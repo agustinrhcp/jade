@@ -1,13 +1,11 @@
 require 'ast'
+require 'lexer'
 
 module Parser
   extend self
 
-  def expression
-  end
-
   def grouping
-    (symbol('(') >> expression >> symbol(')'))
+    (type(:lparen) >> expression >> type(:rparen))
       .map(&AST.grouping)
   end
 
@@ -16,10 +14,27 @@ module Parser
   end
 
   def equality
-    comparison
+    chainl(comparison, types(:eq, :not_eq), &AST.binary)
   end
 
   def comparison
+    chainl(addition, types(:lt, :lte, :gt, :gte), &AST.binary)
+  end
+
+  def addition
+    chainl(multiplicative, types(:plus, :minus), &AST.binary)
+  end
+
+  def multiplicative
+    chainl(unary, types(:star, :slash), &AST.binary)
+  end
+
+  def unary
+    ((types(:minus, :bang) >> lazy { unary }).map(&AST.unary)) | factor
+  end
+
+  def factor
+    literal | variable| lazy { grouping }
   end
 
   def many(parser)
@@ -47,10 +62,12 @@ module Parser
 
   def one_of(*parsers)
     Parser.new do |state|
+      result = nil
       parsers.each do |parser|
         result = parser.call(state)
-        break result if result
+        break if result
       end
+      result
     end
   end
 
@@ -61,35 +78,37 @@ module Parser
   def chainl(value_parser, operator_parser, &combine)
     Parser.new do |state|
       value_result = value_parser.call(state)
-      return nil unless value_result
+      if value_result
+        left_value, current_state = value_result
 
-      left_value, current_state = value_result
+        loop do
+          op_result = operator_parser.call(current_state)
+          break unless op_result
 
-      loop do
-        op_result = operator_parser.call(current_state)
-        break unless op_result
+          operator_token, after_op_state = op_result
 
-        operator_token, after_op_state = op_result
+          right_result = value_parser.call(after_op_state)
+          break unless right_result
 
-        right_result = value_parser.call(after_op_state)
-        break unless right_result
+          right_value, after_right_state = right_result
 
-        right_value, after_right_state = right_result
+          left_value = combine.call(left_value, operator_token, right_value)
+          current_state = after_right_state
+        end
 
-        left_value = combine.call(left_value, operator_token, right_value)
-        current_state = after_right_state
+        [left_value, current_state]
+      else
+        nil
       end
-
-      [left_value, current_state]
     end
   end
 
-  def symbol(sym)
+  def type(type)
     Parser.new do |state|
       next nil if state.eof?
 
       token = state.current
-      if token.value == sym
+      if token.type == type
         [token, state.advance]
       else
         nil
@@ -97,9 +116,34 @@ module Parser
     end
   end
 
+  def types(*types)
+    types
+      .map  { type(it) }
+      .then { one_of(*it) }
+  end
+
+  def symbol(sym)
+    Lexer::SYMBOLS.fetch(sym)
+      .then { type(it) }
+  end
+
   def int
     type_parser(:int)
       .map(&AST.literal)
+  end
+
+  def bool
+    type_parser(:bool)
+      .map(&AST.literal)
+  end
+
+  def string
+    type_parser(:string)
+      .map(&AST.literal)
+  end
+
+  def literal
+    int | bool | string
   end
 
   def identifier
@@ -109,6 +153,12 @@ module Parser
   def variable
     identifier
       .map(&AST.variable)
+  end
+
+  def lazy(&block)
+    Parser.new do |input|
+      block.call.call(input)
+    end
   end
 
   private

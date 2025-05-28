@@ -24,6 +24,13 @@ module AST
     end
   end
 
+  def unary
+    ->(stuff) do
+      stuff => [operator, right]
+      Unary.new(operator: operator.value.to_sym, right:)
+    end
+  end
+
   def literal
     ->(token) do
       Literal.new(
@@ -39,8 +46,7 @@ module AST
     ->(token) do
       AST::Variable.new(
         name: token.value,
-        start: token.position,
-        end: token.position.offset_by_string(token.value),
+        range: Range.new(token.position, token.position.offset_by_string(token.value)),
         type: nil
       )
     end

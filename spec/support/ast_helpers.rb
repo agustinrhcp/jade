@@ -11,6 +11,14 @@ module AstHelpers
     AST::Grouping.new(expression:, range: dummy_range)
   end
 
+  def var(name, type: nil)
+    AST::Variable.new(name:, type:, range: dummy_range)
+  end
+
+  def uny(operator, right)
+    AST::Unary.new(operator:, right:)
+  end
+
   private
 
   def dummy_range

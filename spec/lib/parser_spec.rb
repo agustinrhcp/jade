@@ -74,4 +74,84 @@ describe Parser do
 
     it { is_expected.to match_ast_node(grp(lit(42))) }
   end
+
+  describe '.literal' do
+    let(:parser) { described_class.literal }
+
+    context 'a string' do
+      let(:tokens) { [Token.new(:string, 'Hello World!')] }
+
+      it { is_expected.to match_ast_node(lit('Hello World!')) }
+    end
+
+    context 'an int' do
+      let(:tokens) { [Token.new(:int, 42)] }
+
+      it { is_expected.to match_ast_node(lit(42)) }
+    end
+
+    context 'a boolean' do
+      let(:tokens) { [Token.new(:bool, true)] }
+
+      it { is_expected.to match_ast_node(lit(true)) }
+    end
+  end
+
+  describe '.addition' do
+    let(:parser) { described_class.addition }
+
+    context 'a + 4' do
+      let(:tokens) { [Token.new(:identifier, 'a'), Token.new(:plus, '+'), Token.new(:int, 4)] }
+
+      it { is_expected.to match_ast_node(bin(var('a'), :+, lit(4))) }
+    end
+
+    context '1 * 2 + 3' do
+      let(:tokens) { [Token.new(:int, 1), Token.new(:star, '*'), Token.new(:int, 2), Token.new(:plus, '+'), Token.new(:int, 3)] }
+
+      it { is_expected.to match_ast_node(bin(bin(lit(1), :*, lit(2)), :+, lit(3))) }
+    end
+
+    context '1 + 2 * 3' do
+      let(:tokens) { [Token.new(:int, 1), Token.new(:plus, '+'), Token.new(:int, 2), Token.new(:star, '*'), Token.new(:int, 3)] }
+
+      it { is_expected.to match_ast_node(bin(lit(1), :+, bin(lit(2), :*, lit(3)))) }
+    end
+
+    context '(1 + 2) * 3' do
+      let(:tokens) do
+        [
+          Token.new(:lparen, '('), Token.new(:int, 1), Token.new(:plus, '+'), Token.new(:int, 2), Token.new(:rparen, ')'),
+          Token.new(:star, '*'), Token.new(:int, 3),
+        ]
+      end
+
+      it { is_expected.to match_ast_node(bin(grp(bin(lit(1), :+, lit(2))), :*, lit(3))) }
+    end
+  end
+
+  describe 'comparison' do
+    let(:parser) { described_class.comparison }
+
+    let(:tokens) do
+      [
+        Token.new(:int, 2), Token.new(:minus, '-'), Token.new(:int, 3),
+        Token.new(:lte, '<='), Token.new(:minus, '-'), Token.new(:int, 3),
+      ]
+    end
+
+    it { is_expected.to match_ast_node(bin(bin(lit(2), :-, lit(3)), :<=, uny(:-, lit(3)))) }
+  end
+
+  describe '.expression' do
+    let(:parser) { described_class.expression }
+
+    context 'handles literals' do
+      context 'a string token' do
+        let(:tokens) { [Token.new(:string, 'Hello World!')] }
+
+        it { is_expected.to match_ast_node(lit('Hello World!')) }
+      end
+    end
+  end
 end

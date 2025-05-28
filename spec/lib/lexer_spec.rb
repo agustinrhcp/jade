@@ -5,6 +5,100 @@ require 'lexer'
 describe Lexer do
   subject(:tokens) { Lexer.scan(code) }
 
+  context 'literals' do
+    context 'int' do
+      let(:code) { '1' }
+
+      it { is_expected.to have_tokenized(:int).with(1) }
+    end
+
+    context 'boolean' do
+      let(:code) { 'True' }
+
+      it { is_expected.to have_tokenized(:bool).with(true) }
+
+      context 'false' do
+        it { is_expected.to have_tokenized(:bool).with(false) }
+      end
+    end
+
+    context 'strings' do
+      let(:code) { '"Hello!"' }
+
+      it { is_expected.to have_tokenized(:string).with('Hello!') }
+    end
+  end
+
+  context 'identifier' do
+    let(:code) { 'pepe' }
+
+    it { is_expected.to have_tokenized(:identifier).with('pepe') }
+  end
+
+  context 'operators' do
+    context '+' do
+      let(:code) { '+' }
+
+      it { is_expected.to have_tokenized(:plus).with('+') }
+    end
+
+    context '-' do
+      let(:code) { '-' }
+
+      it { is_expected.to have_tokenized(:minus).with('-') }
+    end
+
+    context '*' do
+      let(:code) { '*' }
+
+      it { is_expected.to have_tokenized(:star).with('*') }
+    end
+
+    context '/' do
+      let(:code) { '/' }
+
+      it { is_expected.to have_tokenized(:slash).with('/') }
+    end
+
+    context 'comparison' do
+      context '==' do
+        let(:code) { '==' }
+
+        it { is_expected.to have_tokenized(:eq).with('==') }
+      end
+
+      context '!=' do
+        let(:code) { '!=' }
+
+        it { is_expected.to have_tokenized(:not_eq).with('!=') }
+      end
+
+      context '<' do
+        let(:code) { '<' }
+
+        it { is_expected.to have_tokenized(:lt).with('<') }
+      end
+
+      context '<=' do
+        let(:code) { '<=' }
+
+        it { is_expected.to have_tokenized(:lte).with('<=') }
+      end
+
+      context '>' do
+        let(:code) { '>' }
+
+        it { is_expected.to have_tokenized(:gt).with('>') }
+      end
+
+      context '>=' do
+        let(:code) { '>=' }
+
+        it { is_expected.to have_tokenized(:gte).with('>=') }
+      end
+    end
+  end
+
   context 'a + b' do
     let(:code) { 'a + b' }
 
