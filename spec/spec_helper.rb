@@ -20,6 +20,7 @@ Dir[File.join(File.dirname(__FILE__), 'support/**/*.rb')].sort.each { |f| requir
 
 RSpec.configure do |config|
   config.include AstHelpers
+  config.include TokenHelpers
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
   # assertions if you prefer.

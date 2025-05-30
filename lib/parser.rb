@@ -1,11 +1,12 @@
 require 'ast'
 require 'lexer'
+require 'result'
 
 module Parser
   extend self
 
   def grouping
-    (type(:lparen) >> expression >> type(:rparen))
+    (type_parser(:lparen) >> expression >> type_parser(:rparen))
       .map(&AST.grouping)
   end
 
@@ -39,19 +40,28 @@ module Parser
 
   def many(parser)
     Parser.new do |state|
-      results = []
+      oks = []
+      error = nil
       current = state
 
       loop do
-        result = parser.call(current)
-        break unless result
+        break if current.eof?
 
-        value, next_state = result
-        results << value
-        current = next_state
+        case parser.call(current)
+        in Ok([value, next_state])
+          oks << value
+          current = next_state
+        in Err(err)
+          error = err
+          break
+        end
       end
 
-      [results, current]
+      if error.nil?
+        Ok[[oks, current]]
+      else
+        Err[error]
+      end
     end
   end
 
@@ -62,12 +72,16 @@ module Parser
 
   def one_of(*parsers)
     Parser.new do |state|
-      result = nil
-      parsers.each do |parser|
-        result = parser.call(state)
-        break if result
-      end
-      result
+      parsers
+        .reduce(Err[[]]) do |acc, parser|
+          next acc if acc.ok?
+
+          case [acc, parser.call(state)]
+          in Err, Ok(stuff) then Ok[stuff]
+          in Err(errors), Err(error) then Err[errors.concat([error])]
+          end
+        end
+        .map_error { |errors| errors.min }
     end
   end
 
@@ -76,55 +90,18 @@ module Parser
   end
 
   def chainl(value_parser, operator_parser, &combine)
-    Parser.new do |state|
-      value_result = value_parser.call(state)
-      if value_result
-        left_value, current_state = value_result
-
-        loop do
-          op_result = operator_parser.call(current_state)
-          break unless op_result
-
-          operator_token, after_op_state = op_result
-
-          right_result = value_parser.call(after_op_state)
-          break unless right_result
-
-          right_value, after_right_state = right_result
-
-          left_value = combine.call(left_value, operator_token, right_value)
-          current_state = after_right_state
-        end
-
-        [left_value, current_state]
-      else
-        nil
-      end
-    end
-  end
-
-  def type(type)
-    Parser.new do |state|
-      next nil if state.eof?
-
-      token = state.current
-      if token.type == type
-        [token, state.advance]
-      else
-        nil
-      end
-    end
+    Parser.new { |state| _chainl(value_parser, operator_parser, state, &combine) }
   end
 
   def types(*types)
     types
-      .map  { type(it) }
+      .map  { type_parser(it) }
       .then { one_of(*it) }
   end
 
   def symbol(sym)
     Lexer::SYMBOLS.fetch(sym)
-      .then { type(it) }
+      .then { type_parser(it) }
   end
 
   def int
@@ -165,13 +142,26 @@ module Parser
 
   def type_parser(type)
     Parser.new do |state|
-      next nil if state.eof?
-
-      token = state.current
-      if token.type == type
-        [token, state.advance]
+      if state.eof?
+        Err[[
+          EOFError.new(
+            "Unexpected end of input, expected #{type}",
+            token: nil,
+            position: state.position,
+          ),
+          state,
+        ]]
+      elsif state.current.type == type
+        Ok[([state.current, state.advance])]
       else
-        nil
+        Err[[
+          UnexpectedTokenError.new(
+            "Expected #{type}, got #{state.current&.type.inspect}",
+            token: state.current,
+            position: state.position,
+          ),
+          state,
+        ]]
       end
     end
   end
@@ -205,25 +195,18 @@ module Parser
 
     def >>(other)
       Parser.new do |state|
-        result1 = call(state)
-        next nil unless result1
-
-        value1, state1 = result1
-        result2 = other.call(state1)
-        next nil unless result2
-
-        value2, state2 = result2
-        [[value1, value2].flatten, state2]
+        call(state).and_then do |(value1, state1)|
+          other.call(state1).map do |(value2, state2)|
+            [[value1, value2].flatten, state2]
+          end
+        end
       end
     end
 
     def map(&block)
       Parser.new do |state|
-        result = call(state)
-        next nil unless result
-
-        value, new_state = result
-        [block.call(value), new_state]
+        call(state)
+          .map { |(value, new_state)| [block.call(value), new_state] }
       end
     end
 
@@ -235,4 +218,90 @@ module Parser
       ::Parser.many(self)
     end
   end
+
+  def _chainl(value_parser, operator_parser, state, &combine)
+    value_parser
+      .call(state)
+      .map_error do |error|
+        case error
+        in [UnexpectedTokenError, error_state]
+          [
+            MissingOperandError.new(
+              "Operator '#{error_state.tokens.first&.value}' lacks left-hand side",
+              token: error_state.tokens.first,
+              position: error_state.position,
+            ),
+            error_state,
+          ]
+        else
+         error
+       end
+      end
+      .and_then do |(left_value, current_state)|
+        loop do
+          operator_parser
+            .call(current_state)
+            .on_err { return Ok[[left_value, current_state]] } =>
+              Ok([operator_token, after_op_state])
+
+          value_parser
+            .call(after_op_state)
+            .on_err do |error|
+              case error
+              in [UnexpectedTokenError | EOFError, error_state]
+                return Err[[
+                  MissingOperandError.new(
+                    "Operator '#{operator_token.value}' lacks right-hand side",
+                    token: operator_token,
+                    position: error_state.position,
+                  ),
+                  error_state,
+                ]]
+              else
+                return Err[error]
+              end
+            end => Ok([right_value, after_right_state])
+
+          left_value = combine.call(left_value, operator_token, right_value)
+          current_state = after_right_state
+        end
+      end
+  end
+
+  class Error < StandardError
+    attr_reader :token, :position
+
+    def initialize(message, token:, position:)
+      @token = token
+      @position = position
+      super(message)
+    end
+
+    protected
+
+    def <=>(other)
+      [
+        semantic_priority,
+        -position,
+      ] <=> [
+        other.semantic_priority,
+        -other.position,
+      ]
+    end
+
+    def semantic?
+      is_a?(SemanticError)
+    end
+
+    def semantic_priority
+      semantic? ? 0 : 1
+    end
+  end
+
+  class UnexpectedTokenError < Error; end
+  class IncompleteExpressionError < Error; end
+  class EOFError < Error; end
+
+  class SemanticError < Error; end
+  class MissingOperandError < SemanticError; end
 end
