@@ -1,6 +1,11 @@
 module AstHelpers
   def lit(value)
-    AST::Literal.new(value:, type: nil, range: dummy_range)
+    type = case value
+      in String then :string
+      in Integer then :int
+      in true | false then :bool
+      end
+    AST::Literal.new(value:, type:, range: dummy_range)
   end
 
   def bin(left, operator, right)
