@@ -153,6 +153,19 @@ describe Parser do
     it { is_expected.to match_ast_node(bin(bin(lit(2), :-, lit(3)), :<=, uny(:-, lit(3)))) }
   end
 
+  describe '.statement' do
+    let(:parser) { described_class.statement }
+
+    context 'variable_declaration' do
+      let(:tokens) { [tok(:let, 'let'), tok(:identifier, 'a'), tok(:assign, '='), tok(:int, 5)] }
+
+      before do
+        AST::PrettyPrinter.print(var_dec('a', lit(5)))
+      end
+      it { is_expected.to match_ast_node(var_dec('a', lit(5))) }
+    end
+  end
+
   describe '.expression' do
     let(:parser) { described_class.expression }
 

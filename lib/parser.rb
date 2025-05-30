@@ -10,8 +10,21 @@ module Parser
       .map(&AST.grouping)
   end
 
+  def parse
+    statement | expression
+  end
+
   def expression
     equality
+  end
+
+  def statement
+    variable_declaration
+  end
+
+  def variable_declaration
+    (type_parser(:let) >> identifier >> type_parser(:assign) >> lazy { expression })
+      .map(&AST.variable_declaration)
   end
 
   def equality

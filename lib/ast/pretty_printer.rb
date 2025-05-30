@@ -26,6 +26,11 @@ module AST
         "#{prefix}Grouping(\n" \
         "#{print(expression, indent + 1)}\n" \
         "#{prefix})"
+      in VariableDeclaration(name:, expression:)
+        "#{prefix}Variable Declaration(\n" \
+        "#{prefix}  name: #{name},\n" \
+        "#{print(expression, indent + 1)}\n" \
+        "#{prefix})"
       end
     end
   end

@@ -14,6 +14,8 @@ module AST
   Variable = Data.define(:name, :type, :range)
   Grouping = Data.define(:expression, :range)
 
+  VariableDeclaration = Data.define(:name, :expression, :range)
+
   Range = Data.define(:start, :end)
 
   def grouping
@@ -57,6 +59,17 @@ module AST
         name: token.value,
         range: Range.new(token.position, token.position.offset_by_string(token.value)),
         type: nil
+      )
+    end
+  end
+
+  def variable_declaration
+    ->(stuff) do
+      stuff => [_let, identifier, _assign, expression]
+      AST::VariableDeclaration.new(
+        name: identifier.value,
+        expression:,
+        range: Range.new(_let.position, expression.range.end)
       )
     end
   end

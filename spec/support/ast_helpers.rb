@@ -24,6 +24,10 @@ module AstHelpers
     AST::Unary.new(operator:, right:, range: dummy_range)
   end
 
+  def var_dec(name, expression)
+    AST::VariableDeclaration.new(name:, expression:, range: dummy_range)
+  end
+
   private
 
   def dummy_range
