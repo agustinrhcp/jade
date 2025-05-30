@@ -3,7 +3,8 @@ require 'spec_helper'
 require 'type_checker'
 
 describe TypeChecker do
-  subject { described_class.check(node) }
+  let(:result) { described_class.check(node) }
+  subject { result => Ok(type); type }
 
   context 'for an integer' do
     let(:node) { lit(2) }
@@ -32,11 +33,9 @@ describe TypeChecker do
 
     context 'minus bool' do
       let(:node) { uny(:-, lit(true)) }
+      subject { result => Err(error); error }
 
-      it 'raises an error' do
-        expect { subject }
-          .to raise_error(TypeChecker::Error)
-      end
+      its(:message) { is_expected.to eql "Unary '-' not valid for bool" }
     end
 
     context 'bang bool' do
@@ -47,11 +46,9 @@ describe TypeChecker do
 
     context 'bang string' do
       let(:node) { uny(:!, lit('Hello')) }
+      subject { result => Err(error); error }
 
-      it 'raises an error' do
-        expect { subject }
-          .to raise_error(TypeChecker::Error)
-      end
+      its(:message) { is_expected.to eql "Unary '!' not valid for string" }
     end
   end
 
@@ -84,20 +81,16 @@ describe TypeChecker do
       context 'invalid operands' do
         context 'string + int' do
           let(:node) { bin(lit('Hello'), :+, lit(2)) }
+          subject { result => Err(error); error }
 
-          it 'raises an error' do
-            expect { subject }
-              .to raise_error(TypeChecker::Error)
-          end
+          its(:message) { is_expected.to eql "Left operand of '+' must be int, got string" }
         end
 
         context 'bool * int' do
           let(:node) { bin(lit(true), :*, lit(2)) }
+          subject { result => Err(error); error }
 
-          it 'raises an error' do
-            expect { subject }
-              .to raise_error(TypeChecker::Error)
-          end
+          its(:message) { is_expected.to eql "Left operand of '*' must be int, got bool" }
         end
       end
     end
@@ -142,20 +135,16 @@ describe TypeChecker do
       context 'invalid operands' do
         context 'string < int' do
           let(:node) { bin(lit('Hello'), :<, lit(2)) }
+          subject { result => Err(error); error }
 
-          it 'raises an error' do
-            expect { subject }
-              .to raise_error(TypeChecker::Error)
-          end
+          its(:message) { is_expected.to eql "Left operand of '<' must be int, got string" }
         end
 
         context 'bool == string' do
           let(:node) { bin(lit(true), :==, lit('Hello')) }
+          subject { result => Err(error); error }
 
-          it 'raises an error' do
-            expect { subject }
-              .to raise_error(TypeChecker::Error)
-          end
+          its(:message) { is_expected.to eql "Right operand of '==' must be bool, got string" }
         end
       end
     end

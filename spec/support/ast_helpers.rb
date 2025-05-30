@@ -21,7 +21,7 @@ module AstHelpers
   end
 
   def uny(operator, right)
-    AST::Unary.new(operator:, right:)
+    AST::Unary.new(operator:, right:, range: dummy_range)
   end
 
   private

@@ -3,8 +3,13 @@ require 'position'
 module AST
   extend self
 
-  Binary   = Data.define(:left, :operator, :right)
-  Unary    = Data.define(:operator, :right)
+  Binary = Data.define(:left, :operator, :right) do
+    def range
+      Range.new(left.range.start, right.range.end)
+    end
+  end
+
+  Unary    = Data.define(:operator, :right, :range)
   Literal  = Data.define(:value, :type, :range)
   Variable = Data.define(:name, :type, :range)
   Grouping = Data.define(:expression, :range)
@@ -27,7 +32,11 @@ module AST
   def unary
     ->(stuff) do
       stuff => [operator, right]
-      Unary.new(operator: operator.value.to_sym, right:)
+      Unary.new(
+        operator: operator.value.to_sym,
+        right:,
+        range: Range.new(operator.position, right.range.end),
+      )
     end
   end
 
