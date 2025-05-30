@@ -7,7 +7,7 @@ module Lexer
 
   State = Data.define(:code, :pos, :line, :col, :tokens)
 
-  KEYWORDS = Set['def', 'end']
+  KEYWORDS = Set['def', 'end', 'let']
   SYMBOLS = {
     '->' => :arrow,
     '('  => :lparen,
@@ -28,6 +28,8 @@ module Lexer
     '<=' => :lte,
     '>'  => :gt,
     '>=' => :gte,
+
+    '=' => :assign,
   }
   SYMBOLS_REGEX = Regexp.union(SYMBOLS.keys.sort_by { |k| -k.length })
 

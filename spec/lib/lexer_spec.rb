@@ -108,6 +108,16 @@ describe Lexer do
     it { is_expected.to have_tokenized(:plus) }
   end
 
+  context 'a variable declaration' do
+    let(:code) { 'let x = 5' }
+
+    its(:size) { is_expected.to be 4 }
+    it { is_expected.to have_tokenized(:let) }
+    it { is_expected.to have_tokenized(:identifier).with('x') }
+    it { is_expected.to have_tokenized(:assign) }
+    it { is_expected.to have_tokenized(:int).with(5) }
+  end
+
   context 'a function definition' do
     let(:code) do
       <<~CODE
