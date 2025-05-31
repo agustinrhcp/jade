@@ -27,6 +27,12 @@ module SemanticAnalyzer
     in AST::Grouping(expression:)
       analyzed_expression, errors = analyze(expression, scope)
       [node.with(expression: analyzed_expression), errors]
+
+    in AST::VariableDeclaration(name:, expression:)
+      analyzed_expression, errors = analyze(expression, scope)
+      scope.define(name, expression.range)
+      [node.with(expression: analyzed_expression), errors]
+
     end
   end
 
@@ -36,7 +42,6 @@ module SemanticAnalyzer
     end
 
     def define(name, range)
-      # TODO: Need the type as well
       with(vars: vars.merge(name: range))
     end
 

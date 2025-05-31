@@ -162,7 +162,24 @@ describe Parser do
       before do
         AST::PrettyPrinter.print(var_dec('a', lit(5)))
       end
+
       it { is_expected.to match_ast_node(var_dec('a', lit(5))) }
+
+      context 'malformed' do
+        subject(:errors) do
+          parser.call(Parser::State.new(tokens)) => Err(errors)
+          errors
+        end
+
+        describe 'let = 1' do
+          let(:tokens) { [tok(:let, 'let'), tok(:assign, '='), tok(:int, 1)] }
+
+          it 'returns an error' do
+            subject => [Parser::UnexpectedTokenError => error, _]
+            expect(error.message).to eql "Expected identifier, got \"=\""
+          end
+        end
+      end
     end
   end
 
@@ -186,7 +203,7 @@ describe Parser do
       context 'no left operator (+ 1)' do
         let(:tokens) { [tok(:plus, '+'), tok(:int, 1)] }
 
-        it 'raises an error' do
+        it 'returns an error' do
           subject => [Parser::MissingOperandError => error, _]
           expect(error.message).to eql "Operator '+' lacks left-hand side"
         end
@@ -195,7 +212,7 @@ describe Parser do
       context 'no right side operator (1 +)' do
         let(:tokens) { [tok(:int, 1), tok(:plus, '+')] }
 
-        it 'raises an error' do
+        it 'returns an error' do
           subject => [Parser::MissingOperandError => error, _]
           expect(error.message).to eql "Operator '+' lacks right-hand side"
         end

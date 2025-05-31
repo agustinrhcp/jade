@@ -23,8 +23,12 @@ module Parser
   end
 
   def variable_declaration
-    (type_parser(:let) >> identifier >> type_parser(:assign) >> lazy { expression })
-      .map(&AST.variable_declaration)
+    (
+      type_parser(:let) >>
+        identifier >>
+        type_parser(:assign) >>
+        lazy { expression }
+    ).map(&AST.variable_declaration)
   end
 
   def equality
@@ -169,7 +173,7 @@ module Parser
       else
         Err[[
           UnexpectedTokenError.new(
-            "Expected #{type}, got #{state.current&.type.inspect}",
+            "Expected #{type}, got #{state.current&.value.inspect}",
             token: state.current,
             position: state.position,
           ),
@@ -220,6 +224,13 @@ module Parser
       Parser.new do |state|
         call(state)
           .map { |(value, new_state)| [block.call(value), new_state] }
+      end
+    end
+
+    def map_error(&block)
+      Parser.new do |state|
+        call(state)
+          .map_error { |error| block.call(error) }
       end
     end
 

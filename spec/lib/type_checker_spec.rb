@@ -3,8 +3,9 @@ require 'spec_helper'
 require 'type_checker'
 
 describe TypeChecker do
-  let(:result) { described_class.check(node) }
-  subject { result => Ok(type); type }
+  let(:env) { TypeChecker::Env.new }
+  let(:result) { described_class.check(node, env) }
+  subject { result => Ok([type, _]); type }
 
   context 'for an integer' do
     let(:node) { lit(2) }
@@ -147,6 +148,36 @@ describe TypeChecker do
           its(:message) { is_expected.to eql "Right operand of '==' must be bool, got string" }
         end
       end
+    end
+  end
+
+  context 'variables and declarations' do
+    context 'a declared variable' do
+      let(:node) { var('x') }
+      let(:env) { TypeChecker::Env.new.define('x', :int) }
+
+      it { is_expected.to eql :int }
+    end
+
+    context 'an undeclared variable' do
+      let(:node) { var('y') }
+      subject { result => Err(error); error }
+
+      its(:message) { is_expected.to eql "Undefined variable 'y'" }
+    end
+
+    context 'a variable declaration' do
+      let(:node) { var_dec('z', lit(42)) }
+
+      context 'the returned env' do
+        subject { result => Ok([_, env]); env }
+
+        it 'adds the variable to the environment' do
+          expect(subject.resolve(:z)).to eql :int
+        end
+      end
+
+      it { is_expected.to eql :int }
     end
   end
 end
