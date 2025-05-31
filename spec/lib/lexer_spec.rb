@@ -137,4 +137,20 @@ describe Lexer do
     it { is_expected.to have_tokenized(:int).on(line: 2, column: 5).with(2) }
     it { is_expected.to have_tokenized(:end).on(line: 3, column: 1) }
   end
+
+  context 'multiple expressions' do
+    let(:code) do
+      <<~CODE
+        let x = 5
+        x * 2
+      CODE
+    end
+
+    it { is_expected.to have_tokenized(:let) }
+    it { is_expected.to have_tokenized(:identifier).with('x') }
+    it { is_expected.to have_tokenized(:int).with(5) }
+    it { is_expected.to have_tokenized(:identifier).with('x') }
+    it { is_expected.to have_tokenized(:star) }
+    it { is_expected.to have_tokenized(:int).with(2) }
+  end
 end

@@ -16,6 +16,8 @@ module AST
 
   VariableDeclaration = Data.define(:name, :expression, :range)
 
+  Program = Data.define(:statements)
+
   Range = Data.define(:start, :end)
 
   def grouping
@@ -71,6 +73,12 @@ module AST
         expression:,
         range: Range.new(_let.position, expression.range.end)
       )
+    end
+  end
+
+  def program
+    ->(statements) do
+      AST::Program.new(statements:)
     end
   end
 end

@@ -5,7 +5,7 @@ require 'token'
 require 'ast'
 
 describe Parser do
-  subject(:expression) do
+  subject(:ast) do
     parser.call(Parser::State.new(tokens)) => Ok([ast, _])
     ast
   end
@@ -217,6 +217,30 @@ describe Parser do
           expect(error.message).to eql "Operator '+' lacks right-hand side"
         end
       end
+    end
+  end
+
+  context 'program' do
+    let(:parser) { described_class.program }
+
+    let(:tokens) do
+      [
+        tok(:let, 'let'), tok(:identifier, 'a'), tok(:assign, '='), tok(:int, 5),
+        tok(:identifier, 'a'), tok(:star, '*'), tok(:int, 2),
+      ]
+    end
+
+    it { is_expected.to be_a(AST::Program) }
+    it do
+      is_expected.to match_ast_node(prog([
+        var_dec('a', lit(5)),
+        bin(var('a'), :*, lit(2))
+      ]))
+    end
+
+    describe 'its first statement' do
+      subject { ast.statements.first }
+      it { is_expected.to match_ast_node(var_dec('a', lit(5))) }
     end
   end
 end

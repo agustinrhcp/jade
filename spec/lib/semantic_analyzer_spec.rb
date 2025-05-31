@@ -2,13 +2,13 @@ require 'semantic_analyzer'
 
 describe SemanticAnalyzer do
   subject do
-    described_class.analyze(node) => [analyzed, _]
+    described_class.analyze(node) => [analyzed, _, _]
     analyzed
   end
 
   context 'detects undefined variables' do
     subject do
-      described_class.analyze(node) => [_, [error]]
+      described_class.analyze(node) => [_, _, [error]]
       error
     end
 

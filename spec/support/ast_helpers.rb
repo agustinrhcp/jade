@@ -28,6 +28,10 @@ module AstHelpers
     AST::VariableDeclaration.new(name:, expression:, range: dummy_range)
   end
 
+  def prog(statements)
+    AST::Program.new(statements:)
+  end
+
   private
 
   def dummy_range

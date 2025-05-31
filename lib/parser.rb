@@ -5,13 +5,13 @@ require 'result'
 module Parser
   extend self
 
+  def program
+    (statement | expression).many.map(&AST.program)
+  end
+
   def grouping
     (type_parser(:lparen) >> expression >> type_parser(:rparen))
       .map(&AST.grouping)
-  end
-
-  def parse
-    statement | expression
   end
 
   def expression

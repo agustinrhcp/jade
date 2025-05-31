@@ -31,6 +31,10 @@ module AST
         "#{prefix}  name: #{name},\n" \
         "#{print(expression, indent + 1)}\n" \
         "#{prefix})"
+      in Program(statements:)
+        "#{prefix}Program(\n" \
+        "#{statements.map { |stmt| print(stmt, indent + 1) }.join(",\n")}\n" \
+        "#{prefix})"
       end
     end
   end
