@@ -76,6 +76,13 @@ module TypeChecker
         #  the semantic analyzer.
         Err[Error.new("Undefined variable '#{name}'", range: node.range)]
       end
+
+    in AST::Program(statements:)
+      statements.reduce(Ok[[nil, env]]) do |acc, stmt|
+        acc => Ok([_, new_env])
+        check(stmt, new_env)
+          .on_err { return Err[it] }
+      end
     end
   end
 

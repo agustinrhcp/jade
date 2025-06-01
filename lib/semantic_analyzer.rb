@@ -6,7 +6,7 @@ module SemanticAnalyzer
   def analyze(node, scope = Scope.new) 
     case node
     in AST::Literal
-      [node, []]
+      [node, scope, []]
 
     in AST::Variable(name:)
       if scope.resolve(name)
@@ -30,16 +30,15 @@ module SemanticAnalyzer
 
     in AST::VariableDeclaration(name:, expression:)
       analyzed_expression, current_scope, errors = analyze(expression, scope)
-      scope.define(name, expression.range)
-      [node.with(expression: analyzed_expression), current_scope, errors]
+      [node.with(expression: analyzed_expression), current_scope.define(name, expression.range), errors]
 
     in AST::Program(statements:)
       statements
         .reduce([[], scope, []]) do |(analyzed_stmts, current_scope, errors), stmt|
           analyzed_stmt, new_scope, stmt_errors = analyze(stmt, current_scope)
-          [nodes.concat([analyzed_stmt]), new_scope, errors.concat(stmt_errors)]
+          [analyzed_stmts.concat([analyzed_stmt]), new_scope, errors.concat(stmt_errors)]
         end
-        .then { |analyzed_stmts, errors| [node.with(statements: analyzed_stmts), errors] }
+        .then { |analyzed_stmts, scope, errors| [node.with(statements: analyzed_stmts), scope, errors] }
     end
   end
 
@@ -49,7 +48,7 @@ module SemanticAnalyzer
     end
 
     def define(name, range)
-      with(vars: vars.merge(name: range))
+      with(vars: vars.merge(name => range))
     end
 
     def resolve(name)
