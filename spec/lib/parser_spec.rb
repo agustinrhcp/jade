@@ -232,10 +232,10 @@ describe Parser do
 
     it { is_expected.to be_a(AST::Program) }
     it do
-      is_expected.to match_ast_node(prog([
+      is_expected.to match_ast_node(prog(
         var_dec('a', lit(5)),
         bin(var('a'), :*, lit(2))
-      ]))
+      ))
     end
 
     describe 'its first statement' do
