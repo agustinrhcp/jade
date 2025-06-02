@@ -34,43 +34,44 @@ module TypeChecker
     :>= => { :int => { :int => :bool } },
   }
 
-  def check(node, env = Env.new)
+  def check(node, scope = Scope.new)
     case node
     in AST::Literal(type:)
-      Ok[[type, env]]
+      Ok[[type, scope]]
 
     in AST::Grouping(expression:)
-      check(expression, env)
+      check(expression, scope)
 
     in AST::Unary(operator:, right:)
-      check(node.right, env)
-        .and_then do |(operand_type, new_env)|
+      check(node.right, scope)
+        .and_then do |(operand_type, new_scope)|
           UNARY_OP_RULES.dig(operator, operand_type)
-            .then { return Ok[[it, new_env]] if it }
+            .then { return Ok[[it, new_scope]] if it }
 
           Err[Error.new("Unary '#{node.operator}' not valid for #{operand_type}", range: node.range)]
         end
 
     in AST::Binary(left:, operator:, right:)
-      check(node.left, env)
-        .and_then do |(left_operand_type, env_after_left)|
-          check(node.right, env_after_left)
-            .and_then do |(right_operand_type, env_after_right)|
+      check(node.left, scope)
+        .and_then do |(left_operand_type, scope_after_left)|
+          check(node.right, scope_after_left)
+            .and_then do |(right_operand_type, scope_after_right)|
               BINARY_OP_RULES.dig(operator, left_operand_type)
                 .or_else { return left_type_error(node, BINARY_OP_RULES[operator].keys) }
                 .dig(right_operand_type)
-                .or_else { return right_type_error(node, left_operand_type) }
-                .then { Ok[[it, env_after_right]] }
+                .or_else { return right_type_error(node, actual: right_operand_type, expected: left_operand_type) }
+                .then { Ok[[it, scope_after_right]] }
             end
         end
 
-    in AST::VariableDeclaration(name:, expression:)
-      check(expression, env)
-        .map { |(type, new_env)| [type, new_env.define(name, type)] }
+    in AST::VariableDeclaration(name:, expression:, range:)
+      check(expression, scope)
+        .map { |(type, new_scope)| [type, new_scope.define(TypedVar.new(name, type, range))] }
 
     in AST::Variable(name:)
-      if env.defined?(name)
-        Ok[[env.resolve(name), env]]
+      if scope.resolve(name)
+        # What if it is untyped?
+        Ok[[scope.resolve(name).type, scope]]
       else
         # Should never reach here, this should be caught by
         #  the semantic analyzer.
@@ -78,9 +79,9 @@ module TypeChecker
       end
 
     in AST::Program(statements:)
-      statements.reduce(Ok[[nil, env]]) do |acc, stmt|
-        acc => Ok([_, new_env])
-        check(stmt, new_env)
+      statements.reduce(Ok[[nil, scope]]) do |acc, stmt|
+        acc => Ok([_, new_scope])
+        check(stmt, new_scope)
           .on_err { return Err[it] }
       end
     end
@@ -99,31 +100,13 @@ module TypeChecker
     Err[Error.new(message, range: node.left.range)]
   end
 
-  def right_type_error(node, expected_type)
+  def right_type_error(node, actual:, expected:)
     Err[
       Error.new(
-        "Right operand of '#{node.operator}' must be #{expected_type}, got #{node.right.type}",
+        "Right operand of '#{node.operator}' must be #{expected}, got #{actual}",
         range: node.right.range,
       )
     ]
-  end
-
-  Env = Data.define(:vars) do
-    def initialize(vars: {})
-      super
-    end
-
-    def define(name, type)
-      with(vars: vars.merge(name.to_sym => type))
-    end
-
-    def resolve(name)
-      vars[name.to_sym]
-    end
-
-    def defined?(name)
-      vars.key?(name.to_sym)
-    end
   end
 
   class Error < StandardError

@@ -3,6 +3,7 @@ require 'parser'
 require 'semantic_analyzer'
 require 'generator'
 require 'type_checker'
+require 'scope'
 
 module REPL
   def self.start
@@ -20,8 +21,7 @@ module REPL
     trap("SIGINT") { irb.signal_handle }
 
     context = binding
-    scope = SemanticAnalyzer::Scope.new
-    env = TypeChecker::Env.new
+    scope = Scope.new
 
     loop do
       input = irb.context.io.prompt
@@ -40,8 +40,8 @@ module REPL
         if errors.any?
           errors.each { |e| puts "error: #{e.message}" }
         else
-          case TypeChecker.check(analyzed_ast, env)
-          in Ok([type, env])
+          case TypeChecker.check(analyzed_ast, scope)
+          in Ok([type, scope])
             ruby = Generator.generate(analyzed_ast)
             result = context.eval(ruby)
             puts "=> #{result.inspect} : #{type}"

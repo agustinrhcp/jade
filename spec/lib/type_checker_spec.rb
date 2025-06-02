@@ -1,10 +1,11 @@
 require 'spec_helper'
 
 require 'type_checker'
+require 'scope'
 
 describe TypeChecker do
-  let(:env) { TypeChecker::Env.new }
-  let(:result) { described_class.check(node, env) }
+  let(:scope) { Scope.new }
+  let(:result) { described_class.check(node, scope) }
   subject { result => Ok([type, _]); type }
 
   context 'for an integer' do
@@ -154,7 +155,7 @@ describe TypeChecker do
   context 'variables and declarations' do
     context 'a declared variable' do
       let(:node) { var('x') }
-      let(:env) { TypeChecker::Env.new.define('x', :int) }
+      let(:scope) { Scope.new.define(TypedVar.new('x', :int, nil)) }
 
       it { is_expected.to eql :int }
     end
@@ -169,15 +170,31 @@ describe TypeChecker do
     context 'a variable declaration' do
       let(:node) { var_dec('z', lit(42)) }
 
-      context 'the returned env' do
-        subject { result => Ok([_, env]); env }
+      context 'the returned scope' do
+        subject { result => Ok([_, scope]); scope }
 
-        it 'adds the variable to the environment' do
-          expect(subject.resolve(:z)).to eql :int
+        it 'adds the variable type to the scope' do
+          expect(subject.resolve(:z).type).to eql :int
         end
       end
 
       it { is_expected.to eql :int }
+
+      context 'a string' do
+        let(:scope) { Scope.new.define(UntypedVar.new('z', nil)) }
+        let(:node) { var_dec('z', lit('Alo')) }
+
+        context 'the returned scope' do
+          subject { result => Ok([_, scope]); scope }
+
+          it 'adds the variable type to the scope' do
+            subject.resolve(:z) => TypedVar(type:)
+            expect(type).to eql :string
+          end
+        end
+
+        it { is_expected.to eql :string }
+      end
     end
   end
 end

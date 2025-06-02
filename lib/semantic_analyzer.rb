@@ -1,4 +1,5 @@
 require 'ast'
+require 'scope'
 
 module SemanticAnalyzer
   extend self
@@ -29,32 +30,42 @@ module SemanticAnalyzer
       [node.with(expression: analyzed_expression), scope, errors]
 
     in AST::VariableDeclaration(name:, expression:)
-      analyzed_expression, current_scope, errors = analyze(expression, scope)
-      [node.with(expression: analyzed_expression), current_scope.define(name, expression.range), errors]
+      if scope.resolve(name)
+        [node, scope, [Error.new("Already defined variable '#{name}'", range: node.range)]]
+      else
+        analyzed_expression, current_scope, errors = analyze(expression, scope)
+        [
+          node.with(expression: analyzed_expression),
+          current_scope.define(UntypedVar.new(name, expression.range)),
+          errors,
+        ]
+      end
 
     in AST::Program(statements:)
-      statements
-        .reduce([[], scope, []]) do |(analyzed_stmts, current_scope, errors), stmt|
-          analyzed_stmt, new_scope, stmt_errors = analyze(stmt, current_scope)
-          [analyzed_stmts.concat([analyzed_stmt]), new_scope, errors.concat(stmt_errors)]
-        end
-        .then { |analyzed_stmts, scope, errors| [node.with(statements: analyzed_stmts), scope, errors] }
+      analyze_many(scope, statements)
+      .then { |analyzed_stmts, new_scope, errors| [node.with(statements: analyzed_stmts), new_scope, errors] }
+
+    in AST::FunctionDeclaration(name:, parameters:, return_type:, body:)
+      function_scope = parameters.reduce(current_scope) do |acc, param|
+        acc.define(TypedVar.new(param.name, param.type, param.range))
+      end
+
+      analyzed_body, _, body_errors = analyze_many(scope, body)
+
+      [node.with(body: analyzed_body), scope.define(UntypedVar.new(name, node.range)), body_errors]
     end
   end
 
-  Scope = Data.define(:vars) do
-    def initialize(vars: {})
-      super
-    end
+  private
 
-    def define(name, range)
-      with(vars: vars.merge(name => range))
-    end
-
-    def resolve(name)
-      vars[name]
-    end
+  def analyze_many(scope, statements)
+    statements
+      .reduce([[], scope, []]) do |(analyzed_stmts, current_scope, errors), stmt|
+        analyzed_stmt, new_scope, stmt_errors = analyze(stmt, current_scope)
+        [analyzed_stmts.concat([analyzed_stmt]), new_scope, errors.concat(stmt_errors)]
+      end
   end
+
 
   class Error < StandardError
     attr_reader :range
