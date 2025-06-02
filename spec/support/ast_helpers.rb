@@ -36,6 +36,12 @@ module AstHelpers
     AST::ParameterList.new(parameters:)
   end
 
+  def fn_dec(name, parameters, return_type, *body)
+    AST::FunctionDeclaration.new(
+      name:, parameters:, return_type:, body:, range: dummy_range,
+    )
+  end
+
   def prog(*statements)
     AST::Program.new(statements:)
   end

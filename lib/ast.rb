@@ -17,6 +17,7 @@ module AST
   VariableDeclaration = Data.define(:name, :expression, :range)
   Parameter           = Data.define(:name, :type, :range)
   ParameterList       = Data.define(:parameters)
+  FunctionDeclaration = Data.define(:name, :parameters, :return_type, :body, :range)
 
   Program = Data.define(:statements)
 
@@ -80,7 +81,7 @@ module AST
 
   def parameter
     ->(stuff) do
-      stuff => [name, _, type]
+      stuff => [name, type]
       AST::Parameter.new(
         name: name.value,
         type: type.value,
@@ -92,6 +93,25 @@ module AST
   def parameter_list
     ->(parameters) do
       AST::ParameterList.new(parameters:)
+    end
+  end
+
+  def function_declaration
+    ->(tokens) do
+      tokens => [
+        name,
+        parameters,
+        return_type,
+        body,
+      ]
+
+      AST::FunctionDeclaration.new(
+        name: name.value,
+        parameters:,
+        return_type: return_type.value,
+        body:,
+        range: Range.new(name.position, body.last.range.end),
+      )
     end
   end
 

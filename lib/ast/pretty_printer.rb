@@ -44,6 +44,13 @@ module AST
         "#{prefix}ParameterList(\n" \
         "#{parameters.map { |param| print(param, indent + 1) }.join(",\n")}\n" \
         "#{prefix})"
+      in FunctionDeclaration(name:, parameters:, return_type:, body:)
+        "#{prefix}Function Declaration(\n" \
+        "#{prefix}  name: #{name},\n" \
+        "#{prefix}  parameters: #{print(parameters)}" \
+        "#{prefix}  returning type: #{return_type}" \
+        "#{body.map { |stmt| print(stmt, indent + 1) }.join(",\n")}\n" \
+        "#{prefix})"
       end
     end
   end

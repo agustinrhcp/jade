@@ -179,6 +179,46 @@ describe Parser do
 
       it { is_expected.to match_ast_node(params(param('first_name', 'String'), param('last_name', 'String'), param('email', 'String'))) }
     end
+
+    context 'just one' do
+      let(:tokens) do
+        [
+          tok(:identifier, 'email'), tok(:colon, :':'), tok(:identifier, 'String'),
+        ]
+      end
+
+      it { is_expected.to match_ast_node(params(param('email', 'String'))) }
+    end
+
+    context 'none' do
+      let(:tokens) do
+        []
+      end
+
+      it { is_expected.to match_ast_node(params) }
+    end
+  end
+
+  describe '.function_declaration' do
+    let(:parser) { described_class.function_declaration }
+    let(:tokens) do
+      [
+        tok(:def, 'def'), tok(:identifier, 'double'), tok(:lparen, '('), tok(:identifier, 'n'), tok(:colon, :':'),
+        tok(:identifier, 'Int'), tok(:rparen, ')'), tok(:arrow, '->'), tok(:identifier, 'Int'),
+        tok(:let, 'let'), tok(:identifier, 'multi'), tok(:assign, '='), tok(:int, 2),
+        tok(:identifier, 'n'), tok(:star, :*), tok(:identifier, 'multi'),
+        tok(:end, 'end'),
+      ]
+    end
+
+    it do
+      is_expected.to match_ast_node(
+        fn_dec('double', params(param('n', 'Int')), 'Int',
+          var_dec('multi', lit(2)),
+          bin(var('n'), :*, var('multi')),
+        )
+      )
+    end
   end
 
   describe '.statement' do

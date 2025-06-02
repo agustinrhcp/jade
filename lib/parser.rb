@@ -10,7 +10,7 @@ module Parser
   end
 
   def grouping
-    (type_parser(:lparen) >> expression >> type_parser(:rparen))
+    (type(:lparen) >> expression >> type(:rparen))
       .map(&AST.grouping)
   end
 
@@ -19,14 +19,14 @@ module Parser
   end
 
   def statement
-    variable_declaration
+    variable_declaration | function_declaration
   end
 
   def variable_declaration
     (
-      type_parser(:let) >>
+      type(:let) >>
         identifier >>
-        type_parser(:assign) >>
+        type(:assign) >>
         lazy { expression }
     ).map(&AST.variable_declaration)
   end
@@ -55,15 +55,36 @@ module Parser
     literal | variable| lazy { grouping }
   end
 
+  def function_declaration
+    (
+      type(:def).skip >>
+        identifier >>
+        type(:lparen).skip >>
+        parameters >>
+        type(:rparen).skip >>
+        type(:arrow).skip >>
+        type_name >>
+        lazy { (statement | expression).many.map { [it] } } >>
+        type(:end).skip
+    ).map(&AST.function_declaration)
+  end
+
   def parameters
-    (parameter >> (type_parser(:comma) >> parameter).map { |_comma, param| param }.many)
+    (
+      (parameter >> (type(:comma).skip >> parameter).many.map { it.flatten }) |
+        none.map { [] }
+    )
       .map(&AST.parameter_list)
+  end
+
+  def none
+    Parser.new { |state| Ok[[nil, state]] }
   end
 
   def parameter
     (
       identifier >>
-        type_parser(:colon) >>
+        type(:colon).skip >>
         type_name
     ).map(&AST.parameter)
   end
@@ -75,7 +96,6 @@ module Parser
   def many(parser)
     Parser.new do |state|
       oks = []
-      error = nil
       current = state
 
       loop do
@@ -86,22 +106,21 @@ module Parser
           oks << value
           current = next_state
         in Err(err)
-          error = err
           break
         end
       end
 
-      if error.nil?
-        Ok[[oks, current]]
-      else
-        Err[error]
-      end
+      Ok[[oks, current]]
     end
   end
 
   def at_least_one(parser)
     parser >> many(parser)
       .map { |(first, rest)| [first] + rest }
+  end
+
+  def skip(parser)
+    parser.map { |_| :skip }
   end
 
   def one_of(*parsers)
@@ -129,27 +148,27 @@ module Parser
 
   def types(*types)
     types
-      .map  { type_parser(it) }
+      .map  { type(it) }
       .then { one_of(*it) }
   end
 
   def symbol(sym)
     Lexer::SYMBOLS.fetch(sym)
-      .then { type_parser(it) }
+      .then { type(it) }
   end
 
   def int
-    type_parser(:int)
+    type(:int)
       .map(&AST.literal)
   end
 
   def bool
-    type_parser(:bool)
+    type(:bool)
       .map(&AST.literal)
   end
 
   def string
-    type_parser(:string)
+    type(:string)
       .map(&AST.literal)
   end
 
@@ -158,7 +177,7 @@ module Parser
   end
 
   def identifier
-    type_parser(:identifier)
+    type(:identifier)
   end
 
   def variable
@@ -182,7 +201,7 @@ module Parser
 
   private
 
-  def type_parser(type)
+  def type(type)
     Parser.new do |state|
       if state.eof?
         Err[[
@@ -239,7 +258,7 @@ module Parser
       Parser.new do |state|
         call(state).and_then do |(value1, state1)|
           other.call(state1).map do |(value2, state2)|
-            [[value1, value2].flatten, state2]
+            [[value1, value2].reject { it == :skip }.flatten(1), state2]
           end
         end
       end
@@ -265,6 +284,10 @@ module Parser
 
     def many
       ::Parser.many(self)
+    end
+
+    def skip
+      ::Parser.skip(self)
     end
   end
 
