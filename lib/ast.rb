@@ -15,6 +15,8 @@ module AST
   Grouping = Data.define(:expression, :range)
 
   VariableDeclaration = Data.define(:name, :expression, :range)
+  Parameter           = Data.define(:name, :type, :range)
+  ParameterList       = Data.define(:parameters)
 
   Program = Data.define(:statements)
 
@@ -73,6 +75,23 @@ module AST
         expression:,
         range: Range.new(_let.position, expression.range.end)
       )
+    end
+  end
+
+  def parameter
+    ->(stuff) do
+      stuff => [name, _, type]
+      AST::Parameter.new(
+        name: name.value,
+        type: type.value,
+        range: Range.new(name.position, type.position),
+      )
+    end
+  end
+
+  def parameter_list
+    ->(parameters) do
+      AST::ParameterList.new(parameters:)
     end
   end
 

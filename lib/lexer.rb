@@ -14,6 +14,8 @@ module Lexer
     ')'  => :rparen,
     ':'  => :colon,
     ','  => :comma,
+    '{'  => :lbrace,
+    '}'  => :rbrace,
 
     # arithmetic
     '+'  => :plus,

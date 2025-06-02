@@ -55,6 +55,23 @@ module Parser
     literal | variable| lazy { grouping }
   end
 
+  def parameters
+    (parameter >> (type_parser(:comma) >> parameter).map { |_comma, param| param }.many)
+      .map(&AST.parameter_list)
+  end
+
+  def parameter
+    (
+      identifier >>
+        type_parser(:colon) >>
+        type_name
+    ).map(&AST.parameter)
+  end
+
+  def type_name
+    identifier
+  end
+
   def many(parser)
     Parser.new do |state|
       oks = []
@@ -152,6 +169,14 @@ module Parser
   def lazy(&block)
     Parser.new do |input|
       block.call.call(input)
+    end
+  end
+
+  def maybe(parser, default: nil)
+    Parser.new do |state|
+      parser.call(state)
+        .map { |(value, next_state)| [value, next_state] }
+        .on_err { Ok[[default, state]] }
     end
   end
 

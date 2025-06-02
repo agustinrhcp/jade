@@ -28,6 +28,14 @@ module AstHelpers
     AST::VariableDeclaration.new(name:, expression:, range: dummy_range)
   end
 
+  def param(name, type)
+    AST::Parameter.new(name:, type:, range: dummy_range)
+  end
+
+  def params(*parameters)
+    AST::ParameterList.new(parameters:)
+  end
+
   def prog(*statements)
     AST::Program.new(statements:)
   end

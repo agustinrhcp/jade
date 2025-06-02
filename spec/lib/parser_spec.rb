@@ -153,6 +153,34 @@ describe Parser do
     it { is_expected.to match_ast_node(bin(bin(lit(2), :-, lit(3)), :<=, uny(:-, lit(3)))) }
   end
 
+  describe '.parameter' do
+    let(:parser) { described_class.parameter }
+
+    let(:tokens) do
+      [
+        tok(:identifier, 'name'), tok(:colon, :':'), tok(:identifier, 'Int')
+      ]
+    end
+
+    it { is_expected.to match_ast_node(param('name', 'Int')) }
+  end
+
+  describe '.parameters' do
+    let(:parser) { described_class.parameters }
+
+    context 'many' do
+      let(:tokens) do
+        [
+          tok(:identifier, 'first_name'), tok(:colon, :':'), tok(:identifier, 'String'), tok(:comma, ','),
+          tok(:identifier, 'last_name'), tok(:colon, :':'), tok(:identifier, 'String'), tok(:comma, ','),
+          tok(:identifier, 'email'), tok(:colon, :':'), tok(:identifier, 'String'),
+        ]
+      end
+
+      it { is_expected.to match_ast_node(params(param('first_name', 'String'), param('last_name', 'String'), param('email', 'String'))) }
+    end
+  end
+
   describe '.statement' do
     let(:parser) { described_class.statement }
 

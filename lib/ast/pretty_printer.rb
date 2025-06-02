@@ -35,6 +35,15 @@ module AST
         "#{prefix}Program(\n" \
         "#{statements.map { |stmt| print(stmt, indent + 1) }.join(",\n")}\n" \
         "#{prefix})"
+      in Parameter(name:, type:)
+        "#{prefix}Parameter(\n" \
+        "#{prefix}  name: #{name}\n" \
+        "#{prefix}  tpye: #{type}\n" \
+        "#{prefix})"
+      in ParameterList(parameters:)
+        "#{prefix}ParameterList(\n" \
+        "#{parameters.map { |param| print(param, indent + 1) }.join(",\n")}\n" \
+        "#{prefix})"
       end
     end
   end
