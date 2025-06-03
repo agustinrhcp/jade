@@ -15,9 +15,9 @@ module Type
 
   Function = Data.define(:parameters, :return_type) do
     def to_s
-      return return_type if param_types.empty?
+      return return_type if parameters.empty?
 
-      parameters.join(', ') + ' -> ' + return_type
+      parameters.map(&:to_s).join(', ') + ' -> ' + return_type.to_s
     end
   end
 end

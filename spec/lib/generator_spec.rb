@@ -19,4 +19,21 @@ describe Generator do
 
     it { is_expected.to eql "x = 5 * 7\n1 + x" }
   end
+  context 'a function declaration' do
+    let(:node) do
+      fn_dec('double', params(param('n', 'Int')), 'Int',
+        bin(var('n'), :*, lit(2))
+      )
+    end
+
+    it do
+      expected = 
+        <<~CODE
+          def double(n)
+            n * 2
+          end
+        CODE
+      is_expected.to eql expected.strip
+    end
+  end
 end

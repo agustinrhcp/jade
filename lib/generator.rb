@@ -19,6 +19,10 @@ module Generator
       "#{name} = #{generate(expression)}"
     in AST::Program(statements:)
       statements.map { generate(it) }.join("\n")
+    in AST::FunctionDeclaration(name:, parameters:, body:)
+      "def #{name}(#{parameters.parameters.map(&:name).join(', ')})\n" +
+        "  " + body.map { generate(it) }.join("\n") + "\n" +
+        "end"
     end
   end
 end
