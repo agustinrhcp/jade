@@ -36,7 +36,7 @@ module SemanticAnalyzer
         analyzed_expression, current_scope, errors = analyze(expression, scope)
         [
           node.with(expression: analyzed_expression),
-          current_scope.define(UntypedVar.new(name, expression.range)),
+          current_scope.define_unbound_var(name, expression.range),
           errors,
         ]
       end
@@ -47,12 +47,12 @@ module SemanticAnalyzer
 
     in AST::FunctionDeclaration(name:, parameters:, return_type:, body:)
       function_scope = parameters.reduce(current_scope) do |acc, param|
-        acc.define(TypedVar.new(param.name, param.type, param.range))
+        acc.define_typed_var(param.name, param.type, param.range)
       end
 
       analyzed_body, _, body_errors = analyze_many(scope, body)
 
-      [node.with(body: analyzed_body), scope.define(UntypedVar.new(name, node.range)), body_errors]
+      [node.with(body: analyzed_body), scope.define_unbound_function(name, node.range), body_errors]
     end
   end
 

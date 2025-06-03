@@ -11,7 +11,7 @@ module AST
 
   Unary    = Data.define(:operator, :right, :range)
   Literal  = Data.define(:value, :type, :range)
-  Variable = Data.define(:name, :type, :range)
+  Variable = Data.define(:name, :range)
   Grouping = Data.define(:expression, :range)
 
   VariableDeclaration = Data.define(:name, :expression, :range)
@@ -24,8 +24,7 @@ module AST
   Range = Data.define(:start, :end)
 
   def grouping
-    ->(stuff) do
-      stuff => [lparen, expression, rparen]
+    ->((lparen, expression, rparen)) do
       Grouping.new(expression:, range: Range.new(lparen.position, rparen.position))
     end
   end
@@ -37,8 +36,7 @@ module AST
   end
 
   def unary
-    ->(stuff) do
-      stuff => [operator, right]
+    ->((operator, right)) do
       Unary.new(
         operator: operator.value.to_sym,
         right:,
@@ -51,7 +49,11 @@ module AST
     ->(token) do
       Literal.new(
         value: token.value,
-        type: token.type,
+        type: case token.type
+          in :int then INT
+          in :string then STRING
+          in :bool then BOOL
+          end,
         # TODO: .to_s is hacky but let's leave it for now
         range: Range.new(token.position, token.position.offset_by_string(token.value.to_s))
       )
@@ -63,25 +65,22 @@ module AST
       AST::Variable.new(
         name: token.value,
         range: Range.new(token.position, token.position.offset_by_string(token.value)),
-        type: nil
       )
     end
   end
 
   def variable_declaration
-    ->(stuff) do
-      stuff => [_let, identifier, _assign, expression]
+    ->((identifier, expression)) do
       AST::VariableDeclaration.new(
         name: identifier.value,
         expression:,
-        range: Range.new(_let.position, expression.range.end)
+        range: Range.new(identifier.position, expression.range.end)
       )
     end
   end
 
   def parameter
-    ->(stuff) do
-      stuff => [name, type]
+    ->((name, type)) do
       AST::Parameter.new(
         name: name.value,
         type: type.value,

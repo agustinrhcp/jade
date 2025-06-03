@@ -11,46 +11,46 @@ describe TypeChecker do
   context 'for an integer' do
     let(:node) { lit(2) }
 
-    it { is_expected.to eql :int }
+    it { is_expected.to eql INT }
   end
 
   context 'for a boolean' do
     let(:node) { lit(false) }
 
-    it { is_expected.to eql :bool }
+    it { is_expected.to eql BOOL }
   end
 
   context 'for a string' do
     let(:node) { lit('Hello') }
 
-    it { is_expected.to eql :string }
+    it { is_expected.to eql STRING }
   end
 
   context 'a unary operation' do
     context 'minus int' do
       let(:node) { uny(:-, lit(4)) }
 
-      it { is_expected.to eql :int }
+      it { is_expected.to eql INT }
     end
 
     context 'minus bool' do
       let(:node) { uny(:-, lit(true)) }
       subject { result => Err(error); error }
 
-      its(:message) { is_expected.to eql "Unary '-' not valid for bool" }
+      its(:message) { is_expected.to eql "Unary '-' not valid for Bool" }
     end
 
     context 'bang bool' do
       let(:node) { uny(:!, lit(true)) }
 
-      it { is_expected.to be :bool }
+      it { is_expected.to eql BOOL }
     end
 
     context 'bang string' do
       let(:node) { uny(:!, lit('Hello')) }
       subject { result => Err(error); error }
 
-      its(:message) { is_expected.to eql "Unary '!' not valid for string" }
+      its(:message) { is_expected.to eql "Unary '!' not valid for String" }
     end
   end
 
@@ -59,25 +59,25 @@ describe TypeChecker do
       context 'addition' do
         let(:node) { bin(lit(2), :+, lit(3)) }
 
-        it { is_expected.to eql :int }
+        it { is_expected.to eql INT }
       end
 
       context 'subtraction' do
         let(:node) { bin(lit(5), :-, lit(3)) }
 
-        it { is_expected.to eql :int }
+        it { is_expected.to eql INT }
       end
 
       context 'multiplication' do
         let(:node) { bin(lit(2), :*, lit(3)) }
 
-        it { is_expected.to eql :int }
+        it { is_expected.to eql INT }
       end
 
       context 'division' do
         let(:node) { bin(lit(6), :/, lit(2)) }
 
-        it { is_expected.to eql :int }
+        it { is_expected.to eql INT }
       end
 
       context 'invalid operands' do
@@ -85,14 +85,14 @@ describe TypeChecker do
           let(:node) { bin(lit('Hello'), :+, lit(2)) }
           subject { result => Err(error); error }
 
-          its(:message) { is_expected.to eql "Left operand of '+' must be int, got string" }
+          its(:message) { is_expected.to eql "Left operand of '+' must be Int, got String" }
         end
 
         context 'bool * int' do
           let(:node) { bin(lit(true), :*, lit(2)) }
           subject { result => Err(error); error }
 
-          its(:message) { is_expected.to eql "Left operand of '*' must be int, got bool" }
+          its(:message) { is_expected.to eql "Left operand of '*' must be Int, got Bool" }
         end
       end
     end
@@ -101,37 +101,37 @@ describe TypeChecker do
       context 'less than' do
         let(:node) { bin(lit(2), :<, lit(3)) }
 
-        it { is_expected.to eql :bool }
+        it { is_expected.to eql BOOL }
       end
 
       context 'less than or equal' do
         let(:node) { bin(lit(2), :<=, lit(2)) }
 
-        it { is_expected.to eql :bool }
+        it { is_expected.to eql BOOL }
       end
 
       context 'greater than' do
         let(:node) { bin(lit(3), :>, lit(2)) }
 
-        it { is_expected.to eql :bool }
+        it { is_expected.to eql BOOL }
       end
 
       context 'greater than or equal' do
         let(:node) { bin(lit(3), :>=, lit(3)) }
 
-        it { is_expected.to eql :bool }
+        it { is_expected.to eql BOOL }
       end
 
       context 'equal' do
         let(:node) { bin(lit(2), :==, lit(2)) }
 
-        it { is_expected.to eql :bool }
+        it { is_expected.to eql BOOL }
       end
 
       context 'not equal' do
         let(:node) { bin(lit(2), :!=, lit(3)) }
 
-        it { is_expected.to eql :bool }
+        it { is_expected.to eql BOOL }
       end
 
       context 'invalid operands' do
@@ -139,14 +139,14 @@ describe TypeChecker do
           let(:node) { bin(lit('Hello'), :<, lit(2)) }
           subject { result => Err(error); error }
 
-          its(:message) { is_expected.to eql "Left operand of '<' must be int, got string" }
+          its(:message) { is_expected.to eql "Left operand of '<' must be Int, got String" }
         end
 
         context 'bool == string' do
           let(:node) { bin(lit(true), :==, lit('Hello')) }
           subject { result => Err(error); error }
 
-          its(:message) { is_expected.to eql "Right operand of '==' must be bool, got string" }
+          its(:message) { is_expected.to eql "Right operand of '==' must be Bool, got String" }
         end
       end
     end
@@ -155,9 +155,9 @@ describe TypeChecker do
   context 'variables and declarations' do
     context 'a declared variable' do
       let(:node) { var('x') }
-      let(:scope) { Scope.new.define(TypedVar.new('x', :int, nil)) }
+      let(:scope) { Scope.new.define_typed_var('x', INT, nil) }
 
-      it { is_expected.to eql :int }
+      it { is_expected.to eql INT }
     end
 
     context 'an undeclared variable' do
@@ -174,14 +174,14 @@ describe TypeChecker do
         subject { result => Ok([_, scope]); scope }
 
         it 'adds the variable type to the scope' do
-          expect(subject.resolve(:z).type).to eql :int
+          expect(subject.resolve(:z).type).to eql INT
         end
       end
 
-      it { is_expected.to eql :int }
+      it { is_expected.to eql INT }
 
       context 'a string' do
-        let(:scope) { Scope.new.define(UntypedVar.new('z', nil)) }
+        let(:scope) { Scope.new.define_unbound_var('z', nil) }
         let(:node) { var_dec('z', lit('Alo')) }
 
         context 'the returned scope' do
@@ -189,12 +189,20 @@ describe TypeChecker do
 
           it 'adds the variable type to the scope' do
             subject.resolve(:z) => TypedVar(type:)
-            expect(type).to eql :string
+            expect(type).to eql STRING
           end
         end
 
-        it { is_expected.to eql :string }
+        it { is_expected.to eql STRING }
       end
+    end
+
+    context 'function declarations' do
+      let(:node) { fn_dec('double', params(param('n', INT)), INT, bin(var('n'), :*, lit(2))) }
+
+      it { is_expected.to be_a(Type::Function) }
+      its(:parameters) { is_expected.to eql [INT] }
+      its(:return_type) { is_expected.to eql INT }
     end
   end
 end

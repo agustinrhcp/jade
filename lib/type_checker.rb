@@ -1,5 +1,6 @@
 require 'ast'
 require 'result'
+require 'type'
 
 require 'refinements/or_else'
 
@@ -9,29 +10,29 @@ module TypeChecker
   using Refinements::OrElse
 
   UNARY_OP_RULES = {
-    :! => { :bool => :bool },
-    :- => { :int => :int},
+    :! => { BOOL => BOOL },
+    :- => { INT => INT},
   }
 
   BINARY_OP_RULES = {
-    :+  => { :int => { :int => :int } },
-    :-  => { :int => { :int => :int } },
-    :*  => { :int => { :int => :int } },
-    :/  => { :int => { :int => :int } },
+    :+  => { INT => { INT => INT } },
+    :-  => { INT => { INT => INT } },
+    :*  => { INT => { INT => INT } },
+    :/  => { INT => { INT => INT } },
     :== => {
-      :bool => { :bool => :bool },
-      :int => { :int => :bool },
-      :string => { :string => :bool },
+      BOOL => { BOOL => BOOL },
+      INT => { INT => BOOL },
+      STRING => { STRING => BOOL },
     },
     :!= => {
-      :bool => { :bool => :bool },
-      :int => { :int => :bool },
-      :string => { :string => :bool },
+      BOOL => { BOOL => BOOL },
+      INT => { INT => BOOL },
+      STRING => { STRING => BOOL },
     },
-    :<  => { :int => { :int => :bool } },
-    :<= => { :int => { :int => :bool } },
-    :>  => { :int => { :int => :bool } },
-    :>= => { :int => { :int => :bool } },
+    :<  => { INT => { INT => BOOL } },
+    :<= => { INT => { INT => BOOL } },
+    :>  => { INT => { INT => BOOL } },
+    :>= => { INT => { INT => BOOL } },
   }
 
   def check(node, scope = Scope.new)
@@ -66,7 +67,7 @@ module TypeChecker
 
     in AST::VariableDeclaration(name:, expression:, range:)
       check(expression, scope)
-        .map { |(type, new_scope)| [type, new_scope.define(TypedVar.new(name, type, range))] }
+        .map { |(type, new_scope)| [type, new_scope.define_typed_var(name, type, range)] }
 
     in AST::Variable(name:)
       if scope.resolve(name)
@@ -77,17 +78,40 @@ module TypeChecker
         #  the semantic analyzer.
         Err[Error.new("Undefined variable '#{name}'", range: node.range)]
       end
+    in AST::FunctionDeclaration(name:, parameters:, return_type:, body:, range:)
+      if scope.resolve(name)
+        Err[Error.new("Function '#{name}' is already defined", range: node.range)]
+      else
+        fn_type = Type::Function.new(parameters.parameters.map(&:type), return_type)
+
+        new_scope = scope.define_typed_function(name, fn_type, range)
+        fn_scope = parameters.parameters.reduce(new_scope) do |acc, param|
+          acc.define_typed_var(param.name, param.type, param.range)
+        end
+
+        check_many(fn_scope, body)
+          .and_then do |(typed_body, _)|
+            if typed_body != return_type
+              return Err[Error.new("Expected return type #{return_type}, got #{typed_body.type}", range: typed_body.range)]
+            end
+
+            Ok[[fn_type, new_scope]]
+          end
+      end
 
     in AST::Program(statements:)
-      statements.reduce(Ok[[nil, scope]]) do |acc, stmt|
-        acc => Ok([_, new_scope])
-        check(stmt, new_scope)
-          .on_err { return Err[it] }
-      end
+      check_many(scope, statements)
     end
   end
 
   private
+
+  def check_many(scope, nodes)
+    nodes.reduce(Ok[[nil, scope]]) do |acc, node|
+      acc => Ok([_, new_scope])
+      check(node, new_scope)
+    end
+  end
 
   def left_type_error(node, expected_types)
     message = case expected_types

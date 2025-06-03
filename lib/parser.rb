@@ -24,9 +24,9 @@ module Parser
 
   def variable_declaration
     (
-      type(:let) >>
+      type(:let).skip >>
         identifier >>
-        type(:assign) >>
+        type(:assign).skip >>
         lazy { expression }
     ).map(&AST.variable_declaration)
   end

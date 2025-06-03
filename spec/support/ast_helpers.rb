@@ -1,10 +1,13 @@
+require 'type'
+
 module AstHelpers
   def lit(value)
     type = case value
-      in String then :string
-      in Integer then :int
-      in true | false then :bool
+      in String then STRING
+      in Integer then INT
+      in true | false then BOOL
       end
+
     AST::Literal.new(value:, type:, range: dummy_range)
   end
 
@@ -16,8 +19,8 @@ module AstHelpers
     AST::Grouping.new(expression:, range: dummy_range)
   end
 
-  def var(name, type: nil)
-    AST::Variable.new(name:, type:, range: dummy_range)
+  def var(name)
+    AST::Variable.new(name:, range: dummy_range)
   end
 
   def uny(operator, right)
