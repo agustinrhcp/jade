@@ -6,7 +6,9 @@ require 'type_checker'
 require 'scope'
 
 module REPL
-  def self.start
+  extend self
+
+  def start
     puts "Welcome to the Jade REPL"
     puts "Type Jade code. Press Ctrl+D to exit."
 
@@ -25,10 +27,12 @@ module REPL
 
     loop do
       input = irb.context.io.prompt
-      code = gets
+      code = read_multiline_input
 
       break unless code
-      break if code == 'exit'
+      if code.strip == 'exit'
+        break
+      end
 
       tokens = Lexer.scan(code)
       case Parser.program.call(Parser::State.new(tokens))
@@ -51,5 +55,14 @@ module REPL
         end
       end
     end
+  end
+
+  def read_multiline_input
+    lines = []
+    while (line = $stdin.gets)
+      break if line.strip == '' # use blank line to finish
+      lines << line
+    end
+    lines.join
   end
 end

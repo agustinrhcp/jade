@@ -83,7 +83,7 @@ module AST
     ->((name, type)) do
       AST::Parameter.new(
         name: name.value,
-        type: type.value,
+        type: resolve_type(type.value),
         range: Range.new(name.position, type.position),
       )
     end
@@ -107,7 +107,7 @@ module AST
       AST::FunctionDeclaration.new(
         name: name.value,
         parameters:,
-        return_type: return_type.value,
+        return_type: resolve_type(return_type.value),
         body:,
         range: Range.new(name.position, body.last.range.end),
       )
@@ -117,6 +117,16 @@ module AST
   def program
     ->(statements) do
       AST::Program.new(statements:)
+    end
+  end
+
+  private
+
+  def resolve_type(type_name)
+    case type_name
+    in 'Int' then INT
+    in 'String' then STRING
+    in 'Bool' then BOOL
     end
   end
 end

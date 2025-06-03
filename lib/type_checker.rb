@@ -58,7 +58,7 @@ module TypeChecker
           check(node.right, scope_after_left)
             .and_then do |(right_operand_type, scope_after_right)|
               BINARY_OP_RULES.dig(operator, left_operand_type)
-                .or_else { return left_type_error(node, BINARY_OP_RULES[operator].keys) }
+                .or_else { return left_type_error(node, expected: BINARY_OP_RULES[operator].keys, actual: left_operand_type) }
                 .dig(right_operand_type)
                 .or_else { return right_type_error(node, actual: right_operand_type, expected: left_operand_type) }
                 .then { Ok[[it, scope_after_right]] }
@@ -79,9 +79,10 @@ module TypeChecker
         Err[Error.new("Undefined variable '#{name}'", range: node.range)]
       end
     in AST::FunctionDeclaration(name:, parameters:, return_type:, body:, range:)
-      if scope.resolve(name)
+      case scope.resolve(name)
+      in TypedFunction
         Err[Error.new("Function '#{name}' is already defined", range: node.range)]
-      else
+      in UnboundFunction | nil
         fn_type = Type::Function.new(parameters.parameters.map(&:type), return_type)
 
         new_scope = scope.define_typed_function(name, fn_type, range)
@@ -113,12 +114,12 @@ module TypeChecker
     end
   end
 
-  def left_type_error(node, expected_types)
-    message = case expected_types
-      in [expected_type]
-        "Left operand of '#{node.operator}' must be #{expected_type}, got #{node.left.type}"
+  def left_type_error(node, expected:, actual:)
+    message = case expected
+      in [expected]
+        "Left operand of '#{node.operator}' must be #{expected}, got #{actual}"
       else
-        "Left operand of '#{node.operator}' must be one of #{expected_types.map(&:to_s).sort.join(', ')}, got #{node.left.type}"
+        "Left operand of '#{node.operator}' must be one of #{expected.map(&:to_s).sort.join(', ')}, got #{actual}"
       end
 
     Err[Error.new(message, range: node.left.range)]

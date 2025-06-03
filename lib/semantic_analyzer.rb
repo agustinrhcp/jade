@@ -46,11 +46,11 @@ module SemanticAnalyzer
       .then { |analyzed_stmts, new_scope, errors| [node.with(statements: analyzed_stmts), new_scope, errors] }
 
     in AST::FunctionDeclaration(name:, parameters:, return_type:, body:)
-      function_scope = parameters.reduce(current_scope) do |acc, param|
+      function_scope = parameters.parameters.reduce(scope) do |acc, param|
         acc.define_typed_var(param.name, param.type, param.range)
       end
 
-      analyzed_body, _, body_errors = analyze_many(scope, body)
+      analyzed_body, _, body_errors = analyze_many(function_scope, body)
 
       [node.with(body: analyzed_body), scope.define_unbound_function(name, node.range), body_errors]
     end
