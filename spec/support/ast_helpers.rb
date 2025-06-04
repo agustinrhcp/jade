@@ -3,9 +3,9 @@ require 'type'
 module AstHelpers
   def lit(value)
     type = case value
-      in String then STRING
-      in Integer then INT
-      in true | false then BOOL
+      in String then Type.string
+      in Integer then Type.int
+      in true | false then Type.bool
       end
 
     AST::Literal.new(value:, type:, range: dummy_range)
@@ -42,6 +42,12 @@ module AstHelpers
   def fn_dec(name, parameters, return_type, *body)
     AST::FunctionDeclaration.new(
       name:, parameters:, return_type:, body:, range: dummy_range,
+    )
+  end
+
+  def fn_call(name, *arguments)
+    AST::FunctionCall.new(
+      name:, arguments:, range: dummy_range,
     )
   end
 

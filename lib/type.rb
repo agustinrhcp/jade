@@ -1,6 +1,18 @@
 module Type
   extend self
 
+  def int
+    @int ||= Type::Int.new
+  end
+
+  def string
+    @string ||= Type::String.new
+  end
+
+  def bool
+    @bool ||= Type::Bool.new
+  end
+
   Int = Data.define do
     def to_s; 'Int'; end
   end
@@ -21,7 +33,3 @@ module Type
     end
   end
 end
-
-INT = Type::Int.new
-BOOL = Type::Bool.new
-STRING = Type::String.new

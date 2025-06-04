@@ -52,7 +52,7 @@ module Parser
   end
 
   def factor
-    literal | variable| lazy { grouping }
+    literal | function_call | variable| lazy { grouping }
   end
 
   def function_declaration
@@ -67,6 +67,20 @@ module Parser
         lazy { (statement | expression).many.map { [it] } } >>
         type(:end).skip
     ).map(&AST.function_declaration)
+  end
+
+  def function_call
+    (
+      identifier >>
+        type(:lparen).skip >>
+        lazy { arguments } >>
+        type(:rparen).skip
+    ).map(&AST.function_call)
+  end
+
+  def arguments
+    (expression >> (type(:comma).skip >> expression).many.map { it.flatten }) |
+      none.map { [] }
   end
 
   def parameters

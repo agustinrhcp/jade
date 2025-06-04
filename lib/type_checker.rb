@@ -10,29 +10,29 @@ module TypeChecker
   using Refinements::OrElse
 
   UNARY_OP_RULES = {
-    :! => { BOOL => BOOL },
-    :- => { INT => INT},
+    :! => { Type.bool => Type.bool },
+    :- => { Type.int => Type.int},
   }
 
   BINARY_OP_RULES = {
-    :+  => { INT => { INT => INT } },
-    :-  => { INT => { INT => INT } },
-    :*  => { INT => { INT => INT } },
-    :/  => { INT => { INT => INT } },
+    :+  => { Type.int => { Type.int => Type.int } },
+    :-  => { Type.int => { Type.int => Type.int } },
+    :*  => { Type.int => { Type.int => Type.int } },
+    :/  => { Type.int => { Type.int => Type.int } },
     :== => {
-      BOOL => { BOOL => BOOL },
-      INT => { INT => BOOL },
-      STRING => { STRING => BOOL },
+      Type.bool => { Type.bool => Type.bool },
+      Type.int => { Type.int => Type.bool },
+      Type.string => { Type.string => Type.bool },
     },
     :!= => {
-      BOOL => { BOOL => BOOL },
-      INT => { INT => BOOL },
-      STRING => { STRING => BOOL },
+      Type.bool => { Type.bool => Type.bool },
+      Type.int => { Type.int => Type.bool },
+      Type.string => { Type.string => Type.bool },
     },
-    :<  => { INT => { INT => BOOL } },
-    :<= => { INT => { INT => BOOL } },
-    :>  => { INT => { INT => BOOL } },
-    :>= => { INT => { INT => BOOL } },
+    :<  => { Type.int => { Type.int => Type.bool } },
+    :<= => { Type.int => { Type.int => Type.bool } },
+    :>  => { Type.int => { Type.int => Type.bool } },
+    :>= => { Type.int => { Type.int => Type.bool } },
   }
 
   def check(node, scope = Scope.new)

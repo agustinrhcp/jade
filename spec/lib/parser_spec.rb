@@ -221,15 +221,30 @@ describe Parser do
     end
   end
 
+  describe '.function_call' do
+    let(:parser) { described_class.function_call }
+    let(:tokens) { [tok(:identifier, 'double'), tok(:lparen, '('), tok(:rparen, ')')] }
+
+    it { is_expected.to match_ast_node(fn_call('double')) }
+
+    context 'with a single argument' do
+      let(:tokens) { [tok(:identifier, 'double'), tok(:lparen, '('), tok(:int, 42), tok(:rparen, ')')] }
+
+      it { is_expected.to match_ast_node(fn_call('double', lit(42))) }
+    end
+
+    context 'with multiple arguments' do
+      let(:tokens) { [tok(:identifier, 'double'), tok(:lparen, '('), tok(:int, 42), tok(:comma, ','), tok(:identifier, 'a'), tok(:rparen, ')')] }
+
+      it { is_expected.to match_ast_node(fn_call('double', lit(42), var('a'))) }
+    end
+  end
+
   describe '.statement' do
     let(:parser) { described_class.statement }
 
     context 'variable_declaration' do
       let(:tokens) { [tok(:let, 'let'), tok(:identifier, 'a'), tok(:assign, '='), tok(:int, 5)] }
-
-      before do
-        AST::PrettyPrinter.print(var_dec('a', lit(5)))
-      end
 
       it { is_expected.to match_ast_node(var_dec('a', lit(5))) }
 

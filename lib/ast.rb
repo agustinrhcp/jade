@@ -18,6 +18,7 @@ module AST
   Parameter           = Data.define(:name, :type, :range)
   ParameterList       = Data.define(:parameters)
   FunctionDeclaration = Data.define(:name, :parameters, :return_type, :body, :range)
+  FunctionCall        = Data.define(:name, :arguments, :range)
 
   Program = Data.define(:statements)
 
@@ -50,9 +51,9 @@ module AST
       Literal.new(
         value: token.value,
         type: case token.type
-          in :int then INT
-          in :string then STRING
-          in :bool then BOOL
+          in :int then Type.int
+          in :string then Type.string
+          in :bool then Type.bool
           end,
         # TODO: .to_s is hacky but let's leave it for now
         range: Range.new(token.position, token.position.offset_by_string(token.value.to_s))
@@ -114,6 +115,16 @@ module AST
     end
   end
 
+  def function_call
+    ->((name, *arguments)) do
+      AST::FunctionCall.new(
+        name: name.value,
+        arguments: arguments,
+        range: Range.new(name.position, arguments&.last&.range&.end || name.position),
+      )
+    end
+  end
+
   def program
     ->(statements) do
       AST::Program.new(statements:)
@@ -124,9 +135,9 @@ module AST
 
   def resolve_type(type_name)
     case type_name
-    in 'Int' then INT
-    in 'String' then STRING
-    in 'Bool' then BOOL
+    in 'Int' then Type.int
+    in 'String' then Type.string
+    in 'Bool' then Type.bool
     end
   end
 end
