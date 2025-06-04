@@ -52,7 +52,23 @@ module SemanticAnalyzer
 
       analyzed_body, _, body_errors = analyze_many(function_scope, body)
 
-      [node.with(body: analyzed_body), scope.define_unbound_function(name, node.range), body_errors]
+      [node.with(body: analyzed_body), scope.define_unbound_function(name, parameters.size, node.range), body_errors]
+
+    in AST::FunctionCall(name:, arguments:)
+      if fn = scope.resolve(name)
+        if fn.arity == arguments.size
+          analyzed_arguments, _, argument_errors = analyze_many(scope, arguments)
+          [node.with(arguments: analyzed_arguments), scope, argument_errors]
+        else
+          [
+            node,
+            scope,
+            [Error.new("Function '#{name}' expects #{fn.arity} arguments, got #{arguments.size}", range: node.range)],
+          ]
+        end
+      else
+        [node, scope, [Error.new("Undefined function '#{name}'", range: node.range)]]
+      end
     end
   end
 

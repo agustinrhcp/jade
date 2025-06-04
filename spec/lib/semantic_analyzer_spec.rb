@@ -48,4 +48,48 @@ describe SemanticAnalyzer do
       end
     end
   end
+
+  context 'function calls' do
+    context 'valid calls' do
+      let(:node) do
+        prog(
+          fn_dec(:double, params(param(:x, :int)), :int, bin(var(:x), :*, lit(2))),
+          fn_call(:double, lit(42))
+        )
+      end
+
+      it 'returns the analyzed node' do
+        expect(subject).to be_a(AST::Program)
+        expect(subject.statements.last).to be_a(AST::FunctionCall)
+        expect(subject.statements.last.name).to eql :double
+        expect(subject.statements.last.arguments.first).to be_a(AST::Literal)
+      end
+    end
+
+    context 'invalid calls' do
+      subject do
+        described_class.analyze(node) => [_, _, [error]]
+        error
+      end
+
+      context 'undefined function' do
+        let(:node) { fn_call(:unknown, lit(42)) }
+
+        it { is_expected.to be_a(SemanticAnalyzer::Error) }
+        its(:message) { is_expected.to eql "Undefined function 'unknown'" }
+      end
+
+      context 'wrong number of arguments' do
+        let(:node) do
+          prog(
+            fn_dec(:double, params(param(:x, :int)), :int, bin(var(:x), :*, lit(2))),
+            fn_call(:double, lit(42), lit(43))
+          )
+        end
+
+        it { is_expected.to be_a(SemanticAnalyzer::Error) }
+        its(:message) { is_expected.to eql "Function 'double' expects 1 arguments, got 2" }
+      end
+    end
+  end
 end

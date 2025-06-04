@@ -11,8 +11,8 @@ Scope = Data.define(:vars, :functions) do
     write_var(TypedVar.new(name, type, range))
   end
 
-  def define_unbound_function(name, range)
-    write_fn(UnboundFunction.new(name, range))
+  def define_unbound_function(name, arity, range)
+    write_fn(UnboundFunction.new(name, arity, range))
   end
 
   def define_typed_function(name, type, range)
@@ -36,6 +36,6 @@ end
 
 UnboundVar = Data.define(:name, :range)
 TypedVar = Data.define(:name, :type, :range)
-UnboundFunction = Data.define(:name, :range)
+UnboundFunction = Data.define(:name, :arity, :range)
 TypedFunction = Data.define(:name, :type, :range)
 

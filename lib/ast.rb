@@ -16,7 +16,13 @@ module AST
 
   VariableDeclaration = Data.define(:name, :expression, :range)
   Parameter           = Data.define(:name, :type, :range)
-  ParameterList       = Data.define(:parameters)
+
+  ParameterList = Data.define(:parameters) do
+    def size
+      parameters.size
+    end
+  end
+
   FunctionDeclaration = Data.define(:name, :parameters, :return_type, :body, :range)
   FunctionCall        = Data.define(:name, :arguments, :range)
 
