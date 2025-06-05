@@ -92,13 +92,32 @@ module TypeChecker
 
         check_many(fn_scope, body)
           .and_then do |(typed_body, _)|
-            if typed_body != return_type
-              return Err[Error.new("Expected return type #{return_type}, got #{typed_body.type}", range: typed_body.range)]
+            if typed_body.last != return_type
+              return Err[Error.new("Expected return type #{return_type}, got #{typed_body.last}", range: body.last.range)]
             end
 
             Ok[[fn_type, new_scope]]
           end
       end
+
+    in AST::FunctionCall(name:, arguments:)
+      fn = scope.resolve(name)
+
+      check_many(scope, arguments)
+        .and_then do |(argument_types, _)|
+          fn
+            .type
+            .parameters
+            .zip(argument_types)
+            .each.with_index
+            .reduce(Ok[[fn.type.return_type, scope]]) do |acc, ((param_type, argument_type), i)|
+              next acc if param_type == argument_type
+
+              return Err[
+                Error.new("Expected argument #{i} of type #{param_type}, got #{argument_type}", range: nil),
+              ]
+            end
+        end
 
     in AST::Program(statements:)
       check_many(scope, statements)
@@ -108,9 +127,12 @@ module TypeChecker
   private
 
   def check_many(scope, nodes)
-    nodes.reduce(Ok[[nil, scope]]) do |acc, node|
-      acc => Ok([_, new_scope])
+    nodes.reduce(Ok[[[], scope]]) do |acc, node|
+      acc => Ok([all_checked, new_scope])
       check(node, new_scope)
+        .map do |(checked, new_scope)|
+          [all_checked.concat([checked]), new_scope]
+        end
     end
   end
 

@@ -205,4 +205,32 @@ describe TypeChecker do
       its(:return_type) { is_expected.to eql Type.int }
     end
   end
+
+  context 'function calls' do
+    let(:fn_type) { Type::Function.new([Type.int], Type.int) }
+    let(:scope) { Scope.new.define_typed_function('double', fn_type, nil) }
+
+    context 'valid calls' do
+      let(:node) { fn_call('double', lit(42)) }
+
+      it { is_expected.to eql Type.int }
+    end
+
+    context 'invalid calls' do
+      subject { result => Err(error); error }
+
+      context 'argument type mismatch' do
+        let(:node) { fn_call('double', lit('hello')) }
+
+        its(:message) { is_expected.to eql "Expected argument 0 of type Int, got String" }
+      end
+
+      context 'multiple arguments with type mismatch' do
+        let(:fn_type) { Type::Function.new([Type.int, Type.string], Type.int) }
+        let(:node) { fn_call('double', lit(42), lit(43)) }
+
+        its(:message) { is_expected.to eql "Expected argument 1 of type String, got Int" }
+      end
+    end
+  end
 end

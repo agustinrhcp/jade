@@ -37,5 +37,10 @@ end
 UnboundVar = Data.define(:name, :range)
 TypedVar = Data.define(:name, :type, :range)
 UnboundFunction = Data.define(:name, :arity, :range)
-TypedFunction = Data.define(:name, :type, :range)
+
+TypedFunction = Data.define(:name, :type, :range) do
+  def arity
+    type.parameters.size
+  end
+end
 

@@ -48,7 +48,7 @@ module REPL
           in Ok([type, scope])
             ruby = Generator.generate(analyzed_ast)
             result = context.eval(ruby)
-            puts "=> #{result.inspect} : #{type}"
+            puts "=> #{result.inspect} : #{type.first.to_s}"
           in Err(errors)
             puts errors
           end

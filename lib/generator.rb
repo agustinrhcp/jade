@@ -23,6 +23,8 @@ module Generator
       "def #{name}(#{parameters.parameters.map(&:name).join(', ')})\n" +
         "  " + body.map { generate(it) }.join("\n") + "\n" +
         "end"
+    in AST::FunctionCall(name:, arguments:)
+      "#{name}(#{arguments.map { generate(it) }.join(', ')})"
     end
   end
 end
