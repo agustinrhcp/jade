@@ -158,7 +158,7 @@ describe Parser do
 
     let(:tokens) do
       [
-        tok(:identifier, 'name'), tok(:colon, :':'), tok(:identifier, 'Int')
+        tok(:identifier, 'name'), tok(:colon, :':'), tok(:constant, 'Int')
       ]
     end
 
@@ -171,9 +171,9 @@ describe Parser do
     context 'many' do
       let(:tokens) do
         [
-          tok(:identifier, 'first_name'), tok(:colon, :':'), tok(:identifier, 'String'), tok(:comma, ','),
-          tok(:identifier, 'last_name'), tok(:colon, :':'), tok(:identifier, 'String'), tok(:comma, ','),
-          tok(:identifier, 'email'), tok(:colon, :':'), tok(:identifier, 'String'),
+          tok(:identifier, 'first_name'), tok(:colon, :':'), tok(:constant, 'String'), tok(:comma, ','),
+          tok(:identifier, 'last_name'), tok(:colon, :':'), tok(:constant, 'String'), tok(:comma, ','),
+          tok(:identifier, 'email'), tok(:colon, :':'), tok(:constant, 'String'),
         ]
       end
 
@@ -183,7 +183,7 @@ describe Parser do
     context 'just one' do
       let(:tokens) do
         [
-          tok(:identifier, 'email'), tok(:colon, :':'), tok(:identifier, 'String'),
+          tok(:identifier, 'email'), tok(:colon, :':'), tok(:constant, 'String'),
         ]
       end
 
@@ -204,7 +204,7 @@ describe Parser do
     let(:tokens) do
       [
         tok(:def, 'def'), tok(:identifier, 'double'), tok(:lparen, '('), tok(:identifier, 'n'), tok(:colon, :':'),
-        tok(:identifier, 'Int'), tok(:rparen, ')'), tok(:arrow, '->'), tok(:identifier, 'Int'),
+        tok(:constant, 'Int'), tok(:rparen, ')'), tok(:arrow, '->'), tok(:constant, 'Int'),
         tok(:let, 'let'), tok(:identifier, 'multi'), tok(:assign, '='), tok(:int, 2),
         tok(:identifier, 'n'), tok(:star, :*), tok(:identifier, 'multi'),
         tok(:end, 'end'),
@@ -237,6 +237,34 @@ describe Parser do
       let(:tokens) { [tok(:identifier, 'double'), tok(:lparen, '('), tok(:int, 42), tok(:comma, ','), tok(:identifier, 'a'), tok(:rparen, ')')] }
 
       it { is_expected.to match_ast_node(fn_call('double', lit(42), var('a'))) }
+    end
+  end
+
+  describe '.record_declaration' do
+    let(:parser) { described_class.record_declaration }
+    let(:tokens) do
+      [
+        tok(:type, 'type'), tok(:constant, 'MyRecord'), tok(:assign, '='),
+        tok(:lbrace, ']'),
+        tok(:identifier, 'a'), tok(:colon, ':'), tok(:constant, 'Int'),
+        tok(:rbrace, '}'),
+      ]
+    end
+
+    it { is_expected.to match_ast_node(rec_dec('MyRecord', rec_f('a', 'Int'))) }
+
+    context 'with many fields' do
+      let(:tokens) do
+        [
+          tok(:type, 'type'), tok(:constant, 'MyRecord'), tok(:assign, '='),
+          tok(:lbrace, ']'),
+          tok(:identifier, 'a'), tok(:colon, ':'), tok(:constant, 'Int'), tok(:comma, ','),
+          tok(:identifier, 'b'), tok(:colon, ':'), tok(:constant, 'String'),
+          tok(:rbrace, '}'),
+        ]
+      end
+
+      it { is_expected.to match_ast_node(rec_dec('MyRecord', rec_f('a', 'Int'), rec_f('b', 'String'))) }
     end
   end
 

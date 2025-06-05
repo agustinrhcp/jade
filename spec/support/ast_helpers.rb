@@ -51,6 +51,14 @@ module AstHelpers
     )
   end
 
+  def rec_dec(name, *fields)
+    AST::RecordDeclaration.new(name:, fields:, range: dummy_range)
+  end
+
+  def rec_f(name, type)
+    AST::RecordField.new(name:, type:, range: dummy_range)
+  end
+
   def prog(*statements)
     AST::Program.new(statements:)
   end

@@ -35,6 +35,12 @@ describe Lexer do
     it { is_expected.to have_tokenized(:identifier).with('pepe') }
   end
 
+  context 'constant' do
+    let(:code) { 'Pepe' }
+
+    it { is_expected.to have_tokenized(:constant).with('Pepe') }
+  end
+
   context 'operators' do
     context '+' do
       let(:code) { '+' }

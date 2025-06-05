@@ -19,7 +19,7 @@ module Parser
   end
 
   def statement
-    variable_declaration | function_declaration
+    variable_declaration | function_declaration | record_declaration
   end
 
   def variable_declaration
@@ -63,10 +63,25 @@ module Parser
         parameters >>
         type(:rparen).skip >>
         type(:arrow).skip >>
-        type_name >>
+        constant >>
         lazy { (statement | expression).many.map { [it] } } >>
         type(:end).skip
     ).map(&AST.function_declaration)
+  end
+
+  def record_declaration
+    (
+      type(:type).skip >>
+        constant >>
+        type(:assign).skip >>
+        type(:lbrace).skip >>
+        (record_field >> (type(:comma).skip >> record_field).many.map { it.flatten }) >>
+        type(:rbrace).skip
+    ).map(&AST.record_declaration)
+  end
+
+  def record_field
+    (identifier >> type(:colon).skip >> constant).map(&AST.record_field)
   end
 
   def function_call
@@ -99,12 +114,12 @@ module Parser
     (
       identifier >>
         type(:colon).skip >>
-        type_name
+        constant
     ).map(&AST.parameter)
   end
 
-  def type_name
-    identifier
+  def constant
+    type(:constant)
   end
 
   def many(parser)

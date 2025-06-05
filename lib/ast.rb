@@ -11,12 +11,12 @@ module AST
 
   Unary    = Data.define(:operator, :right, :range)
   Literal  = Data.define(:value, :type, :range)
-  Variable = Data.define(:name, :range)
   Grouping = Data.define(:expression, :range)
 
+  Variable = Data.define(:name, :range)
   VariableDeclaration = Data.define(:name, :expression, :range)
-  Parameter           = Data.define(:name, :type, :range)
 
+  Parameter = Data.define(:name, :type, :range)
   ParameterList = Data.define(:parameters) do
     def size
       parameters.size
@@ -25,6 +25,9 @@ module AST
 
   FunctionDeclaration = Data.define(:name, :parameters, :return_type, :body, :range)
   FunctionCall        = Data.define(:name, :arguments, :range)
+
+  RecordDeclaration = Data.define(:name, :fields, :range)
+  RecordField       = Data.define(:name, :type, :range)
 
   Program = Data.define(:statements)
 
@@ -127,6 +130,26 @@ module AST
         name: name.value,
         arguments: arguments,
         range: Range.new(name.position, arguments&.last&.range&.end || name.position),
+      )
+    end
+  end
+
+  def record_declaration
+    ->((name, *fields)) do
+      AST::RecordDeclaration.new(
+        name: name.value,
+        fields:,
+        range: Range.new(name.position, fields.last&.range&.end || name.position),
+      )
+    end
+  end
+
+  def record_field
+    ->((name, type)) do
+      AST::RecordField.new(
+        name: name.value,
+        type: type.value,
+        range: Range.new(name.position, type.position),
       )
     end
   end

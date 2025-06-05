@@ -73,6 +73,21 @@ module AST
         "#{prefix}  arguments: \n" \
         "#{args_str}\n" \
         "#{prefix})"
+
+      in RecordDeclaration(name:, fields:)
+        "#{prefix}RecordDeclaration(\n" \
+        "#{prefix}  name: #{name},\n" \
+        "#{prefix}  fields: (\n" \
+        "#{fields.map { |field| print(field, indent + 2) }.join(",\n")}\n" \
+        "#{prefix}  )\n" \
+        "#{prefix})"
+
+      in RecordField(name:, type:)
+        "#{prefix}RecordField(\n" \
+        "#{prefix}  name: #{name},\n" \
+        "#{prefix}  type: #{type}\n" \
+        "#{prefix})"
+
       end
     end
   end

@@ -7,7 +7,7 @@ module Lexer
 
   State = Data.define(:code, :pos, :line, :col, :tokens)
 
-  KEYWORDS = Set['def', 'end', 'let']
+  KEYWORDS = Set['def', 'end', 'let', 'type']
   SYMBOLS = {
     '->' => :arrow,
     '('  => :lparen,
@@ -89,8 +89,14 @@ module Lexer
       return add_token(state, :string, str_val, raw: raw_str)
     end
 
+    # Constants
+    if (match = /\A[A-Z][A-Za-z0-9_]*/.match(remaining))
+      word = match[0]
+      return add_token(state, :constant, word)
+    end
+
     # Identifiers and keywords
-    if (match = /\A[a-zA-Z_][a-zA-Z0-9_]*/.match(remaining))
+    if (match = /\A[a-z_][a-z0-9_]*/.match(remaining))
       word = match[0]
       type = KEYWORDS.include?(word) ? word.to_sym : :identifier
       return add_token(state, type, word)
