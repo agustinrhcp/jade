@@ -88,6 +88,26 @@ module AST
         "#{prefix}  type: #{type}\n" \
         "#{prefix})"
 
+      in RecordInstantiation(name:, fields:)
+        "#{prefix}RecordInstantiation(\n" \
+        "#{prefix}  name: #{name},\n" \
+        "#{prefix}  fields: (\n" \
+        "#{fields.map { |field| print(field, indent + 2) }.join(",\n")}\n" \
+        "#{prefix}  )\n" \
+        "#{prefix})"
+
+      in AnonymousRecord(fields:)
+        "#{prefix}AnonymousRecord(\n" \
+        "#{prefix}  fields: (\n" \
+        "#{fields.map { |field| print(field, indent + 2) }.join(",\n")}\n" \
+        "#{prefix}  )\n" \
+        "#{prefix})"
+
+      in RecordFieldAssign(name:, expression:)
+        "#{prefix}RecordFieldAssign(\n" \
+        "#{prefix}  name: #{name},\n" \
+        "#{prefix}  expression: #{print(expression)}\n" \
+        "#{prefix})"
       end
     end
   end

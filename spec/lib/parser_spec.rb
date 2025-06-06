@@ -245,27 +245,56 @@ describe Parser do
     let(:tokens) do
       [
         tok(:type, 'type'), tok(:constant, 'MyRecord'), tok(:assign, '='),
-        tok(:lbrace, ']'),
+        tok(:lbrace, '{'),
         tok(:identifier, 'a'), tok(:colon, ':'), tok(:constant, 'Int'),
         tok(:rbrace, '}'),
       ]
     end
 
-    it { is_expected.to match_ast_node(rec_dec('MyRecord', rec_f('a', 'Int'))) }
+    it { is_expected.to match_ast_node(rec('MyRecord', field('a', 'Int'))) }
 
     context 'with many fields' do
       let(:tokens) do
         [
           tok(:type, 'type'), tok(:constant, 'MyRecord'), tok(:assign, '='),
-          tok(:lbrace, ']'),
+          tok(:lbrace, '{'),
           tok(:identifier, 'a'), tok(:colon, ':'), tok(:constant, 'Int'), tok(:comma, ','),
           tok(:identifier, 'b'), tok(:colon, ':'), tok(:constant, 'String'),
           tok(:rbrace, '}'),
         ]
       end
 
-      it { is_expected.to match_ast_node(rec_dec('MyRecord', rec_f('a', 'Int'), rec_f('b', 'String'))) }
+      it { is_expected.to match_ast_node(rec('MyRecord', field('a', 'Int'), field('b', 'String'))) }
     end
+  end
+
+  describe '.record_instantiation' do
+    let(:parser) { described_class.record_instantiation }
+    let(:tokens) do
+      [
+        tok(:constant, 'MyRecord'),
+        tok(:lparen, '('),
+        tok(:identifier, 'a'), tok(:colon, ':'), tok(:int, 42), tok(:comma, ','),
+        tok(:identifier, 'b'), tok(:colon, ':'), tok(:string, 'Alo'),
+        tok(:rparen, ')'),
+      ]
+    end
+
+    it { is_expected.to match_ast_node(rec_new('MyRecord', field_set('a', lit(42)), field_set('b', lit('Alo')))) }
+  end
+
+  describe '.anonymous_record' do
+    let(:parser) { described_class.anonymous_record }
+    let(:tokens) do
+      [
+        tok(:lbrace, '{'),
+        tok(:identifier, 'a'), tok(:colon, ':'), tok(:int, 42), tok(:comma, ','),
+        tok(:identifier, 'b'), tok(:colon, ':'), tok(:string, 'Alo'),
+        tok(:rbrace, '}'),
+      ]
+    end
+
+    it { is_expected.to match_ast_node(anon_rec(field_set('a', lit(42)), field_set('b', lit('Alo')))) }
   end
 
   describe '.statement' do

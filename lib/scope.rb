@@ -1,5 +1,5 @@
-Scope = Data.define(:vars, :functions) do
-  def initialize(vars: {}, functions: {})
+Scope = Data.define(:vars, :functions, :records) do
+  def initialize(vars: {}, functions: {}, records: {})
     super
   end
 
@@ -23,6 +23,17 @@ Scope = Data.define(:vars, :functions) do
     vars[name.to_sym] || functions[name.to_sym]
   end
 
+  def resolve_record(name)
+    records[name.to_sym]
+  end
+
+  def define_record(name, fields)
+    fields
+      .map  { |f| RecordTypeField.new(f.name, f.type) }
+      .then { |fs| RecordType.new(name, fs) }
+      .then { |record| write_record(record) }
+  end
+
   private
 
   def write_var(var)
@@ -31,6 +42,10 @@ Scope = Data.define(:vars, :functions) do
 
   def write_fn(fn)
     with(functions: functions.merge(fn.name.to_sym => fn))
+  end
+
+  def write_record(record)
+    with(records: records.merge(record.name.to_sym => record))
   end
 end
 
@@ -44,3 +59,5 @@ TypedFunction = Data.define(:name, :type, :range) do
   end
 end
 
+RecordTypeField = Data.define(:name, :type)
+RecordType = Data.define(:name, :fields)

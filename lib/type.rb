@@ -32,4 +32,10 @@ module Type
       parameters.map(&:to_s).join(', ') + ' -> ' + return_type.to_s
     end
   end
+
+  Record = Data.define(:name) do
+    def to_s
+      name
+    end
+  end
 end

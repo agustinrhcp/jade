@@ -69,6 +69,76 @@ module SemanticAnalyzer
       else
         [node, scope, [Error.new("Undefined function '#{name}'", range: node.range)]]
       end
+
+    in AST::RecordDeclaration(name:, fields:)
+      if scope.resolve_record(name)
+        return [node, scope, [Error.new("Already defined record type '#{name}'", range: node.range)]]
+      end
+
+      unless fields.uniq { |f| f.name }.length == fields.length
+        indexed_fields = fields.group_by(&:name)
+        errors = fields
+          .map(&:name)
+          .tally.select { |f, c| c > 1 }
+          .map { |f, _| Error.new("Duplicate field '#{f}' in record '#{name}'", range: indexed_fields[f].last.range) }
+
+        return [node, scope, errors]
+      end
+
+      [node, scope.define_record(name, fields), []]
+
+    in AST::RecordInstantiation(name:, fields:)
+      record_type = scope.resolve_record(name)
+
+      unless record_type
+        return [node, scope, [Error.new("Undefined record type '#{name}'", range: node.range)]]
+      end
+
+      unless fields.uniq { |f| f.name }.length == fields.length
+        indexed_fields = fields.group_by(&:name)
+        errors = fields
+          .map(&:name)
+          .tally.select { |f, c| c > 1 }
+          .map { |f, _| Error.new("Duplicate assignment to field '#{f}' in record instantiation", range: indexed_fields[f].last.range) }
+
+        return [node, scope, errors]
+      end
+
+      expected_field_names = record_type.fields.map(&:name)
+      given_field_names = fields.map(&:name)
+
+      missing = expected_field_names - given_field_names
+      extra   = given_field_names - expected_field_names
+
+      missing_or_extra_fields_errors = missing
+        .map { |field_name| Error.new("Missing required field '#{field_name}' for record '#{name}'", range: node.range)}
+        .concat(extra.map { |field_name| Error.new("Unknown field '#{field_name}' for record '#{name}'", range: node.range)})
+
+      analayzed_fields, _, field_errors = analyze_many(scope, fields)
+      [
+        node.with(fields: analayzed_fields),
+        scope,
+        missing_or_extra_fields_errors.concat(field_errors),
+      ]
+
+    in AST::RecordFieldAssign(name:, expression:)
+      analyzed_expression, _, expression_errors = analyze(expression, scope)
+      [node.with(expression: analyzed_expression), scope, expression_errors]
+
+    in AST::AnonymousRecord(fields:)
+      analyzed_fields, _, field_errors = analyze_many(scope, fields)
+
+      unless fields.uniq { |f| f.name }.length == fields.length
+        indexed_fields = fields.group_by(&:name)
+        errors = fields
+          .map(&:name)
+          .tally.select { |f, c| c > 1 }
+          .map { |f, _| Error.new("Duplicate field '#{f}' in anonymous record", range: indexed_fields[f].last.range) }
+
+        return [node, scope, errors]
+      end
+
+      [node.with(fields: analyzed_fields), scope, field_errors]
     end
   end
 

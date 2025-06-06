@@ -26,8 +26,11 @@ module AST
   FunctionDeclaration = Data.define(:name, :parameters, :return_type, :body, :range)
   FunctionCall        = Data.define(:name, :arguments, :range)
 
-  RecordDeclaration = Data.define(:name, :fields, :range)
-  RecordField       = Data.define(:name, :type, :range)
+  RecordDeclaration   = Data.define(:name, :fields, :range)
+  RecordField         = Data.define(:name, :type, :range)
+  RecordInstantiation = Data.define(:name, :fields, :range)
+  AnonymousRecord     = Data.define(:fields, :range)
+  RecordFieldAssign   = Data.define(:name, :expression, :range)
 
   Program = Data.define(:statements)
 
@@ -150,6 +153,35 @@ module AST
         name: name.value,
         type: type.value,
         range: Range.new(name.position, type.position),
+      )
+    end
+  end
+
+  def record_instantiation
+    ->((name, *fields)) do
+      AST::RecordInstantiation.new(
+        name: name.value,
+        fields:,
+        range: Range.new(name.position, fields.last&.range&.end || name.position),
+      )
+    end
+  end
+
+  def anonymous_record
+    ->((*fields)) do
+      AST::AnonymousRecord.new(
+        fields:,
+        range: Range.new(fields.first.range.start, fields.last&.range&.end),
+      )
+    end
+  end
+
+  def record_field_assign
+    ->((name, expression)) do
+      AST::RecordFieldAssign.new(
+        name: name.value,
+        expression:,
+        range: Range.new(name.position, expression.range.end),
       )
     end
   end

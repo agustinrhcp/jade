@@ -51,12 +51,24 @@ module AstHelpers
     )
   end
 
-  def rec_dec(name, *fields)
+  def rec(name, *fields)
     AST::RecordDeclaration.new(name:, fields:, range: dummy_range)
   end
 
-  def rec_f(name, type)
+  def field(name, type)
     AST::RecordField.new(name:, type:, range: dummy_range)
+  end
+
+  def rec_new(name, *fields)
+    AST::RecordInstantiation.new(name:, fields:, range: dummy_range)
+  end
+
+  def anon_rec(*fields)
+    AST::AnonymousRecord.new(fields:, range: dummy_range)
+  end
+
+  def field_set(name, expression)
+    AST::RecordFieldAssign.new(name:, expression:, range: dummy_range)
   end
 
   def prog(*statements)

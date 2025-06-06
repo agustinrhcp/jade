@@ -52,7 +52,7 @@ module Parser
   end
 
   def factor
-    literal | function_call | variable| lazy { grouping }
+    record_instantiation | literal | function_call | variable | lazy { grouping }
   end
 
   def function_declaration
@@ -80,8 +80,34 @@ module Parser
     ).map(&AST.record_declaration)
   end
 
+
   def record_field
     (identifier >> type(:colon).skip >> constant).map(&AST.record_field)
+  end
+
+  def record_instantiation
+    (
+      constant >> 
+        type(:lparen).skip >>
+        (record_field_assign >>
+           (type(:comma).skip >> record_field_assign).many.map { it.flatten }
+        ) >>
+        type(:rparen).skip
+    ).map(&AST.record_instantiation)
+  end
+
+  def anonymous_record
+    (
+      type(:lbrace).skip >>
+        (record_field_assign >>
+           (type(:comma).skip >> record_field_assign).many.map { it.flatten }
+        ) >>
+        type(:rbrace).skip
+    ).map(&AST.anonymous_record)
+  end
+
+  def record_field_assign
+    (identifier >> type(:colon).skip >> lazy { expression }).map(&AST.record_field_assign)
   end
 
   def function_call
