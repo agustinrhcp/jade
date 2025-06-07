@@ -119,6 +119,10 @@ module TypeChecker
             end
         end
 
+    in AST::RecordDeclaration(name:, fields:)
+      record_type = Type::Record.new(name, Hash[fields.map { |f| [f.name, f.type] }])
+      Ok[[record_type, scope.define_typed_record(name, fields, record_type)]]
+      
     in AST::Program(statements:)
       check_many(scope, statements)
     end

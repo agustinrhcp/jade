@@ -233,4 +233,11 @@ describe TypeChecker do
       end
     end
   end
+
+  context 'record declaration' do
+    let(:node) { rec('User', field('name', Type.string), field('age', Type.int)) }
+
+    it { is_expected.to be_a(Type::Record) }
+    its(:fields) { is_expected.to eql('name' => Type.string, 'age' => Type.int) }
+  end
 end

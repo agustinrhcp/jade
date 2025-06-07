@@ -27,10 +27,18 @@ Scope = Data.define(:vars, :functions, :records) do
     records[name.to_sym]
   end
 
-  def define_record(name, fields)
+  def define_unbound_record(name, fields)
     fields
-      .map  { |f| RecordTypeField.new(f.name, f.type) }
+      .map(&:name)
       .then { |fs| RecordType.new(name, fs) }
+      .then { |record| write_record(record) }
+  end
+
+  def define_typed_record(name, fields, type)
+    fields
+      .map  { |f| [f.name, f.type] }
+      .then { Hash[_1] }
+      .then { |fs| TypedRecordType.new(name, fs, type) }
       .then { |record| write_record(record) }
   end
 
@@ -59,5 +67,5 @@ TypedFunction = Data.define(:name, :type, :range) do
   end
 end
 
-RecordTypeField = Data.define(:name, :type)
 RecordType = Data.define(:name, :fields)
+TypedRecordType = Data.define(:name, :fields, :type)

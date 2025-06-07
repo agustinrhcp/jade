@@ -85,7 +85,7 @@ module SemanticAnalyzer
         return [node, scope, errors]
       end
 
-      [node, scope.define_record(name, fields), []]
+      [node, scope.define_unbound_record(name, fields), []]
 
     in AST::RecordInstantiation(name:, fields:)
       record_type = scope.resolve_record(name)
@@ -104,7 +104,7 @@ module SemanticAnalyzer
         return [node, scope, errors]
       end
 
-      expected_field_names = record_type.fields.map(&:name)
+      expected_field_names = record_type.fields
       given_field_names = fields.map(&:name)
 
       missing = expected_field_names - given_field_names

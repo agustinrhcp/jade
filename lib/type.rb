@@ -33,9 +33,9 @@ module Type
     end
   end
 
-  Record = Data.define(:name) do
+  Record = Data.define(:name, :fields) do
     def to_s
-      name
+      "#{name}(#{fields.map { |k, v| "#{k}: #{v}"}.join(', ')})"
     end
   end
 end
