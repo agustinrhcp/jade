@@ -239,5 +239,110 @@ describe TypeChecker do
 
     it { is_expected.to be_a(Type::Record) }
     its(:fields) { is_expected.to eql('name' => Type.string, 'age' => Type.int) }
+
+    context 'empty record' do
+      let(:node) { rec('Empty') }
+
+      it { is_expected.to be_a(Type::Record) }
+      its(:fields) { is_expected.to be_empty }
+    end
+  end
+
+  context 'record instantiation' do
+    let(:record_type) { Type::Record.new('User', {'name' => Type.string, 'age' => Type.int}) }
+    let(:scope) { Scope.new.define_typed_record('User', record_type, nil) }
+
+    context 'valid instantiation' do
+      let(:node) { rec_new('User', field_set('name', lit('John')), field_set('age', lit(25))) }
+
+      it { is_expected.to be_a(Type::Record) }
+      its(:fields) { is_expected.to eql('name' => Type.string, 'age' => Type.int) }
+    end
+
+    context 'fields in different order' do
+      let(:node) { rec_new('User', field_set('age', lit(25)), field_set('name', lit('John'))) }
+
+      it { is_expected.to be_a(Type::Record) }
+      its(:fields) { is_expected.to eql('name' => Type.string, 'age' => Type.int) }
+    end
+
+    context 'empty record instantiation' do
+      let(:record_type) { Type::Record.new('Empty', {}) }
+      let(:scope) { Scope.new.define_typed_record('Empty', record_type, nil) }
+      let(:node) { rec_new('Empty') }
+
+      it { is_expected.to be_a(Type::Record) }
+      its(:fields) { is_expected.to be_empty }
+    end
+
+    context 'invalid instantiation' do
+      subject { result => Err(errors); errors.first }
+
+      context 'undefined record type' do
+        let(:scope) { Scope.new }
+        let(:node) { rec_new('Unknown', field_set('name', lit('John'))) }
+
+        its(:message) { is_expected.to eql "Undefined record type 'Unknown'" }
+      end
+
+      context 'field type mismatch' do
+        let(:node) { rec_new('User', field_set('name', lit(42)), field_set('age', lit(25))) }
+
+        its(:message) { is_expected.to eql "Field 'name' expects String, got Int" }
+      end
+
+      context 'multiple field type mismatches' do
+        let(:node) { rec_new('User', field_set('name', lit(42)), field_set('age', lit('twenty-five'))) }
+
+        subject { result => Err(errors); errors }
+
+        it 'reports all type mismatches' do
+          expect(subject.size).to be >= 1
+          error_messages = subject.map(&:message)
+          expect(error_messages.any? { |msg| msg.include?("Field 'name' expects String, got Int") }).to be true
+          expect(error_messages.any? { |msg| msg.include?("Field 'age' expects Int, got String") }).to be true
+        end
+      end
+    end
+  end
+
+  context 'anonymous records' do
+    context 'valid anonymous record' do
+      let(:node) { anon_rec(field_set('x', lit(42)), field_set('y', lit('hello'))) }
+
+      it { is_expected.to be_a(Type::Record) }
+      its(:fields) { is_expected.to eql('x' => Type.int, 'y' => Type.string) }
+    end
+
+    context 'empty anonymous record' do
+      let(:node) { anon_rec() }
+
+      it { is_expected.to be_a(Type::Record) }
+      its(:fields) { is_expected.to be_empty }
+    end
+
+    context 'anonymous record with complex expressions' do
+      let(:scope) { Scope.new.define_typed_var('base', Type.int, nil) }
+      let(:node) { anon_rec(field_set('sum', bin(lit(10), :+, var('base'))), field_set('doubled', bin(var('base'), :*, lit(2)))) }
+
+      it { is_expected.to be_a(Type::Record) }
+      its(:fields) { is_expected.to eql('sum' => Type.int, 'doubled' => Type.int) }
+    end
+
+    context 'invalid anonymous record' do
+      subject { result => Err(error); error }
+
+      context 'undefined variable in field expression' do
+        let(:node) { anon_rec(field_set('value', var('undefined_var'))) }
+
+        its(:message) { is_expected.to eql "Undefined variable 'undefined_var'" }
+      end
+
+      context 'type error in field expression' do
+        let(:node) { anon_rec(field_set('invalid', bin(lit('hello'), :+, lit(42)))) }
+
+        its(:message) { is_expected.to eql "Left operand of '+' must be Int, got String" }
+      end
+    end
   end
 end

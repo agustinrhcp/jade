@@ -34,11 +34,8 @@ Scope = Data.define(:vars, :functions, :records) do
       .then { |record| write_record(record) }
   end
 
-  def define_typed_record(name, fields, type)
-    fields
-      .map  { |f| [f.name, f.type] }
-      .then { Hash[_1] }
-      .then { |fs| TypedRecordType.new(name, fs, type) }
+  def define_typed_record(name, type, range)
+    TypedRecordType.new(name, type, range)
       .then { |record| write_record(record) }
   end
 
@@ -68,4 +65,4 @@ TypedFunction = Data.define(:name, :type, :range) do
 end
 
 RecordType = Data.define(:name, :fields)
-TypedRecordType = Data.define(:name, :fields, :type)
+TypedRecordType = Data.define(:name, :type, :range)

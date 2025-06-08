@@ -12,7 +12,7 @@ module TypeChecker
   UNARY_OP_RULES = {
     :! => { Type.bool => Type.bool },
     :- => { Type.int => Type.int},
-  }
+  }.freeze
 
   BINARY_OP_RULES = {
     :+  => { Type.int => { Type.int => Type.int } },
@@ -33,7 +33,7 @@ module TypeChecker
     :<= => { Type.int => { Type.int => Type.bool } },
     :>  => { Type.int => { Type.int => Type.bool } },
     :>= => { Type.int => { Type.int => Type.bool } },
-  }
+  }.freeze
 
   def check(node, scope = Scope.new)
     case node
@@ -122,7 +122,43 @@ module TypeChecker
     in AST::RecordDeclaration(name:, fields:)
       record_type = Type::Record.new(name, Hash[fields.map { |f| [f.name, f.type] }])
       Ok[[record_type, scope.define_typed_record(name, fields, record_type)]]
-      
+
+    in AST::RecordInstantiation(name:, fields:)
+      type = scope.resolve_record(name)&.type
+
+      unless type
+        # This should be caught by semantic analysis
+        return Err[[
+          Error.new("Undefined record type '#{name}'", range: node.range)
+        ]]
+      end
+
+      fields
+        .reduce(Ok[nil]) do |acc, field|
+          checked_and_compared_result =
+            check(field)
+              .and_then do |(checked, _)|
+                next Ok[nil] if checked == type.fields[field.name]
+
+                Err[Error.new("Field '#{field.name}' expects #{type.fields[field.name]}, got #{checked}", range: field.range)]
+              end
+
+          case [acc, checked_and_compared_result]
+          in Ok, Ok
+            acc
+          in Err(errors), Err(new_error)
+            Err[errors.concat([new_error])]
+          in Ok, Err(error)
+            Err[[error]]
+          else
+            acc
+          end
+        end
+        .map { [type, scope] }
+
+    in AST::RecordFieldAssign(expression:)
+      check(expression, scope)
+
     in AST::Program(statements:)
       check_many(scope, statements)
     end
