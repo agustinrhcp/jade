@@ -3,30 +3,52 @@ require 'ast'
 module Generator
   extend self
 
-  def generate(node)
+  INDENT = '  '.freeze
+
+  def generate(node, indents = 0)
+    prefix = INDENT * indents
+
     case node
     in AST::Literal(value:)
-      value.inspect
+      prefix + value.inspect
     in AST::Variable(name:)
-      name.to_s
+      prefix + name.to_s
     in AST::Unary(operator:, right:)
-      "#{operator}#{generate(right)}"
+      prefix + "#{operator}#{generate(right)}"
     in AST::Binary(left:, operator:, right:)
-      "#{generate(left)} #{operator} #{generate(right)}"
+      prefix + "#{generate(left)} #{operator} #{generate(right)}"
     in AST::Grouping(expression:)
-      "(#{generate(expression)})"
+      prefix + "(#{generate(expression)})"
     in AST::VariableDeclaration(name:, expression:)
-      "#{name} = #{generate(expression)}"
+      prefix + "#{name} = #{generate(expression)}"
     in AST::Program(statements:)
-      statements.map { generate(it) }.join("\n")
+      statements.map { generate(it, indents) }.join("\n")
+
     in AST::FunctionDeclaration(name:, parameters:, body:)
-      "def #{name}(#{parameters.parameters.map(&:name).join(', ')})\n" +
-        "  " + body.map { generate(it) }.join("\n") + "\n" +
-        "end"
+      "#{prefix}def #{name}(#{parameters.parameters.map(&:name).join(', ')})\n" +
+        body.map { generate(it, indents + 1) }.join("\n") + "\n" +
+        "#{prefix}end"
+
     in AST::FunctionCall(name:, arguments:)
-      "#{name}(#{arguments.map { generate(it) }.join(', ')})"
+      "#{prefix}#{name}(#{arguments.map { generate(it) }.join(', ')})"
+
     in AST::RecordDeclaration(name:, fields:)
-      "#{name} = Data.define(#{fields.map { |f| ":#{f.name}"}.join(', ')})"
+      "#{prefix}#{name} = Data.define(#{fields.map { |f| ":#{f.name}"}.join(', ')})"
+
+    in AST::Module(name:, exposing:, statements:)
+      mod_names = name.split('.')
+      generated_header = mod_names
+        .each_with_index.map { |mod, i| "#{INDENT * i}module #{mod}"}
+        .join("\n")
+
+      generated_footer = mod_names
+        .each_with_index.map { |mod, i| "#{INDENT * (mod_names.size - i - 1)}end"}
+        .join("\n")
+
+      geneated_statements = statements
+        .map { generate(it, indents + mod_names.size) }
+
+      [generated_header, geneated_statements, generated_footer].join("\n") + "\n"
     end
   end
 end

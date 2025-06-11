@@ -139,6 +139,16 @@ module SemanticAnalyzer
       end
 
       [node.with(fields: analyzed_fields), scope, field_errors]
+
+    in AST::Module(name:, exposing:, statements:, range:)
+      # TODO: Register module
+      analyzed_statements, new_scope, stmts_errors = analyze_many(scope, statements)
+
+      missing_exposed_errors = exposing
+        .reject { |exposed| new_scope.resolve(exposed) }
+        .map { |exposed| Error.new("Cannot find a #{exposed} value to expose", range:)}
+
+      [node.with(statements: analyzed_statements), new_scope, stmts_errors + missing_exposed_errors]
     end
   end
 

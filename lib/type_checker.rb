@@ -179,6 +179,9 @@ module TypeChecker
 
     in AST::Program(statements:)
       check_many(scope, statements)
+
+    in AST::Module(statements:)
+      check_many(scope, statements)
     end
   end
 

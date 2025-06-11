@@ -20,7 +20,7 @@ Scope = Data.define(:vars, :functions, :records) do
   end
 
   def resolve(name)
-    vars[name.to_sym] || functions[name.to_sym]
+    vars[name.to_sym] || functions[name.to_sym] || records[name.to_sym]
   end
 
   def resolve_record(name)

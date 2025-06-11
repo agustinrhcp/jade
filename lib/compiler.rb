@@ -14,7 +14,8 @@ module Compiler
       .scan(source)
       # TODO: scanning raises an error (instead of returning a result)
       .then { |tokens| Parser::State.new(tokens) }
-      .then { |tokens| Parser.program.call(tokens) }
+      .then { |tokens| Parser.module.call(tokens) }
+      .on_err { |(err, _)| fail err.message }
       .and_then do |(ast, _)|
         analyzed_ast, scope, errors = SemanticAnalyzer.analyze(ast)
         fail errors.first.message if errors.any?

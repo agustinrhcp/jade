@@ -14,8 +14,8 @@ module Parser
           .map { |tokens| tokens.map(&:value).join('.') } >>
         type(:exposing).skip >>
         type(:lparen).skip >>
-        (identifier >>
-           (type(:comma).skip >> identifier).many
+        ((identifier | constant) >>
+           (type(:comma).skip >> (identifier | constant)).many
         )
           .map { |(first, rest)| [[first.value] + (rest || []).map(&:value)] } >>
         type(:rparen).skip >>

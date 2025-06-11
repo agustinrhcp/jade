@@ -207,10 +207,13 @@ module AST
   private
 
   def resolve_type(type_name)
+    # TODO: Handle other types!
     case type_name
     in 'Int' then Type.int
     in 'String' then Type.string
     in 'Bool' then Type.bool
+    else
+      Type::Record.new(type_name, [])
     end
   end
 end
