@@ -7,7 +7,7 @@ module Lexer
 
   State = Data.define(:code, :pos, :line, :col, :tokens)
 
-  KEYWORDS = Set['def', 'end', 'let', 'type']
+  KEYWORDS = Set['def', 'end', 'let', 'type', 'module', 'exposing']
   SYMBOLS = {
     '->' => :arrow,
     '('  => :lparen,

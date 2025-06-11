@@ -159,4 +159,24 @@ describe Lexer do
     it { is_expected.to have_tokenized(:star) }
     it { is_expected.to have_tokenized(:int).with(2) }
   end
+
+  context 'module' do
+    let(:code) do
+      <<~CODE
+        module My.Module exposing (hello)
+          def hello() -> String
+            "Hello"
+          end
+        end
+      CODE
+    end
+
+    it { is_expected.to have_tokenized(:module) }
+    it { is_expected.to have_tokenized(:constant).with('My') }
+    it { is_expected.to have_tokenized(:dot) }
+    it { is_expected.to have_tokenized(:constant).with('Module') }
+    it { is_expected.to have_tokenized(:exposing) }
+    it { is_expected.to have_tokenized(:identifier).with('hello') }
+    it { is_expected.to have_tokenized(:end) }
+  end
 end

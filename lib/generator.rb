@@ -25,6 +25,8 @@ module Generator
         "end"
     in AST::FunctionCall(name:, arguments:)
       "#{name}(#{arguments.map { generate(it) }.join(', ')})"
+    in AST::RecordDeclaration(name:, fields:)
+      "#{name} = Data.define(#{fields.map { |f| ":#{f.name}"}.join(', ')})"
     end
   end
 end

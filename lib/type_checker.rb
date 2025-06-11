@@ -123,6 +123,24 @@ module TypeChecker
       record_type = Type::Record.new(name, Hash[fields.map { |f| [f.name, f.type] }])
       Ok[[record_type, scope.define_typed_record(name, fields, record_type)]]
 
+    in AST::AnonymousRecord(fields:)
+      fields
+        .reduce(Ok[{}]) do |acc, field|
+          case [acc, check(field, scope)]
+          in [Ok(acc_types), Ok([field_type, _])]
+            Ok[acc_types.merge(field.name => field_type)]
+          in [Ok, Err(errors)]
+            Err[errors]
+          in Err(acc_error), Err(field_errors)
+            acc
+            # TODO: Return multiple errors
+            # Err[acc_errors.concat(field_errors)]
+          in Err, Ok
+            acc
+          end
+        end
+          .map { |typed_fields| [Type::Record.new(nil, typed_fields), scope] }
+
     in AST::RecordInstantiation(name:, fields:)
       type = scope.resolve_record(name)&.type
 

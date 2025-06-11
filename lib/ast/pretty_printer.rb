@@ -49,16 +49,20 @@ module AST
         "#{prefix})"
 
       in ParameterList(parameters:)
-        "#{prefix}ParameterList(\n" \
-        "#{parameters.map { |param| print(param, indent + 1) }.join(",\n")}\n" \
-        "#{prefix})"
+        if parameters.empty?
+          "#{prefix}ParameterList()\n" \
+        else
+          "#{prefix}ParameterList(\n" \
+          "#{parameters.map { |param| print(param, indent + 1) }.join(",\n")}\n" \
+          "#{prefix})"
+        end
 
       in FunctionDeclaration(name:, parameters:, return_type:, body:)
         "#{prefix}Function Declaration(\n" \
         "#{prefix}  name: #{name},\n" \
         "#{prefix}  parameters: #{print(parameters)}" \
-        "#{prefix}  returning type: #{return_type}" \
-        "#{body.map { |stmt| print(stmt, indent + 1) }.join(",\n")}\n" \
+        "#{prefix}  returning type: #{return_type}\n" \
+        "#{body.map { |stmt| print(stmt, indent + 2) }.join(",\n")}\n" \
         "#{prefix})"
 
       in FunctionCall(name:, arguments:)
@@ -108,6 +112,14 @@ module AST
         "#{prefix}  name: #{name},\n" \
         "#{prefix}  expression: #{print(expression)}\n" \
         "#{prefix})"
+
+      in Module(name:, exposing:, statements:)
+        "#{prefix}Module(\n" \
+        "#{prefix}  name: #{name},\n" \
+        "#{prefix}  exposing: #{exposing},\n" \
+        "#{statements.map { |stmt| print(stmt, indent + 1) }.join(",\n")}\n" \
+        "#{prefix})"
+
       end
     end
   end

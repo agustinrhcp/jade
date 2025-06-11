@@ -5,6 +5,25 @@ require 'result'
 module Parser
   extend self
 
+  def module
+    (
+      type(:module).skip >>
+        (constant >>
+           (type(:dot).skip >> constant).many.map { it.flatten }
+        )
+          .map { |tokens| tokens.map(&:value).join('.') } >>
+        type(:exposing).skip >>
+        type(:lparen).skip >>
+        (identifier >>
+           (type(:comma).skip >> identifier).many
+        )
+          .map { |(first, rest)| [[first.value] + (rest || []).map(&:value)] } >>
+        type(:rparen).skip >>
+        statement.many >>
+        type(:end).skip
+    ).map(&AST.module)
+  end
+
   def program
     (statement | expression).many.map(&AST.program)
   end

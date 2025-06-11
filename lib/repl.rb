@@ -46,6 +46,7 @@ module REPL
         else
           case TypeChecker.check(analyzed_ast, scope)
           in Ok([type, scope])
+            puts scope
             ruby = Generator.generate(analyzed_ast)
             result = context.eval(ruby)
             puts "=> #{result.inspect} : #{type.first.to_s}"

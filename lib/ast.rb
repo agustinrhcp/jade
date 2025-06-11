@@ -33,6 +33,7 @@ module AST
   RecordFieldAssign   = Data.define(:name, :expression, :range)
 
   Program = Data.define(:statements)
+  Module  = Data.define(:name, :exposing, :statements, :range)
 
   Range = Data.define(:start, :end)
 
@@ -189,6 +190,17 @@ module AST
   def program
     ->(statements) do
       AST::Program.new(statements:)
+    end
+  end
+
+  def module
+    ->((name, exposing, *statements)) do
+      AST::Module.new(
+        name:,
+        exposing:,
+        statements:,
+        range: Range.new(Position.new, statements.last.range),
+      )
     end
   end
 

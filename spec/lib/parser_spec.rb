@@ -219,6 +219,24 @@ describe Parser do
         )
       )
     end
+
+    context 'another (for module)' do
+      let(:tokens) do
+        [
+          tok(:def, 'def'), tok(:identifier, 'hello'), tok(:lparen, '('),
+          tok(:rparen, ')'),
+          tok(:arrow, '->'), tok(:constant, 'String'),
+          tok(:string, 'Hello'),
+          tok(:end, 'end'),
+        ]
+      end
+
+      it do
+        is_expected.to match_ast_node(
+          fn_dec('hello', params(), 'String', lit('Hello'))
+        )
+      end
+    end
   end
 
   describe '.function_call' do
@@ -382,5 +400,33 @@ describe Parser do
       subject { ast.statements.first }
       it { is_expected.to match_ast_node(var_dec('a', lit(5))) }
     end
+  end
+
+  describe 'module' do
+    let(:parser) { described_class.module }
+
+    let(:tokens) do
+      [
+        tok(:module, 'module'),
+        tok(:constant, 'My'), tok(:dot, '.'), tok(:constant, 'Module'),
+        tok(:exposing, 'exposing'), tok(:lparen, '('), tok(:identifier, 'hello'), tok(:rparen, ')'),
+        tok(:def, 'def'), tok(:identifier, 'hello'), tok(:lparen, '('), tok(:rparen, ')'),
+        tok(:arrow, '->'), tok(:constant, 'String'),
+        tok(:string, 'Hello'),
+        tok(:end, 'end'),
+        tok(:end, 'end')
+      ]
+    end
+
+    it { is_expected.to be_a(AST::Module) }
+    it {
+      is_expected.to match_ast_node(
+        mod(
+          'My.Module',
+          ['hello'],
+          fn_dec('hello', params, 'String', lit('Hello')),
+        )
+      )
+    }
   end
 end
