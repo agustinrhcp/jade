@@ -113,6 +113,12 @@ module AST
         "#{prefix}  expression: #{print(expression)}\n" \
         "#{prefix})"
 
+      in RecordAccess(target:, field:)
+        "#{prefix}RecordAccess(\n" \
+        "#{prefix}  target: #{print(target, indent + 1).lstrip},\n" \
+        "#{prefix}  field: #{field}\n" \
+        "#{prefix})"
+
       in Module(name:, exposing:, statements:)
         "#{prefix}Module(\n" \
         "#{prefix}  name: #{name},\n" \

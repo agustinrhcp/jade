@@ -12,7 +12,7 @@ describe Compiler do
           type User = { name: String, age: Int }
 
           def say_hi(user: User) -> String
-            "Hello"
+            "Hello \#\{user.name\}"
           end
         end
       JADE

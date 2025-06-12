@@ -71,7 +71,15 @@ module Parser
   end
 
   def factor
-    record_instantiation | literal | function_call | variable | lazy { grouping }
+    record_access_targets = record_instantiation | function_call | variable | lazy { grouping }
+
+    (
+      (record_access_targets >>
+        (type(:dot).skip >> identifier).many)
+        .map do |(target, *fields)|
+          fields.flatten.reduce(target, &AST.record_access)
+        end
+    ) | literal
   end
 
   def function_declaration

@@ -402,6 +402,33 @@ describe Parser do
     end
   end
 
+  describe '.record_access' do
+    let(:parser) { described_class.factor }
+
+    let(:tokens) do 
+      [
+        tok(:identifier, 'pepe'), tok(:dot, '.'), tok(:identifier, 'lala')
+      ]
+    end
+
+    it { is_expected.to match_ast_node(rec_access(var('pepe'), 'lala')) }
+
+    context 'multiple record accesses' do
+      let(:tokens) do 
+        [
+          tok(:identifier, 'this'), tok(:dot, '.'), tok(:identifier, 'is'),
+          tok(:dot, '.'), tok(:identifier, 'a'), tok(:dot, '.'), tok(:identifier, 'lot')
+        ]
+      end
+
+      it { 
+        is_expected.to match_ast_node(
+          rec_access(rec_access(rec_access(var('this'), 'is'), 'a'), 'lot')
+        )
+      }
+    end
+  end
+
   describe 'module' do
     let(:parser) { described_class.module }
 

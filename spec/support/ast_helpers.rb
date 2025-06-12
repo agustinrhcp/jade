@@ -79,6 +79,10 @@ module AstHelpers
     AST::Module.new(name:, exposing:, statements:, range: dummy_range)
   end
 
+  def rec_access(target, field)
+    AST::RecordAccess.new(target:, field:, range: dummy_range)
+  end
+
   private
 
   def dummy_range

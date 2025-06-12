@@ -179,4 +179,13 @@ describe Lexer do
     it { is_expected.to have_tokenized(:identifier).with('hello') }
     it { is_expected.to have_tokenized(:end) }
   end
+
+  describe '.record_access' do
+    context 'record accessing an record instantiation' do
+      let(:code) { "User(name: \"Pepe\").name" }
+
+      it { is_expected.to have_tokenized(:dot) }
+      it { is_expected.to have_tokenized(:identifier).with('name') }
+    end
+  end
 end

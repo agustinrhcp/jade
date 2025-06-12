@@ -91,6 +91,16 @@ module AST
   end
   RecordInstantiation = Data.define(:name, :fields, :range)
 
+  RecordAccess = Data.define(:target, :field, :type, :range) do
+    def initialize(target:, field:, type: nil, range:)
+      super
+    end
+
+    def annotate(type)
+      with(type:)
+    end
+  end
+
   AnonymousRecord     = Data.define(:fields, :range, :type) do
     def initialize(fields:, range:, type: nil)
       super
@@ -271,6 +281,15 @@ module AST
         exposing:,
         statements:,
         range: Range.new(Position.new, statements.last.range),
+      )
+    end
+  end
+  def record_access
+    ->(target, field) do
+      AST::RecordAccess.new(
+        target:,
+        field: field.value,
+        range: Range.new(target.range.start, field.position)
       )
     end
   end
