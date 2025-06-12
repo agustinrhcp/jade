@@ -1,6 +1,7 @@
 require 'ast'
 require 'result'
 require 'type'
+require 'context'
 
 require 'refinements/or_else'
 
@@ -35,82 +36,92 @@ module TypeChecker
     :>= => { Type.int => { Type.int => Type.bool } },
   }.freeze
 
-  def check(node, scope = Scope.new)
+  def check(node, context = Context.new)
     case node
     in AST::Literal(type:)
-      Ok[[type, scope]]
+      Ok[[type, context]]
 
     in AST::Grouping(expression:)
-      check(expression, scope)
+      check(expression, context)
 
     in AST::Unary(operator:, right:)
-      check(node.right, scope)
-        .and_then do |(operand_type, new_scope)|
+      check(node.right, context)
+        .and_then do |(operand_type, new_context)|
           UNARY_OP_RULES.dig(operator, operand_type)
-            .then { return Ok[[it, new_scope]] if it }
+            .then { return Ok[[it, new_context]] if it }
 
           Err[Error.new("Unary '#{node.operator}' not valid for #{operand_type}", range: node.range)]
         end
 
     in AST::Binary(left:, operator:, right:)
-      check(node.left, scope)
-        .and_then do |(left_operand_type, scope_after_left)|
-          check(node.right, scope_after_left)
-            .and_then do |(right_operand_type, scope_after_right)|
+      check(node.left, context)
+        .and_then do |(left_operand_type, context_after_left)|
+          check(node.right, context_after_left)
+            .and_then do |(right_operand_type, context_after_right)|
               BINARY_OP_RULES.dig(operator, left_operand_type)
                 .or_else { return left_type_error(node, expected: BINARY_OP_RULES[operator].keys, actual: left_operand_type) }
                 .dig(right_operand_type)
                 .or_else { return right_type_error(node, actual: right_operand_type, expected: left_operand_type) }
-                .then { Ok[[it, scope_after_right]] }
+                .then { Ok[[it, context_after_right]] }
             end
         end
 
     in AST::VariableDeclaration(name:, expression:, range:)
-      check(expression, scope)
-        .map { |(type, new_scope)| [type, new_scope.define_typed_var(name, type, range)] }
+      check(expression, context)
+        .map do |(type, new_context)|
+          [type, new_context.annotate_var(name, type)]
+        end
 
     in AST::Variable(name:)
-      if scope.resolve(name)
+      if context.resolve_var(name)
         # What if it is untyped?
-        Ok[[scope.resolve(name).type, scope]]
+        Ok[[context.resolve_var(name).type, context]]
       else
         # Should never reach here, this should be caught by
         #  the semantic analyzer.
         Err[Error.new("Undefined variable '#{name}'", range: node.range)]
       end
     in AST::FunctionDeclaration(name:, parameters:, return_type:, body:, range:)
-      case scope.resolve(name)
-      in TypedFunction
-        Err[Error.new("Function '#{name}' is already defined", range: node.range)]
-      in UnboundFunction | nil
-        fn_type = Type::Function.new(parameters.parameters.map(&:type), return_type)
 
-        new_scope = scope.define_typed_function(name, fn_type, range)
-        fn_scope = parameters.parameters.reduce(new_scope) do |acc, param|
-          acc.define_typed_var(param.name, param.type, param.range)
-        end
+      annotated_parameters = parameters
+        .parameters.map { |param| param.annotate(context.resolve_type(param.type)) }
+      resolved_return_type = context.resolve_type(return_type)
 
-        check_many(fn_scope, body)
-          .and_then do |(typed_body, _)|
-            if typed_body.last != return_type
-              return Err[Error.new("Expected return type #{return_type}, got #{typed_body.last}", range: body.last.range)]
-            end
-
-            Ok[[fn_type, new_scope]]
-          end
+      if resolved_return_type.nil?
+        require 'byebug'; byebug
+        return Err[Error.new("Undefined type #{return_type}", range:)]
       end
 
-    in AST::FunctionCall(name:, arguments:)
-      fn = scope.resolve(name)
+      fn_type = Type::Function.new(annotated_parameters.map(&:type), resolved_return_type)
+      new_context = context.annotate_fn(name, fn_type)
 
-      check_many(scope, arguments)
+      fn_context = annotated_parameters
+        .reduce(new_context) do |acc, param|
+          acc
+            .define_var(param.name, param)
+            .annotate_var(param.name, param.type)
+        end
+
+      check_many(fn_context, body)
+        .and_then do |(typed_body, _)|
+          if typed_body.last != resolved_return_type
+            return Err[Error.new("Expected return type #{resolved_return_type}, got #{typed_body.last}", range: body.last.range)]
+          end
+
+          Ok[[fn_type, new_context]]
+        end
+
+    in AST::FunctionCall(name:, arguments:)
+      fn = context.resolve_fn(name)
+
+      check_many(context, arguments)
         .and_then do |(argument_types, _)|
           fn
             .type
             .parameters
             .zip(argument_types)
             .each.with_index
-            .reduce(Ok[[fn.type.return_type, scope]]) do |acc, ((param_type, argument_type), i)|
+            .reduce(Ok[[fn.type.return_type, context]]) do |acc, ((param_type, argument_type), i)|
               next acc if param_type == argument_type
 
               return Err[
@@ -120,13 +131,28 @@ module TypeChecker
         end
 
     in AST::RecordDeclaration(name:, fields:)
-      record_type = Type::Record.new(name, Hash[fields.map { |f| [f.name, f.type] }])
-      Ok[[record_type, scope.define_typed_record(name, fields, record_type)]]
+      fields
+        .reduce(Ok[[]]) do |acc, field|
+          case [acc, context.resolve_type(field.type)]
+          in Ok, nil
+            Err[[Error.new("Undefined type #{field.type}", range: field.range)]]
+          in Ok(ok_acc), resolved_type
+            Ok[ok_acc.concat([field.annotate(resolved_type)])]
+          in Err(err_acc), nil
+            Err[err_acc.concat([Error.new("Undefined type #{field.type}", range: field.range)])]
+          in Err, _
+            acc
+          end
+        end
+        .map do |annotated_fields|
+          record_type = Type::Record.new(name, Hash[annotated_fields.map { |f| [f.name, f.type] }])
+          [record_type, context.define_type(name, record_type)]
+        end
 
     in AST::AnonymousRecord(fields:)
       fields
         .reduce(Ok[{}]) do |acc, field|
-          case [acc, check(field, scope)]
+          case [acc, check(field, context)]
           in [Ok(acc_types), Ok([field_type, _])]
             Ok[acc_types.merge(field.name => field_type)]
           in [Ok, Err(errors)]
@@ -139,10 +165,10 @@ module TypeChecker
             acc
           end
         end
-          .map { |typed_fields| [Type::Record.new(nil, typed_fields), scope] }
+          .map { |typed_fields| [Type::Record.new(nil, typed_fields), context] }
 
     in AST::RecordInstantiation(name:, fields:)
-      type = scope.resolve_record(name)&.type
+      type = context.resolve_type(name)
 
       unless type
         # This should be caught by semantic analysis
@@ -154,7 +180,7 @@ module TypeChecker
       fields
         .reduce(Ok[nil]) do |acc, field|
           checked_and_compared_result =
-            check(field)
+            check(field, context)
               .and_then do |(checked, _)|
                 next Ok[nil] if checked == type.fields[field.name]
 
@@ -172,27 +198,27 @@ module TypeChecker
             acc
           end
         end
-        .map { [type, scope] }
+        .map { [type, context] }
 
     in AST::RecordFieldAssign(expression:)
-      check(expression, scope)
+      check(expression, context)
 
     in AST::Program(statements:)
-      check_many(scope, statements)
+      check_many(context, statements)
 
     in AST::Module(statements:)
-      check_many(scope, statements)
+      check_many(context, statements)
     end
   end
 
   private
 
-  def check_many(scope, nodes)
-    nodes.reduce(Ok[[[], scope]]) do |acc, node|
-      acc => Ok([all_checked, new_scope])
-      check(node, new_scope)
-        .map do |(checked, new_scope)|
-          [all_checked.concat([checked]), new_scope]
+  def check_many(context, nodes)
+    nodes.reduce(Ok[[[], context]]) do |acc, node|
+      acc => Ok([all_checked, new_context])
+      check(node, new_context)
+        .map do |(checked, new_context)|
+          [all_checked.concat([checked]), new_context]
         end
     end
   end

@@ -17,10 +17,10 @@ module Compiler
       .then { |tokens| Parser.module.call(tokens) }
       .on_err { |(err, _)| fail err.message }
       .and_then do |(ast, _)|
-        analyzed_ast, scope, errors = SemanticAnalyzer.analyze(ast)
+        analyzed_ast, context, errors = SemanticAnalyzer.analyze(ast)
         fail errors.first.message if errors.any?
         TypeChecker
-          .check(analyzed_ast, scope)
+          .check(analyzed_ast, context)
           .on_err { |err| fail err.message }
           .map { analyzed_ast }
       end

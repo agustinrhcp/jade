@@ -11,16 +11,22 @@ module Generator
     case node
     in AST::Literal(value:)
       prefix + value.inspect
+
     in AST::Variable(name:)
       prefix + name.to_s
+
     in AST::Unary(operator:, right:)
       prefix + "#{operator}#{generate(right)}"
+
     in AST::Binary(left:, operator:, right:)
       prefix + "#{generate(left)} #{operator} #{generate(right)}"
+
     in AST::Grouping(expression:)
       prefix + "(#{generate(expression)})"
+
     in AST::VariableDeclaration(name:, expression:)
       prefix + "#{name} = #{generate(expression)}"
+
     in AST::Program(statements:)
       statements.map { generate(it, indents) }.join("\n")
 
@@ -34,6 +40,12 @@ module Generator
 
     in AST::RecordDeclaration(name:, fields:)
       "#{prefix}#{name} = Data.define(#{fields.map { |f| ":#{f.name}"}.join(', ')})"
+
+    in AST::RecordInstantiation(name:, fields:)
+      fields_assignments = fields
+        .map { |f| ":#{f.name} => #{generate(f.expression)}"}
+        .join(', ')
+      "#{prefix}#{name}.new(#{fields_assignments})"
 
     in AST::Module(name:, exposing:, statements:)
       mod_names = name.split('.')

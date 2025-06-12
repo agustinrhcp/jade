@@ -5,28 +5,6 @@ require 'compiler'
 describe Compiler do
   subject { described_class.compile(source_code) }
 
-  xcontext 'a function definition' do
-    let(:source_code) do
-      <<~JADE
-        def add(a: Int, b: Int) -> Int
-          a + b
-        end
-      JADE
-    end
-
-    it { is_expected.to eql "def add(a, b)\n  a + b\nend" }
-  end
-
-  xcontext 'a type definition' do
-    let(:source_code) do
-      <<~JADE
-        type User = { name: String, age: Int }
-      JADE
-    end
-
-    it { is_expected.to eql "User = Data.define(:name, :age)" }
-  end
-
   context 'a module definition' do
     let(:source_code) do
       <<~JADE
@@ -50,5 +28,30 @@ describe Compiler do
         end
       RUBY
     }
+
+    context 'with record instantiation' do
+      let(:source_code) do
+        <<~JADE
+          module User exposing (User, init)
+            type User = { name: String, age: Int }
+
+            def init(name: String) -> User
+              User(name: name, age: 0)
+            end
+          end
+        JADE
+      end
+
+      it {
+        is_expected.to eql <<~RUBY
+          module User
+            User = Data.define(:name, :age)
+            def init(name)
+              User.new(:name => name, :age => 0)
+            end
+          end
+        RUBY
+      }
+    end
   end
 end

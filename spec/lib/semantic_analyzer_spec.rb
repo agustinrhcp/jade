@@ -35,7 +35,7 @@ describe SemanticAnalyzer do
         error
       end
 
-      context 'redeclaration in same scope' do
+      context 'redeclaration in same context' do
         let(:node) do
           prog(
             var_dec(:x, lit(42)),

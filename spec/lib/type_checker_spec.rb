@@ -1,11 +1,10 @@
 require 'spec_helper'
 
 require 'type_checker'
-require 'scope'
 
 describe TypeChecker do
-  let(:scope) { Scope.new }
-  let(:result) { described_class.check(node, scope) }
+  let(:ctx) { Context.new }
+  let(:result) { described_class.check(node, ctx) }
   subject { result => Ok([type, _]); type }
 
   context 'for an integer' do
@@ -155,7 +154,7 @@ describe TypeChecker do
   context 'variables and declarations' do
     context 'a declared variable' do
       let(:node) { var('x') }
-      let(:scope) { Scope.new.define_typed_var('x', Type.int, nil) }
+      let(:ctx) { Context.new.define_var('x', node).annotate_var('x', Type.int) }
 
       it { is_expected.to eql Type.int }
     end
@@ -169,26 +168,27 @@ describe TypeChecker do
 
     context 'a variable declaration' do
       let(:node) { var_dec('z', lit(42)) }
+      let(:ctx) { Context.new.define_var('z', node) }
 
-      context 'the returned scope' do
-        subject { result => Ok([_, scope]); scope }
+      context 'the returned ctx' do
+        subject { result => Ok([_, ctx]); ctx }
 
-        it 'adds the variable type to the scope' do
-          expect(subject.resolve(:z).type).to eql Type.int
+        it 'adds the variable type to the ctx' do
+          expect(subject.resolve_var('z').type).to eql Type.int
         end
       end
 
       it { is_expected.to eql Type.int }
 
       context 'a string' do
-        let(:scope) { Scope.new.define_unbound_var('z', nil) }
         let(:node) { var_dec('z', lit('Alo')) }
+        let(:ctx) { Context.new.define_var('z', node) }
 
-        context 'the returned scope' do
-          subject { result => Ok([_, scope]); scope }
+        context 'the returned ctx' do
+          subject { result => Ok([_, ctx]); ctx }
 
-          it 'adds the variable type to the scope' do
-            subject.resolve(:z) => TypedVar(type:)
+          it 'adds the variable type to the ctx' do
+            type = subject.resolve_var('z').type
             expect(type).to eql Type.string
           end
         end
@@ -198,7 +198,8 @@ describe TypeChecker do
     end
 
     context 'function declarations' do
-      let(:node) { fn_dec('double', params(param('n', Type.int)), Type.int, bin(var('n'), :*, lit(2))) }
+      let(:ctx) { Context.new.define_fn('double', node) }
+      let(:node) { fn_dec('double', params(param('n', 'Int')), 'Int', bin(var('n'), :*, lit(2))) }
 
       it { is_expected.to be_a(Type::Function) }
       its(:parameters) { is_expected.to eql [Type.int] }
@@ -208,7 +209,7 @@ describe TypeChecker do
 
   context 'function calls' do
     let(:fn_type) { Type::Function.new([Type.int], Type.int) }
-    let(:scope) { Scope.new.define_typed_function('double', fn_type, nil) }
+    let(:ctx) { Context.new.define_fn('double', node).annotate_fn('double', fn_type) }
 
     context 'valid calls' do
       let(:node) { fn_call('double', lit(42)) }
@@ -235,7 +236,7 @@ describe TypeChecker do
   end
 
   context 'record declaration' do
-    let(:node) { rec('User', field('name', Type.string), field('age', Type.int)) }
+    let(:node) { rec('User', field('name', 'String'), field('age', 'Int')) }
 
     it { is_expected.to be_a(Type::Record) }
     its(:fields) { is_expected.to eql('name' => Type.string, 'age' => Type.int) }
@@ -250,7 +251,7 @@ describe TypeChecker do
 
   context 'record instantiation' do
     let(:record_type) { Type::Record.new('User', {'name' => Type.string, 'age' => Type.int}) }
-    let(:scope) { Scope.new.define_typed_record('User', record_type, nil) }
+    let(:ctx) { Context.new.define_type('User', record_type) }
 
     context 'valid instantiation' do
       let(:node) { rec_new('User', field_set('name', lit('John')), field_set('age', lit(25))) }
@@ -268,7 +269,7 @@ describe TypeChecker do
 
     context 'empty record instantiation' do
       let(:record_type) { Type::Record.new('Empty', {}) }
-      let(:scope) { Scope.new.define_typed_record('Empty', record_type, nil) }
+      let(:ctx) { Context.new.define_type('Empty', record_type) }
       let(:node) { rec_new('Empty') }
 
       it { is_expected.to be_a(Type::Record) }
@@ -279,7 +280,7 @@ describe TypeChecker do
       subject { result => Err(errors); errors.first }
 
       context 'undefined record type' do
-        let(:scope) { Scope.new }
+        let(:ctx) { Context.new }
         let(:node) { rec_new('Unknown', field_set('name', lit('John'))) }
 
         its(:message) { is_expected.to eql "Undefined record type 'Unknown'" }
@@ -322,7 +323,10 @@ describe TypeChecker do
     end
 
     context 'anonymous record with complex expressions' do
-      let(:scope) { Scope.new.define_typed_var('base', Type.int, nil) }
+      let(:ctx) do
+        Context.new.define_var('base', var_dec('base', lit(42))).annotate_var('base', Type.int)
+      end
+
       let(:node) { anon_rec(field_set('sum', bin(lit(10), :+, var('base'))), field_set('doubled', bin(var('base'), :*, lit(2)))) }
 
       it { is_expected.to be_a(Type::Record) }

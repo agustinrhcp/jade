@@ -3,33 +3,104 @@ require 'position'
 module AST
   extend self
 
-  Binary = Data.define(:left, :operator, :right) do
+  Binary = Data.define(:left, :operator, :right, :type) do
+    def initialize(left:, operator:, right:, type: nil)
+      super
+    end
+
+    def annotate(type)
+      with(type:)
+    end
+
     def range
       Range.new(left.range.start, right.range.end)
     end
   end
 
-  Unary    = Data.define(:operator, :right, :range)
-  Literal  = Data.define(:value, :type, :range)
+  Unary = Data.define(:operator, :right, :range, :type) do
+    def initialize(operator:, right:, range:, type: nil)
+      super
+    end
+
+    def annotate(type)
+      with(type:)
+    end
+  end
+
+  Literal = Data.define(:value, :type, :range)
+
   Grouping = Data.define(:expression, :range)
 
-  Variable = Data.define(:name, :range)
-  VariableDeclaration = Data.define(:name, :expression, :range)
+  Variable = Data.define(:name, :range, :type) do
+    def initialize(name:, range:, type: nil)
+      super
+    end
 
-  Parameter = Data.define(:name, :type, :range)
+    def annotate(type)
+      with(type:)
+    end
+  end
+
+  VariableDeclaration = Data.define(:name, :expression, :range, :type) do
+    def initialize(name:, expression:, range:, type: nil)
+      super
+    end
+
+    def annotate(type)
+      with(type:)
+    end
+  end
+
+  Parameter = Data.define(:name, :type, :range) do
+    def annotate(type)
+      with(type:)
+    end
+  end
+
   ParameterList = Data.define(:parameters) do
     def size
       parameters.size
     end
   end
 
-  FunctionDeclaration = Data.define(:name, :parameters, :return_type, :body, :range)
-  FunctionCall        = Data.define(:name, :arguments, :range)
+  FunctionDeclaration = Data.define(:name, :parameters, :return_type, :type, :body, :range) do
+    def initialize(name:, parameters:, return_type:, type: nil, body:, range:)
+      super
+    end
+
+    def annotate(type)
+      with(type:, return_type: type.return_type)
+    end
+  end
+
+  FunctionCall = Data.define(:name, :arguments, :range, :type) do
+    def initialize(name:, arguments:, range:, type: nil)
+      super
+    end
+
+    def annotate(type)
+      with(type:)
+    end
+  end
 
   RecordDeclaration   = Data.define(:name, :fields, :range)
-  RecordField         = Data.define(:name, :type, :range)
+  RecordField         = Data.define(:name, :type, :range) do
+    def annotate(type)
+      with(type:)
+    end
+  end
   RecordInstantiation = Data.define(:name, :fields, :range)
-  AnonymousRecord     = Data.define(:fields, :range)
+
+  AnonymousRecord     = Data.define(:fields, :range, :type) do
+    def initialize(fields:, range:, type: nil)
+      super
+    end
+
+    def annotate(type)
+      with(type:)
+    end
+  end
+
   RecordFieldAssign   = Data.define(:name, :expression, :range)
 
   Program = Data.define(:statements)
@@ -97,7 +168,7 @@ module AST
     ->((name, type)) do
       AST::Parameter.new(
         name: name.value,
-        type: resolve_type(type.value),
+        type: type.value,
         range: Range.new(name.position, type.position),
       )
     end
@@ -121,7 +192,7 @@ module AST
       AST::FunctionDeclaration.new(
         name: name.value,
         parameters:,
-        return_type: resolve_type(return_type.value),
+        return_type: return_type.value,
         body:,
         range: Range.new(name.position, body.last.range.end),
       )
@@ -213,7 +284,7 @@ module AST
     in 'String' then Type.string
     in 'Bool' then Type.bool
     else
-      Type::Record.new(type_name, [])
+      type_name
     end
   end
 end
