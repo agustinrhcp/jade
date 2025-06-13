@@ -144,6 +144,10 @@ module SemanticAnalyzer
 
       [node.with(fields: analyzed_fields), context, field_errors]
 
+    in AST::RecordAccess(target:)
+      analyzed_target, new_context, errors = analyze(target, context)
+      [node.with(target: analyzed_target), new_context, errors]
+
     in AST::Module(name:, exposing:, statements:, range:)
       # TODO: Register module
       analyzed_statements, new_context, stmts_errors = analyze_many(context, statements)

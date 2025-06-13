@@ -51,7 +51,11 @@ module Parser
   end
 
   def equality
-    chainl(comparison, types(:eq, :not_eq), &AST.binary)
+    chainl(concatenation, types(:eq, :not_eq), &AST.binary)
+  end
+
+  def concatenation
+    chainl(comparison, type(:concat), &AST.binary)
   end
 
   def comparison

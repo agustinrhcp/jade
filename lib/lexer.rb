@@ -32,7 +32,8 @@ module Lexer
     '>'  => :gt,
     '>=' => :gte,
 
-    '=' => :assign,
+    '++' => :concat,
+    '='  => :assign,
   }
   SYMBOLS_REGEX = Regexp.union(SYMBOLS.keys.sort_by { |k| -k.length })
 

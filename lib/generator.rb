@@ -19,7 +19,12 @@ module Generator
       prefix + "#{operator}#{generate(right)}"
 
     in AST::Binary(left:, operator:, right:)
-      prefix + "#{generate(left)} #{operator} #{generate(right)}"
+      case operator
+      in '++'
+        prefix + "#{generate(left)}.__concat__(#{generate(right)})"
+      else
+        prefix + "#{generate(left)} #{operator} #{generate(right)}"
+      end
 
     in AST::Grouping(expression:)
       prefix + "(#{generate(expression)})"
@@ -41,6 +46,9 @@ module Generator
     in AST::RecordDeclaration(name:, fields:)
       "#{prefix}#{name} = Data.define(#{fields.map { |f| ":#{f.name}"}.join(', ')})"
 
+    in AST::RecordAccess(target:, field:)
+      "#{prefix}#{generate(target)}.send(:#{field})"
+
     in AST::RecordInstantiation(name:, fields:)
       fields_assignments = fields
         .map { |f| ":#{f.name} => #{generate(f.expression)}"}
@@ -60,7 +68,12 @@ module Generator
       geneated_statements = statements
         .map { generate(it, indents + mod_names.size) }
 
-      [generated_header, geneated_statements, generated_footer].join("\n") + "\n"
+      [
+        generated_header,
+        "#{INDENT * mod_names.size}extend self",
+        geneated_statements,
+        generated_footer
+      ].join("\n") + "\n"
     end
   end
 end

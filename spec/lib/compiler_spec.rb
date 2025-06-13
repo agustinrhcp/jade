@@ -1,9 +1,12 @@
 require 'spec_helper'
 
 require 'compiler'
+require 'runtime'
+
+using Runtime
 
 describe Compiler do
-  subject { described_class.compile(source_code) }
+  subject(:generated_code) { described_class.compile(source_code) }
 
   context 'a module definition' do
     let(:source_code) do
@@ -12,7 +15,7 @@ describe Compiler do
           type User = { name: String, age: Int }
 
           def say_hi(user: User) -> String
-            "Hello \#\{user.name\}"
+            "Hello " ++ user.name
           end
         end
       JADE
@@ -21,13 +24,27 @@ describe Compiler do
     it {
       is_expected.to eql <<~RUBY
         module User
+          extend self
           User = Data.define(:name, :age)
           def say_hi(user)
-            "Hello"
+            "Hello " ++ user.send(:name)
           end
         end
       RUBY
     }
+
+    describe 'evaling' do
+      subject do
+        Module.new
+          .tap { it.module_eval(generated_code) }
+          .then { it::User }
+      end
+
+      it 'works' do
+        pepe = subject::User.new("Pepe", 0)
+        expect(subject.say_hi(pepe)).to eql 'Hello Pepe'
+      end
+    end
 
     context 'with record instantiation' do
       let(:source_code) do
@@ -45,6 +62,7 @@ describe Compiler do
       it {
         is_expected.to eql <<~RUBY
           module User
+            extend self
             User = Data.define(:name, :age)
             def init(name)
               User.new(:name => name, :age => 0)
@@ -52,6 +70,19 @@ describe Compiler do
           end
         RUBY
       }
+
+      describe 'evaling' do
+        subject do
+          Module.new
+            .tap { it.module_eval(generated_code) }
+            .then { it::User }
+        end
+
+        it 'works' do
+          pepe = subject::init("Pepe")
+          expect(pepe.name).to eql 'Pepe'
+        end
+      end
     end
   end
 end

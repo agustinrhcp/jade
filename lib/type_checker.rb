@@ -34,6 +34,7 @@ module TypeChecker
     :<= => { Type.int => { Type.int => Type.bool } },
     :>  => { Type.int => { Type.int => Type.bool } },
     :>= => { Type.int => { Type.int => Type.bool } },
+    :'++' => { Type.string => { Type.string => Type.string } },
   }.freeze
 
   def check(node, context = Context.new)
@@ -203,6 +204,20 @@ module TypeChecker
     in AST::RecordFieldAssign(expression:)
       check(expression, context)
 
+    in AST::RecordAccess(target:, field:)
+      check(target, context)
+        .and_then do |target_type, new_context|
+          case target_type
+          in Type::Record(name:, fields:)
+            if fields[field]
+              Ok[[fields[field], new_context]]
+            else
+              Err[Error.new("Record #{name} does not have a #{field} field")]
+            end
+          else
+             Err[Error.new("#{target_type} is not a record and cannot be access with '.'")]
+          end
+        end
     in AST::Program(statements:)
       check_many(context, statements)
 

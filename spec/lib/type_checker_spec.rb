@@ -307,6 +307,17 @@ describe TypeChecker do
     end
   end
 
+  context 'record access' do
+    let(:ctx) do 
+      Context.new
+        .define_type('User', Type::Record.new(name: 'User',fields: { 'name' => Type.string }))
+    end
+
+    let(:node) { rec_access(rec_new('User', field_set('name', lit('John'))), 'name') }
+
+    it { is_expected.to eql Type.string }
+  end
+
   context 'anonymous records' do
     context 'valid anonymous record' do
       let(:node) { anon_rec(field_set('x', lit(42)), field_set('y', lit('hello'))) }
