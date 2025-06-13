@@ -119,6 +119,28 @@ module AST
         "#{prefix}  field: #{field}\n" \
         "#{prefix})"
 
+      in UnionType(name:, variants:)
+        "#{prefix}Union Type(\n" \
+        "#{prefix}  name: #{name},\n" \
+        "#{prefix}  variants: (\n" \
+        "#{variants.map { |var| print(var, indent + 2) }.join(",\n")}\n"\
+        "#{prefix}  )\n"\
+        "#{prefix})"\
+
+      in Variant(name:, fields:)
+        fields_string = if fields.empty?
+          "#{prefix}  fields: ()\n"
+        else
+          "#{prefix}  fields: (\n" \
+          "#{fields.map { |field| print(field, indent + 2) }.join(",\n")}\n" \
+          "#{prefix}  )\n" \
+        end
+
+        "#{prefix}Variant(\n" \
+        "#{prefix}  name: #{name},\n" \
+        "#{fields_string}"\
+        "#{prefix})"
+
       in Module(name:, exposing:, statements:)
         "#{prefix}Module(\n" \
         "#{prefix}  name: #{name},\n" \

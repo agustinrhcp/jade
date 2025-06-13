@@ -23,6 +23,7 @@ module Lexer
     '-'  => :minus,
     '*'  => :star,
     '/'  => :slash,
+    '|'  => :pipe,
 
     # comparison
     '==' => :eq,

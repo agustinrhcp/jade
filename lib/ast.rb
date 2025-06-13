@@ -113,6 +113,9 @@ module AST
 
   RecordFieldAssign   = Data.define(:name, :expression, :range)
 
+  UnionType = Data.define(:name, :variants, :range)
+  Variant = Data.define(:name, :fields, :range)
+
   Program = Data.define(:statements)
   Module  = Data.define(:name, :exposing, :statements, :range)
 
@@ -290,6 +293,26 @@ module AST
         target:,
         field: field.value,
         range: Range.new(target.range.start, field.position)
+      )
+    end
+  end
+
+  def union
+    ->((name, *variants)) do
+      AST::UnionType.new(
+        name: name.value,
+        variants:,
+        range: Range.new(name.position, variants.last.range.end),
+      )
+    end
+  end
+
+  def variant
+    -> ((name, *fields)) do
+      AST::Variant.new(
+        name: name.value,
+        fields: fields.compact,
+        range: Range.new(name.position, name.position),
       )
     end
   end

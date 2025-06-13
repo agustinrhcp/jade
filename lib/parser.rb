@@ -111,6 +111,23 @@ module Parser
     ).map(&AST.record_declaration)
   end
 
+  def union_type
+    (
+      type(:type).skip >>
+        constant >>
+        type(:assign).skip >>
+        (variant >> (type(:pipe).skip >> variant).many.map { it.flatten })
+    ).map(&AST.union)
+  end
+
+  def variant
+    (
+      type(:constant) >>
+        ((type(:lparen).skip >>
+        (record_field >> (type(:comma).skip >> record_field).many.map { it.flatten }) >>
+        type(:rparen).skip) | none)
+    ).map(&AST.variant)
+  end
 
   def record_field
     (identifier >> type(:colon).skip >> constant).map(&AST.record_field)

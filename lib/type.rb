@@ -38,4 +38,16 @@ module Type
       "#{name}(#{fields.map { |k, v| "#{k}: #{v}"}.join(', ')})"
     end
   end
+
+  Variant = Data.define(:name, :fields) do
+    def to_s
+      "#{name}(#{fields.map { |k, v| "#{k}: #{v}"}.join(', ')})"
+    end
+  end
+
+  Union = Data.define(:name, :variants) do
+    def to_s
+      name
+    end
+  end
 end

@@ -286,6 +286,34 @@ describe Parser do
     end
   end
 
+  describe 'union_type' do
+    let(:parser) { described_class.union_type }
+    let(:tokens) do
+      [
+        tok(:type, 'type'), tok(:constant, 'Color'), tok(:assign, '='),
+        tok(:constant, 'Red'), tok(:pipe, '|'),
+        tok(:constant, 'Green'), tok(:pipe, '|'),
+        tok(:constant, 'Custom'), tok(:lparen, '('), 
+          tok(:identifier, 'r'), tok(:colon, ':'), tok(:constant, 'Int'), tok(:comma, ','),
+          tok(:identifier, 'g'), tok(:colon, ':'), tok(:constant, 'Int'), tok(:comma, ','),
+          tok(:identifier, 'b'), tok(:colon, ':'), tok(:constant, 'Int'),
+        tok(:rparen, ')'),
+      ]
+    end
+
+    before { puts AST::PrettyPrinter.print(subject) }
+
+    it {
+      is_expected.to match_ast_node(
+        union('Color', 
+          variant('Red'),
+          variant('Green'),
+          variant('Custom', field('r', 'Int'), field('g', 'Int'), field('b', 'Int'))
+        )
+      )
+    }
+  end
+
   describe '.record_instantiation' do
     let(:parser) { described_class.record_instantiation }
     let(:tokens) do

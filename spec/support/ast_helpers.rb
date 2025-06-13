@@ -83,6 +83,14 @@ module AstHelpers
     AST::RecordAccess.new(target:, field:, range: dummy_range)
   end
 
+  def union(name, *variants)
+    AST::UnionType.new(name:, variants:, range: dummy_range)
+  end
+
+  def variant(name, *fields)
+    AST::Variant.new(name:, fields:, range: dummy_range)
+  end
+
   private
 
   def dummy_range
