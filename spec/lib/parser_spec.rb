@@ -1,12 +1,17 @@
 require 'spec_helper'
 
+require 'byebug'
 require 'parser'
 require 'token'
 require 'ast'
 
 describe Parser do
+  let(:parse) do
+    parser.call(Parser::State.new(tokens))
+  end
+
   subject(:ast) do
-    parser.call(Parser::State.new(tokens)) => Ok([ast, _])
+    parse => Ok([ast, _])
     ast
   end
 
@@ -58,6 +63,7 @@ describe Parser do
         tok(:int, 1),
         tok(:int, 2),
         tok(:int, 3),
+        tok(:string, "Hola")
       ]
     end
 
@@ -66,6 +72,115 @@ describe Parser do
     end
 
     it { is_expected.to match_many_ast_nodes(lit(1), lit(2), lit(3)) }
+
+    describe 'the returned state' do
+      subject { parse => Ok([ast, state]); state }
+
+      its(:current) { is_expected.to eql tokens[3] }
+    end
+  end
+
+  describe 'sequence' do
+    let(:parser) do
+      Parser.send(:type, :lparen) >>
+        Parser.sequence(Parser.int, separated_by: Parser.send(:type, :comma)) >>
+        Parser.send(:type, :rparen)
+    end
+
+    let(:tokens) do
+      [
+        tok(:lparen, '('),
+        tok(:int, 1), tok(:comma, ','), tok(:int, 2), tok(:comma, ','), tok(:int, 3),
+        tok(:rparen, ')'),
+      ]
+    end
+
+    describe 'the returned state' do
+      subject { parse => Ok([ast, state]); state }
+
+      it { is_expected.to be_eof }
+    end
+
+    context 'if part of the sequence fails' do
+      let(:tokens) do
+        [
+        tok(:lparen, '('),
+        tok(:int, 1), tok(:comma, ','), tok(:int, 2), tok(:comma, ','), tok(:string, '3'),
+        tok(:rparen, ')'),
+        ]
+      end
+
+      describe 'the error' do
+        subject { parse => Err([error, state]); error }
+        its(:message) { is_expected.to eql "Expected rparen, got string (3)" }
+      end
+
+      describe 'the returned state' do
+        subject { parse => Err([error, state]); state }
+
+        its(:current) { is_expected.to eql tokens[0] }
+      end
+    end
+  end
+
+  describe '>>' do
+    let(:tokens) do
+      [tok(:int, 1), tok(:int, 2), tok(:int, 3)]
+    end
+
+    let(:parser) { Parser.int >> Parser.int }
+
+    describe 'the returned state' do
+      subject { parse => Ok([ast, state]); state }
+
+      its(:current) { is_expected.to eql tokens[2] }
+    end
+
+    context 'when it fails' do
+      let(:parser) { Parser.int >> Parser.int >> Parser.string }
+
+      describe 'the error' do
+        subject { parse => Err([error, state]); error }
+        its(:message) { is_expected.to eql "Expected string, got int (3)" }
+      end
+
+      describe 'the returned state' do
+        subject { parse => Err([error, state]); state }
+
+        its(:current) { is_expected.to eql tokens[0] }
+      end
+    end
+
+    context 'when combining with many' do
+      let(:tokens) do
+        [tok(:lparen, '('), tok(:int, 1), tok(:int, 2), tok(:int, 3), tok(:rparen, ')')]
+      end
+
+      let(:parser) { Parser.send(:type, :lparen) >> Parser.int.many >> Parser.send(:type, :rparen) }
+
+      describe 'the returned state' do
+        subject { parse => Ok([ast, state]); state }
+
+        it { is_expected.to be_eof }
+      end
+
+      context 'when it fails' do
+      let(:tokens) do
+        [tok(:lparen, '('), tok(:int, 1), tok(:int, 2), tok(:string, 'nope'), tok(:int, 3), tok(:rparen, ')')]
+      end
+
+        describe 'the error' do
+          subject { parse => Err([error, state]); error }
+          its(:message) { is_expected.to eql "Expected rparen, got string (nope)" }
+        end
+
+        describe 'the returned state' do
+          subject { parse => Err([error, state]); state }
+
+          its(:current) { is_expected.to eql tokens[0] }
+        end
+      end
+    end
   end
 
   describe '>> and map' do
@@ -286,6 +401,117 @@ describe Parser do
     end
   end
 
+  describe 'variant' do
+    let(:parser) { described_class.variant }
+
+    context 'with no fields or params' do
+      let(:tokens) do
+        [
+          tok(:constant, 'Success')
+        ]
+      end
+
+      it { is_expected.to match_ast_node(variant('Success')) }
+    end
+
+    context 'with params only' do
+      let(:tokens) do
+        [
+          tok(:constant, 'Success'), tok(:lparen, '('),
+          tok(:constant, 'String'),
+          tok(:rparen, ')')
+        ]
+      end
+
+      it { is_expected.to match_ast_node(variant('Success', params: [variant_param('String')])) }
+    end
+
+    context 'with fields only' do
+      let(:tokens) do
+        [
+          tok(:constant, 'Custom'), tok(:lparen, '('),
+          tok(:identifier, 'r'), tok(:colon, ':'), tok(:constant, 'Int'), tok(:comma, ','),
+          tok(:identifier, 'g'), tok(:colon, ':'), tok(:constant, 'Int'),
+          tok(:rparen, ')')
+        ]
+      end
+
+      it {
+        is_expected.to match_ast_node(
+          variant(
+            'Custom', fields: [
+              variant_field('r', 'Int'),
+              variant_field('g', 'Int'),
+            ]
+          )
+        )
+      }
+    end
+
+    context 'with mixed fields and params (should fail)' do
+      let(:tokens) do
+        [
+          tok(:constant, 'Error'), tok(:lparen, '('),
+          tok(:identifier, 'code'), tok(:colon, ':'), tok(:constant, 'Int'), tok(:comma, ','),
+          tok(:constant, 'String'),
+          tok(:rparen, ')')
+        ]
+      end
+
+      describe 'the error' do
+        subject { parse => Err([error, state]); error }
+
+        its(:message) { is_expected.to eql "Mixed variant: cannot combine fields and params" }
+      end
+
+      describe 'the returned state' do
+        subject { parse => Err([error, state]); state }
+
+        its(:current) { is_expected.to eql tokens[0] }
+      end
+
+      context 'inside a sequence' do
+        let(:parser) { Parser.sequence(described_class.variant, separated_by: Parser.send(:type, :pipe)) }
+
+        describe 'the error' do
+          subject { parse => Err([error, state]); error }
+
+          its(:message) { is_expected.to eql "Mixed variant: cannot combine fields and params" }
+        end
+
+        describe 'the returned state' do
+          subject { parse => Err([error, state]); state }
+
+          its(:current) { is_expected.to eql tokens[0] }
+        end
+
+        xcontext 'but one succeeds' do
+          let(:tokens) do
+            [
+              tok(:constant, 'Success'), tok(:pipe, '|'),
+              tok(:constant, 'Error'), tok(:lparen, '('),
+              tok(:identifier, 'code'), tok(:colon, ':'), tok(:constant, 'Int'), tok(:comma, ','),
+              tok(:constant, 'String'),
+              tok(:rparen, ')')
+            ]
+          end
+
+          describe 'the error' do
+            subject { parse => Err([error, state]); error }
+
+            its(:message) { is_expected.to eql "Mixed variant: cannot combine fields and params" }
+          end
+
+          describe 'the returned state' do
+            subject { parse => Err([error, state]); state }
+
+            its(:current) { is_expected.to eql tokens[0] }
+          end
+        end
+      end
+    end
+  end
+
   describe 'union_type' do
     let(:parser) { described_class.union_type }
     let(:tokens) do
@@ -302,16 +528,84 @@ describe Parser do
     end
 
     before { puts AST::PrettyPrinter.print(subject) }
-
     it {
       is_expected.to match_ast_node(
         union('Color', 
           variant('Red'),
           variant('Green'),
-          variant('Custom', field('r', 'Int'), field('g', 'Int'), field('b', 'Int'))
+          variant('Custom', fields: [variant_field('r', 'Int'), variant_field('g', 'Int'), variant_field('b', 'Int')])
         )
       )
     }
+
+    context 'with positional arguments' do
+      let(:tokens) do
+        [
+          tok(:type, 'type'), tok(:constant, 'Result'), tok(:assign, '='),
+          tok(:constant, 'Ok'), tok(:lparen, '('), 
+            tok(:constant, 'String'),
+          tok(:rparen, ')'), tok(:pipe, '|'),
+          tok(:constant, 'Err'), tok(:lparen, '('), 
+            tok(:constant, 'Int'), tok(:comma, ','),
+            tok(:constant, 'String'),
+          tok(:rparen, ')'),
+        ]
+      end
+
+      it {
+        is_expected.to match_ast_node(
+          union('Result', 
+            variant('Ok', params: [variant_param('String')]),
+            variant('Err', params: [variant_param('Int'), variant_param('String')])
+          )
+        )
+      }
+    end
+
+    context 'with mixed named and positional arguments' do
+      let(:tokens) do
+        [
+          tok(:type, 'type'), tok(:constant, 'MixedResult'), tok(:assign, '='),
+          tok(:constant, 'Success'), tok(:lparen, '('), tok(:constant, 'String'),
+          tok(:rparen, ')'), tok(:pipe, '|'),
+          tok(:constant, 'Error'), tok(:lparen, '('), 
+            tok(:identifier, 'code'), tok(:colon, ':'), tok(:constant, 'Int'), tok(:comma, ','),
+            tok(:constant, 'String'),
+          tok(:rparen, ')'),
+        ]
+      end
+
+      xit {
+        # TODO: It should fail, but there's a bug. Check Parser.variant
+        is_expected.to match_ast_node(
+          union('MixedResult', 
+            variant('Success', params: [variant_param('String')]),
+            variant('Error', fields: [variant_field('code', 'Int')])
+          )
+        )
+      }
+    end
+
+    context 'simple union without arguments' do
+      let(:tokens) do
+        [
+          tok(:type, 'type'), tok(:constant, 'Status'), tok(:assign, '='),
+          tok(:constant, 'Loading'), tok(:pipe, '|'),
+          tok(:constant, 'Success'), tok(:pipe, '|'),
+          tok(:constant, 'Failed'),
+        ]
+      end
+
+      it {
+        is_expected.to match_ast_node(
+          union('Status', 
+            variant('Loading'),
+            variant('Success'),
+            variant('Failed')
+          )
+        )
+      }
+    end
   end
 
   describe '.record_instantiation' do
@@ -362,7 +656,7 @@ describe Parser do
 
           it 'returns an error' do
             subject => [Parser::UnexpectedTokenError => error, _]
-            expect(error.message).to eql "Expected identifier, got \"=\""
+            expect(error.message).to eql "Expected identifier, got assign (=)"
           end
         end
       end

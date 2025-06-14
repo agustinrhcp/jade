@@ -127,18 +127,31 @@ module AST
         "#{prefix}  )\n"\
         "#{prefix})"\
 
-      in Variant(name:, fields:)
-        fields_string = if fields.empty?
-          "#{prefix}  fields: ()\n"
-        else
+      in Variant(name:, fields:, params:)
+        content = case [fields, params]
+        in [[], []]
+          ""
+        in [some_fields, []] if some_fields.any?
           "#{prefix}  fields: (\n" \
-          "#{fields.map { |field| print(field, indent + 2) }.join(",\n")}\n" \
-          "#{prefix}  )\n" \
+          "#{some_fields.map { |field| print(field, indent + 2) }.join(",\n")}\n" \
+          "#{prefix}  )\n"
+        in [[], some_params] if some_params.any?
+          "#{prefix}  params: (" \
+          "#{some_params.map { |param| print(param, indent + 2) }.join(", ")})\n"
         end
 
         "#{prefix}Variant(\n" \
         "#{prefix}  name: #{name},\n" \
-        "#{fields_string}"\
+        "#{content}" \
+        "#{prefix})"
+
+      in VariantParam(value:)
+        "#{value}"
+
+      in VariantField(name:, value:)
+        "#{prefix}VariantField(\n" \
+        "#{prefix}  name: #{name},\n" \
+        "#{prefix}  value: #{value}\n" \
         "#{prefix})"
 
       in Module(name:, exposing:, statements:)

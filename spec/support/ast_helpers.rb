@@ -87,8 +87,16 @@ module AstHelpers
     AST::UnionType.new(name:, variants:, range: dummy_range)
   end
 
-  def variant(name, *fields)
-    AST::Variant.new(name:, fields:, range: dummy_range)
+  def variant_field(name, value)
+    AST::VariantField.new(name:, value:, type: nil, range: dummy_range)
+  end
+
+  def variant_param(value)
+    AST::VariantParam.new(value:, type: nil, range: dummy_range)
+  end
+
+  def variant(name, params: [], fields: [])
+    AST::Variant.new(name:, fields: fields, params: params, range: dummy_range)
   end
 
   private

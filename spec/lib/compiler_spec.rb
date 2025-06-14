@@ -84,5 +84,27 @@ describe Compiler do
         end
       end
     end
+
+    context 'with union type' do
+      let(:source_code) do
+        <<~JADE
+          module Result exposing (Result)
+            type Result = Ok(String) | Err
+          end
+        JADE
+      end
+
+      it {
+        is_expected.to eql <<~RUBY
+          module User
+            extend self
+            User = Data.define(:name, :age)
+            def init(name)
+              User.new(:name => name, :age => 0)
+            end
+          end
+        RUBY
+      }
+    end
   end
 end

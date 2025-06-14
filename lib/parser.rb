@@ -8,9 +8,7 @@ module Parser
   def module
     (
       type(:module).skip >>
-        (constant >>
-           (type(:dot).skip >> constant).many.map { it.flatten }
-        )
+        (sequence(constant, separated_by: type(:dot).skip))
           .map { |tokens| tokens.map(&:value).join('.') } >>
         type(:exposing).skip >>
         type(:lparen).skip >>
@@ -38,7 +36,7 @@ module Parser
   end
 
   def statement
-    variable_declaration | function_declaration | record_declaration
+    variable_declaration | function_declaration | record_declaration | union_type
   end
 
   def variable_declaration
@@ -116,17 +114,62 @@ module Parser
       type(:type).skip >>
         constant >>
         type(:assign).skip >>
-        (variant >> (type(:pipe).skip >> variant).many.map { it.flatten })
+        sequence(variant, separated_by: type(:pipe).skip)
     ).map(&AST.union)
   end
 
   def variant
-    (
-      type(:constant) >>
-        ((type(:lparen).skip >>
-        (record_field >> (type(:comma).skip >> record_field).many.map { it.flatten }) >>
-        type(:rparen).skip) | none)
-    ).map(&AST.variant)
+    Parser.new do |state|
+      (
+        type(:constant) >=
+          ((type(:lparen).skip >>
+          sequence((tagged_variant_field | tagged_variant_param), separated_by: type(:comma).skip) >>
+          type(:rparen).skip) | none)
+      )
+      .and_then do |(name, *maybe_fields_or_params)|
+        # TODO: This doesn't work, because there's an issue with sequence and 
+        #  backtracking. 
+        # TODO: This may also work if I parse just one type of param (field or param) and
+        #  not support mixed, but that will requrie a workaround to show the correct
+        #  and contextual error message. That workaround I may need anyways, so
+        #  maybe that will be the future fix.
+        fields_or_params = maybe_fields_or_params.compact
+
+        kinds = fields_or_params.map(&:first).uniq
+
+        case kinds
+        when [:param]
+          success([name, { params: fields_or_params.map(&:last).map(&AST.variant_param) }])
+        when [:field]
+          success([name, { fields: fields_or_params.map(&:last).map(&AST.variant_field) }])
+        when []
+          success([name, {}])
+        else
+          offending = fields_or_params.find { _1.first != kinds.first }&.last
+          failure(Error.new("Mixed variant: cannot combine fields and params", token: offending, position: offending&.position || state.position), state)
+        end
+      end
+      .map(&AST.variant)
+      .call(state)
+    end
+  end
+
+  def success(value)
+    Parser.new { |state| Ok[[value, state]] }
+  end
+
+  def failure(error, err_state = nil)
+    Parser.new { |state| Err[[error, err_state || state]] }
+  end
+
+  def tagged_variant_field
+    (identifier >> type(:colon).skip >> constant)
+      .map { [[:field, it]] }
+  end
+
+  def tagged_variant_param
+    constant
+      .map { [[:param, it]] }
   end
 
   def record_field
@@ -137,9 +180,7 @@ module Parser
     (
       constant >> 
         type(:lparen).skip >>
-        (record_field_assign >>
-           (type(:comma).skip >> record_field_assign).many.map { it.flatten }
-        ) >>
+        sequence(record_field_assign, separated_by: type(:comma).skip) >>
         type(:rparen).skip
     ).map(&AST.record_instantiation)
   end
@@ -147,9 +188,7 @@ module Parser
   def anonymous_record
     (
       type(:lbrace).skip >>
-        (record_field_assign >>
-           (type(:comma).skip >> record_field_assign).many.map { it.flatten }
-        ) >>
+        sequence(record_field_assign, separated_by: type(:comma).skip) >>
         type(:rbrace).skip
     ).map(&AST.anonymous_record)
   end
@@ -168,13 +207,13 @@ module Parser
   end
 
   def arguments
-    (expression >> (type(:comma).skip >> expression).many.map { it.flatten }) |
+    sequence(expression, separated_by: type(:comma).skip) |
       none.map { [] }
   end
 
   def parameters
     (
-      (parameter >> (type(:comma).skip >> parameter).many.map { it.flatten }) |
+      sequence(parameter, separated_by: type(:comma).skip) |
         none.map { [] }
     )
       .map(&AST.parameter_list)
@@ -208,7 +247,8 @@ module Parser
         in Ok([value, next_state])
           oks << value
           current = next_state
-        in Err(err)
+        in Err([err, err_state])
+          current = err_state
           break
         end
       end
@@ -217,9 +257,15 @@ module Parser
     end
   end
 
-  def at_least_one(parser)
-    parser >> many(parser)
-      .map { |(first, rest)| [first] + rest }
+  def sequence(parser, separated_by: none)
+    (parser.map { [it] } >= (separated_by >= parser).many).map { it.flatten(1) }
+  end
+
+  def at_least_one(parser, separator: nil)
+    parser.map do |first|
+      (separator ? separator >> parser : parser).many
+        .map { |rest| [first] + rest }
+    end
   end
 
   def skip(parser)
@@ -237,7 +283,7 @@ module Parser
           in Err(errors), Err(error) then Err[errors.concat([error])]
           end
         end
-        .map_error { |errors| errors.min }
+        .map_error { |errors| errors.min_by(&:first) }
     end
   end
 
@@ -320,7 +366,7 @@ module Parser
       else
         Err[[
           UnexpectedTokenError.new(
-            "Expected #{type}, got #{state.current&.value.inspect}",
+            "Expected #{type}, got #{state.current&.type} (#{state.current&.value})",
             token: state.current,
             position: state.position,
           ),
@@ -360,9 +406,27 @@ module Parser
     def >>(other)
       Parser.new do |state|
         call(state).and_then do |(value1, state1)|
-          other.call(state1).map do |(value2, state2)|
-            [[value1, value2].reject { it == :skip }.flatten(1), state2]
-          end
+          other.call(state1)
+            .map do |(value2, state2)|
+              [[value1, value2].reject { it == :skip }.flatten(1), state2]
+            end
+            .map_error do |(err, err_state)|
+              [err, state]
+            end
+        end
+      end
+    end
+
+    def >=(other)
+      Parser.new do |state|
+        call(state).and_then do |(value1, state1)|
+          other.call(state1)
+            .map do |(value2, state2)|
+              [[value1, value2].reject { it == :skip }.flatten(1), state2]
+            end
+            .map_error do |err|
+              err
+            end
         end
       end
     end
@@ -371,6 +435,13 @@ module Parser
       Parser.new do |state|
         call(state)
           .map { |(value, new_state)| [block.call(value), new_state] }
+      end
+    end
+
+    def and_then(&block)
+      Parser.new do |state|
+        call(state)
+          .and_then { |(value, new_state)| block.call(value).call(new_state) }
       end
     end
 
