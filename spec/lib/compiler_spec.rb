@@ -96,12 +96,10 @@ describe Compiler do
 
       it {
         is_expected.to eql <<~RUBY
-          module User
+          module Result
             extend self
-            User = Data.define(:name, :age)
-            def init(name)
-              User.new(:name => name, :age => 0)
-            end
+            Result_Ok = Data.define(:tuple)
+            Result_Err = Data.define
           end
         RUBY
       }

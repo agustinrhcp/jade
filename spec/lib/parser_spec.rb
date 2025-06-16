@@ -527,7 +527,6 @@ describe Parser do
       ]
     end
 
-    before { puts AST::PrettyPrinter.print(subject) }
     it {
       is_expected.to match_ast_node(
         union('Color', 

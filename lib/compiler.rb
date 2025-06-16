@@ -21,7 +21,7 @@ module Compiler
         fail errors.first.message if errors.any?
         TypeChecker
           .check(analyzed_ast, context)
-          .on_err { |err| fail err.message }
+          .on_err { |err| fail Array(err).first.message }
           .map { analyzed_ast }
       end
       .on_err { |err| fail err.message }

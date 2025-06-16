@@ -39,7 +39,19 @@ module Type
     end
   end
 
-  Variant = Data.define(:name, :fields) do
+  VariantNullary = Data.define(:name, :union_type_name) do
+    def to_s
+      name
+    end
+  end
+
+  VariantTuple = Data.define(:name, :params, :union_type_name) do
+    def to_s
+      "#{name}(#{params.join(', ')})"
+    end
+  end
+
+  VariantRecord = Data.define(:name, :fields, :union_type_name) do
     def to_s
       "#{name}(#{fields.map { |k, v| "#{k}: #{v}"}.join(', ')})"
     end

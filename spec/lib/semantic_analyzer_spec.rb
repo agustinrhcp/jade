@@ -409,4 +409,200 @@ describe SemanticAnalyzer do
       end
     end
   end
+
+  context 'union type declaration and usage' do
+    context 'valid union type declarations' do
+      let(:node) { union('Color', variant('Red'), variant('Green'), variant('Blue')) }
+
+      it { is_expected.to be_a(AST::UnionType) }
+      its(:name) { is_expected.to eql 'Color' }
+
+      it 'returns the analyzed node' do
+        expect(subject.variants.size).to eql 3
+        expect(subject.variants.map(&:name)).to eql ['Red', 'Green', 'Blue']
+      end
+
+      context 'union with variants having parameters' do
+        let(:node) do
+          union(
+            'Result',
+            variant('Ok', params: [variant_param('String')]),
+            variant('Err', params: [variant_param('Int')]),
+          )
+        end
+
+        it { is_expected.to be_a(AST::UnionType) }
+        its(:name) { is_expected.to eql 'Result' }
+
+        it 'returns the analyzed node' do
+          expect(subject.variants.size).to eql 2
+
+          expect(subject.variants.first.params.size).to eql 1
+          expect(subject.variants.first.params.first.value).to eql 'String'
+          expect(subject.variants.last.params.size).to eql 1
+          expect(subject.variants.last.params.first.value).to eql 'Int'
+        end
+      end
+
+      context 'union with variants having fields' do
+        let(:node) { union('Shape', variant('Circle', fields: [variant_field('radius', 'Int')]), variant('Rectangle', fields: [variant_field('width', 'Int'), variant_field('height', 'Int')])) }
+
+        it { is_expected.to be_a(AST::UnionType) }
+        its(:name) { is_expected.to eql 'Shape' }
+
+        it 'returns the analyzed node' do
+          expect(subject.variants.size).to eql 2
+          expect(subject.variants.first.fields.size).to eql 1
+          expect(subject.variants.last.fields.size).to eql 2
+        end
+      end
+
+      context 'union with mixed variants' do
+        let(:node) { union('Mixed', variant('Simple'), variant('WithParam', params: [variant_param('String')]), variant('WithField', fields: [variant_field('value', 'Int')])) }
+
+        it { is_expected.to be_a(AST::UnionType) }
+        its(:name) { is_expected.to eql 'Mixed' }
+
+        it 'returns the analyzed node' do
+          expect(subject.variants.size).to eql 3
+          expect(subject.variants[0].fields).to be_empty
+          expect(subject.variants[0].params).to be_empty
+          expect(subject.variants[1].params.size).to eql 1
+          expect(subject.variants[2].fields.size).to eql 1
+        end
+      end
+
+      context 'single variant union' do
+        let(:node) { union('Maybe', variant('Nothing')) }
+
+        it 'returns the analyzed node' do
+          expect(subject).to be_a(AST::UnionType)
+          expect(subject.name).to eql 'Maybe'
+          expect(subject.variants.size).to eql 1
+          expect(subject.variants.first.name).to eql 'Nothing'
+        end
+      end
+    end
+
+    context 'invalid union type declarations' do
+      subject do
+        described_class.analyze(node) => [_, _, [error]]
+        error
+      end
+
+      context 'duplicate variant names' do
+        let(:node) { union('Color', variant('Red'), variant('Green'), variant('Red')) }
+
+        it { is_expected.to be_a(SemanticAnalyzer::Error) }
+        its(:message) { is_expected.to eql "Duplicate variant 'Red' type 'Color'" }
+      end
+
+      context 'multiple duplicate variants' do
+        let(:node) { union('Status', variant('Loading'), variant('Success'), variant('Loading'), variant('Error'), variant('Success')) }
+
+        subject do
+          described_class.analyze(node) => [_, _, errors]
+          errors
+        end
+
+        it 'reports all duplicate variants' do
+          expect(subject.size).to be >= 1
+          error_messages = subject.map(&:message)
+          expect(error_messages.any? { |msg| msg.include?("Duplicate variant") && msg.include?("type 'Status'") }).to be true
+        end
+      end
+
+      context 'redeclaration of union type' do
+        let(:node) do
+          prog(
+            union('Color', variant('Red')),
+            union('Color', variant('Blue'))
+          )
+        end
+
+        it { is_expected.to be_a(SemanticAnalyzer::Error) }
+        its(:message) { is_expected.to eql "Already defined type 'Color'" }
+      end
+
+      context 'union type conflicts with record type' do
+        let(:node) do
+          prog(
+            rec('User', field('name', 'String')),
+            union('User', variant('Admin'), variant('Guest'))
+          )
+        end
+
+        it { is_expected.to be_a(SemanticAnalyzer::Error) }
+        its(:message) { is_expected.to eql "Already defined type 'User'" }
+      end
+
+      context 'record type conflicts with union type' do
+        let(:node) do
+          prog(
+            union('Status', variant('Active'), variant('Inactive')),
+            rec('Status', field('value', 'String'))
+          )
+        end
+
+        it { is_expected.to be_a(SemanticAnalyzer::Error) }
+        its(:message) { is_expected.to eql "Already defined record type 'Status'" }
+      end
+    end
+
+    context 'union types in context' do
+      let(:node) do
+        prog(
+          union('Color', variant('Red'), variant('Green'), variant('Blue')),
+          union('Status', variant('Loading'), variant('Success'), variant('Error'))
+        )
+      end
+
+      it 'registers both union types' do
+        expect(subject).to be_a(AST::Program)
+        expect(subject.statements.size).to eql 2
+        expect(subject.statements.first).to be_a(AST::UnionType)
+        expect(subject.statements.last).to be_a(AST::UnionType)
+      end
+    end
+
+    context 'complex union type scenarios' do
+      context 'union with complex variant fields' do
+        let(:node) do
+          prog(
+            rec('Point', field('x', 'Int'), field('y', 'Int')),
+            union('Shape', 
+              variant('Circle', fields: [variant_field('center', 'Point'), variant_field('radius', 'Int')]),
+              variant('Rectangle', fields: [variant_field('topLeft', 'Point'), variant_field('bottomRight', 'Point')])
+            )
+          )
+        end
+
+        it 'analyzes union with record type references' do
+          expect(subject).to be_a(AST::Program)
+          union_type = subject.statements.last
+          expect(union_type).to be_a(AST::UnionType)
+          expect(union_type.variants.first.fields.first.value).to eql 'Point'
+        end
+      end
+
+      context 'nested union definitions' do
+        let(:node) do
+          prog(
+            union('Inner', variant('A'), variant('B')),
+            union('Outer', 
+              variant('SimpleCase'),
+              variant('ComplexCase', params: [variant_param('Inner')])
+            )
+          )
+        end
+
+        it 'handles nested union type references' do
+          expect(subject).to be_a(AST::Program)
+          expect(subject.statements.size).to eql 2
+          outer_union = subject.statements.last
+          expect(outer_union.variants.last.params.first.value).to eql 'Inner'
+        end
+      end
+    end
+  end
 end

@@ -113,7 +113,16 @@ module AST
 
   RecordFieldAssign   = Data.define(:name, :expression, :range)
 
-  UnionType = Data.define(:name, :variants, :range)
+  UnionType = Data.define(:name, :variants, :type, :range) do
+    def initialize(name:, variants:, type: nil, range:)
+      super
+    end
+
+    def annotate(type)
+      with(type:)
+    end
+  end
+
   Variant = Data.define(:name, :fields, :params, :range)
   VariantField = Data.define(:name, :value, :type, :range)
   VariantParam = Data.define(:value, :type, :range)

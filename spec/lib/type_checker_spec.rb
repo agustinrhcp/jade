@@ -360,4 +360,24 @@ describe TypeChecker do
       end
     end
   end
+
+  context 'union type' do
+    let(:node) { union('Color', variant('Red'), variant('Green'), variant('Blue')) }
+
+    it { is_expected.to be_a(Type::Union) }
+
+    describe 'its variants' do
+      subject { result => Ok([type, _]); type.variants }
+
+      it 'are checked' do
+        expect(subject).to all(be_a(Type::VariantNullary))
+        expect(subject.first.name).to eql 'Red'
+        expect(subject.first.union_type_name).to eql 'Color'
+        expect(subject[1].name).to eql 'Green'
+        expect(subject[1].union_type_name).to eql 'Color'
+        expect(subject[2].name).to eql 'Blue'
+        expect(subject[2].union_type_name).to eql 'Color'
+      end
+    end
+  end
 end

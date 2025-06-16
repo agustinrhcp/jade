@@ -79,15 +79,10 @@ module SemanticAnalyzer
         return [node, context, [Error.new("Already defined record type '#{name}'", range: node.range)]]
       end
 
-      unless fields.uniq { |f| f.name }.length == fields.length
-        indexed_fields = fields.group_by(&:name)
-        errors = fields
-          .map(&:name)
-          .tally.select { |f, c| c > 1 }
-          .map { |f, _| Error.new("Duplicate field '#{f}' in record '#{name}'", range: indexed_fields[f].last.range) }
-
-        return [node, context, errors]
+      validate_uniquness_of_named_pairs(fields) do |f|
+        "Duplicate field '#{f}' in record '#{name}'"
       end
+        .then { return [node, context, it] if it.any? }
 
       [node, context.define_type(name, node), []]
 
@@ -98,15 +93,10 @@ module SemanticAnalyzer
         return [node, context, [Error.new("Undefined record type '#{name}'", range: node.range)]]
       end
 
-      unless fields.uniq { |f| f.name }.length == fields.length
-        indexed_fields = fields.group_by(&:name)
-        errors = fields
-          .map(&:name)
-          .tally.select { |f, c| c > 1 }
-          .map { |f, _| Error.new("Duplicate assignment to field '#{f}' in record instantiation", range: indexed_fields[f].last.range) }
-
-        return [node, context, errors]
+      validate_uniquness_of_named_pairs(fields) do |f|
+        "Duplicate assignment to field '#{f}' in record instantiation"
       end
+        .then { return [node, context, it] if it.any? }
 
       expected_field_names = record_type.fields.map(&:name)
       given_field_names = fields.map(&:name)
@@ -132,15 +122,10 @@ module SemanticAnalyzer
     in AST::AnonymousRecord(fields:)
       analyzed_fields, _, field_errors = analyze_many(context, fields)
 
-      unless fields.uniq { |f| f.name }.length == fields.length
-        indexed_fields = fields.group_by(&:name)
-        errors = fields
-          .map(&:name)
-          .tally.select { |f, c| c > 1 }
-          .map { |f, _| Error.new("Duplicate field '#{f}' in anonymous record", range: indexed_fields[f].last.range) }
-
-        return [node, context, errors]
+      validate_uniquness_of_named_pairs(fields) do |f|
+        "Duplicate field '#{f}' in anonymous record"
       end
+        .then { return [node, context, it] if it.any? }
 
       [node.with(fields: analyzed_fields), context, field_errors]
 
@@ -158,6 +143,42 @@ module SemanticAnalyzer
         .map { |exposed| Error.new("Cannot find a #{exposed} value to expose", range:)}
 
       [node.with(statements: analyzed_statements), new_context, stmts_errors + missing_exposed_errors]
+
+    in AST::UnionType(name:, variants:)
+      if context.resolve_type(name)
+        return [node, context, [Error.new("Already defined type '#{name}'", range: node.range)]]
+      end
+
+      validate_uniquness_of_named_pairs(variants) do |v|
+        "Duplicate variant '#{v}' type '#{name}'"
+      end
+        .then { return [node, context, it] if it.any? }
+
+      analyzed_variants, new_context, variant_errors = analyze_many(context, variants)
+
+      [
+        node.with(variants: analyzed_variants),
+        new_context.define_type(name, node.with(variants: analyzed_variants)),
+        variant_errors,
+      ]
+
+    in AST::Variant(name:, fields:, params:)
+      analyzed_variant, errors = case [fields, params]
+        in [[], []]
+          [node, []]
+        in [some_fields, []] if some_fields.any?
+          [node, validate_uniquness_of_named_pairs(some_fields) do |v|
+            "Duplicate variant field '#{f}' for field'#{name}'"
+          end]
+        in [[], some_params] if some_params.any?
+          [node, []]
+        end
+
+      [
+        analyzed_variant,
+        context,
+        errors,
+      ]
     end
   end
 
@@ -171,6 +192,19 @@ module SemanticAnalyzer
       end
   end
 
+  def validate_uniquness_of_named_pairs(named_pairs)
+    return [] if named_pairs.uniq { |f| f.name }.length == named_pairs.length
+
+    indexed_named_pairs = named_pairs.group_by(&:name)
+    errors = named_pairs
+      .map(&:name)
+      .tally.select { |f, c| c > 1 }
+      .map do |f, _|
+        Error.new(yield(f), range: indexed_named_pairs[f].last.range)
+      end
+
+    errors
+  end
 
   class Error < StandardError
     attr_reader :range

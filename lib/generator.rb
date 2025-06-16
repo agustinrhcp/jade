@@ -55,6 +55,9 @@ module Generator
         .join(', ')
       "#{prefix}#{name}.new(#{fields_assignments})"
 
+    in AST::UnionType => union_type
+      union_type_template(union_type, prefix)
+      
     in AST::Module(name:, exposing:, statements:)
       mod_names = name.split('.')
       generated_header = mod_names
@@ -74,6 +77,25 @@ module Generator
         geneated_statements,
         generated_footer
       ].join("\n") + "\n"
+    end
+  end
+
+  private
+
+  def union_type_template(union_type, prefix)
+    union_type => AST::UnionType(variants:, name:)
+    variants.map { union_type_variant_template(name, it, prefix) }
+  end
+
+  def union_type_variant_template(union_type_name, variant, prefix)
+    variant => AST::Variant(name:, fields:, params:)
+    case [fields, params]
+    in [[], []]
+      "#{prefix}#{union_type_name}_#{name} = Data.define"
+    in [some_fields, []] if some_fields.any?
+      "#{prefix}#{union_type_name}_#{name} = Data.define(#{fields.map { |f| ":#{f.name}"}.join(', ')})"
+    in [[], some_params] if some_params.any?
+      "#{prefix}#{union_type_name}_#{name} = Data.define(:tuple)"
     end
   end
 end

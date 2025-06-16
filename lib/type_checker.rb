@@ -83,13 +83,11 @@ module TypeChecker
         Err[Error.new("Undefined variable '#{name}'", range: node.range)]
       end
     in AST::FunctionDeclaration(name:, parameters:, return_type:, body:, range:)
-
       annotated_parameters = parameters
         .parameters.map { |param| param.annotate(context.resolve_type(param.type)) }
       resolved_return_type = context.resolve_type(return_type)
 
       if resolved_return_type.nil?
-        require 'byebug'; byebug
         return Err[Error.new("Undefined type #{return_type}", range:)]
       end
 
@@ -218,6 +216,27 @@ module TypeChecker
              Err[Error.new("#{target_type} is not a record and cannot be access with '.'")]
           end
         end
+
+    in AST::UnionType(name:, variants:)
+      variants
+        .reduce(Ok[[]]) do |acc, variant|
+          case [acc, check_variant(variant, context, name)]
+          in [Ok(acc_ok), Ok(variant_type)]
+            Ok[acc_ok + [variant_type]]
+          in [Ok, Err => err]
+            err
+          in [Err, Ok]
+            acc
+          in [Err(acc_err), Err(err)]
+            # TODO: return many errors Err[acc_err + err]
+            Err[err]
+          end
+        end
+        .map do |typed_checked_variants|
+          type = Type::Union.new(name:, variants: typed_checked_variants)
+          [type, node.annotate(type)]
+        end
+
     in AST::Program(statements:)
       check_many(context, statements)
 
@@ -227,6 +246,45 @@ module TypeChecker
   end
 
   private
+
+  def check_variant(variant, context, union_type_name)
+    variant => AST::Variant(name:, fields:, params:)
+
+    type = case [fields, params]
+    in [[], []]
+      Ok[Type::VariantNullary.new(name:, union_type_name:)]
+    in [some_fields, []] if some_fields.any?
+      some_fields
+        .reduce(Ok[{}]) do |acc, (f_k, f_v)|
+          case [acc, context.resolve_type(f_v)]
+          in [Ok, nil]
+            Err[[Error.new("Undefined type for field #{f_k} #{f_v}", range: variant.range)]]
+          in [Ok(ok_acc), a_type]
+            Ok[ok_acc.merge(f_k, a_type)]
+          in [Err(err_acc), nil]
+            Err[err_acc + [Error.new("Undefined type for field #{f_k} #{f_v}", range: variant.range)]]
+          in [Err, _]
+            acc
+          end
+        end
+        .map { Type::VariantRecord.new(name:, fields: it, union_type_name:) }
+    in [[], some_params] if some_params.any?
+      some_params
+        .reduce(Ok[[]]) do |acc, param|
+          case [acc, context.resolve_type(param.value)]
+          in [Ok, nil]
+            Err[[Error.new("Undefined type for variant #{name} '#{param.value}'", range: variant.range)]]
+          in [Ok(ok_acc), a_type]
+            Ok[ok_acc.concat([a_type])]
+          in [Err(err_acc), nil]
+            Err[error_acc + [Error.new("Undefined type for variant #{name} '#{param.value}'", range: variant.range)]]
+          in [Err, _]
+            acc
+          end
+        end
+        .map { Type::VariantTuple.new(name:, params: it, union_type_name:) }
+    end
+  end
 
   def check_many(context, nodes)
     nodes.reduce(Ok[[[], context]]) do |acc, node|
