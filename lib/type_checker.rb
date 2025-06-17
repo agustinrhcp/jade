@@ -70,7 +70,7 @@ module TypeChecker
     in AST::VariableDeclaration(name:, expression:, range:)
       check(expression, context)
         .map do |(type, new_context)|
-          [type, new_context.annotate_var(name, type)]
+          [type, new_context.define_var(name, expression).annotate_var(name, type)]
         end
 
     in AST::Variable(name:)
@@ -129,22 +129,23 @@ module TypeChecker
             end
         end
 
-    in AST::RecordDeclaration(name:, fields:)
+    in AST::RecordDeclaration(name:, params:, fields:)
       fields
         .reduce(Ok[[]]) do |acc, field|
-          case [acc, context.resolve_type(field.type)]
-          in Ok, nil
-            Err[[Error.new("Undefined type #{field.type}", range: field.range)]]
-          in Ok(ok_acc), resolved_type
+          case [acc, resolve_type_reference(field.type, context)]
+          in Ok, Err(err)
+            Err[[err]]
+          in Ok(ok_acc), Ok(resolved_type)
             Ok[ok_acc.concat([field.annotate(resolved_type)])]
-          in Err(err_acc), nil
-            Err[err_acc.concat([Error.new("Undefined type #{field.type}", range: field.range)])]
+          in Err(err_acc), Err(err)
+            Err[err_acc.concat([err])]
           in Err, _
             acc
           end
         end
         .map do |annotated_fields|
-          record_type = Type::Record.new(name, Hash[annotated_fields.map { |f| [f.name, f.type] }])
+          record_type = Type::Record
+            .new(name, Hash[annotated_fields.map { |f| [f.name, f.type] }], params)
           [record_type, context.define_type(name, record_type)]
         end
 
@@ -164,7 +165,7 @@ module TypeChecker
             acc
           end
         end
-          .map { |typed_fields| [Type::Record.new(nil, typed_fields), context] }
+          .map { |typed_fields| [Type::Record.new(nil, typed_fields, []), context] }
 
     in AST::RecordInstantiation(name:, fields:)
       type = context.resolve_type(name)
@@ -246,6 +247,16 @@ module TypeChecker
   end
 
   private
+
+  def resolve_type_reference(ast_ref, context)
+    case ast_ref
+    in AST::TypeRef(name:, range:)
+      context.resolve_type(name)&.then { Ok[it]} ||
+        Error.new("Undefined type #{name}", range:)
+    in AST::GenericRef(name:)
+      Ok[Type::Generic.new(name)]
+    end
+  end
 
   def check_variant(variant, context, union_type_name)
     variant => AST::Variant(name:, fields:, params:)

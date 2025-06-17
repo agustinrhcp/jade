@@ -102,9 +102,10 @@ module Parser
     (
       type(:type).skip >>
         constant >>
+        (sequence(identifier) | success([[]])).map { [it] } >>
         type(:assign).skip >>
         type(:lbrace).skip >>
-        (record_field >> (type(:comma).skip >> record_field).many.map { it.flatten }) >>
+        sequence(record_field, separated_by: type(:comma).skip) >>
         type(:rbrace).skip
     ).map(&AST.record_declaration)
   end
@@ -113,6 +114,7 @@ module Parser
     (
       type(:type).skip >>
         constant >>
+        (sequence(identifier) | success([[]])).map { [it] } >>
         type(:assign).skip >>
         sequence(variant, separated_by: type(:pipe).skip)
     ).map(&AST.union)
@@ -163,17 +165,21 @@ module Parser
   end
 
   def tagged_variant_field
-    (identifier >> type(:colon).skip >> constant)
+    (identifier >> type(:colon).skip >> (constant | identifier))
       .map { [[:field, it]] }
   end
 
   def tagged_variant_param
-    constant
+    (constant | identifier)
       .map { [[:param, it]] }
   end
 
   def record_field
-    (identifier >> type(:colon).skip >> constant).map(&AST.record_field)
+    (identifier >>
+      type(:colon).skip >>
+      (constant.map(&AST.type_ref) | identifier.map(&AST.generic_ref))
+    )
+      .map(&AST.record_field)
   end
 
   def record_instantiation
@@ -208,13 +214,13 @@ module Parser
 
   def arguments
     sequence(expression, separated_by: type(:comma).skip) |
-      none.map { [] }
+      success([])
   end
 
   def parameters
     (
       sequence(parameter, separated_by: type(:comma).skip) |
-        none.map { [] }
+        success([])
     )
       .map(&AST.parameter_list)
   end
@@ -258,7 +264,8 @@ module Parser
   end
 
   def sequence(parser, separated_by: none)
-    (parser.map { [it] } >= (separated_by >= parser).many).map { it.flatten(1) }
+    (parser.map { [it] } >= (separated_by >= parser).many)
+      .map { it.flatten(1) }
   end
 
   def at_least_one(parser, separator: nil)

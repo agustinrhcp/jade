@@ -399,6 +399,34 @@ describe Parser do
 
       it { is_expected.to match_ast_node(rec('MyRecord', field('a', 'Int'), field('b', 'String'))) }
     end
+
+    context 'with generic parameters' do
+      let(:tokens) do
+        [
+          tok(:type, 'type'), tok(:constant, 'Container'), tok(:identifier, 'a'), tok(:assign, '='),
+          tok(:lbrace, '{'),
+          tok(:identifier, 'value'), tok(:colon, ':'), tok(:identifier, 'a'), tok(:comma, ','),
+          tok(:identifier, 'label'), tok(:colon, ':'), tok(:constant, 'String'),
+          tok(:rbrace, '}'),
+        ]
+      end
+
+      it { is_expected.to match_ast_node(rec_with_generics('Container', ['a'], field('value', 'a'), field('label', 'String'))) }
+    end
+
+    context 'with multiple generic parameters' do
+      let(:tokens) do
+        [
+          tok(:type, 'type'), tok(:constant, 'Result'), tok(:identifier, 'ok'), tok(:identifier, 'err'), tok(:assign, '='),
+          tok(:lbrace, '{'),
+          tok(:identifier, 'value'), tok(:colon, ':'), tok(:identifier, 'ok'), tok(:comma, ','),
+          tok(:identifier, 'error'), tok(:colon, ':'), tok(:identifier, 'err'),
+          tok(:rbrace, '}'),
+        ]
+      end
+
+      it { is_expected.to match_ast_node(rec_with_generics('Result', ['ok', 'err'], field('value', 'ok'), field('error', 'err'))) }
+    end
   end
 
   describe 'variant' do

@@ -6,6 +6,7 @@ module AST
 
     def print(node, indent=0)
       prefix = '  ' * indent
+
       case node
       in Binary(left:, operator:, right:)
         "#{prefix}Binary(\n" \
@@ -78,7 +79,7 @@ module AST
         "#{args_str}\n" \
         "#{prefix})"
 
-      in RecordDeclaration(name:, fields:)
+      in RecordDeclaration(name:, fields:, params:)
         "#{prefix}RecordDeclaration(\n" \
         "#{prefix}  name: #{name},\n" \
         "#{prefix}  fields: (\n" \
@@ -89,7 +90,7 @@ module AST
       in RecordField(name:, type:)
         "#{prefix}RecordField(\n" \
         "#{prefix}  name: #{name},\n" \
-        "#{prefix}  type: #{type}\n" \
+        "#{prefix}  type: #{print(type)}\n" \
         "#{prefix})"
 
       in RecordInstantiation(name:, fields:)
@@ -153,6 +154,12 @@ module AST
         "#{prefix}  name: #{name},\n" \
         "#{prefix}  value: #{value}\n" \
         "#{prefix})"
+
+      in TypeRef(name:)
+        "Type(#{name})"
+
+      in GenericRef(name:)
+        "Generic(#{name})"
 
       in Module(name:, exposing:, statements:)
         "#{prefix}Module(\n" \

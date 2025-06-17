@@ -27,7 +27,11 @@ module AST
     end
   end
 
-  Literal = Data.define(:value, :type, :range)
+  Literal = Data.define(:value, :type, :range) do
+    def annotate(type)
+      self
+    end
+  end
 
   Grouping = Data.define(:expression, :range)
 
@@ -83,7 +87,8 @@ module AST
     end
   end
 
-  RecordDeclaration   = Data.define(:name, :fields, :range)
+  # params if for generics
+  RecordDeclaration   = Data.define(:name, :params, :fields, :range)
   RecordField         = Data.define(:name, :type, :range) do
     def annotate(type)
       with(type:)
@@ -101,6 +106,9 @@ module AST
     end
   end
 
+  TypeRef = Data.define(:name, :range)
+  GenericRef = Data.define(:name, :range)
+
   AnonymousRecord     = Data.define(:fields, :range, :type) do
     def initialize(fields:, range:, type: nil)
       super
@@ -113,8 +121,9 @@ module AST
 
   RecordFieldAssign   = Data.define(:name, :expression, :range)
 
-  UnionType = Data.define(:name, :variants, :type, :range) do
-    def initialize(name:, variants:, type: nil, range:)
+  # params if for generics
+  UnionType = Data.define(:name, :params, :variants, :type, :range) do
+    def initialize(name:, variants:, params:, type: nil, range:)
       super
     end
 
@@ -234,10 +243,11 @@ module AST
   end
 
   def record_declaration
-    ->((name, *fields)) do
+    ->((name, params, *fields)) do
       AST::RecordDeclaration.new(
         name: name.value,
         fields:,
+        params:,
         range: Range.new(name.position, fields.last&.range&.end || name.position),
       )
     end
@@ -247,10 +257,28 @@ module AST
     ->((name, type)) do
       AST::RecordField.new(
         name: name.value,
-        type: type.value,
-        range: Range.new(name.position, type.position),
+        type: type,
+        range: Range.new(name.position, type.range.end),
       )
     end
+  end
+
+  def type_ref
+    ->(token) {
+      AST::TypeRef.new(
+        name: token.value,
+        range: Range.new(token.position, token.position)
+      )
+    }
+  end
+
+  def generic_ref
+    ->(token) {
+      AST::GenericRef.new(
+        name: token.value,
+        range: Range.new(token.position, token.position)
+      )
+    }
   end
 
   def record_instantiation
@@ -309,9 +337,10 @@ module AST
   end
 
   def union
-    ->((name, *variants)) do
+    ->((name, params, *variants)) do
       AST::UnionType.new(
         name: name.value,
+        params:,
         variants:,
         range: Range.new(name.position, variants.last.range.end),
       )

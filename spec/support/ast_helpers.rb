@@ -52,10 +52,20 @@ module AstHelpers
   end
 
   def rec(name, *fields)
-    AST::RecordDeclaration.new(name:, fields:, range: dummy_range)
+    AST::RecordDeclaration.new(name:, params: [], fields:, range: dummy_range)
   end
 
-  def field(name, type)
+  def rec_with_generics(name, params, *fields)
+    AST::RecordDeclaration.new(name:, params:, fields:, range: dummy_range)
+  end
+
+  def field(name, type_string)
+    type = if type_string.match?(/\A[a-z_]/)
+      AST::GenericRef.new(name: type_string, range: dummy_range)
+    else
+      AST::TypeRef.new(name: type_string, range: dummy_range)
+    end
+
     AST::RecordField.new(name:, type:, range: dummy_range)
   end
 
@@ -84,7 +94,11 @@ module AstHelpers
   end
 
   def union(name, *variants)
-    AST::UnionType.new(name:, variants:, range: dummy_range)
+    AST::UnionType.new(name:, params: [], variants:, range: dummy_range)
+  end
+
+  def union_with_generic(name, params, *variants)
+    AST::UnionType.new(name:, params:, variants:, range: dummy_range)
   end
 
   def variant_field(name, value)

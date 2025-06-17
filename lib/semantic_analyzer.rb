@@ -74,7 +74,7 @@ module SemanticAnalyzer
         [node, context, [Error.new("Undefined function '#{name}'", range: node.range)]]
       end
 
-    in AST::RecordDeclaration(name:, fields:)
+    in AST::RecordDeclaration(name:, params:, fields:)
       if context.resolve_type(name)
         return [node, context, [Error.new("Already defined record type '#{name}'", range: node.range)]]
       end
@@ -82,6 +82,12 @@ module SemanticAnalyzer
       validate_uniquness_of_named_pairs(fields) do |f|
         "Duplicate field '#{f}' in record '#{name}'"
       end
+        .then { return [node, context, it] if it.any? }
+
+      fields
+        .select { |f| f.type.is_a?(AST::GenericRef) }
+        .reject { |f| params.include?(f.type.name) }
+        .map    { |f| Error.new("Unbound type variable '#{f.type.name}' for '#{name}' definition", range: node.range) }
         .then { return [node, context, it] if it.any? }
 
       [node, context.define_type(name, node), []]

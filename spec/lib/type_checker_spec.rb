@@ -247,10 +247,28 @@ describe TypeChecker do
       it { is_expected.to be_a(Type::Record) }
       its(:fields) { is_expected.to be_empty }
     end
+
+    context 'with generic parameters' do
+      let(:node) { rec_with_generics('Container', ['a'], field('value', 'a'), field('label', 'String')) }
+
+      it { is_expected.to be_a(Type::Record) }
+      its(:name) { is_expected.to eql 'Container' }
+      its(:params) { is_expected.to eql ['a'] }
+      its(:fields) { is_expected.to eql('value' => Type::Generic.new('a'), 'label' => Type.string) }
+    end
+
+    context 'with multiple generic parameters' do
+      let(:node) { rec_with_generics('Result', ['ok', 'err'], field('value', 'ok'), field('error', 'err')) }
+
+      it { is_expected.to be_a(Type::Record) }
+      its(:name) { is_expected.to eql 'Result' }
+      its(:params) { is_expected.to eql ['ok', 'err'] }
+      its(:fields) { is_expected.to eql('value' => Type::Generic.new('ok'), 'error' => Type::Generic.new('err')) }
+    end
   end
 
   context 'record instantiation' do
-    let(:record_type) { Type::Record.new('User', {'name' => Type.string, 'age' => Type.int}) }
+    let(:record_type) { Type::Record.new('User', {'name' => Type.string, 'age' => Type.int }, []) }
     let(:ctx) { Context.new.define_type('User', record_type) }
 
     context 'valid instantiation' do
@@ -268,7 +286,7 @@ describe TypeChecker do
     end
 
     context 'empty record instantiation' do
-      let(:record_type) { Type::Record.new('Empty', {}) }
+      let(:record_type) { Type::Record.new('Empty', {}, []) }
       let(:ctx) { Context.new.define_type('Empty', record_type) }
       let(:node) { rec_new('Empty') }
 
@@ -310,7 +328,7 @@ describe TypeChecker do
   context 'record access' do
     let(:ctx) do 
       Context.new
-        .define_type('User', Type::Record.new(name: 'User',fields: { 'name' => Type.string }))
+        .define_type('User', Type::Record.new(name: 'User',fields: { 'name' => Type.string }, params: []))
     end
 
     let(:node) { rec_access(rec_new('User', field_set('name', lit('John'))), 'name') }

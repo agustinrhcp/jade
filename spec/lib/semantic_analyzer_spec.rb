@@ -90,7 +90,8 @@ describe SemanticAnalyzer do
         expect(subject.name).to eql 'User'
         expect(subject.fields.size).to eql 2
         expect(subject.fields.first.name).to eql 'name'
-        expect(subject.fields.first.type).to eql 'String'
+        expect(subject.fields.first.type).to be_a(AST::TypeRef)
+        expect(subject.fields.first.type.name).to eql('String')
       end
 
       context 'empty record' do
@@ -109,6 +110,17 @@ describe SemanticAnalyzer do
         it 'returns the analyzed node' do
           expect(subject).to be_a(AST::RecordDeclaration)
           expect(subject.name).to eql 'Counter'
+          expect(subject.fields.size).to eql 1
+        end
+      end
+
+      context 'with generics' do
+        let(:node) { rec_with_generics('Box', ['a'], field('content', 'a')) }
+
+        it 'returns the analyzed node' do
+          expect(subject).to be_a(AST::RecordDeclaration)
+          expect(subject.name).to eql 'Box'
+          expect(subject.params).to eql ['a']
           expect(subject.fields.size).to eql 1
         end
       end
@@ -152,6 +164,13 @@ describe SemanticAnalyzer do
 
         it { is_expected.to be_a(SemanticAnalyzer::Error) }
         its(:message) { is_expected.to eql "Already defined record type 'User'" }
+      end
+
+      context 'with undeclared generics' do
+        let(:node) { rec('Box', field('content', 'a')) }
+
+        it { is_expected.to be_a(SemanticAnalyzer::Error) }
+        its(:message) { is_expected.to eql "Unbound type variable 'a' for 'Box' definition" }
       end
     end
 

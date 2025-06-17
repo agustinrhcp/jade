@@ -33,7 +33,7 @@ module Type
     end
   end
 
-  Record = Data.define(:name, :fields) do
+  Record = Data.define(:name, :fields, :params) do
     def to_s
       "#{name}(#{fields.map { |k, v| "#{k}: #{v}"}.join(', ')})"
     end
@@ -62,4 +62,6 @@ module Type
       name
     end
   end
+
+  Generic = Data.define(:name)
 end
