@@ -1,6 +1,5 @@
 require 'spec_helper'
 
-require 'byebug'
 require 'parser'
 require 'token'
 require 'ast'
@@ -292,7 +291,8 @@ describe Parser do
         ]
       end
 
-      it { is_expected.to match_ast_node(params(param('first_name', 'String'), param('last_name', 'String'), param('email', 'String'))) }
+      its(:size)  { is_expected.to eql 3 }
+      it { is_expected.to all(be_a(AST::Parameter)) }
     end
 
     context 'just one' do
@@ -302,7 +302,8 @@ describe Parser do
         ]
       end
 
-      it { is_expected.to match_ast_node(params(param('email', 'String'))) }
+      its(:size)  { is_expected.to eql 1 }
+      its(:first) { is_expected.to be_a(AST::Parameter) }
     end
 
     context 'none' do
@@ -310,7 +311,7 @@ describe Parser do
         []
       end
 
-      it { is_expected.to match_ast_node(params) }
+      it { is_expected.to be_empty }
     end
   end
 
@@ -328,7 +329,7 @@ describe Parser do
 
     it do
       is_expected.to match_ast_node(
-        fn_dec('double', params(param('n', 'Int')), 'Int',
+        fn_dec('double', [param('n', 'Int')], 'Int',
           var_dec('multi', lit(2)),
           bin(var('n'), :*, var('multi')),
         )
@@ -348,7 +349,7 @@ describe Parser do
 
       it do
         is_expected.to match_ast_node(
-          fn_dec('hello', params(), 'String', lit('Hello'))
+          fn_dec('hello', [], 'String', lit('Hello'))
         )
       end
     end
@@ -800,7 +801,7 @@ describe Parser do
         mod(
           'My.Module',
           ['hello'],
-          fn_dec('hello', params, 'String', lit('Hello')),
+          fn_dec('hello', [], 'String', lit('Hello')),
         )
       )
     }

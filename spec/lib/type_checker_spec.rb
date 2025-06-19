@@ -5,7 +5,18 @@ require 'type_checker'
 describe TypeChecker do
   let(:ctx) { Context.new }
   let(:result) { described_class.check(node, ctx) }
-  subject { result => Ok([type, _]); type }
+
+  subject { result => Ok([node, _]); node.type }
+
+  before do
+    case result
+    in Ok([checked_node, new_ctx])
+      expect(checked_node).to be_a(AST::Node)
+      expect(new_ctx).to be_a(Context)
+    in Err(errors)
+      expect(errors).to all(be_a(TypeChecker::Error))
+    end
+  end
 
   context 'for an integer' do
     let(:node) { lit(2) }
@@ -34,7 +45,7 @@ describe TypeChecker do
 
     context 'minus bool' do
       let(:node) { uny(:-, lit(true)) }
-      subject { result => Err(error); error }
+      subject { result => Err([error]); error }
 
       its(:message) { is_expected.to eql "Unary '-' not valid for Bool" }
     end
@@ -47,7 +58,7 @@ describe TypeChecker do
 
     context 'bang string' do
       let(:node) { uny(:!, lit('Hello')) }
-      subject { result => Err(error); error }
+      subject { result => Err([error]); error }
 
       its(:message) { is_expected.to eql "Unary '!' not valid for String" }
     end
@@ -82,14 +93,14 @@ describe TypeChecker do
       context 'invalid operands' do
         context 'string + int' do
           let(:node) { bin(lit('Hello'), :+, lit(2)) }
-          subject { result => Err(error); error }
+          subject { result => Err([error]); error }
 
           its(:message) { is_expected.to eql "Left operand of '+' must be Int, got String" }
         end
 
         context 'bool * int' do
           let(:node) { bin(lit(true), :*, lit(2)) }
-          subject { result => Err(error); error }
+          subject { result => Err([error]); error }
 
           its(:message) { is_expected.to eql "Left operand of '*' must be Int, got Bool" }
         end
@@ -136,14 +147,14 @@ describe TypeChecker do
       context 'invalid operands' do
         context 'string < int' do
           let(:node) { bin(lit('Hello'), :<, lit(2)) }
-          subject { result => Err(error); error }
+          subject { result => Err([error]); error }
 
           its(:message) { is_expected.to eql "Left operand of '<' must be Int, got String" }
         end
 
         context 'bool == string' do
           let(:node) { bin(lit(true), :==, lit('Hello')) }
-          subject { result => Err(error); error }
+          subject { result => Err([error]); error }
 
           its(:message) { is_expected.to eql "Right operand of '==' must be Bool, got String" }
         end
@@ -154,24 +165,24 @@ describe TypeChecker do
   context 'variables and declarations' do
     context 'a declared variable' do
       let(:node) { var('x') }
-      let(:ctx) { Context.new.define_var('x', node).annotate_var('x', Type.int) }
+      let(:ctx) { Context.new.define_var('x').annotate_var('x', Type.int) }
 
       it { is_expected.to eql Type.int }
     end
 
     context 'an undeclared variable' do
       let(:node) { var('y') }
-      subject { result => Err(error); error }
+      subject { result => Err([error]); error }
 
       its(:message) { is_expected.to eql "Undefined variable 'y'" }
     end
 
     context 'a variable declaration' do
       let(:node) { var_dec('z', lit(42)) }
-      let(:ctx) { Context.new.define_var('z', node) }
+      let(:ctx) { Context.new.define_var('z') }
 
       context 'the returned ctx' do
-        subject { result => Ok([_, ctx]); ctx }
+        subject { result => Ok([_, new_ctx]); new_ctx }
 
         it 'adds the variable type to the ctx' do
           expect(subject.resolve_var('z').type).to eql Type.int
@@ -182,7 +193,7 @@ describe TypeChecker do
 
       context 'a string' do
         let(:node) { var_dec('z', lit('Alo')) }
-        let(:ctx) { Context.new.define_var('z', node) }
+        let(:ctx) { Context.new.define_var('z') }
 
         context 'the returned ctx' do
           subject { result => Ok([_, ctx]); ctx }
@@ -198,8 +209,12 @@ describe TypeChecker do
     end
 
     context 'function declarations' do
-      let(:ctx) { Context.new.define_fn('double', node) }
-      let(:node) { fn_dec('double', params(param('n', 'Int')), 'Int', bin(var('n'), :*, lit(2))) }
+      let(:ctx) do
+         Context.new
+           .define_fn('double', node)
+           .define_var('n')
+       end
+      let(:node) { fn_dec('double', [param('n', 'Int')], 'Int', bin(var('n'), :*, lit(2))) }
 
       it { is_expected.to be_a(Type::Function) }
       its(:parameters) { is_expected.to eql [Type.int] }
@@ -209,7 +224,9 @@ describe TypeChecker do
 
   context 'function calls' do
     let(:fn_type) { Type::Function.new([Type.int], Type.int) }
-    let(:ctx) { Context.new.define_fn('double', node).annotate_fn('double', fn_type) }
+    let(:ctx) do
+      Context.new.define_fn('double', node).annotate_fn('double', fn_type)
+    end
 
     context 'valid calls' do
       let(:node) { fn_call('double', lit(42)) }
@@ -218,7 +235,7 @@ describe TypeChecker do
     end
 
     context 'invalid calls' do
-      subject { result => Err(error); error }
+      subject { result => Err([error]); error }
 
       context 'argument type mismatch' do
         let(:node) { fn_call('double', lit('hello')) }
@@ -318,8 +335,51 @@ describe TypeChecker do
         it 'reports all type mismatches' do
           expect(subject.size).to be >= 1
           error_messages = subject.map(&:message)
-          expect(error_messages.any? { |msg| msg.include?("Field 'name' expects String, got Int") }).to be true
-          expect(error_messages.any? { |msg| msg.include?("Field 'age' expects Int, got String") }).to be true
+          expect(error_messages).to include("Field 'name' expects String, got Int")
+          expect(error_messages).to include("Field 'age' expects Int, got String")
+        end
+      end
+    end
+
+    context 'with generic record types' do
+      let(:generic_record_type) { Type::Record.new('Container', {'value' => Type::Generic.new('a'), 'label' => Type.string}, ['a']) }
+      let(:ctx) { Context.new.define_type('Container', generic_record_type) }
+
+      context 'valid generic instantiation with string' do
+        let(:node) { rec_new('Container', field_set('value', lit('hello')), field_set('label', lit('greeting'))) }
+
+        it { is_expected.to be_a(Type::Record) }
+        its(:name) { is_expected.to eql 'Container' }
+        its(:params) { is_expected.to eql('a' => Type.string) }
+        its(:fields) { is_expected.to eql('value' => Type::Generic.new(substituted: Type.string, name: 'a'), 'label' => Type.string) }
+      end
+
+      context 'valid generic instantiation with integer' do
+        let(:node) { rec_new('Container', field_set('value', lit(42)), field_set('label', lit('number'))) }
+
+        it { is_expected.to be_a(Type::Record) }
+        its(:name) { is_expected.to eql 'Container' }
+        its(:fields) { is_expected.to eql('value' => Type::Generic.new(substituted: Type.int, name: 'a'), 'label' => Type.string) }
+      end
+
+      context 'multiple generic parameters' do
+        let(:multi_generic_type) { Type::Record.new('Result', {'ok' => Type::Generic.new('a'), 'err' => Type::Generic.new('b')}, ['a', 'b']) }
+        let(:ctx) { Context.new.define_type('Result', multi_generic_type) }
+
+        context 'valid instantiation with different types' do
+          let(:node) { rec_new('Result', field_set('ok', lit('success')), field_set('err', lit(404))) }
+
+          it { is_expected.to be_a(Type::Record) }
+          its(:name) { is_expected.to eql 'Result' }
+          its(:fields) { is_expected.to eql('ok' => Type::Generic.new(substituted: Type.string, name: 'a'), 'err' => Type::Generic.new(substituted: Type.int, name: 'b')) }
+        end
+
+        context 'valid instantiation with same types' do
+          let(:node) { rec_new('Result', field_set('ok', lit('success')), field_set('err', lit('error'))) }
+
+          it { is_expected.to be_a(Type::Record) }
+          its(:name) { is_expected.to eql 'Result' }
+          its(:fields) { is_expected.to eql('ok' => Type::Generic.new(substituted: Type.string, name: 'a'), 'err' => Type::Generic.new(substituted: Type.string, name: 'b')) }
         end
       end
     end
@@ -341,7 +401,15 @@ describe TypeChecker do
       let(:node) { anon_rec(field_set('x', lit(42)), field_set('y', lit('hello'))) }
 
       it { is_expected.to be_a(Type::Record) }
-      its(:fields) { is_expected.to eql('x' => Type.int, 'y' => Type.string) }
+
+      describe 'its fields' do
+        subject { super().fields }
+
+        it 'contains the right types' do
+          expect(subject['x'].type).to eql Type.int
+          expect(subject['y'].type).to eql Type.string
+        end
+      end
     end
 
     context 'empty anonymous record' do
@@ -353,17 +421,24 @@ describe TypeChecker do
 
     context 'anonymous record with complex expressions' do
       let(:ctx) do
-        Context.new.define_var('base', var_dec('base', lit(42))).annotate_var('base', Type.int)
+        Context.new.define_var('base').annotate_var('base', Type.int)
       end
 
       let(:node) { anon_rec(field_set('sum', bin(lit(10), :+, var('base'))), field_set('doubled', bin(var('base'), :*, lit(2)))) }
 
       it { is_expected.to be_a(Type::Record) }
-      its(:fields) { is_expected.to eql('sum' => Type.int, 'doubled' => Type.int) }
+      describe 'its fields' do
+        subject { super().fields }
+
+        it 'contains the right types' do
+          expect(subject['sum'].type).to eql Type.int
+          expect(subject['doubled'].type).to eql Type.int
+        end
+      end
     end
 
     context 'invalid anonymous record' do
-      subject { result => Err(error); error }
+      subject { result => Err([error]); error }
 
       context 'undefined variable in field expression' do
         let(:node) { anon_rec(field_set('value', var('undefined_var'))) }
@@ -388,13 +463,13 @@ describe TypeChecker do
       subject { result => Ok([type, _]); type.variants }
 
       it 'are checked' do
-        expect(subject).to all(be_a(Type::VariantNullary))
-        expect(subject.first.name).to eql 'Red'
-        expect(subject.first.union_type_name).to eql 'Color'
-        expect(subject[1].name).to eql 'Green'
-        expect(subject[1].union_type_name).to eql 'Color'
-        expect(subject[2].name).to eql 'Blue'
-        expect(subject[2].union_type_name).to eql 'Color'
+        expect(subject.map(&:type)).to all(be_a(Type::VariantNullary))
+        expect(subject.first.type.name).to eql 'Red'
+        expect(subject.first.type.union_type_name).to eql 'Color'
+        expect(subject[1].type.name).to eql 'Green'
+        expect(subject[1].type.union_type_name).to eql 'Color'
+        expect(subject[2].type.name).to eql 'Blue'
+        expect(subject[2].type.union_type_name).to eql 'Color'
       end
     end
   end

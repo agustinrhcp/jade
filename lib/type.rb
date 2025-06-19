@@ -63,5 +63,13 @@ module Type
     end
   end
 
-  Generic = Data.define(:name)
+  Generic = Data.define(:name, :substituted) do
+    def initialize(name:, substituted: nil)
+      super
+    end
+
+    def to_s
+      substituted ? substituted : name
+    end
+  end
 end

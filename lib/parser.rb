@@ -89,7 +89,7 @@ module Parser
       type(:def).skip >>
         identifier >>
         type(:lparen).skip >>
-        parameters >>
+        parameters.map { [it] } >>
         type(:rparen).skip >>
         type(:arrow).skip >>
         constant >>
@@ -218,11 +218,8 @@ module Parser
   end
 
   def parameters
-    (
-      sequence(parameter, separated_by: type(:comma).skip) |
-        success([])
-    )
-      .map(&AST.parameter_list)
+    sequence(parameter, separated_by: type(:comma).skip) |
+      success([])
   end
 
   def none

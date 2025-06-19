@@ -1,14 +1,28 @@
-Context = Data.define(:value_scope, :type_scope, :parent) do
-  def initialize(value_scope: ValueScope.new, type_scope: TypeScope.new, parent: nil)
+Context = Data.define(:value_scope, :type_scope, :parent, :substitution) do
+  def initialize(
+    value_scope:
+    ValueScope.new,
+    type_scope:
+    TypeScope.new,
+    substitution: {},
+    parent: nil
+  )
     super
   end
 
-  def define_var(name, node)
-    with(value_scope: value_scope.define_var(name, node))
+  VarEntry = Data.define(:name, :type)
+  FunctionEntry = Data.define(:name, :parameters, :return_type, :type)
+
+  def define_var(name)
+    with(value_scope: value_scope.define_var(name, VarEntry.new(name, nil)))
   end
 
-  def define_fn(name, node)
-    with(value_scope: value_scope.define_fn(name, node))
+  def define_fn(name, parameters)
+    with(
+      value_scope: value_scope.define_fn(
+        name, FunctionEntry.new(name, parameters, nil, nil),
+      )
+    )
   end
 
   def define_type(name, type)
@@ -28,11 +42,25 @@ Context = Data.define(:value_scope, :type_scope, :parent) do
   end
 
   def annotate_var(name, type)
-    with(value_scope: value_scope.annotate_var(name, type))
+    value_scope.resolve_var(name)
+      .with(type:)
+      .then { value_scope.define_var(name, it) }
+      .then { with(value_scope: it) }
   end
 
   def annotate_fn(name, type)
-    with(value_scope: value_scope.annotate_fn(name, type))
+    value_scope.resolve_fn(name)
+      .with(type:)
+      .then { value_scope.define_fn(name, it) }
+      .then { with(value_scope: it) }
+  end
+
+def extend_substitution(name, type)
+    with(substitution: substitution.merge(name => type))
+  end
+
+  def resolve_substitution(name)
+    substitution[name]
   end
 end
 
@@ -79,16 +107,3 @@ ValueScope = Data.define(:vars, :functions) do
     functions[name]
   end
 end
-
-UnboundVar = Data.define(:name, :range)
-TypedVar = Data.define(:name, :type, :range)
-UnboundFunction = Data.define(:name, :arity, :range)
-
-TypedFunction = Data.define(:name, :type, :range) do
-  def arity
-    type.parameters.size
-  end
-end
-
-RecordType = Data.define(:name, :fields)
-TypedRecordType = Data.define(:name, :type, :range)

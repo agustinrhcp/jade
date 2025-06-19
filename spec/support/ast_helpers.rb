@@ -12,7 +12,7 @@ module AstHelpers
   end
 
   def bin(left, operator, right)
-    AST::Binary.new(left:, operator:, right:)
+    AST::Binary.new(left:, operator:, right:, range: dummy_range)
   end
 
   def grp(expression)
@@ -33,10 +33,6 @@ module AstHelpers
 
   def param(name, type)
     AST::Parameter.new(name:, type:, range: dummy_range)
-  end
-
-  def params(*parameters)
-    AST::ParameterList.new(parameters:)
   end
 
   def fn_dec(name, parameters, return_type, *body)
@@ -70,7 +66,7 @@ module AstHelpers
   end
 
   def rec_new(name, *fields)
-    AST::RecordInstantiation.new(name:, fields:, range: dummy_range)
+    AST::RecordInstantiation.new(name:, fields:, params: [], range: dummy_range)
   end
 
   def anon_rec(*fields)

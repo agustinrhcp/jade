@@ -3,49 +3,48 @@ require 'position'
 module AST
   extend self
 
-  Binary = Data.define(:left, :operator, :right, :type) do
-    def initialize(left:, operator:, right:, type: nil)
-      super
-    end
-
-    def annotate(type)
-      with(type:)
-    end
-
-    def range
-      Range.new(left.range.start, right.range.end)
-    end
-  end
-
-  Unary = Data.define(:operator, :right, :range, :type) do
-    def initialize(operator:, right:, range:, type: nil)
-      super
-    end
-
+  module Node
     def annotate(type)
       with(type:)
     end
   end
 
-  Literal = Data.define(:value, :type, :range) do
-    def annotate(type)
-      self
-    end
+  def define_ast_node(name, *fields)
+    const_set(name, Data.define(*fields, :range, :type) {
+      include Node
+
+      define_method(:initialize) do |**kwargs|
+        kwargs[:type] ||= nil
+        super(**kwargs)
+      end
+    })
   end
 
-  Grouping = Data.define(:expression, :range)
+  define_ast_node(:Binary, :left, :operator, :right)
+  define_ast_node(:Unary, :operator, :right)
+  define_ast_node(:Literal, :value)
+  define_ast_node(:Grouping, :expression)
 
-  Variable = Data.define(:name, :range, :type) do
-    def initialize(name:, range:, type: nil)
-      super
-    end
+  define_ast_node(:Variable, :name)
+  define_ast_node(:VariableDeclaration, :name, :expression)
 
-    def annotate(type)
-      with(type:)
-    end
-  end
+  define_ast_node(:Parameter, :name)
+  define_ast_node(:FunctionDeclaration, :name, :parameters, :return_type, :body)
+  define_ast_node(:FunctionCall, :name, :arguments)
+  define_ast_node(:RecordDeclaration, :name, :params, :fields)
+  define_ast_node(:RecordField, :name)
+  define_ast_node(:RecordInstantiation, :name, :fields, :params)
+  define_ast_node(:AnonymousRecord, :fields)
+  define_ast_node(:RecordAccess, :target, :field)
 
-  VariableDeclaration = Data.define(:name, :expression, :range, :type) do
+  define_ast_node(:UnionType, :name, :params, :variants)
+  define_ast_node(:Variant, :name, :fields, :params)
+
+
+  TypeRef = Data.define(:name, :range)
+  GenericRef = Data.define(:name, :range)
+
+  RecordFieldAssign = Data.define(:name, :expression, :range, :type) do
     def initialize(name:, expression:, range:, type: nil)
       super
     end
@@ -55,84 +54,8 @@ module AST
     end
   end
 
-  Parameter = Data.define(:name, :type, :range) do
-    def annotate(type)
-      with(type:)
-    end
-  end
-
-  ParameterList = Data.define(:parameters) do
-    def size
-      parameters.size
-    end
-  end
-
-  FunctionDeclaration = Data.define(:name, :parameters, :return_type, :type, :body, :range) do
-    def initialize(name:, parameters:, return_type:, type: nil, body:, range:)
-      super
-    end
-
-    def annotate(type)
-      with(type:, return_type: type.return_type)
-    end
-  end
-
-  FunctionCall = Data.define(:name, :arguments, :range, :type) do
-    def initialize(name:, arguments:, range:, type: nil)
-      super
-    end
-
-    def annotate(type)
-      with(type:)
-    end
-  end
-
   # params if for generics
-  RecordDeclaration   = Data.define(:name, :params, :fields, :range)
-  RecordField         = Data.define(:name, :type, :range) do
-    def annotate(type)
-      with(type:)
-    end
-  end
-  RecordInstantiation = Data.define(:name, :fields, :range)
 
-  RecordAccess = Data.define(:target, :field, :type, :range) do
-    def initialize(target:, field:, type: nil, range:)
-      super
-    end
-
-    def annotate(type)
-      with(type:)
-    end
-  end
-
-  TypeRef = Data.define(:name, :range)
-  GenericRef = Data.define(:name, :range)
-
-  AnonymousRecord     = Data.define(:fields, :range, :type) do
-    def initialize(fields:, range:, type: nil)
-      super
-    end
-
-    def annotate(type)
-      with(type:)
-    end
-  end
-
-  RecordFieldAssign   = Data.define(:name, :expression, :range)
-
-  # params if for generics
-  UnionType = Data.define(:name, :params, :variants, :type, :range) do
-    def initialize(name:, variants:, params:, type: nil, range:)
-      super
-    end
-
-    def annotate(type)
-      with(type:)
-    end
-  end
-
-  Variant = Data.define(:name, :fields, :params, :range)
   VariantField = Data.define(:name, :value, :type, :range)
   VariantParam = Data.define(:value, :type, :range)
 
@@ -149,7 +72,12 @@ module AST
 
   def binary
     ->(left, operator, right) do
-      Binary.new(left:, operator: operator.value.to_sym, right:)
+      Binary.new(
+        left:,
+        operator: operator.value.to_sym,
+        right:,
+        range: Range.new(left.range.start, right.range.end),
+      )
     end
   end
 
@@ -204,12 +132,6 @@ module AST
         type: type.value,
         range: Range.new(name.position, type.position),
       )
-    end
-  end
-
-  def parameter_list
-    ->(parameters) do
-      AST::ParameterList.new(parameters:)
     end
   end
 
@@ -286,6 +208,7 @@ module AST
       AST::RecordInstantiation.new(
         name: name.value,
         fields:,
+        params: [],
         range: Range.new(name.position, fields.last&.range&.end || name.position),
       )
     end

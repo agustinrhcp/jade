@@ -1,3 +1,22 @@
+module Result
+  extend self
+
+  def walk(list, &block)
+    list.reduce(Ok[[]]) do |acc, item|
+      case [acc, block.call(item)]
+      in [Ok(collected), Ok(result)]
+        Ok[collected + [result]]
+      in [Ok, Err(err)]
+        Err[err]
+      in [Err, Ok]
+        acc
+      in [Err(acc_err), Err(err)]
+        Err[acc_err + err]
+      end
+    end
+  end
+end
+
 Ok  = Data.define(:ok) do
   private :ok
 

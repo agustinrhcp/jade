@@ -53,7 +53,7 @@ describe SemanticAnalyzer do
     context 'valid calls' do
       let(:node) do
         prog(
-          fn_dec(:double, params(param(:x, :int)), :int, bin(var(:x), :*, lit(2))),
+          fn_dec(:double, [param(:x, :int)], :int, bin(var(:x), :*, lit(2))),
           fn_call(:double, lit(42))
         )
       end

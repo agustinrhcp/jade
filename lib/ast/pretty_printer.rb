@@ -49,19 +49,19 @@ module AST
         "#{prefix}  type: #{type}\n" \
         "#{prefix})"
 
-      in ParameterList(parameters:)
-        if parameters.empty?
-          "#{prefix}ParameterList()\n" \
-        else
-          "#{prefix}ParameterList(\n" \
-          "#{parameters.map { |param| print(param, indent + 1) }.join(",\n")}\n" \
-          "#{prefix})"
-        end
-
       in FunctionDeclaration(name:, parameters:, return_type:, body:)
+        parameters_print =
+          if parameters.empty?
+            "#{prefix}()\n" \
+          else
+            "#{prefix}(\n" \
+            "#{parameters.map { |param| print(param, indent + 1) }.join(",\n")}\n" \
+            "#{prefix})"
+          end
+
         "#{prefix}Function Declaration(\n" \
         "#{prefix}  name: #{name},\n" \
-        "#{prefix}  parameters: #{print(parameters)}" \
+        "#{prefix}  parameters: #{parameters_print}" \
         "#{prefix}  returning type: #{return_type}\n" \
         "#{body.map { |stmt| print(stmt, indent + 2) }.join(",\n")}\n" \
         "#{prefix})"

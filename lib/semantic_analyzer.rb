@@ -40,7 +40,7 @@ module SemanticAnalyzer
         analyzed_expression, current_context, errors = analyze(expression, context)
         [
           node.with(expression: analyzed_expression),
-          current_context.define_var(name, analyzed_expression),
+          current_context.define_var(name),
           errors,
         ]
       end
@@ -50,13 +50,13 @@ module SemanticAnalyzer
       .then { |analyzed_stmts, new_context, errors| [node.with(statements: analyzed_stmts), new_context, errors] }
 
     in AST::FunctionDeclaration(name:, parameters:, return_type:, body:)
-      function_context = parameters.parameters.reduce(context) do |acc, param|
-        acc.define_var(param.name, param)
+      function_context = parameters.reduce(context) do |acc, param|
+        acc.define_var(param.name)
       end
 
       analyzed_body, _, body_errors = analyze_many(function_context, body)
 
-      [node.with(body: analyzed_body), context.define_fn(name, node), body_errors]
+      [node.with(body: analyzed_body), context.define_fn(name, parameters), body_errors]
 
     in AST::FunctionCall(name:, arguments:)
       if fn = context.resolve_fn(name)
