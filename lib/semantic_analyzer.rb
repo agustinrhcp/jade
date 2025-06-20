@@ -1,3 +1,5 @@
+require 'result'
+
 require 'ast'
 require 'context'
 
@@ -7,102 +9,131 @@ module SemanticAnalyzer
   def analyze(node, context = Context.new) 
     case node
     in AST::Literal
-      [node, context, []]
+      Ok[node.annotate(context:)]
 
     in AST::Variable(name:)
       if context.resolve_var(name)
-        [node, context, []]
+        Ok[node.annotate(context:)]
       else
-        [
-          node,
-          context,
-          [Error.new("Undefined variable '#{name}'", range: node.range)],
-        ]
+        Err[[Error.new("Undefined variable '#{name}'", range: node.range)]]
       end
 
     in AST::Unary(operator:, right:)
-      analyzed_right, _, errors = analyze(right, context)
-      [node.with(right: analyzed_right), context, errors]
+      analyze(right, context).map do |analyzed_right|
+        node.with(right: analyzed_right).annotate(context:)
+      end
 
     in AST::Binary(left:, right:)
-      analyzed_left, _, errors_left = analyze(left, context)
-      analyzed_right, _, errors_right = analyze(right, context)
-      [node.with(right: analyzed_right, left: analyzed_left), context, errors_left + errors_right]
+      case [analyze(left, context), analyze(right, context)]
+      in [Ok(analyzed_left), Ok(analyzed_right)]
+        node
+          .with(
+            right: analyzed_right,
+            left: analyzed_left,
+          )
+          .annotate(context:)
+          .then { Ok[it] }
+
+      in [Ok, Err(errors)]
+        Err[errors]
+
+      in [Err(errors), Ok]
+        Err[errors]
+
+      in [Err(errors_left), Err(errors_right)]
+        Err[errors_left + errors_right]
+      end
 
     in AST::Grouping(expression:)
-      analyzed_expression, _, errors = analyze(expression, context)
-      [node.with(expression: analyzed_expression), context, errors]
+      analyze(expression, context)
+        .and_then do |analyzed_expression|
+          node.with(expression: analyzed_expression).annotate(context:)
+        end
 
     in AST::VariableDeclaration(name:, expression:)
       if context.resolve_var(name)
-        [node, context, [Error.new("Already defined variable '#{name}'", range: node.range)]]
-      else
-        analyzed_expression, current_context, errors = analyze(expression, context)
-        [
-          node.with(expression: analyzed_expression),
-          current_context.define_var(name),
-          errors,
-        ]
+        return Err[[Error.new("Already defined variable '#{name}'", range: node.range)]]
       end
+
+      analyze(expression, context)
+        .map do |analyzed_expression|
+          node
+            .with(expression: analyzed_expression)
+            .annotate(context: analyzed_expression.context.define_var(name))
+        end
 
     in AST::Program(statements:)
-      analyze_many(context, statements)
-      .then { |analyzed_stmts, new_context, errors| [node.with(statements: analyzed_stmts), new_context, errors] }
+      analyze_many(statements, context)
+        .map do |analyzed_stmts|
+          node
+            .with(statements: analyzed_stmts)
+            .annotate(context:)
+        end
 
     in AST::FunctionDeclaration(name:, parameters:, return_type:, body:)
-      function_context = parameters.reduce(context) do |acc, param|
-        acc.define_var(param.name)
+      if context.resolve_fn(name)
+        return Err[[Error.new("Already defined function '#{name}'", range: node.range)]]
       end
 
-      analyzed_body, _, body_errors = analyze_many(function_context, body)
+      function_context = parameters
+        .reduce(context) { |acc, param| acc.define_var(param.name) } 
+        # Define the function for recursion
+        .define_fn(name, parameters)
 
-      [node.with(body: analyzed_body), context.define_fn(name, parameters), body_errors]
+      analyze_many(body, function_context)
+        .map do |analyzed_body|
+          node
+            .with(body: analyzed_body)
+            .annotate(context: context.define_fn(name, parameters))
+        end
 
     in AST::FunctionCall(name:, arguments:)
-      if fn = context.resolve_fn(name)
-        if fn.parameters.size == arguments.size
-          analyzed_arguments, _, argument_errors = analyze_many(context, arguments)
-          [node.with(arguments: analyzed_arguments), context, argument_errors]
-        else
-          [
-            node,
-            context,
-            [Error.new("Function '#{name}' expects #{fn.arity} arguments, got #{arguments.size}", range: node.range)],
-          ]
-        end
-      else
-        [node, context, [Error.new("Undefined function '#{name}'", range: node.range)]]
+      fn = context.resolve_fn(name)
+
+      unless fn
+        return Err[[Error.new("Undefined function '#{name}'", range: node.range)]]
       end
+
+      unless fn.parameters.size == arguments.size
+        return Err[[Error.new("Function '#{name}' expects #{fn.arity} arguments, got #{arguments.size}", range: node.range)]]
+      end
+
+      analyze_many(arguments, context)
+        .map do |analyzed_arguments|
+          node.with(arguments: analyzed_arguments).annotate(context:)
+        end
 
     in AST::RecordDeclaration(name:, params:, fields:)
       if context.resolve_type(name)
-        return [node, context, [Error.new("Already defined record type '#{name}'", range: node.range)]]
+        return Err[[Error.new("Already defined record type '#{name}'", range: node.range)]]
       end
 
       validate_uniquness_of_named_pairs(fields) do |f|
         "Duplicate field '#{f}' in record '#{name}'"
       end
-        .then { return [node, context, it] if it.any? }
+        .then { return Err[it] if it.any? }
 
       fields
         .select { |f| f.type.is_a?(AST::GenericRef) }
         .reject { |f| params.include?(f.type.name) }
         .map    { |f| Error.new("Unbound type variable '#{f.type.name}' for '#{name}' definition", range: node.range) }
-        .then { return [node, context, it] if it.any? }
+        .then { return Err[it] if it.any? }
 
-      [node, context.define_type(name, node), []]
+      node
+        .annotate(context: context.define_type(name, node))
+        .then { Ok[it] }
 
     in AST::RecordInstantiation(name:, fields:)
       record_type = context.resolve_type(name)
 
       unless record_type
-        return [node, context, [Error.new("Undefined record type '#{name}'", range: node.range)]]
+        return Err[[Error.new("Undefined record type '#{name}'", range: node.range)]]
       end
 
       validate_uniquness_of_named_pairs(fields) do |f|
         "Duplicate assignment to field '#{f}' in record instantiation"
       end
-        .then { return [node, context, it] if it.any? }
+        .then { return Err[it] if it.any? }
 
       expected_field_names = record_type.fields.map(&:name)
       given_field_names = fields.map(&:name)
@@ -110,30 +141,30 @@ module SemanticAnalyzer
       missing = expected_field_names - given_field_names
       extra   = given_field_names - expected_field_names
 
-      missing_or_extra_fields_errors = missing
+      missing
         .map { |field_name| Error.new("Missing required field '#{field_name}' for record '#{name}'", range: node.range)}
         .concat(extra.map { |field_name| Error.new("Unknown field '#{field_name}' for record '#{name}'", range: node.range)})
+        .then { return Err[it] if it.any? }
 
-      analayzed_fields, _, field_errors = analyze_many(context, fields)
-      [
-        node.with(fields: analayzed_fields),
-        context,
-        missing_or_extra_fields_errors.concat(field_errors),
-      ]
+      analyze_many(fields, context)
+        .map do
+          node.with(fields: it).annotate(context:)
+        end
 
     in AST::RecordFieldAssign(name:, expression:)
-      analyzed_expression, _, expression_errors = analyze(expression, context)
-      [node.with(expression: analyzed_expression), context, expression_errors]
+      analyze(expression, context)
+        .map { node.with(expression: it).annotate(context:) }
 
     in AST::AnonymousRecord(fields:)
-      analyzed_fields, _, field_errors = analyze_many(context, fields)
-
       validate_uniquness_of_named_pairs(fields) do |f|
         "Duplicate field '#{f}' in anonymous record"
       end
-        .then { return [node, context, it] if it.any? }
+        .then { return Err[it] if it.any? }
 
-      [node.with(fields: analyzed_fields), context, field_errors]
+      analyze_many(fields, context)
+        .map do |analyzed_fields|
+          node.with(fields: analyzed_fields).annotate(context:)
+        end
 
     in AST::RecordAccess(target:)
       analyzed_target, new_context, errors = analyze(target, context)
@@ -152,51 +183,40 @@ module SemanticAnalyzer
 
     in AST::UnionType(name:, variants:)
       if context.resolve_type(name)
-        return [node, context, [Error.new("Already defined type '#{name}'", range: node.range)]]
+        return Err[[Error.new("Already defined type '#{name}'", range: node.range)]]
       end
 
       validate_uniquness_of_named_pairs(variants) do |v|
         "Duplicate variant '#{v}' type '#{name}'"
       end
-        .then { return [node, context, it] if it.any? }
+        .then { return Err[it] if it.any? }
 
-      analyzed_variants, new_context, variant_errors = analyze_many(context, variants)
-
-      [
-        node.with(variants: analyzed_variants),
-        new_context.define_type(name, node.with(variants: analyzed_variants)),
-        variant_errors,
-      ]
+      analyze_many(variants, context)
+        .map do
+          node
+            .with(variants: it)
+            .annotate(context: context.define_type(name, node))
+        end
 
     in AST::Variant(name:, fields:, params:)
       analyzed_variant, errors = case [fields, params]
         in [[], []]
-          [node, []]
+          Ok[node]
         in [some_fields, []] if some_fields.any?
-          [node, validate_uniquness_of_named_pairs(some_fields) do |v|
+          validate_uniquness_of_named_pairs(some_fields) do |v|
             "Duplicate variant field '#{f}' for field'#{name}'"
-          end]
-        in [[], some_params] if some_params.any?
-          [node, []]
-        end
+          end
+            .then { return Err[it] if it.any? }
 
-      [
-        analyzed_variant,
-        context,
-        errors,
-      ]
+          Ok[node]
+
+        in [[], some_params] if some_params.any?
+          Ok[node]
+        end
     end
   end
 
   private
-
-  def analyze_many(context, statements)
-    statements
-      .reduce([[], context, []]) do |(analyzed_stmts, current_context, errors), stmt|
-        analyzed_stmt, new_context, stmt_errors = analyze(stmt, current_context)
-        [analyzed_stmts.concat([analyzed_stmt]), new_context, errors.concat(stmt_errors)]
-      end
-  end
 
   def validate_uniquness_of_named_pairs(named_pairs)
     return [] if named_pairs.uniq { |f| f.name }.length == named_pairs.length
@@ -210,6 +230,32 @@ module SemanticAnalyzer
       end
 
     errors
+  end
+
+  def reduce_nodes(list, initial_context)
+    list.reduce(Ok[[[], initial_context]]) do |acc, item|
+      acc
+        .on_err do |(errors, context)|
+          yield(item, context)
+            .map_error { |e| [errors + e, context] }
+            .and_then { Err[_1] }
+        end
+        .and_then do |(collected, context)|
+          yield(item, context)
+            .map do |checked|
+              [collected + [checked], checked.context]
+            end
+            .map_error { |e| [e, context] }
+        end
+    end
+      .map(&:first)
+      .map_error(&:first)
+  end
+
+  def analyze_many(nodes, context)
+    reduce_nodes(nodes, context) do |node, next_context|
+      analyze(node, next_context)
+    end
   end
 
   class Error < StandardError

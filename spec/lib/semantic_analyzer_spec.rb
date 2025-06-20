@@ -1,16 +1,32 @@
 require 'semantic_analyzer'
 
 describe SemanticAnalyzer do
-  subject do
-    described_class.analyze(node) => [analyzed, _, _]
-    analyzed
+  let(:ctx) { Context.new }
+
+  subject(:result) do
+    described_class.analyze(node, ctx)
+  end
+
+  before do
+    case result
+    in Ok(analyzed_node)
+      expect(analyzed_node).to be_a(AST::Node)
+      expect(analyzed_node.context).to be_a(Context)
+    in Err(errors)
+      expect(errors).to all(be_a(SemanticAnalyzer::Error))
+    end
+  end
+
+  context 'literals' do
+    subject { super() => Ok(analyzed_node); analyzed_node }
+
+    let(:node) { lit(42) }
+
+    it { is_expected.to eql(node.with(context: Context.new)) }
   end
 
   context 'detects undefined variables' do
-    subject do
-      described_class.analyze(node) => [_, _, [error]]
-      error
-    end
+    subject { super() => Err([error]); error }
 
     let(:node) { var(:pepe) }
 
@@ -19,6 +35,8 @@ describe SemanticAnalyzer do
   end
 
   context 'variable declarations' do
+    subject { super() => Ok(analyzed_node); analyzed_node }
+
     context 'valid declarations' do
       let(:node) { var_dec(:x, lit(42)) }
 
@@ -30,10 +48,7 @@ describe SemanticAnalyzer do
     end
 
     context 'invalid declarations' do
-      subject do
-        described_class.analyze(node) => [_, _, [error]]
-        error
-      end
+      subject { result => Err([error]); error }
 
       context 'redeclaration in same context' do
         let(:node) do
@@ -51,6 +66,8 @@ describe SemanticAnalyzer do
 
   context 'function calls' do
     context 'valid calls' do
+      subject { super() => Ok(program); program }
+
       let(:node) do
         prog(
           fn_dec(:double, [param(:x, :int)], :int, bin(var(:x), :*, lit(2))),
@@ -67,10 +84,7 @@ describe SemanticAnalyzer do
     end
 
     context 'invalid calls' do
-      subject do
-        described_class.analyze(node) => [_, _, [error]]
-        error
-      end
+      subject { super() => Err([error]); error }
 
       context 'undefined function' do
         let(:node) { fn_call(:unknown, lit(42)) }
@@ -83,6 +97,8 @@ describe SemanticAnalyzer do
 
   context 'record declaration and instantiation' do
     context 'valid record declarations' do
+      subject { super() => Ok(declaration); declaration }
+
       let(:node) { rec('User', field('name', 'String'), field('age', 'Int')) }
 
       it 'returns the analyzed node' do
@@ -127,10 +143,7 @@ describe SemanticAnalyzer do
     end
 
     context 'invalid record declarations' do
-      subject do
-        described_class.analyze(node) => [_, _, [error]]
-        error
-      end
+      subject { super() => Err([error]); error }
 
       context 'duplicate field names' do
         let(:node) { rec('User', field('name', 'String'), field('name', 'Int')) }
@@ -142,10 +155,7 @@ describe SemanticAnalyzer do
       context 'multiple duplicate fields' do
         let(:node) { rec('User', field('name', 'String'), field('age', 'Int'), field('name', 'String'), field('age', 'String')) }
         
-        subject do
-          described_class.analyze(node) => [_, _, errors]
-          errors
-        end
+        subject { result => Err(errors); errors }
 
         it 'reports all duplicate fields' do
           expect(subject.size).to eql 2
@@ -175,6 +185,8 @@ describe SemanticAnalyzer do
     end
 
     context 'valid record instantiation' do
+      subject { super() => Ok(program); program }
+
       let(:node) do
         prog(
           rec('User', field('name', 'String'), field('age', 'Int')),
@@ -237,10 +249,7 @@ describe SemanticAnalyzer do
     end
 
     context 'invalid record instantiation' do
-      subject do
-        described_class.analyze(node) => [_, _, [error]]
-        error
-      end
+      subject { super() => Err([error]); error }
 
       context 'undefined record type' do
         let(:node) { rec_new('Unknown', field_set('name', lit('John'))) }
@@ -269,10 +278,7 @@ describe SemanticAnalyzer do
           )
         end
 
-        subject do
-          described_class.analyze(node) => [_, _, errors]
-          errors
-        end
+        subject { result => Err(errors); errors }
 
         it 'reports all missing fields' do
           expect(subject.size).to be >= 1
@@ -301,10 +307,7 @@ describe SemanticAnalyzer do
           )
         end
 
-        subject do
-          described_class.analyze(node) => [_, _, errors]
-          errors
-        end
+        subject { result => Err(errors); errors }
 
         it 'reports all unknown fields' do
           expect(subject.size).to be >= 1
@@ -333,10 +336,7 @@ describe SemanticAnalyzer do
           )
         end
 
-        subject do
-          described_class.analyze(node) => [_, _, errors]
-          errors
-        end
+        subject { result => Err(errors); errors }
 
         it 'reports all duplicate assignments' do
           expect(subject.size).to be >= 1
@@ -353,10 +353,7 @@ describe SemanticAnalyzer do
           )
         end
 
-        subject do
-          described_class.analyze(node) => [_, _, errors]
-          errors
-        end
+        subject { result => Err(errors); errors }
 
         it 'reports both missing and unknown field errors' do
           expect(subject.size).to be >= 2
@@ -369,6 +366,8 @@ describe SemanticAnalyzer do
 
     context 'anonymous records' do
       context 'valid anonymous record' do
+        subject { super() => Ok(analyzed); analyzed }
+
         let(:node) { anon_rec(field_set('x', lit(42)), field_set('y', lit('hello'))) }
 
         it 'returns the analyzed node' do
@@ -380,6 +379,8 @@ describe SemanticAnalyzer do
       end
 
       context 'empty anonymous record' do
+        subject { super() => Ok(analyzed); analyzed }
+
         let(:node) { anon_rec() }
 
         it 'returns the analyzed node' do
@@ -389,6 +390,9 @@ describe SemanticAnalyzer do
       end
 
       context 'anonymous record with complex expressions' do
+        subject { super() => Ok(analyzed); analyzed }
+
+        let(:ctx) { Context.new.define_var('user_name') }
         let(:node) { anon_rec(field_set('sum', bin(lit(10), :+, lit(20))), field_set('name', var('user_name'))) }
 
         it 'analyzes field expressions' do
@@ -399,10 +403,7 @@ describe SemanticAnalyzer do
       end
 
       context 'invalid anonymous record' do
-        subject do
-          described_class.analyze(node) => [_, _, [error]]
-          error
-        end
+        subject { super() => Err([error]); error }
 
         context 'duplicate field names' do
           let(:node) { anon_rec(field_set('x', lit(42)), field_set('x', lit(43))) }
@@ -412,12 +413,9 @@ describe SemanticAnalyzer do
         end
 
         context 'multiple duplicate fields' do
-          let(:node) { anon_rec(field_set('x', lit(42)), field_set('y', lit(43)), field_set('x', lit(44)), field_set('y', lit(45))) }
+          subject { result => Err(errors); errors }
 
-          subject do
-            described_class.analyze(node) => [_, _, errors]
-            errors
-          end
+          let(:node) { anon_rec(field_set('x', lit(42)), field_set('y', lit(43)), field_set('x', lit(44)), field_set('y', lit(45))) }
 
           it 'reports all duplicate fields' do
             expect(subject.size).to be >= 1
@@ -431,6 +429,8 @@ describe SemanticAnalyzer do
 
   context 'union type declaration and usage' do
     context 'valid union type declarations' do
+      subject { super() => Ok(analyzed_node); analyzed_node }
+
       let(:node) { union('Color', variant('Red'), variant('Green'), variant('Blue')) }
 
       it { is_expected.to be_a(AST::UnionType) }
@@ -504,10 +504,7 @@ describe SemanticAnalyzer do
     end
 
     context 'invalid union type declarations' do
-      subject do
-        described_class.analyze(node) => [_, _, [error]]
-        error
-      end
+      subject { super() => Err([error]); error }
 
       context 'duplicate variant names' do
         let(:node) { union('Color', variant('Red'), variant('Green'), variant('Red')) }
@@ -519,10 +516,7 @@ describe SemanticAnalyzer do
       context 'multiple duplicate variants' do
         let(:node) { union('Status', variant('Loading'), variant('Success'), variant('Loading'), variant('Error'), variant('Success')) }
 
-        subject do
-          described_class.analyze(node) => [_, _, errors]
-          errors
-        end
+        subject { result => Err(errors); errors }
 
         it 'reports all duplicate variants' do
           expect(subject.size).to be >= 1
@@ -569,6 +563,7 @@ describe SemanticAnalyzer do
     end
 
     context 'union types in context' do
+      subject { super() => Ok(analyzed); analyzed }
       let(:node) do
         prog(
           union('Color', variant('Red'), variant('Green'), variant('Blue')),
@@ -585,6 +580,8 @@ describe SemanticAnalyzer do
     end
 
     context 'complex union type scenarios' do
+      subject { super() => Ok(analyzed); analyzed }
+
       context 'union with complex variant fields' do
         let(:node) do
           prog(

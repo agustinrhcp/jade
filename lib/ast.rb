@@ -4,17 +4,22 @@ module AST
   extend self
 
   module Node
-    def annotate(type)
-      with(type:)
+    def annotate(type: nil, context: nil)
+      with(**{ type:, context: }.compact)
+    end
+
+    def annotate_context(context)
+      with(context:)
     end
   end
 
   def define_ast_node(name, *fields)
-    const_set(name, Data.define(*fields, :range, :type) {
+    const_set(name, Data.define(*fields, :range, :type, :context) {
       include Node
 
       define_method(:initialize) do |**kwargs|
         kwargs[:type] ||= nil
+        kwargs[:context] ||= nil
         super(**kwargs)
       end
     })
@@ -36,30 +41,22 @@ module AST
   define_ast_node(:RecordInstantiation, :name, :fields, :params)
   define_ast_node(:AnonymousRecord, :fields)
   define_ast_node(:RecordAccess, :target, :field)
+  define_ast_node(:RecordFieldAssign, :name, :expression)
 
   define_ast_node(:UnionType, :name, :params, :variants)
   define_ast_node(:Variant, :name, :fields, :params)
 
+  define_ast_node(:Program, :statements)
 
   TypeRef = Data.define(:name, :range)
   GenericRef = Data.define(:name, :range)
 
-  RecordFieldAssign = Data.define(:name, :expression, :range, :type) do
-    def initialize(name:, expression:, range:, type: nil)
-      super
-    end
-
-    def annotate(type)
-      with(type:)
-    end
-  end
 
   # params if for generics
 
   VariantField = Data.define(:name, :value, :type, :range)
   VariantParam = Data.define(:value, :type, :range)
 
-  Program = Data.define(:statements)
   Module  = Data.define(:name, :exposing, :statements, :range)
 
   Range = Data.define(:start, :end)
@@ -235,7 +232,11 @@ module AST
 
   def program
     ->(statements) do
-      AST::Program.new(statements:)
+      AST::Program
+        .new(
+          statements:,
+          range: Range.new(statements.first.range.start, statements.last.range.end),
+        )
     end
   end
 

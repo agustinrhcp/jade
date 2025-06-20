@@ -78,7 +78,7 @@ module AstHelpers
   end
 
   def prog(*statements)
-    AST::Program.new(statements:)
+    AST::Program.new(statements:, range: dummy_range)
   end
 
   def mod(name, exposing, *statements)
