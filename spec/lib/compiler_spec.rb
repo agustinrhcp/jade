@@ -8,7 +8,7 @@ using Runtime
 describe Compiler do
   subject(:generated_code) { described_class.compile(source_code) }
 
-  context 'a simple functoin definition' do
+  context 'a simple function definition within a module' do
     let(:source_code) do
       <<~JADE
         module Math exposing (double)
@@ -22,11 +22,11 @@ describe Compiler do
 
     it {
       is_expected.to eql <<~RUBY
-        module User
+        module Math
           extend self
-          User = Data.define(:name, :age)
-          def say_hi(user)
-            "Hello " ++ user.send(:name)
+          def double(n)
+            two = 2
+            n * two
           end
         end
       RUBY

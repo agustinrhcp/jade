@@ -21,7 +21,7 @@ describe Generator do
   end
   context 'a function declaration' do
     let(:node) do
-      fn_dec('double', params(param('n', 'Int')), 'Int',
+      fn_dec('double', [param('n', 'Int')], 'Int',
         bin(var('n'), :*, lit(2))
       )
     end

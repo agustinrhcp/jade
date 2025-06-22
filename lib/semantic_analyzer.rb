@@ -2,6 +2,7 @@ require 'result'
 
 require 'ast'
 require 'context'
+require 'tuple'
 
 module SemanticAnalyzer
   extend self
@@ -9,30 +10,29 @@ module SemanticAnalyzer
   def analyze(node, context = Context.new) 
     case node
     in AST::Literal
-      Ok[node.annotate(context:)]
+      Ok[Tuple[node, context]]
 
     in AST::Variable(name:)
       if context.resolve_var(name)
-        Ok[node.annotate(context:)]
+        Ok[Tuple[node, context]]
       else
         Err[[Error.new("Undefined variable '#{name}'", range: node.range)]]
       end
 
     in AST::Unary(operator:, right:)
-      analyze(right, context).map do |analyzed_right|
-        node.with(right: analyzed_right).annotate(context:)
+      analyze(right, context).map do |(analyzed_right, new_context)|
+        Tuple[node.with(right: analyzed_right), new_context]
       end
 
     in AST::Binary(left:, right:)
       case [analyze(left, context), analyze(right, context)]
-      in [Ok(analyzed_left), Ok(analyzed_right)]
+      in [Ok([analyzed_left, _]), Ok([analyzed_right, _])]
         node
           .with(
             right: analyzed_right,
             left: analyzed_left,
           )
-          .annotate(context:)
-          .then { Ok[it] }
+          .then { Ok[Tuple[it, context]] }
 
       in [Ok, Err(errors)]
         Err[errors]
@@ -47,7 +47,7 @@ module SemanticAnalyzer
     in AST::Grouping(expression:)
       analyze(expression, context)
         .and_then do |analyzed_expression|
-          node.with(expression: analyzed_expression).annotate(context:)
+          Tuple[node.with(expression: analyzed_expression), context]
         end
 
     in AST::VariableDeclaration(name:, expression:)
@@ -56,18 +56,17 @@ module SemanticAnalyzer
       end
 
       analyze(expression, context)
-        .map do |analyzed_expression|
-          node
-            .with(expression: analyzed_expression)
-            .annotate(context: analyzed_expression.context.define_var(name))
+        .map do |(analyzed_expression, new_context)|
+          Tuple[
+            node.with(expression: analyzed_expression),
+            new_context.define_var(name),
+          ]
         end
 
     in AST::Program(statements:)
       analyze_many(statements, context)
-        .map do |analyzed_stmts|
-          node
-            .with(statements: analyzed_stmts)
-            .annotate(context:)
+        .map do |(analyzed_stmts, _)|
+          Tuple[node.with(statements: analyzed_stmts), context]
         end
 
     in AST::FunctionDeclaration(name:, parameters:, return_type:, body:)
@@ -81,10 +80,8 @@ module SemanticAnalyzer
         .define_fn(name, parameters)
 
       analyze_many(body, function_context)
-        .map do |analyzed_body|
-          node
-            .with(body: analyzed_body)
-            .annotate(context: context.define_fn(name, parameters))
+        .map do |(analyzed_body, _)|
+          Tuple[node.with(body: analyzed_body), context.define_fn(name, parameters)]
         end
 
     in AST::FunctionCall(name:, arguments:)
@@ -99,8 +96,8 @@ module SemanticAnalyzer
       end
 
       analyze_many(arguments, context)
-        .map do |analyzed_arguments|
-          node.with(arguments: analyzed_arguments).annotate(context:)
+        .map do |(analyzed_arguments, _)|
+          Tuple[node.with(arguments: analyzed_arguments), context]
         end
 
     in AST::RecordDeclaration(name:, params:, fields:)
@@ -119,8 +116,7 @@ module SemanticAnalyzer
         .map    { |f| Error.new("Unbound type variable '#{f.type.name}' for '#{name}' definition", range: node.range) }
         .then { return Err[it] if it.any? }
 
-      node
-        .annotate(context: context.define_type(name, node))
+      Tuple[node, context.define_type(name, node)]
         .then { Ok[it] }
 
     in AST::RecordInstantiation(name:, fields:)
@@ -147,13 +143,13 @@ module SemanticAnalyzer
         .then { return Err[it] if it.any? }
 
       analyze_many(fields, context)
-        .map do
-          node.with(fields: it).annotate(context:)
+        .map do |(analyzed_fields, _)|
+          Tuple[node.with(fields: analyzed_fields), context]
         end
 
     in AST::RecordFieldAssign(name:, expression:)
       analyze(expression, context)
-        .map { node.with(expression: it).annotate(context:) }
+        .map { Tuple[node.with(expression: it.first), context] }
 
     in AST::AnonymousRecord(fields:)
       validate_uniquness_of_named_pairs(fields) do |f|
@@ -162,24 +158,29 @@ module SemanticAnalyzer
         .then { return Err[it] if it.any? }
 
       analyze_many(fields, context)
-        .map do |analyzed_fields|
-          node.with(fields: analyzed_fields).annotate(context:)
+        .map do |(analyzed_fields, _)|
+          Tuple[node.with(fields: analyzed_fields), context]
         end
 
     in AST::RecordAccess(target:)
-      analyzed_target, new_context, errors = analyze(target, context)
-      [node.with(target: analyzed_target), new_context, errors]
+      analyze(target, context)
+        .map do |(analyzed_target, new_context)|
+          Tuple[node.with(target: analyzed_target), new_context]
+        end
 
     in AST::Module(name:, exposing:, statements:, range:)
       # TODO: Register module
-      analyzed_statements, new_context, stmts_errors = analyze_many(context, statements)
+      analyze_many(statements, context)
+        .and_then do |(analyzed_statements, inner_module_context)|
+          missing_exposed_errors = exposing
+            # TODO: Know if it's a constant or an identifier
+            .reject { |exposed| inner_module_context.resolve_fn(exposed) || inner_module_context.resolve_type(exposed) }
+            .map { |exposed| Error.new("Cannot find a #{exposed} value to expose", range:) }
+            .then { return it if it.any? }
 
-      missing_exposed_errors = exposing
-        # TODO: Know if it's a constant or an identifier
-        .reject { |exposed| new_context.resolve_fn(exposed) || new_context.resolve_type(exposed) }
-        .map { |exposed| Error.new("Cannot find a #{exposed} value to expose", range:)}
-
-      [node.with(statements: analyzed_statements), new_context, stmts_errors + missing_exposed_errors]
+          Tuple[node.with(statements: analyzed_statements), inner_module_context]
+            .then { Ok[it] }
+        end
 
     in AST::UnionType(name:, variants:)
       if context.resolve_type(name)
@@ -192,26 +193,24 @@ module SemanticAnalyzer
         .then { return Err[it] if it.any? }
 
       analyze_many(variants, context)
-        .map do
-          node
-            .with(variants: it)
-            .annotate(context: context.define_type(name, node))
+        .map do |(analyzed_variants, _)|
+          Tuple[node.with(variants: analyzed_variants), context.define_type(name, node)]
         end
 
     in AST::Variant(name:, fields:, params:)
       analyzed_variant, errors = case [fields, params]
         in [[], []]
-          Ok[node]
+          Ok[Tuple[node, context]]
         in [some_fields, []] if some_fields.any?
           validate_uniquness_of_named_pairs(some_fields) do |v|
             "Duplicate variant field '#{f}' for field'#{name}'"
           end
             .then { return Err[it] if it.any? }
 
-          Ok[node]
+          Ok[Tuple[node, context]]
 
         in [[], some_params] if some_params.any?
-          Ok[node]
+          Ok[Tuple[node, context]]
         end
     end
   end
@@ -233,22 +232,21 @@ module SemanticAnalyzer
   end
 
   def reduce_nodes(list, initial_context)
-    list.reduce(Ok[[[], initial_context]]) do |acc, item|
+    list.reduce(Ok[Tuple[[], initial_context]]) do |acc, item|
       acc
         .on_err do |(errors, context)|
           yield(item, context)
-            .map_error { |e| [errors + e, context] }
+            .map_error { |e| Tuple[errors + e, context] }
             .and_then { Err[_1] }
         end
         .and_then do |(collected, context)|
           yield(item, context)
-            .map do |checked|
-              [collected + [checked], checked.context]
+            .map do |(checked, new_context)|
+              Tuple[collected + [checked], new_context]
             end
             .map_error { |e| [e, context] }
         end
     end
-      .map(&:first)
       .map_error(&:first)
   end
 

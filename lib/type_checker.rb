@@ -2,6 +2,7 @@ require 'ast'
 require 'result'
 require 'type'
 require 'context'
+require 'tuple'
 
 require 'type_checker/helpers'
 require 'type_checker/substitution'
@@ -43,12 +44,10 @@ module TypeChecker
     :'++' => { Type.string => { Type.string => Type.string } },
   }.freeze
 
-  # This returns (not yet but soon)
-  #  [the annoted node (type set), new_context]
   def check(node, context = Context.new)
     case node
     in AST::Literal(type:)
-      Ok[[node, context]]
+      Ok[Tuple[node, context]]
 
     in AST::Grouping(expression:)
       check(expression, context)
@@ -57,7 +56,7 @@ module TypeChecker
       check(node.right, context)
         .and_then do |(typed_right, new_context)|
           UNARY_OP_RULES.dig(operator, typed_right.type)
-            .then { return Ok[[node.with(right: typed_right).annotate(it), new_context]] if it }
+            .then { return Ok[Tuple[node.with(right: typed_right).annotate(it), new_context]] if it }
 
           Err[[Error.new("Unary '#{node.operator}' not valid for #{typed_right.type}", range: node.range)]]
         end
@@ -71,16 +70,16 @@ module TypeChecker
                 .or_else { return left_type_error(node, expected: BINARY_OP_RULES[operator].keys, actual: typed_left.type) }
                 .dig(typed_right.type)
                 .or_else { return right_type_error(node, actual: typed_right.type, expected: typed_left.type) }
-                .then { Ok[[node.with(left: typed_left, right: typed_right).annotate(it), context_after_right]] }
+                .then { Ok[Tuple[node.with(left: typed_left, right: typed_right).annotate(it), context_after_right]] }
             end
         end
 
     in AST::VariableDeclaration(name:, expression:, range:)
       check(expression, context)
         .map do |(typed_expression, new_context)|
-          [
+          Tuple[
             node.with(expression: typed_expression).annotate(typed_expression.type),
-            new_context.annotate_var(name, typed_expression.type),
+            new_context.define_var(name).annotate_var(name, typed_expression.type),
           ]
         end
 
@@ -89,7 +88,7 @@ module TypeChecker
         # What if it is untyped?
         node
           .annotate(context.resolve_var(name).type)
-          .then { Ok[[it, context]]}
+          .then { Ok[Tuple[it, context]]}
       else
         # Should never reach here, this should be caught by
         #  the semantic analyzer.
@@ -109,7 +108,7 @@ module TypeChecker
             .parameters
             .zip(checked_arguments)
             .each.with_index
-            .reduce(Ok[[checked_arguments, context]]) do |acc, ((param_type, checked_argument), i)|
+            .reduce(Ok[Tuple[checked_arguments, context]]) do |acc, ((param_type, checked_argument), i)|
               next acc if param_type == checked_argument.type
 
               # TODO: Accumulate errors.
@@ -120,7 +119,7 @@ module TypeChecker
             end
         end
         .map do |(checked_arguments, new_context)|
-          [
+          Tuple[
             node.with(arguments: checked_arguments).annotate(fn.type.return_type),
             new_context
           ]
@@ -133,9 +132,10 @@ module TypeChecker
         end
         .map do |(checked_fields, _)|
           record_type = Type::Record
-            .new(name, Hash[checked_fields.map { |f| [f.name, f.type] }], params)
+            # TODO: Fix the need of the flatten
+            .new(name, Hash[checked_fields.map { |f| [f.name, f.type] }], params.flatten)
 
-          [
+          Tuple[
             node.with(fields: checked_fields)
               .annotate(record_type),
             context.define_type(name, record_type),
@@ -166,7 +166,7 @@ module TypeChecker
         end
           .map do |checked_fields|
             type = Type::Record.new(nil, checked_fields, [])
-            [node.with(fields: checked_fields).annotate(type), context]
+            Tuple[node.with(fields: checked_fields).annotate(type), context]
           end
 
     in AST::RecordInstantiation
@@ -181,7 +181,7 @@ module TypeChecker
           case checked_target.type
           in Type::Record(name:, fields:)
             if checked_target.type.fields[field]
-              Ok[[
+              Ok[Tuple[
                 node
                   .with(target: checked_target)
                   .annotate(checked_target.type.fields[field]),
@@ -200,7 +200,7 @@ module TypeChecker
         .walk(variants) { |variant| check_variant(variant, context, name) }
         .map do |checked_variants|
           type = Type::Union.new(name:, variants: checked_variants)
-          [node.with(variants: checked_variants).annotate(type), context]
+          Tuple[node.with(variants: checked_variants).annotate(type), context]
         end
 
     in AST::Program(statements:)
@@ -208,6 +208,8 @@ module TypeChecker
 
     in AST::Module(statements:)
       check_many(context, statements)
+        .map { |(checked_statements, _)| node.with(statements: checked_statements) }
+        .map { Tuple[it, context] }
     end
   end
 
@@ -267,14 +269,17 @@ module TypeChecker
         end
         .map { Type::VariantTuple.new(name:, params: it, union_type_name:) }
     end
+
+    Ok[variant.annotate(type)]
   end
 
   def check_many(context, nodes)
-    nodes.reduce(Ok[[[], context]]) do |acc, node|
-      acc => Ok([all_checked, new_context])
+    nodes.reduce(Ok[Tuple[[], context]]) do |acc, node|
+      acc => Ok(Tuple[all_checked, new_context])
+
       check(node, new_context)
         .map do |(checked, new_context)|
-          [all_checked.concat([checked]), new_context]
+          Tuple[all_checked.concat([checked]), new_context]
         end
     end
   end

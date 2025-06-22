@@ -3,19 +3,19 @@ module TypeChecker
     extend self
 
     def walk_with_context(list, initial_context)
-      list.reduce(Ok[[[], initial_context]]) do |acc, item|
+      list.reduce(Ok[Tuple[[], initial_context]]) do |acc, item|
         acc
           .and_then do |(collected, context)|
             yield(item, context)
               .map do |(checked, new_context)|
-                [collected + [checked], new_context]
+                Tuple[collected + [checked], new_context]
               end
-              .map_error { |e| [e, context] }
+              .map_error { |e| Tuple[e, context] }
           end
           .on_err do |(errors, context)|
             yield(item, context)
-              .map_error { |e| [errors + [e], context] }
-              .and_then { Err[_1] }
+              .map_error { |e| Tuple[errors + [e], context] }
+              .and_then { Err[it] }
           end
       end
         .map_error(&:first)

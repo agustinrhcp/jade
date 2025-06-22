@@ -32,7 +32,7 @@ module TypeChecker
         end
         .map_error(&:first)
         .map do |(checked_fields, new_context)|
-          [
+          Tuple[
             node.with(fields: checked_fields)
               .annotate(Substitution.substitute(type, new_context)),
             new_context,

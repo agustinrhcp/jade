@@ -4,22 +4,17 @@ module AST
   extend self
 
   module Node
-    def annotate(type: nil, context: nil)
-      with(**{ type:, context: }.compact)
-    end
-
-    def annotate_context(context)
-      with(context:)
+    def annotate(type)
+      with(type:)
     end
   end
 
   def define_ast_node(name, *fields)
-    const_set(name, Data.define(*fields, :range, :type, :context) {
+    const_set(name, Data.define(*fields, :range, :type) {
       include Node
 
       define_method(:initialize) do |**kwargs|
         kwargs[:type] ||= nil
-        kwargs[:context] ||= nil
         super(**kwargs)
       end
     })

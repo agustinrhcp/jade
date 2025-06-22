@@ -21,25 +21,32 @@ module TypeChecker
       end
 
       fn_type = Type::Function.new(annotated_parameters.map(&:type), resolved_return_type)
-      new_context = context.annotate_fn(name, fn_type)
+
+      new_context = context
+        .define_fn(name, parameters)
+        .annotate_fn(name, fn_type)
 
       fn_context = annotated_parameters
         .reduce(new_context) do |acc, param|
-          acc.annotate_var(param.name, param.type)
+          acc
+            .define_var(param.name)
+            .annotate_var(param.name, param.type)
         end
 
       Helpers.check_many(body, fn_context)
         .and_then do |(typed_body, _)|
-          if typed_body.last.type != resolved_return_type
+          if typed_body.last.type != Substitution.substitute(resolved_return_type, context)
             return Err[[
-              Error.new("Expected return type #{resolved_return_type}, got #{typed_body.last}", range: body.last.range)
+              Error.new("Expected return type #{resolved_return_type}, got #{typed_body.last.type}", range: body.last.range)
             ]]
           end
 
-          Ok[[
-            node.annotate(fn_type)
+          Ok[Tuple[
+            node
+              .annotate(fn_type)
               .with(return_type: resolved_return_type)
-              .with(parameters: annotated_parameters), new_context
+              .with(parameters: annotated_parameters),
+            new_context,
           ]]
         end
     end

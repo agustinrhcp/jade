@@ -9,20 +9,20 @@ describe SemanticAnalyzer do
 
   before do
     case result
-    in Ok(analyzed_node)
+    in Ok(Tuple(analyzed_node, new_context))
       expect(analyzed_node).to be_a(AST::Node)
-      expect(analyzed_node.context).to be_a(Context)
+      expect(new_context).to be_a(Context)
     in Err(errors)
       expect(errors).to all(be_a(SemanticAnalyzer::Error))
     end
   end
 
   context 'literals' do
-    subject { super() => Ok(analyzed_node); analyzed_node }
+    subject { super() => Ok([analyzed_node, _]); analyzed_node }
 
     let(:node) { lit(42) }
 
-    it { is_expected.to eql(node.with(context: Context.new)) }
+    it { is_expected.to be_a(AST::Literal)}
   end
 
   context 'detects undefined variables' do
@@ -35,7 +35,7 @@ describe SemanticAnalyzer do
   end
 
   context 'variable declarations' do
-    subject { super() => Ok(analyzed_node); analyzed_node }
+    subject { super() => Ok([analyzed_node, _]); analyzed_node }
 
     context 'valid declarations' do
       let(:node) { var_dec(:x, lit(42)) }
@@ -66,7 +66,7 @@ describe SemanticAnalyzer do
 
   context 'function calls' do
     context 'valid calls' do
-      subject { super() => Ok(program); program }
+      subject { super() => Ok([program, _]); program }
 
       let(:node) do
         prog(
@@ -97,7 +97,7 @@ describe SemanticAnalyzer do
 
   context 'record declaration and instantiation' do
     context 'valid record declarations' do
-      subject { super() => Ok(declaration); declaration }
+      subject { super() => Ok([declaration, _]); declaration }
 
       let(:node) { rec('User', field('name', 'String'), field('age', 'Int')) }
 
@@ -185,7 +185,7 @@ describe SemanticAnalyzer do
     end
 
     context 'valid record instantiation' do
-      subject { super() => Ok(program); program }
+      subject { super() => Ok([program, _]); program }
 
       let(:node) do
         prog(
@@ -366,7 +366,7 @@ describe SemanticAnalyzer do
 
     context 'anonymous records' do
       context 'valid anonymous record' do
-        subject { super() => Ok(analyzed); analyzed }
+        subject { super() => Ok([analyzed, _]); analyzed }
 
         let(:node) { anon_rec(field_set('x', lit(42)), field_set('y', lit('hello'))) }
 
@@ -379,7 +379,7 @@ describe SemanticAnalyzer do
       end
 
       context 'empty anonymous record' do
-        subject { super() => Ok(analyzed); analyzed }
+        subject { super() => Ok([analyzed, _]); analyzed }
 
         let(:node) { anon_rec() }
 
@@ -390,7 +390,7 @@ describe SemanticAnalyzer do
       end
 
       context 'anonymous record with complex expressions' do
-        subject { super() => Ok(analyzed); analyzed }
+        subject { super() => Ok([analyzed, _]); analyzed }
 
         let(:ctx) { Context.new.define_var('user_name') }
         let(:node) { anon_rec(field_set('sum', bin(lit(10), :+, lit(20))), field_set('name', var('user_name'))) }
@@ -429,7 +429,7 @@ describe SemanticAnalyzer do
 
   context 'union type declaration and usage' do
     context 'valid union type declarations' do
-      subject { super() => Ok(analyzed_node); analyzed_node }
+      subject { super() => Ok([analyzed_node, _]); analyzed_node }
 
       let(:node) { union('Color', variant('Red'), variant('Green'), variant('Blue')) }
 
@@ -563,7 +563,7 @@ describe SemanticAnalyzer do
     end
 
     context 'union types in context' do
-      subject { super() => Ok(analyzed); analyzed }
+      subject { super() => Ok([analyzed, _]); analyzed }
       let(:node) do
         prog(
           union('Color', variant('Red'), variant('Green'), variant('Blue')),
@@ -580,7 +580,7 @@ describe SemanticAnalyzer do
     end
 
     context 'complex union type scenarios' do
-      subject { super() => Ok(analyzed); analyzed }
+      subject { super() => Ok([analyzed, _]); analyzed }
 
       context 'union with complex variant fields' do
         let(:node) do

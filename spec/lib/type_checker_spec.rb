@@ -10,7 +10,7 @@ describe TypeChecker do
 
   before do
     case result
-    in Ok([checked_node, new_ctx])
+    in Ok(Tuple(checked_node, new_ctx))
       expect(checked_node).to be_a(AST::Node)
       expect(new_ctx).to be_a(Context)
     in Err(errors)

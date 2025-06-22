@@ -36,7 +36,7 @@ module Generator
       statements.map { generate(it, indents) }.join("\n")
 
     in AST::FunctionDeclaration(name:, parameters:, body:)
-      "#{prefix}def #{name}(#{parameters.parameters.map(&:name).join(', ')})\n" +
+      "#{prefix}def #{name}(#{parameters.map(&:name).join(', ')})\n" +
         body.map { generate(it, indents + 1) }.join("\n") + "\n" +
         "#{prefix}end"
 
