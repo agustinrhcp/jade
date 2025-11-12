@@ -2,12 +2,13 @@ module Jade
   module Parser
     extend self
 
-    def parse(tokens)
-      int.call(State.new(tokens))
+    def parse(tokens, parser = literal)
+      parser.call(State.new(tokens))
     end
 
-    def int
-      type(:int).map(&AST.literal)
+    def literal
+      (type(:int) | type(:bool) | type(:string))
+        .map(&AST.literal)
     end
 
     private
@@ -82,6 +83,13 @@ module Jade
                 end
                 .map_error { |(err, _)| [err, tokens] }
             end
+        end
+      end
+
+      def |(other)
+        P.new do |state|
+          call(state)
+            .on_err { other.call(state) }
         end
       end
     end

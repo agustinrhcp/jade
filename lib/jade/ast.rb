@@ -6,10 +6,11 @@ module Jade
     end
 
     def define_ast_node(name, *fields)
-      const_set(name, Data.define(*fields, :range) {
+      const_set(name, Data.define(*fields, :range, :symbol) {
         include Node
 
         define_method(:initialize) do |**kwargs|
+          kwargs[:symbol] ||= nil
           super(**kwargs)
         end
       })
@@ -23,7 +24,10 @@ module Jade
           case token.type
           in :int
             token.value.to_i
+
           in :bool
+            token.value == 'True' ? true : false
+
           in :string
             token.value
           end

@@ -17,16 +17,32 @@ module Jade
       until scanner.eos?
         case
         when scanner.scan(/\s+/)
+
+        when scanner.scan(/\A(True|False)\b/)
+          tokens << tok(:bool, scanner)
+
         when scanner.scan(/\d+/)
-          tokens << Token.new(
-            :int,
-            scanner.matched,
-            (scanner.pos - scanner.matched_size)...scanner.pos,
-          )
+          tokens << tok(:int, scanner)
+
+        when scanner.scan(/\A"(?:\\.|[^"\\])*"/)
+          tokens << tok(:string, scanner)
+
+        else
+          fail "FAILED TO SCAN at pos #{scanner.pos}, Next chars: #{scanner.rest[0,20].inspect}"
         end
       end
 
       tokens
+    end
+
+    private
+
+    def tok(type, scanner)
+      Token.new(type, scanner.matched, range(scanner))
+    end
+
+    def range(scanner) 
+      (scanner.pos - scanner.matched_size)...scanner.pos
     end
   end
 end
