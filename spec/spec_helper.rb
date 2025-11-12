@@ -18,6 +18,8 @@ require 'rspec/its'
 require 'rspec/collection_matchers'
 require 'byebug'
 
+require 'result'
+
 Dir[File.join(File.dirname(__FILE__), 'support/**/*.rb')].sort.each { |f| require f }
 
 RSpec.configure do |config|
