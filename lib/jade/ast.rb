@@ -18,6 +18,14 @@ module Jade
 
     define_ast_node(:Literal, :value)
 
+    def string_literal
+      ->(tokens) do
+        tokens => [open, token, close]
+
+        Literal[token.value, token.range.begin..close.range.end]
+      end
+    end
+
     def literal
       ->(token) do
         value =
@@ -27,9 +35,6 @@ module Jade
 
           in :bool
             token.value == 'True' ? true : false
-
-          in :string
-            token.value
           end
 
         Literal[value, token.range]

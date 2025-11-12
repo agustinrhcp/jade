@@ -7,8 +7,20 @@ module Jade
     end
 
     def literal
-      (type(:int) | type(:bool) | type(:string))
-        .map(&AST.literal)
+      int | bool | string
+    end
+
+    def int
+      type(:int).map(&AST.literal)
+    end
+
+    def bool
+      type(:bool).map(&AST.literal)
+    end
+
+    def string
+      (type(:quote) >> type(:string_chunk) >> type(:quote))
+        .map(&AST.string_literal)
     end
 
     private
@@ -72,24 +84,24 @@ module Jade
         P.new { |state| call(state).map { |value, _| block.call(value) } }
       end
 
-      def >>(other)
-        P.new do |state|
-          call(state)
-            .and_then do |(value1, state1)|
-              other
-                .call(state1)
-                .map do |(value2, state2)|
-                  [[value1, value2].reject { it == :skip }.flatten(1), state2]
-                end
-                .map_error { |(err, _)| [err, tokens] }
-            end
-        end
-      end
-
       def |(other)
         P.new do |state|
           call(state)
             .on_err { other.call(state) }
+        end
+      end
+
+      def >>(other)
+        P.new do |state|
+          call(state).and_then do |(value1, state1)|
+            other.call(state1)
+              .map do |(value2, state2)|
+                [[value1, value2].reject { it == :skip }.flatten(1), state2]
+              end
+              .map_error do |(err, err_state)|
+                [err, state]
+              end
+          end
         end
       end
     end

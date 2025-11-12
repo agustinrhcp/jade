@@ -6,11 +6,13 @@ require 'jade/ast'
 
 module Jade
   describe Parser do
-    let(:source) do
-      text = <<~JADE
+    let(:text) do
+      <<~JADE
         42
       JADE
+    end
 
+    let(:source) do
       Source.new(uri: 'test', text:)
     end
 
@@ -19,5 +21,16 @@ module Jade
 
     it { is_expected.to be_a(AST::Node).and be_a(AST::Literal) }
     its(:value) { is_expected.to eql 42 }
+
+    context 'with an string literal' do
+      let(:text) do
+        <<~JADE
+          "Hello"
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Node).and be_a(AST::Literal) }
+      its(:value) { is_expected.to eql "Hello" }
+    end
   end
 end
