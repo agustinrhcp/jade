@@ -22,10 +22,10 @@ module Jade
       Lexer
         .tokenize(source)
         .then { Parser.parse(it) }
-        .map  { Frontend.run(it) }
+        .and_then  { Frontend.run(it) }
     end
 
-    subject { frontend => Ok(node); node }
+    subject { frontend => Ok([node, _]); node }
 
     it { is_expected.to be_a(AST::Node).and be_a(AST::Literal) }
     its(:symbol) { is_expected.to eql Symbol.type_ref('Basics.Int') }

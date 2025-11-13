@@ -23,6 +23,7 @@ module Jade
 
       SymbolResolution
         .resolve(ast, registry)
+        .then { Ok[[it, registry]] }
     end
   end
 end
