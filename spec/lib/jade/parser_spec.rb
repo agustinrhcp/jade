@@ -32,5 +32,28 @@ module Jade
       it { is_expected.to be_a(AST::Node).and be_a(AST::Literal) }
       its(:value) { is_expected.to eql "Hello" }
     end
+
+    context 'and it is empty' do
+      let(:text) do
+        <<~JADE
+          ""
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Node).and be_a(AST::Literal) }
+      its(:value) { is_expected.to eql "" }
+    end
+
+    context 'but it is malformed' do
+      let(:text) do
+        <<~JADE
+          "Hello
+        JADE
+      end
+
+      subject { parse => Err([err, _]); err }
+
+      it { is_expected.to be_kind_of(Parser::Error) }
+    end
   end
 end

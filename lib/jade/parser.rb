@@ -7,7 +7,7 @@ module Jade
     end
 
     def literal
-      int | bool | string
+      string | int | bool
     end
 
     def int
@@ -19,7 +19,11 @@ module Jade
     end
 
     def string
-      (type(:quote) >> type(:string_chunk) >> type(:quote))
+      (
+        type(:quote) >>
+          (type(:string_chunk) >> type(:quote))
+            .map_error(&:commit)
+      )
         .map(&AST.string_literal)
     end
 
@@ -84,10 +88,14 @@ module Jade
         P.new { |state| call(state).map { |value, _| block.call(value) } }
       end
 
+      def map_error(&block)
+        P.new { |state| call(state).map_error { |err, _| block.call(err) } }
+      end
+
       def |(other)
         P.new do |state|
           call(state)
-            .on_err { other.call(state) }
+            .on_err { it.first.committed? ? Err[it] : other.call(state) }
         end
       end
 
@@ -107,10 +115,20 @@ module Jade
     end
 
     class Error
-      def initialize(message, position:, token:)
+      def initialize(message, position:, token:, committed: false)
         @message = message
         @position = position
         @token = token
+        @committed = committed
+      end
+
+      def committed?
+        @committed
+      end
+
+      def commit
+        @committed = true
+        self
       end
     end
 
