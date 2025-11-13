@@ -101,5 +101,39 @@ module Jade
         its([0]) { is_expected.to be_a(Frontend::SemanticAnalyzer::UndefinedVariable) }
       end
     end
+
+    context 'a function declaration' do
+      let(:text) do
+        <<~JADE
+          def add(a: Int, b: Int) -> Int
+            a
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+      describe 'its symbol' do
+        subject { super().symbol }
+
+        it { is_expected.to be_a(Symbol::ValueRef) }
+        its(:qualified_name) { is_expected.to eql "__Test__.add" }
+      end
+
+      describe 'the registry' do
+        subject { frontend => Ok([_, registry]); registry }
+
+        it 'contains the function symbol' do
+          symbol = subject.lookup(Symbol::ValueRef['__Test__.add'])
+
+          expect(symbol).to be_a(Symbol::Function)
+          expect(symbol.module_name).to eql '__Test__'
+          expect(symbol.params).to include('a' => Symbol::TypeRef['Basics.Int'])
+          expect(symbol.params).to include('b' => Symbol::TypeRef['Basics.Int'])
+          expect(symbol.return_type).to eql(Symbol::TypeRef['Basics.Int'])
+          expect(symbol.name).to eql 'add'
+        end
+      end
+    end
   end
 end

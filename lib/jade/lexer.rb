@@ -9,7 +9,10 @@ module Jade
   module Lexer
     extend self
 
-    KEYWORDS = Set[]
+    KEYWORDS = Set[
+      'def',
+      'end',
+    ].freeze
 
     SYMBOLS = {
       '->' => :arrow,
@@ -68,6 +71,9 @@ module Jade
 
         when scanner.scan(/\A(True|False)\b/)
           tokens << tok(:bool, scanner)
+
+        when scanner.scan(/\A[A-Z][A-Za-z0-9_]*/)
+          tokens << tok(:constant, scanner)
 
         when scanner.scan(/\d+/)
           tokens << tok(:int, scanner)

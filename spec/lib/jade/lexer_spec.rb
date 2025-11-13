@@ -70,5 +70,32 @@ module Jade
       it { is_expected.to have(1).item.and all(be_a(Token)) }
       its([0]) { is_expected.to be_token.of_type(:identifier).with('some_var').at(0...8) }
     end
+
+    context 'function declaration' do
+      let(:text) do
+        <<~JADE
+          def add(a: Int, b: Int) -> Int
+            a
+          end
+        JADE
+      end
+
+      it { is_expected.to have(15).item.and all(be_a(Token)) }
+      its([0])  { is_expected.to be_token.of_type(:def).at(0...3) }
+      its([1])  { is_expected.to be_token.of_type(:identifier).with('add').at(4...7) }
+      its([2])  { is_expected.to be_token.of_type(:lparen).at(7...8) }
+      its([3])  { is_expected.to be_token.of_type(:identifier).with('a').at(8...9) }
+      its([4])  { is_expected.to be_token.of_type(:colon).at(9...10) }
+      its([5])  { is_expected.to be_token.of_type(:constant).with('Int').at(11...14) }
+      its([6])  { is_expected.to be_token.of_type(:comma).at(14...15) }
+      its([7])  { is_expected.to be_token.of_type(:identifier).with('b').at(16...17) }
+      its([8])  { is_expected.to be_token.of_type(:colon).at(17...18) }
+      its([9])  { is_expected.to be_token.of_type(:constant).with('Int').at(19...22) }
+      its([10]) { is_expected.to be_token.of_type(:rparen).at(22...23) }
+      its([11]) { is_expected.to be_token.of_type(:arrow).with('->').at(24...26) }
+      its([12]) { is_expected.to be_token.of_type(:constant).with('Int').at(27...30) }
+      its([13]) { is_expected.to be_token.of_type(:identifier).with('a').at(33...34) }
+      its([14]) { is_expected.to be_token.of_type(:end).at(35...38) }
+    end
   end
 end

@@ -19,8 +19,12 @@ module Jade
         .entry('String')
         .add_symbol(Symbol.union('String'))
 
-      current_entry = ForwardDeclaration
-        .declare(ast, Registry.entry('__Test__'))
+      current_entry = Registry.entry('__Test__')
+        # Simulate imports
+        .add_imported_symbol(basics_entry.lookup_type('Int').to_ref)
+        .add_imported_symbol(basics_entry.lookup_type('Bool').to_ref)
+        .add_imported_symbol(strings_entry.lookup_type('String').to_ref)
+        .then { ForwardDeclaration.declare(ast, it) }
 
       registry = Registry
         .new

@@ -23,6 +23,10 @@ module Jade
 
     define_ast_node(:Body, :expressions)
 
+    define_ast_node(:FunctionDeclaration, :name, :params, :return_type, :body)
+    define_ast_node(:FunctionDeclarationParam, :name, :type)
+    define_ast_node(:TypeReference, :type, :args)
+
     def string_literal
       ->(tokens) do
         tokens => [open, token, close]
@@ -81,6 +85,37 @@ module Jade
             expressions.first.range.begin..expressions.last.range.end,
           ]
         end
+      end
+    end
+
+    def function_declaration
+      ->(tokens) do
+        tokens => [def_token, name, param_nodes, return_type, body, end_token]
+
+        FunctionDeclaration[
+          name.value,
+          param_nodes,
+          return_type,
+          body,
+          def_token.range.begin...end_token.range.end,
+        ]
+      end
+    end
+
+    def function_declaration_param
+      ->(tokens) do
+        tokens => [name, type]
+
+        FunctionDeclarationParam[
+          name.value,
+          type,
+          name.range.begin..type.range.end,
+        ]
+      end
+    end
+    def type_reference
+      ->(token) do
+        TypeReference[token.value, [], token.range]
       end
     end
   end

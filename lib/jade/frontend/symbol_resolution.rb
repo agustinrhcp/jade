@@ -18,6 +18,14 @@ module Jade
 
         in AST::VariableReference
           node
+
+        in AST::FunctionDeclaration(name:, body:)
+          symbol = current_entry
+            .lookup_value(name)
+            .to_ref
+
+          resolve(body, registry, current_entry)
+            .then { node.with(body: it, symbol:) }
         end
       end
 

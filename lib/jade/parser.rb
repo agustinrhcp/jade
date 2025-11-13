@@ -10,12 +10,25 @@ module Jade
     end
 
     def program
-      sequence(expression)
-        .map(&AST.body)
+      function_declaration | sequence(expression).map(&AST.body)
     end
 
     def expression
       variable_binding | variable_reference | literal
+    end
+
+    def function_declaration
+      (
+        type(:def) >>
+          identifier >>
+          type(:lparen).skip >>
+          sequence(param, separated_by: type(:comma).skip).map { [it] } >>
+          type(:rparen).skip >>
+          type(:arrow).skip >>
+          type_reference >>
+          sequence(expression).map(&AST.body) >>
+          type(:end)
+      ).map(&AST.function_declaration)
     end
 
     def literal
@@ -24,6 +37,12 @@ module Jade
 
     def variable_reference
       identifier.map(&AST.variable_reference)
+    end
+
+    def param
+      (
+        identifier >> type(:colon).skip >> type_reference
+      ).map(&AST.function_declaration_param)
     end
 
     def variable_binding
@@ -68,6 +87,14 @@ module Jade
 
     def identifier
       type(:identifier)
+    end
+
+    def type_reference
+      constant.map(&AST.type_reference)
+    end
+
+    def constant
+      type(:constant)
     end
 
     def type(type)

@@ -19,20 +19,11 @@ module Jade
         in AST::VariableBinding(name:, expression:)
           analyze_r(expression, registry, scope) => { errors: expr_errors }
 
-          if scope.lookup(name)
-            Result[scope, [ShadowingError.new(name)] + expr_errors]
-
-          else
-            Result[scope.bind(name, Symbol.var(name)), expr_errors]
-          end
+          bind(scope, name, Symbol.var(name))
+            .add_errors(expr_errors)
 
         in AST::VariableReference(name:)
-          if scope.lookup(name)
-            Result[scope, []]
-          else
-            UndefinedVariable.new(name)
-              .then { Result[scope, [it]] }
-          end
+          lookup(scope, name)
 
         in AST::Body(expressions:)
           expressions
@@ -40,6 +31,37 @@ module Jade
               analyze_r(expression, registry, acc.scope) => Result[expr_scope, expr_errors]
               Result[expr_scope, expr_errors + acc.errors]
             end
+
+        in AST::FunctionDeclaration(params:, body:)
+          params
+            .reduce(Result[scope, []]) do |acc, param|
+              bind(acc.scope, param.name, Symbol.param(param.name))
+                .add_errors(acc.errors)
+            end
+            .then do
+              analyze_r(body, registry, it.scope)
+                .add_errors(it.errors)
+            end
+        end
+      end
+
+      private
+
+      def bind(scope, name, symbol)
+        if scope.lookup(name)
+          Result[scope, [ShadowingError.new(name)]]
+
+        else
+          Result[scope.bind(name, symbol), []]
+        end
+      end
+
+      def lookup(scope, name)
+        if scope.lookup(name)
+          Result[scope, []]
+        else
+          UndefinedVariable.new(name)
+            .then { Result[scope, [it]] }
         end
       end
 
@@ -48,6 +70,10 @@ module Jade
           return Err[errors] if errors.any?
 
           Ok[nil]
+        end
+
+        def add_errors(more_errors)
+          with(errors: errors + more_errors)
         end
       end
 

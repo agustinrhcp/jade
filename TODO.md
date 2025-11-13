@@ -11,3 +11,9 @@ it should return something like "expected string, int or bool"
 
 for that we also need to contextualize parsers, as string is not
 a type, but " > chunk > "
+
+
+### ForwardDeclaration:HandleErrors
+
+Looking up undeclared symbols can return nil. That needs to fail
+and return a helpful error.

@@ -96,6 +96,21 @@ module Jade
         it { is_expected.to be_kind_of(Parser::Error) }
         its(:message) { is_expected.to include("expected quote") }
       end
+    end 
+
+    context 'a function declaration' do
+      let(:text) do
+        <<~JADE
+          def add(a: Int, b: Int) -> Int
+            a
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Node).and be_a(AST::FunctionDeclaration) }
+      its(:name) { is_expected.to eql 'add' }
+      its(:params) { is_expected.to have(2).items.and all(be_a(AST::FunctionDeclarationParam)) }
+      its(:return_type) { is_expected.to be_a(AST::TypeReference) }
     end
   end
 end

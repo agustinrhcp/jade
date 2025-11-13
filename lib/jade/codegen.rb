@@ -22,6 +22,13 @@ module Jade
         in String
           "\"#{value}\""
         end
+
+      in AST::FunctionDeclaration(name:, params:, body:)
+        params_code = params.map { generate(it, registry) }.join(', ')
+        "def #{name}; ->(#{params_code}) { #{generate(body, registry)} }; end"
+
+      in AST::FunctionDeclarationParam(name:)
+        name
       end
     end
 
