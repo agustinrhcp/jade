@@ -8,6 +8,10 @@ module Jade
       TypeRef[qualified_name]
     end
 
+    def self.var(name)
+      Variable[name]
+    end
+
     Type = Data.define(:module_name, :name) do
       include Symbol
     end
@@ -21,6 +25,10 @@ module Jade
     end
 
     ValueRef = Data.define(:qualified_name) do
+      include Symbol
+    end
+
+    Variable = Data.define(:name) do
       include Symbol
     end
   end

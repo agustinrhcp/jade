@@ -1,4 +1,5 @@
 require 'strscan'
+require 'set'
 
 require 'jade/source'
 
@@ -7,6 +8,45 @@ module Jade
 
   module Lexer
     extend self
+
+    KEYWORDS = Set[]
+
+    SYMBOLS = {
+      '->' => :arrow,
+      '('  => :lparen,
+      ')'  => :rparen,
+      ':'  => :colon,
+      ','  => :comma,
+      '{'  => :lbrace,
+      '}'  => :rbrace,
+      '['  => :lbrack,
+      ']'  => :rbrack,
+      '..' => :dotdot,
+      '.'  => :dot,
+      '@'  => :at,
+
+      # arithmetic
+      '+'  => :plus,
+      '-'  => :minus,
+      '*'  => :star,
+      '/'  => :slash,
+      '|'  => :pipe,
+
+      # comparison
+      '==' => :eq,
+      '!=' => :not_eq,
+      '<'  => :lt,
+      '<=' => :lte,
+      '>'  => :gt,
+      '>=' => :gte,
+
+      '++' => :concat,
+      '='  => :assign,
+
+      '|>' => :pipe_forward,
+    }
+
+    SYMBOLS_REGEX = Regexp.union(SYMBOLS.keys.sort_by { |k| -k.length })
 
     def tokenize(source)
       source => Source(text:)
@@ -18,6 +58,14 @@ module Jade
         case
         when scanner.scan(/\s+/)
 
+        when scanner.scan(/\A#{SYMBOLS_REGEX}/)
+          type = SYMBOLS.fetch(scanner.matched)
+          tokens << tok(type, scanner)
+
+        when scanner.scan(/\A[a-z_][a-z0-9_]*/)
+          type = KEYWORDS.include?(scanner.matched) ? scanner.matched.to_sym : :identifier
+          tokens << tok(type, scanner)
+
         when scanner.scan(/\A(True|False)\b/)
           tokens << tok(:bool, scanner)
 
@@ -28,11 +76,8 @@ module Jade
           (tokens << tok(:quote, scanner))
             .concat(tokenize_string(scanner))
 
-        when scanner.scan(/"(?:\\.|[^"\\\n])*$/)
-          tokens << tok(:malformed_string, scanner)
-
         else
-          fail "FAILED TO SCAN at pos #{scanner.pos}, Next chars: #{scanner.rest[0,20].inspect}"
+          fail "FAILED TO SCAN at pos #{scanner.pos}, Next chars: #{scanner.rest[0, 20].inspect}"
         end
       end
 
@@ -74,10 +119,12 @@ module Jade
     end
 
     def string_chunk_tok(scanner, chunk_start)
+      range = chunk_start...(scanner.pos - 1)
+
       Token.new(
         :string_chunk,
-        scanner.string[chunk_start...(scanner.pos - 1)],
-        range(scanner)
+        scanner.string[range],
+        range,
       )
     end
   end

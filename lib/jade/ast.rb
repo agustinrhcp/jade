@@ -18,6 +18,11 @@ module Jade
 
     define_ast_node(:Literal, :value)
 
+    define_ast_node(:VariableBinding, :name, :expression)
+    define_ast_node(:VariableReference, :name)
+
+    define_ast_node(:Body, :expressions)
+
     def string_literal
       ->(tokens) do
         tokens => [open, token, close]
@@ -38,6 +43,44 @@ module Jade
           end
 
         Literal[value, token.range]
+      end
+    end
+
+    def variable_binding
+      ->(tokens) do
+        tokens => [identifier, _assignment, expression_node]
+
+        VariableBinding[
+          identifier.value,
+          expression_node,
+          identifier.range.begin..expression_node.range.end,
+        ]
+      end
+    end
+
+    def variable_reference
+      ->(identifier) do
+        VariableReference[
+          identifier.value,
+          identifier.range,
+        ]
+      end
+    end
+
+    def body
+      ->(expressions) do
+        if expressions.size == 1
+          expressions.first
+
+        elsif expressions.size == 0
+          Body[[], nil]
+
+        else
+          Body[
+            expressions,
+            expressions.first.range.begin..expressions.last.range.end,
+          ]
+        end
       end
     end
   end

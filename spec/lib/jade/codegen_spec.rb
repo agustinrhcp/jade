@@ -19,14 +19,14 @@ module Jade
         .map  { Codegen.generate(*it) }
     end
 
+    subject { generation => Ok(code); code }
+
     context 'an int literal' do
       let(:text) do
         <<~JADE
           42
         JADE
       end
-
-      subject { generation => Ok(code); code }
 
       it { is_expected.to eql "42" }
     end
@@ -38,8 +38,6 @@ module Jade
         JADE
       end
 
-      subject { generation => Ok(code); code }
-
       it { is_expected.to eql '"Pepe"' }
     end
 
@@ -50,9 +48,19 @@ module Jade
         JADE
       end
 
-      subject { generation => Ok(code); code }
-
       it { is_expected.to eql "true" }
+    end
+
+    context 'variable binding and reference' do
+      let(:text) do
+        <<~JADE
+          finish = "Hei"
+          spanish = "Hola"
+          spanish
+        JADE
+      end
+
+      it { is_expected.to eql "finish = \"Hei\"; spanish = \"Hola\"; spanish" }
     end
   end
 end
