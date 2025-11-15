@@ -1,15 +1,21 @@
 require 'jade/registry'
 require 'jade/symbol'
+require 'jade/type'
 
 require 'jade/frontend/forward_declaration'
 require 'jade/frontend/semantic_analyzer'
 require 'jade/frontend/symbol_resolution'
+require 'jade/frontend/type_checking'
 
 module Jade
   module Frontend
     extend self
 
     def run(ast)
+      run_up_to_semantic_analysis(ast)
+    end
+
+    def run_up_to_semantic_analysis(ast)
       basics_entry = Registry
         .entry('Basics')
         .add_symbol(Symbol.union('Int'))

@@ -10,7 +10,7 @@ module Jade
     end
 
     def self.union(name)
-      Type[nil, name]
+      Union[nil, name, [], []]
     end
 
     def self.type_ref(qualified_name)
@@ -33,12 +33,15 @@ module Jade
       Function[nil, name, params, return_type]
     end
 
-    Type = Data.define(:module_name, :name) do
+    Union = Data.define(:module_name, :name, :type_params, :variants) do
       include Symbol
 
       def to_ref
+        TypeRef[qualified_name]
+      end
+
+      def qualified_name
         [module_name, name].join('.')
-          .then { TypeRef[it] }
       end
     end
 

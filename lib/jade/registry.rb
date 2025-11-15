@@ -34,7 +34,7 @@ module Jade
   ModuleEntry = Data.define(:name, :values, :types, :imports, :exports) do
     def add_symbol(symbol)
       case symbol
-      in Symbol::Type
+      in Symbol::Union
         add_local_type_symbol(symbol)
 
       in Symbol::Function
@@ -46,6 +46,7 @@ module Jade
       case symbol
       in Symbol::TypeRef
         with(types: types.merge(Symbol.unqualified_name(symbol.qualified_name) => symbol))
+
       in Symbol::ValueRef
         with(values: values.merge(Symbol.unqualified_name(symbol.qualified_name) => symbol))
       end
