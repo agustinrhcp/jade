@@ -5,6 +5,7 @@ require 'jade/frontend'
 require 'jade/parser'
 require 'jade/lexer'
 require 'jade/ast'
+require 'jade/ast/pretty_printer'
 
 module Jade
   describe Frontend do
@@ -99,6 +100,34 @@ module Jade
 
         it { is_expected.to have(1).item }
         its([0]) { is_expected.to be_a(Frontend::SemanticAnalyzer::UndefinedVariable) }
+      end
+    end
+
+    context 'infix operations' do
+      let(:text) do
+        <<~JADE
+          1 + 2 * 3 - 4 / 5
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::InfixApplication) }
+
+      it 'precedence is respected' do
+        expect(AST::PrettyPrinter.print(subject)).to eql "((1 + (2 * 3)) - (4 / 5))"
+      end
+
+      context 'other case' do
+        let(:text) do
+          <<~JADE
+            2 * 2 + 3 * 3
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::InfixApplication) }
+
+        it 'precedence is respected' do
+          expect(AST::PrettyPrinter.print(subject)).to eql "((2 * 2) + (3 * 3))"
+        end
       end
     end
 

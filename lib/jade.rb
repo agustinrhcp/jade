@@ -1,9 +1,10 @@
-require 'result'
-require 'jade/source'
+require 'jade/symbol'
+require 'jade/type'
+require 'jade/frontend'
+require 'jade/parser'
+require 'jade/lexer'
+require 'jade/ast'
+require 'jade/codegen'
 
 module Jade
-  extend self
-
-  def compile(source)
-  end
 end

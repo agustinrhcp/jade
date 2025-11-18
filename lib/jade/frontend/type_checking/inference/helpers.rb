@@ -23,11 +23,11 @@ module Jade
             in Symbol::Union
               Type.constructor(symbol.qualified_name)
 
-            in Symbol::Function(params:, return_type:)
+            in Symbol::Function | Symbol::StdlibFunction
               Type
                 .function(
-                  params.transform_values { type_from_symbol(it, registry) },
-                  type_from_symbol(return_type, registry)
+                  symbol.params.transform_values { type_from_symbol(it, registry) },
+                  type_from_symbol(symbol.return_type, registry)
                 )
             end
           end

@@ -13,6 +13,9 @@ module Jade
         in AST::VariableBinding(name:, expression:)
           prefix + "VarBound(#{name} = " + print(expression, indent) + ")"
 
+        in AST::InfixApplication(left:, operator:, right:)
+          prefix + "(#{print(left)} #{operator.value} #{print(right)})"
+
         in AST::Literal(value:)
           case value
           in Integer | TrueClass | FalseClass

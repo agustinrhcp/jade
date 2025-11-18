@@ -9,7 +9,8 @@ module Jade
           resolve_literal(node, registry, current_entry) 
 
         in AST::VariableBinding(expression:)
-          node.with(expression: resolve(expression, registry, current_entry))
+          node
+            .with(expression: resolve(expression, registry, current_entry))
 
         in AST::Body(expressions:)
           expressions
@@ -26,6 +27,16 @@ module Jade
 
           resolve(body, registry, current_entry)
             .then { node.with(body: it, symbol:) }
+
+        in AST::InfixApplication(left:, operator:, right:)
+          symbol = current_entry
+            .lookup_value("(#{operator.value})")
+            .to_ref
+
+          node
+            .with(left: resolve(left, registry, current_entry))
+            .with(right: resolve(right, registry, current_entry))
+            .with(operator: operator.with(symbol:))
         end
       end
 

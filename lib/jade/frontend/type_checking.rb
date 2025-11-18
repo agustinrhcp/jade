@@ -25,6 +25,19 @@ module Jade
         def compose_substitution(sub)
           with(substitution: substitution.compose(sub))
         end
+
+        def to_result
+          if errors.any?
+            Err[errors]
+          else
+            Ok[[type, env]]
+          end
+        end
+      end
+
+      def check_repl(node, registry, env = Env.new, var_gen = VarGen.new)
+        check(node, registry, env, var_gen)
+          .to_result
       end
 
       def check(node, registry, env = Env.new, var_gen = VarGen.new)
@@ -34,6 +47,9 @@ module Jade
 
         in AST::FunctionDeclaration
           Inference::FunctionDeclaration.infer(node, registry, env, var_gen)
+
+        in AST::InfixApplication
+          Inference::InfixApplication.infer(node, registry, env, var_gen)
 
         in AST::VariableReference
           infer_variable_reference(node, registry, env, var_gen)
@@ -58,11 +74,11 @@ module Jade
         in Symbol::Union
           Type.constructor(symbol.qualified_name)
 
-        in Symbol::Function(params:, return_type:)
+        in Symbol::Function | Symbol::StdlibFunction
           Type
             .function(
-              params.transform_values { type_from_symbol(it, registry) },
-              type_from_symbol(return_type, registry)
+              symbol.params.transform_values { type_from_symbol(it, registry) },
+              type_from_symbol(symbol.return_type, registry)
             )
         end
       end
@@ -146,6 +162,19 @@ module Jade
         def message
           "There's a problem with the body of `#{@node.name}` definition: " ++
             "it returns #{@actual} but its signature says it should be #{@expected}"
+        end
+      end
+
+      class InfixApplicationTypeMismatchError
+        def initialize(node, expected, actual, side)
+          @node = node
+          @expected = expected
+          @actual = actual
+          @side = side == :left ? 'Left' : 'Right'
+        end
+
+        def message
+          "#{@side} side of (#{@node.operator.value}) expects #{@expected} but found #{@actual}"
         end
       end
     end

@@ -1,5 +1,6 @@
 require 'spec_helper'
 
+require 'jade/ast'
 require 'jade/frontend'
 require 'jade/parser'
 require 'jade/lexer'

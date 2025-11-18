@@ -14,6 +14,19 @@ module Jade
     end
 
     def expression
+      (primary >> many(operator >> primary))
+        .map do |(head, *tail)|
+          tail.reduce(head) do |left, (op, right)|
+            AST.infix_application.call(left, op, right)
+          end
+        end
+    end
+
+    def operator
+      type(:plus) | type(:minus) | type(:star) | type(:slash)
+    end
+
+    def primary
       variable_binding | variable_reference | literal
     end
 
@@ -51,6 +64,28 @@ module Jade
           type(:assign) >>
           (literal).map_error(&:commit)
       ).map(&AST.variable_binding)
+    end
+
+    def many(parser)
+      P.new do |state|
+        oks = []
+        current = state
+
+        loop do
+          break if current.eof?
+
+          case parser.call(current)
+          in Ok([value, next_state])
+            oks << value
+            current = next_state
+          in Err([err, err_state])
+            current = err_state
+            break
+          end
+        end
+
+        Ok[[oks, current]]
+      end
     end
 
     private
@@ -121,28 +156,6 @@ module Jade
             state,
           ]]
         end
-      end
-    end
-
-    def many(parser)
-      P.new do |state|
-        oks = []
-        current = state
-
-        loop do
-          break if current.eof?
-
-          case parser.call(current)
-          in Ok([value, next_state])
-            oks << value
-            current = next_state
-          in Err([err, err_state])
-            current = err_state
-            break
-          end
-        end
-
-        Ok[[oks, current]]
       end
     end
 
@@ -217,6 +230,10 @@ module Jade
 
       def skip
         self.map { |_| :skip }
+      end
+
+      def many
+        Parser.many(self)
       end
     end
 

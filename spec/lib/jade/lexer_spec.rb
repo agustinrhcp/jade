@@ -71,6 +71,38 @@ module Jade
       its([0]) { is_expected.to be_token.of_type(:identifier).with('some_var').at(0...8) }
     end
 
+    context 'operators' do
+      let(:text) do
+        <<~JADE
+          12 + 12
+        JADE
+      end
+
+      it { is_expected.to have(3).item.and all(be_a(Token)) }
+      its([0]) { is_expected.to be_token.of_type(:int).with('12') }
+      its([1]) { is_expected.to be_token.of_type(:plus).with('+') }
+      its([2]) { is_expected.to be_token.of_type(:int).with('12') }
+
+      context 'a chain of operators' do
+        let(:text) do
+          <<~JADE
+            1 + 2 * 3 - 4 / 5
+          JADE
+        end
+
+        it { is_expected.to have(9).item.and all(be_a(Token)) }
+        its([0]) { is_expected.to be_token.of_type(:int).with('1') }
+        its([1]) { is_expected.to be_token.of_type(:plus).with('+') }
+        its([2]) { is_expected.to be_token.of_type(:int).with('2') }
+        its([3]) { is_expected.to be_token.of_type(:star).with('*') }
+        its([4]) { is_expected.to be_token.of_type(:int).with('3') }
+        its([5]) { is_expected.to be_token.of_type(:minus).with('-') }
+        its([6]) { is_expected.to be_token.of_type(:int).with('4') }
+        its([7]) { is_expected.to be_token.of_type(:slash).with('/') }
+        its([8]) { is_expected.to be_token.of_type(:int).with('5') }
+      end
+    end
+
     context 'function declaration' do
       let(:text) do
         <<~JADE

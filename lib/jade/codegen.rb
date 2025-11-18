@@ -29,6 +29,11 @@ module Jade
 
       in AST::FunctionDeclarationParam(name:)
         name
+
+      in AST::InfixApplication(left:, operator:, right:)
+        symbol = registry.lookup(operator.symbol)
+
+        symbol.codegen.call(generate(left, registry), generate(right, registry))
       end
     end
 

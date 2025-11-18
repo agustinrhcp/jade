@@ -37,7 +37,7 @@ module Jade
       in Symbol::Union
         add_local_type_symbol(symbol)
 
-      in Symbol::Function
+      in Symbol::Function | Symbol::StdlibFunction
         add_local_value_symbol(symbol)
       end
     end

@@ -47,6 +47,12 @@ module Jade
               analyze_r(body, registry, it.scope)
                 .add_errors(it.errors)
             end
+
+        in AST::InfixApplication(left:, right:)
+          analyze_r(left, registry, scope) => { errors: l_errors }
+          analyze_r(right, registry, scope) => { errors: r_errors }
+
+          Result[scope, l_errors + r_errors]
         end
       end
 
@@ -113,7 +119,7 @@ module Jade
         end
 
         def message
-          "Undefined variable #{@var_ref.name}"
+          "Undefined variable #{@var_ref}"
         end
       end
     end

@@ -29,6 +29,9 @@ module Jade
     define_ast_node(:FunctionDeclarationParam, :name, :type)
     define_ast_node(:TypeReference, :type, :args)
 
+    define_ast_node(:InfixApplication, :left, :operator, :right)
+    define_ast_node(:InfixOperator, :value)
+
     def string_literal
       ->(tokens) do
         tokens => [open, token, close]
@@ -115,9 +118,21 @@ module Jade
         ]
       end
     end
+
     def type_reference
       ->(token) do
         TypeReference[token.value, [], token.range]
+      end
+    end
+
+    def infix_application
+      ->(left, token_op, right) do
+        InfixApplication[
+          left,
+          InfixOperator[token_op.value, token_op.range],
+          right,
+          left.range.begin..right.range.end,
+        ]
       end
     end
   end

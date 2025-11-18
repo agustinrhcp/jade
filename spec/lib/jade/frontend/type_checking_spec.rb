@@ -113,6 +113,17 @@ module Jade
           end
         end
       end
+
+      context 'other case' do
+        let(:text) do
+          <<~JADE
+            2 * 2 + 3 * 3
+          JADE
+        end
+
+        its(:type) { is_expected.to eql Type.int }
+        its(:errors) { is_expected.to be_empty }
+      end
     end
   end
 end

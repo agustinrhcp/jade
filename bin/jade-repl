@@ -3,13 +3,7 @@
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 
 require 'result'
-require 'jade/symbol'
-require 'jade/type'
-require 'jade/frontend'
-require 'jade/parser'
-require 'jade/lexer'
-require 'jade/ast'
-require 'jade/codegen'
+require 'jade'
 
 module ColoredStrings
   RBG_COLORS = {
@@ -27,7 +21,6 @@ module ColoredStrings
     end
   end
 end
-
 
 module PrettyPrinting
   refine Jade::AST::Node do
@@ -50,6 +43,8 @@ module Jade
       registry = nil
       current_entry = nil
       scope = nil
+      env = nil
+      var_gen = Frontend::TypeChecking::VarGen.new
 
       @ruby_env = binding
 
@@ -67,36 +62,41 @@ module Jade
           next
         end
 
-        case evaluate(input, registry, current_entry, scope)
+        case evaluate(input, registry, current_entry, scope, env, var_gen)
         in Err(message)
           puts message
-        in Ok([registry, current_entry, scope, generated_code])
+        in Ok([registry, current_entry, scope, env, type, generated_code])
           puts generated_code.violet
 
           eval(generated_code, @ruby_env)
-            .then { puts "=> #{it.inspect.green}"}
+            .then { puts "=> #{it.inspect.green} : #{type.inspect.violet}"}
         end
       end
     end
 
     private
 
-    def evaluate(src, registry, current_entry, scope)
+    def evaluate(src, registry, current_entry, scope, env, var_gen)
       Source.new(nil, src)
         .then { Lexer.tokenize(it) }
         .then { Parser.parse(it) }
-        .on_err { return Err[it.messagee] } => Ok(ast)
+        .on_err { return Err[it.message] } => Ok(ast)
 
-      puts ast.inspect.orange
+      Frontend::FixityFixer.fix(ast)
+        .then { puts it.inspect.orange }
 
       Frontend
-        .run_repl(ast, registry, current_entry, scope)
-        .on_err { return Err[it.first.message] } => Ok([ast, registry, current_entry, scope])
+        .run_repl(ast, registry, current_entry, scope, env, var_gen)
+        .on_err { return Err[it.first.message] } => Ok([
+          ast, type, registry, current_entry, scope, env,
+        ])
 
       Ok[[
         registry,
         current_entry,
         scope,
+        env,
+        type,
         Codegen.generate(ast, registry),
       ]]
     end
@@ -106,7 +106,6 @@ end
 # TODO: Allow multiline
 # Allow debug options.
 # Show errors nicely
-# Add typechecking
 
 Jade::REPL.run
 

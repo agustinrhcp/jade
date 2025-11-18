@@ -33,6 +33,10 @@ module Jade
       Function[nil, name, params, return_type]
     end
 
+    def self.stdlib_function(name, params, return_type, codegen)
+      StdlibFunction[nil, name, params, return_type, codegen]
+    end
+
     Union = Data.define(:module_name, :name, :type_params, :variants) do
       include Symbol
 
@@ -58,8 +62,21 @@ module Jade
       end
     end
 
+    StdlibFunction = Data.define(:module_name, :name, :params, :return_type, :codegen) do
+      include Symbol
+
+      def to_ref
+        [module_name, name].join('.')
+          .then { ValueRef[it] }
+      end
+    end
+
     ValueRef = Data.define(:qualified_name) do
       include Symbol
+
+      def to_ref
+        self
+      end
     end
 
     Variable = Data.define(:name) do

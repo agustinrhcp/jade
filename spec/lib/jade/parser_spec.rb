@@ -112,5 +112,31 @@ module Jade
       its(:params) { is_expected.to have(2).items.and all(be_a(AST::FunctionDeclarationParam)) }
       its(:return_type) { is_expected.to be_a(AST::TypeReference) }
     end
+
+    context 'operators' do
+      let(:text) do
+        <<~JADE
+          12 + 12
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Node).and be_a(AST::InfixApplication) }
+      its(:left) { is_expected.to be_a(AST::Literal) }
+      its(:operator) { is_expected.to be_a(AST::InfixOperator).and have_attributes(value: '+') }
+      its(:right) { is_expected.to be_a(AST::Literal) }
+
+      context 'a chain of operators' do
+        let(:text) do
+          <<~JADE
+            1 + 2 * 3 - 4 / 5
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::Node).and be_a(AST::InfixApplication) }
+        its(:left) { is_expected.to be_a(AST::InfixApplication) }
+        its(:operator) { is_expected.to be_a(AST::InfixOperator).and have_attributes(value: '/') }
+        its(:right) { is_expected.to be_a(AST::Literal).and have_attributes(value: 5) }
+      end
+    end
   end
 end

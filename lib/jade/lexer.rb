@@ -47,7 +47,7 @@ module Jade
       '='  => :assign,
 
       '|>' => :pipe_forward,
-    }
+    }.freeze
 
     SYMBOLS_REGEX = Regexp.union(SYMBOLS.keys.sort_by { |k| -k.length })
 
@@ -61,7 +61,7 @@ module Jade
         case
         when scanner.scan(/\s+/)
 
-        when scanner.scan(/\A#{SYMBOLS_REGEX}/)
+        when scanner.scan(SYMBOLS_REGEX)
           type = SYMBOLS.fetch(scanner.matched)
           tokens << tok(type, scanner)
 
