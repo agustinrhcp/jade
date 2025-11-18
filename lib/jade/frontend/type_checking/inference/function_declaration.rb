@@ -15,7 +15,7 @@ module Jade
               .args.reduce(env) { |body_env, (k, v)| body_env.bind(k, generalize(v)) }
               .then { check(body, registry, it, var_gen) }
               .and_unify(fn_type.return_type) do |error|
-                TypeChecking::FunctionBodyTypeMismatchError.new(node, error.expected, error.actual)
+                FunctionBodyTypeMismatchError.new(node, error.expected, error.actual)
               end
               .then { it.with(type: Type.unit) }
               .then { it.with(env: env.bind(node.name, generalize(fn_type))) }

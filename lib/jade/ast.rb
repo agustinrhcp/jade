@@ -1,3 +1,5 @@
+require 'jade/ast/pretty_printer'
+
 module Jade
   module AST
     extend self

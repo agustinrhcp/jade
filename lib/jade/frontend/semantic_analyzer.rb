@@ -9,6 +9,11 @@ module Jade
           .map { [ast, registry] }
       end
 
+      def analyze_repl(ast, registry, scope = Scope.new)
+        analyze_r(ast, registry, scope)
+          .to_result
+      end
+
       private
 
       def analyze_r(ast, registry, scope)
@@ -45,8 +50,6 @@ module Jade
         end
       end
 
-      private
-
       def bind(scope, name, symbol)
         if scope.lookup(name)
           Result[scope, [ShadowingError.new(name)]]
@@ -69,7 +72,7 @@ module Jade
         def to_result
           return Err[errors] if errors.any?
 
-          Ok[nil]
+          Ok[scope]
         end
 
         def add_errors(more_errors)
