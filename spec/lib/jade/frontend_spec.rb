@@ -164,5 +164,32 @@ module Jade
         end
       end
     end
+
+    context 'function call' do
+      let(:text) do
+        <<~JADE
+          def add(a: Int, b: Int) -> Int
+            a + b
+          end
+
+          add(1, 2)
+        JADE
+      end
+
+      let(:frontend) do
+        Lexer
+          .tokenize(source)
+          .then { Parser.parse(it) }
+          .and_then  { Frontend.run_up_to_semantic_analysis(it) }
+      end
+
+      it { is_expected.to be_a(AST::Node).and be_a(AST::Body) }
+
+      context 'the body expressions' do
+        subject { super().expressions }
+        its([0]) { is_expected.to be_a(AST::FunctionDeclaration) }
+        its([1]) { is_expected.to be_a(AST::FunctionCall) }
+      end
+    end
   end
 end

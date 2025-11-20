@@ -8,9 +8,21 @@ module Jade
 
         def apply(type)
           case type
+          in Type::Function(args:, return_type:)
+            type
+              .with(args: args.map { apply(it) })
+              .with(return_type: apply(return_type) )
+
           in Type::Constructor
             type
+
+          in Type::Var(name:)
+            mappings[name] || type
           end
+        end
+
+        def bind(name, type)
+          with(mappings: mappings.merge(name => type))
         end
 
         def compose(other)

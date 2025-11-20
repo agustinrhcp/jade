@@ -37,6 +37,11 @@ module Jade
             .with(left: resolve(left, registry, current_entry))
             .with(right: resolve(right, registry, current_entry))
             .with(operator: operator.with(symbol:))
+
+        in AST::FunctionCall(callee:, args:)
+          node
+            .with(callee: resolve(callee, registry, current_entry))
+            .with(args: args.map { resolve(it, registry, current_entry) })
         end
       end
 

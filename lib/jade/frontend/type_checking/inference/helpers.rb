@@ -26,7 +26,7 @@ module Jade
             in Symbol::Function | Symbol::StdlibFunction
               Type
                 .function(
-                  symbol.params.transform_values { type_from_symbol(it, registry) },
+                  symbol.params.values.map { type_from_symbol(it, registry) },
                   type_from_symbol(symbol.return_type, registry)
                 )
             end

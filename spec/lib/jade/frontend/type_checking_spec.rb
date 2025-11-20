@@ -54,7 +54,7 @@ module Jade
             is_expected.to include(
               'add' => TypeChecking::Scheme[
                 [],
-                Type.function({ 'a' => Type.int, 'b' => Type.int }, Type.int),
+                Type.function([Type.int, Type.int], Type.int),
               ]
             )
           end
@@ -114,7 +114,7 @@ module Jade
         end
       end
 
-      context 'other case' do
+      context 'infix application' do
         let(:text) do
           <<~JADE
             2 * 2 + 3 * 3
@@ -123,6 +123,57 @@ module Jade
 
         its(:type) { is_expected.to eql Type.int }
         its(:errors) { is_expected.to be_empty }
+
+        context 'when calling with the wrong params' do
+          let(:text) do
+            <<~JADE
+              2 * "Hello"
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to have(1).item }
+
+          describe 'the error' do
+            subject { super().errors.first }
+            it { is_expected.to be_a(TypeChecking::InfixApplicationTypeMismatchError) }
+            its(:message) { is_expected.to include('Left side of (*) expects Int but found String') }
+          end
+        end
+      end
+
+      context 'a function declaration' do
+        let(:text) do
+          <<~JADE
+            def add(a: Int, b: Int) -> Int
+              a + b
+            end
+            add(1, 2)
+          JADE
+        end
+
+        its(:type) { is_expected.to eql Type.int }
+        its(:errors) { is_expected.to be_empty }
+
+        context 'when calling with the wrong params' do
+          let(:text) do
+            <<~JADE
+              def add(a: Int, b: Int) -> Int
+                a + b
+              end
+              add(1, "Hello")
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to have(1).item }
+
+          describe 'the error' do
+            subject { super().errors.first }
+            it { is_expected.to be_a(TypeChecking::FunctionCallTypeMismatchError) }
+            its(:message) { is_expected.to include('Function call mismatch, expected (Int, Int) -> Int but found (Int, String) -> Int') }
+          end
+        end
       end
     end
   end

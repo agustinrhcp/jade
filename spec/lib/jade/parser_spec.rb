@@ -138,5 +138,29 @@ module Jade
         its(:right) { is_expected.to be_a(AST::Literal).and have_attributes(value: 5) }
       end
     end
+
+    context 'function calls' do
+      let(:text) do
+        <<~JADE
+          add(1, 2)
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionCall) }
+      its(:callee) { is_expected.to be_a(AST::VariableReference).and have_attributes(name: 'add') }
+      its(:args) { is_expected.to have(2).items.and all(be_a(AST::Literal)) }
+
+      context 'function callception' do
+        let(:text) do
+          <<~JADE
+            add(add(1, 2), 3)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::FunctionCall) }
+        its(:callee) { is_expected.to be_a(AST::VariableReference).and have_attributes(name: 'add') }
+        its(:args) { is_expected.to have(2).items.and match [an_instance_of(AST::FunctionCall), an_instance_of(AST::Literal)] }
+      end
+    end
   end
 end

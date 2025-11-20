@@ -7,12 +7,14 @@ module Jade
           extend self
 
           def infer(node, registry, env, var_gen)
-            node => AST::FunctionDeclaration(symbol:, body:)
+            node => AST::FunctionDeclaration(symbol:, body:, params:)
 
             fn_type = type_from_symbol(symbol, registry)
 
             fn_type
-              .args.reduce(env) { |body_env, (k, v)| body_env.bind(k, generalize(v)) }
+              .args
+              .zip(params)
+              .reduce(env) { |body_env, (t, p)| body_env.bind(p.name, generalize(t)) }
               .then { check(body, registry, it, var_gen) }
               .and_unify(fn_type.return_type) do |error|
                 FunctionBodyTypeMismatchError.new(node, error.expected, error.actual)

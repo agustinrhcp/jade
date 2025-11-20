@@ -8,6 +8,7 @@ Ok = Data.define(:ok) do
   def map
     Ok.new(yield(ok))
   end
+  alias_method :map_both, :map
 
   def and_then
     yield(ok)
@@ -71,6 +72,7 @@ Err = Data.define(:err) do
   def map_error
     Err.new(yield(err))
   end
+  alias_method :map_both, :map_error
 
   def map2(_)
     self

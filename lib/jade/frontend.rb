@@ -93,7 +93,7 @@ module Jade
             '(+)',
             { a: Symbol::TypeRef['Basics.Int'], b: Symbol::TypeRef['Basics.Int'] },
             Symbol::TypeRef['Basics.Int'],
-            ->(a, b) { "#{a} + #{b}" }
+            "(->(a, b) { a + b })"
           )
         )
         .add_symbol(
@@ -101,7 +101,7 @@ module Jade
             '(-)',
             { a: Symbol::TypeRef['Basics.Int'], b: Symbol::TypeRef['Basics.Int'] },
             Symbol::TypeRef['Basics.Int'],
-            ->(a, b) { "#{a} - #{b}" }
+            "(->(a, b) { a - b })"
           )
         )
         .add_symbol(
@@ -109,7 +109,7 @@ module Jade
             '(*)',
             { a: Symbol::TypeRef['Basics.Int'], b: Symbol::TypeRef['Basics.Int'] },
             Symbol::TypeRef['Basics.Int'],
-            ->(a, b) { "#{a} * #{b}" }
+            "(->(a, b) { a * b })"
           )
         )
         .add_symbol(
@@ -117,7 +117,7 @@ module Jade
             '(/)',
             { a: Symbol::TypeRef['Basics.Int'], b: Symbol::TypeRef['Basics.Int'] },
             Symbol::TypeRef['Basics.Int'],
-            ->(a, b) { "#{a} / #{b}" }
+            "(->(a, b) { a / b })"
           )
         )
     end

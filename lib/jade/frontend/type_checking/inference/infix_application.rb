@@ -11,7 +11,7 @@ module Jade
 
             fn_type = type_from_symbol(operator.symbol, registry)
 
-            left_expected_type, right_expected_type = fn_type.args.values
+            left_expected_type, right_expected_type = fn_type.args
 
             left_result = check(left, registry, env, var_gen)
               .and_unify(left_expected_type) do

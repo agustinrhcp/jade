@@ -75,5 +75,18 @@ module Jade
 
       it { is_expected.to eql "def add; ->(a, b) { a }; end" }
     end
+
+    context 'function call' do
+      let(:text) do
+        <<~JADE
+          def add(a: Int, b: Int) -> Int
+            a + b
+          end
+          add(1, 2)
+        JADE
+      end
+
+      it { is_expected.to eql "def add; ->(a, b) { (->(a, b) { a + b }).call(a, b) }; end; add.call(1, 2)" }
+    end
   end
 end

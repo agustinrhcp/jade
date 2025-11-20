@@ -37,7 +37,7 @@ module Jade
               Result[expr_scope, expr_errors + acc.errors]
             end
 
-        in AST::FunctionDeclaration(params:, body:)
+        in AST::FunctionDeclaration(name:, params:, body:, symbol:)
           params
             .reduce(Result[scope, []]) do |acc, param|
               bind(acc.scope, param.name, Symbol.param(param.name))
@@ -47,12 +47,24 @@ module Jade
               analyze_r(body, registry, it.scope)
                 .add_errors(it.errors)
             end
+            .with(scope: scope.bind(name, symbol))
 
         in AST::InfixApplication(left:, right:)
           analyze_r(left, registry, scope) => { errors: l_errors }
           analyze_r(right, registry, scope) => { errors: r_errors }
 
           Result[scope, l_errors + r_errors]
+
+        in AST::FunctionCall(callee:, args:)
+          # TODO: Shameless copy paste from body
+          args
+            .reduce(Result[scope, []]) do |acc, arg|
+              analyze_r(arg, registry, acc.scope) => Result[arg_scope, arg_errors]
+              Result[arg_scope, arg_errors + acc.errors]
+            end => { errors: args_errors, scope: args_scope }
+
+          analyze_r(callee, registry, args_scope)
+            .add_errors(args_errors)
         end
       end
 

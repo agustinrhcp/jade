@@ -32,6 +32,9 @@ module Jade
     define_ast_node(:InfixApplication, :left, :operator, :right)
     define_ast_node(:InfixOperator, :value)
 
+    define_ast_node(:FunctionCall, :callee, :args)
+    define_ast_node(:MemberAccess, :record, :field)
+
     def string_literal
       ->(tokens) do
         tokens => [open, token, close]
@@ -132,6 +135,26 @@ module Jade
           InfixOperator[token_op.value, token_op.range],
           right,
           left.range.begin..right.range.end,
+        ]
+      end
+    end
+
+    def function_call
+      ->(callee, lparen, args, rparen) do
+        FunctionCall[
+          callee,
+          args,
+          lparen.range.begin..rparen.range.end,
+        ]
+      end
+    end
+
+    def member_access
+      ->(record, dot, field) do
+        FunctionCall[
+          record,
+          field.value,
+          dot.range.begin..field.range.end,
         ]
       end
     end

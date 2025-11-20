@@ -16,6 +16,9 @@ module Jade
           Symbol.predeclared_function(name)
             .then { entry.add_symbol(it) }
 
+        in AST::Body(expressions:)
+          expressions.reduce(entry) { |acc, expr| shallow(expr, acc) }
+
         else
           entry
         end
@@ -36,8 +39,12 @@ module Jade
           return_type => AST::TypeReference(type:)
           return_type_type = entry.lookup_type(type)
 
-          Symbol.function(name, params_types, return_type_type)
+          Symbol
+            .function(name, params_types, return_type_type)
             .then { entry.add_symbol(it) }
+
+        in AST::Body(expressions:)
+          expressions.reduce(entry) { |acc, expr| deep(expr, acc) }
 
         else
           entry

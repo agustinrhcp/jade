@@ -2,6 +2,10 @@ module Jade
   module Type
     extend self
 
+    def var(name)
+      Var[name]
+    end
+
     def unit
       Unit[]
     end
@@ -35,10 +39,9 @@ module Jade
     end
 
     Var = Data.define(:name) do
-      def inspect
+      def to_s
         name
       end
-      alias_method :to_s, :inspect
 
       def free_vars
         [name]
@@ -46,10 +49,9 @@ module Jade
     end
 
     Constructor = Data.define(:name) do
-      def inspect
+      def to_s
         name.split('.').last
       end
-      alias_method :to_s, :inspect
 
       def free_vars
         []
@@ -57,15 +59,14 @@ module Jade
     end
 
     Function = Data.define(:args, :return_type) do
-      def inspect
+      def to_s
         args
           .map(&:to_s).join(', ')
           .then { "(#{it})"} + " -> " + return_type.to_s
       end
-      alias_method :to_s, :inspect
 
       def free_vars
-        (args.values.flat_map(&:free_vars) + return_type.free_vars)
+        (args.flat_map(&:free_vars) + return_type.free_vars)
           .then(&:to_set)
           .then(&:to_a)
       end

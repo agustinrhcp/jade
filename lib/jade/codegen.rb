@@ -33,7 +33,10 @@ module Jade
       in AST::InfixApplication(left:, operator:, right:)
         symbol = registry.lookup(operator.symbol)
 
-        symbol.codegen.call(generate(left, registry), generate(right, registry))
+        "#{symbol.codegen}.call(#{generate(left, registry)}, #{generate(right, registry)})"
+
+      in AST::FunctionCall(callee:, args:)
+        "#{generate(callee, registry)}.call(#{args.map { generate(it, registry) }.join(', ')})"
       end
     end
 

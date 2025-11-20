@@ -13,8 +13,10 @@ module Jade
           case Unification.unify(type, actual)
           in Ok(sub)
             compose_substitution(sub)
+              .apply
           in Err(error)
             add_errors([block.call(error)])
+              .with(type: error.actual)
           end
         end
 
@@ -24,6 +26,10 @@ module Jade
 
         def compose_substitution(sub)
           with(substitution: substitution.compose(sub))
+        end
+
+        def apply
+          with(type: substitution.apply(type))
         end
 
         def to_result
@@ -50,6 +56,9 @@ module Jade
 
         in AST::InfixApplication
           Inference::InfixApplication.infer(node, registry, env, var_gen)
+
+        in AST::FunctionCall
+          Inference::FunctionCall.infer(node, registry, env, var_gen)
 
         in AST::VariableReference
           infer_variable_reference(node, registry, env, var_gen)
@@ -175,6 +184,18 @@ module Jade
 
         def message
           "#{@side} side of (#{@node.operator.value}) expects #{@expected} but found #{@actual}"
+        end
+      end
+
+      class FunctionCallTypeMismatchError
+        def initialize(node, expected, actual)
+          @node = node
+          @expected = expected
+          @actual = actual
+        end
+
+        def message
+          "Function call mismatch, expected #{@expected} but found #{@actual}"
         end
       end
     end

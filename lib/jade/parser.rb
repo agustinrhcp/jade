@@ -2,6 +2,18 @@ module Jade
   module Parser
     extend self
 
+    FunctionCallPostfix = Data.define(:lparen,:args, :rparen) do
+      def apply(node)
+        AST.function_call.call(node, lparen, args, rparen)
+      end
+    end
+
+    MemberAccessPostfix = Data.define(:dot, :identifier) do
+      def apply(node)
+        AST.member_access.call(node, dot, identifier)
+      end
+    end
+
     def parse(tokens, parser = program)
       parser
         .call(State.new(tokens))
@@ -10,7 +22,11 @@ module Jade
     end
 
     def program
-      function_declaration | sequence(expression).map(&AST.body)
+      sequence(expression | statement).map(&AST.body)
+    end
+
+    def statement
+      function_declaration
     end
 
     def expression
@@ -27,7 +43,34 @@ module Jade
     end
 
     def primary
+      (atom >> many(postfix))
+        .map do |(node, *postfixes)|
+          postfixes.reduce(node) do |acc, postfix_type|
+            postfix_type.apply(acc)
+          end
+        end
+    end
+
+    def atom
       variable_binding | variable_reference | literal
+    end
+
+    def postfix
+      function_call | member_access
+    end
+
+    def function_call
+      (
+        type(:lparen) >> 
+          sequence(lazy { expression }, separated_by: type(:comma).skip).map { [it] } >>
+          type(:rparen)
+      )
+        .map { FunctionCallPostfix[*it] }
+    end
+
+    def member_access
+      (type(:dot) >> identifier)
+        .map { MemberAccessPostfix[*it] }
     end
 
     def function_declaration
@@ -156,6 +199,12 @@ module Jade
             state,
           ]]
         end
+      end
+    end
+
+    def lazy(&block)
+      P.new do |input|
+        block.call.call(input)
       end
     end
 
