@@ -88,5 +88,29 @@ module Jade
 
       it { is_expected.to eql "def add; ->(a, b) { (->(a, b) { a + b }).call(a, b) }; end; add.call(1, 2)" }
     end
+
+    context 'type def' do
+      let(:text) do
+        <<~JADE
+          type Maybe(a) = Just(a) | Nothing
+        JADE
+      end
+
+      it { is_expected.to eql "Just = Data.define(:_1); Nothing = Data.define" }
+
+      context 'and reference' do
+        let(:text) do
+          <<~JADE
+            type Maybe(a) = Just(a) | Nothing
+            Just(12)
+          JADE
+        end
+
+        subject { super().split('; ') }
+        its([0]) { is_expected.to eql "Just = Data.define(:_1)" }
+        its([1]) { is_expected.to eql "Nothing = Data.define" }
+        its([2]) { is_expected.to eql "->(*args) { Just[*args] }.call(12)" }
+      end
+    end
   end
 end

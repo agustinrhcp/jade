@@ -9,25 +9,41 @@ module Jade
             Unification.unify(actual, expected)
           end
 
+          def instantiate(scheme, var_gen)
+            Instantiation.instantiate(scheme, var_gen)
+          end
+
           def generalize(type)
             Generalization.generalize(type)
           end
 
           def type_from_symbol(symbol, registry)
             case symbol
+            in Symbol::Variable(name:)
+              Type.var(name)
+
             in Symbol::TypeRef | Symbol::ValueRef
               registry
                 .lookup(symbol)
                 .then { type_from_symbol(it, registry) }
 
             in Symbol::Union
-              Type.constructor(symbol.qualified_name)
+              Type
+                .constructor(symbol.qualified_name)
+                .apply(symbol.type_params.map { type_from_symbol(it, registry) })
 
             in Symbol::Function | Symbol::StdlibFunction
               Type
                 .function(
                   symbol.params.values.map { type_from_symbol(it, registry) },
                   type_from_symbol(symbol.return_type, registry)
+                )
+
+            in Symbol::Variant
+              Type
+                .function(
+                  symbol.args.map { type_from_symbol(it, registry) },
+                  type_from_symbol(symbol.union, registry)
                 )
             end
           end

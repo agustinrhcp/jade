@@ -30,6 +30,9 @@ module Jade
         in AST::VariableReference(name:)
           lookup(scope, name)
 
+        in AST::ConstructorReference(name:)
+          lookup(scope, name)
+
         in AST::Body(expressions:)
           expressions
             .reduce(Result[scope, []]) do |acc, expression|
@@ -65,7 +68,14 @@ module Jade
 
           analyze_r(callee, registry, args_scope)
             .add_errors(args_errors)
-        end
+
+        in AST::TypeDeclaration(name:, symbol:, variants:)
+          variants
+            .reduce(bind(scope, name, symbol)) do |acc, variant|
+              bind(acc.scope, variant.name, symbol)
+                .add_errors(acc.errors)
+            end
+          end
       end
 
       def bind(scope, name, symbol)

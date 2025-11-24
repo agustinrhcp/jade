@@ -21,7 +21,14 @@ module Jade
               .args
               .zip(type2.args)
               .reduce(Ok[Substitution.new]) do |subs_r, args|
-                case unify(*args)
+                sub = case subs_r
+                in Ok(sub)
+                  sub
+                in Err(sub)
+                  sub
+                end
+
+                case unify(*args.map { sub.apply(it) })
                 in Err
                   next subs_r.and_then { Err[it] }
                 in Ok(arg_sub)

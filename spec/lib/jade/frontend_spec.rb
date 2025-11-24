@@ -191,5 +191,56 @@ module Jade
         its([1]) { is_expected.to be_a(AST::FunctionCall) }
       end
     end
+
+    context 'type def' do
+      let(:text) do
+        <<~JADE
+          type Maybe(a) = Just(a) | Nothing
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::TypeDeclaration) }
+      its(:symbol) { is_expected.to eql Symbol.type_ref('__Test__.Maybe') }
+
+      describe 'the variants symbols' do
+        subject { super().variants.map(&:symbol) }
+
+        it { is_expected.to have(2).items.and all(be_a(Symbol::ValueRef)) }
+
+        it 'references its variants' do
+          expect(subject[0].qualified_name).to eql('__Test__.Just')
+          expect(subject[1].qualified_name).to eql('__Test__.Nothing')
+        end
+      end
+
+      describe 'the registry' do
+        subject { frontend => Ok([_, registry]); registry }
+
+        it 'contains the function symbol' do
+          maybe_symbol = subject.lookup(Symbol::TypeRef['__Test__.Maybe'])
+
+          expect(maybe_symbol).to be_a(Symbol::Union)
+          expect(maybe_symbol.type_params).to eql([Symbol.var('a')])
+        end
+      end
+    end
+
+    context 'type def and reference' do
+      let(:text) do
+        <<~JADE
+          type Maybe(a) = Just(a) | Nothing
+          Just
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Body) }
+
+      describe 'the reference' do
+        subject { super().expressions.last }
+
+        it { is_expected.to be_a(AST::ConstructorReference) }
+        its(:symbol) { is_expected.to eql Symbol.value_ref('__Test__.Just') }
+      end
+    end
   end
 end

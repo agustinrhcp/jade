@@ -56,6 +56,12 @@ module Jade
       def free_vars
         []
       end
+
+      def apply(types)
+        return self if types.empty?
+
+        Application[self, types]
+      end
     end
 
     Function = Data.define(:args, :return_type) do
@@ -67,6 +73,19 @@ module Jade
 
       def free_vars
         (args.flat_map(&:free_vars) + return_type.free_vars)
+          .then(&:to_set)
+          .then(&:to_a)
+      end
+    end
+
+    Application = Data.define(:constructor, :args) do
+      def to_s
+        "#{constructor.to_s}(#{args.join(", ")})"
+      end
+
+      def free_vars
+        args
+          .flat_map(&:free_vars)
           .then(&:to_set)
           .then(&:to_a)
       end

@@ -18,6 +18,10 @@ module Jade
 
           in Type::Var(name:)
             mappings[name] || type
+
+          in Type::Application(args:)
+            type
+              .with(args: args.map { apply(it) })
           end
         end
 

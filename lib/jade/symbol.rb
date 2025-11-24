@@ -9,12 +9,20 @@ module Jade
       qualified_name.split('.').last
     end
 
-    def self.union(name)
-      Union[nil, name, [], []]
+    def self.union(name, type_params = [])
+      Union[nil, name, type_params, []]
+    end
+
+    def self.variant(name, args, union)
+      Variant[nil, name, args, union]
     end
 
     def self.type_ref(qualified_name)
       TypeRef[qualified_name]
+    end
+
+    def self.value_ref(qualified_name)
+      ValueRef[qualified_name]
     end
 
     def self.var(name)
@@ -54,6 +62,15 @@ module Jade
     end
 
     Function = Data.define(:module_name, :name, :params, :return_type) do
+      include Symbol
+
+      def to_ref
+        [module_name, name].join('.')
+          .then { ValueRef[it] }
+      end
+    end
+
+    Variant = Data.define(:module_name, :name, :args, :union) do
       include Symbol
 
       def to_ref

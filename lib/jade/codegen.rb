@@ -36,7 +36,20 @@ module Jade
         "#{symbol.codegen}.call(#{generate(left, registry)}, #{generate(right, registry)})"
 
       in AST::FunctionCall(callee:, args:)
-        "#{generate(callee, registry)}.call(#{args.map { generate(it, registry) }.join(', ')})"
+        args_code = args.map { generate(it, registry) }.join(', ')
+
+        "#{generate(callee, registry)}.call(#{args_code})"
+
+      in AST::ConstructorReference(name:)
+        "->(*args) { #{name}[*args] }"
+
+      in AST::TypeDeclaration(variants:)
+        variants.map { generate(it, registry) }.join('; ')
+
+      in AST::VariantDeclaration(name:, args:)
+        args.map.with_index { |_, i| ":_#{i + 1}" }
+          .then { it.empty? ? "" : "(#{it.join(", ")})"}
+          .then { "#{name} = Data.define#{it}" }
       end
     end
 

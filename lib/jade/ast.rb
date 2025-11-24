@@ -22,18 +22,25 @@ module Jade
 
     define_ast_node(:VariableBinding, :name, :expression)
     define_ast_node(:VariableReference, :name)
+    define_ast_node(:ConstructorReference, :name)
 
     define_ast_node(:Body, :expressions)
 
     define_ast_node(:FunctionDeclaration, :name, :params, :return_type, :body)
     define_ast_node(:FunctionDeclarationParam, :name, :type)
-    define_ast_node(:TypeReference, :type, :args)
+    define_ast_node(:TypeDeclaration, :name, :type_params, :variants)
+    define_ast_node(:VariantDeclaration, :name, :args)
+    define_ast_node(:TypeParam, :name)
 
     define_ast_node(:InfixApplication, :left, :operator, :right)
     define_ast_node(:InfixOperator, :value)
 
     define_ast_node(:FunctionCall, :callee, :args)
     define_ast_node(:MemberAccess, :record, :field)
+
+    define_ast_node(:TypeName, :type)
+    define_ast_node(:TypeVar, :type)
+    define_ast_node(:TypeApplication, :constructor, :args)
 
     def string_literal
       ->(tokens) do
@@ -75,6 +82,16 @@ module Jade
         VariableReference[
           identifier.value,
           identifier.range,
+        ]
+      end
+    end
+
+
+    def constructor_reference
+      ->(constant) do
+        ConstructorReference[
+          constant.value,
+          constant.range,
         ]
       end
     end
@@ -122,9 +139,21 @@ module Jade
       end
     end
 
-    def type_reference
+    def type_name
       ->(token) do
-        TypeReference[token.value, [], token.range]
+        TypeName[token.value, token.range]
+      end
+    end
+
+    def type_var
+      ->(token) do
+        TypeVar[token.value, token.range]
+      end
+    end
+
+    def type_application
+      ->(constructor, _lparen, args, rparen) do
+        TypeVarVar[constructor, args, constructor.range.begin..rparen.range.end]
       end
     end
 
@@ -155,6 +184,33 @@ module Jade
           record,
           field.value,
           dot.range.begin..field.range.end,
+        ]
+      end
+    end
+
+    def type_declaration
+      ->((type_token, name, type_params, variants)) do
+        TypeDeclaration[
+          name.value,
+          type_params,
+          variants,
+          type_token.range.begin..variants.last.range.end,
+        ]
+      end
+    end
+
+    def type_param
+      ->(identifier) do
+        TypeParam[identifier.value, identifier.range]
+      end
+    end
+
+    def variant_declaration
+      ->((name, args)) do
+        VariantDeclaration[
+          name.value,
+          args,
+          name.range.begin..(args&.last || name).range.end,
         ]
       end
     end

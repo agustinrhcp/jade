@@ -69,7 +69,7 @@ module Jade
           puts generated_code.violet
 
           eval(generated_code, @ruby_env)
-            .then { puts "=> #{it.inspect.green} : #{type.inspect.violet}"}
+            .then { puts "=> #{it.inspect.green} : #{type.to_s.violet}"}
         end
       end
     end
@@ -83,7 +83,7 @@ module Jade
         .on_err { return Err[it.message] } => Ok(ast)
 
       Frontend::FixityFixer.fix(ast)
-        .then { puts it.inspect.orange }
+        # .then { puts it.inspect.orange }
 
       Frontend
         .run_repl(ast, registry, current_entry, scope, env, var_gen)

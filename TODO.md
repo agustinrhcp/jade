@@ -17,3 +17,14 @@ a type, but " > chunk > "
 
 Looking up undeclared symbols can return nil. That needs to fail
 and return a helpful error.
+
+
+### AST Nodes
+
+Current VarReference should probably be renamed to identifier.
+And have a new VarReference for the a in Maybe(a) and Just(a).
+
+### Holes for currying
+
+Person(_, _, _, _)
+is the same as (\a -> \b -> \c -> \d -> Person(a, b, c, d))

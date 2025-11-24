@@ -12,6 +12,7 @@ module Jade
     KEYWORDS = Set[
       'def',
       'end',
+      'type',
     ].freeze
 
     SYMBOLS = {

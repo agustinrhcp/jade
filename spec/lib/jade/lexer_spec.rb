@@ -129,5 +129,17 @@ module Jade
       its([13]) { is_expected.to be_token.of_type(:identifier).with('a').at(33...34) }
       its([14]) { is_expected.to be_token.of_type(:end).at(35...38) }
     end
+
+    context 'type def' do
+      let(:text) do
+        <<~JADE
+          type Maybe(a) = Just(a) | Nothing
+        JADE
+      end
+
+      it { is_expected.to have(12).item.and all(be_a(Token)) }
+      its([0])  { is_expected.to be_token.of_type(:type).at(0...4) }
+      its([1])  { is_expected.to be_token.of_type(:constant).with('Maybe').at(5...10) }
+    end
   end
 end

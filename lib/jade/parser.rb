@@ -2,7 +2,7 @@ module Jade
   module Parser
     extend self
 
-    FunctionCallPostfix = Data.define(:lparen,:args, :rparen) do
+    FunctionCallPostfix = Data.define(:lparen, :args, :rparen) do
       def apply(node)
         AST.function_call.call(node, lparen, args, rparen)
       end
@@ -22,11 +22,15 @@ module Jade
     end
 
     def program
-      sequence(expression | statement).map(&AST.body)
+      sequence(declaration | statement).map(&AST.body)
     end
 
     def statement
-      function_declaration
+      variable_binding | expression
+    end
+
+    def declaration
+      function_declaration | type_declaration
     end
 
     def expression
@@ -52,7 +56,7 @@ module Jade
     end
 
     def atom
-      variable_binding | variable_reference | literal
+      variable_reference | literal | constructor_reference
     end
 
     def postfix
@@ -62,10 +66,10 @@ module Jade
     def function_call
       (
         type(:lparen) >> 
-          sequence(lazy { expression }, separated_by: type(:comma).skip).map { [it] } >>
+          (sequence(lazy { expression }, separated_by: type(:comma).skip).map { [it] } |
+            none.map { [[]] }) >>
           type(:rparen)
-      )
-        .map { FunctionCallPostfix[*it] }
+      ).map { FunctionCallPostfix[*it] }
     end
 
     def member_access
@@ -81,10 +85,64 @@ module Jade
           sequence(param, separated_by: type(:comma).skip).map { [it] } >>
           type(:rparen).skip >>
           type(:arrow).skip >>
-          type_reference >>
-          sequence(expression).map(&AST.body) >>
+          type_expression >>
+          sequence(statement).map(&AST.body) >>
           type(:end)
       ).map(&AST.function_declaration)
+    end
+
+    def type_declaration
+      (
+        type(:type) >>
+          constant >>
+          (type_params | none.map { [] }) >>
+          type(:assign).skip >>
+          sequence(variant_declaration, separated_by: type(:pipe).skip).map { [it] }
+      ).map(&AST.type_declaration)
+    end
+
+    def type_param
+      identifier
+    end
+
+    def variant_declaration
+      (
+        constant >>
+          (type_expressions | none.map { [[]] })
+      ).map(&AST.variant_declaration)
+    end
+
+    def type_params
+      type(:lparen).skip >>
+        sequence(type_param, separated_by: type(:comma).skip).map { [it] } >>
+        type(:rparen).skip
+    end
+
+    def type_expressions
+      type(:lparen).skip >>
+        sequence(type_expression, separated_by: type(:comma).skip).map { [it] } >>
+        type(:rparen).skip
+    end
+
+    def type_param
+      identifier.map(&AST.type_param)
+    end
+
+    def type_expression
+      type_var | type_application | type_name
+    end
+
+    def type_name
+      constant.map(&AST.type_name)
+    end
+
+    def type_var
+      identifier.map(&AST.type_var)
+    end
+
+    def type_application
+      (type_name >> type(:lparen) >> sequence(lazy { type_expression }) >> type(:rparen))
+        .map(&AST.type_application)
     end
 
     def literal
@@ -95,9 +153,13 @@ module Jade
       identifier.map(&AST.variable_reference)
     end
 
+    def constructor_reference
+      constant.map(&AST.constructor_reference)
+    end
+
     def param
       (
-        identifier >> type(:colon).skip >> type_reference
+        identifier >> type(:colon).skip >> type_expression
       ).map(&AST.function_declaration_param)
     end
 
@@ -105,7 +167,7 @@ module Jade
       (
         identifier >>
           type(:assign) >>
-          (literal).map_error(&:commit)
+          (expression).map_error(&:commit)
       ).map(&AST.variable_binding)
     end
 
@@ -165,10 +227,6 @@ module Jade
 
     def identifier
       type(:identifier)
-    end
-
-    def type_reference
-      constant.map(&AST.type_reference)
     end
 
     def constant

@@ -175,6 +175,60 @@ module Jade
           end
         end
       end
+
+      context 'type def and reference' do
+        let(:text) do
+          <<~JADE
+            type Maybe(a) = Just(a) | Nothing
+            Just
+          JADE
+        end
+
+        its(:type) { is_expected.to eql Type.function([Type.var('t1')], Type.constructor('__Test__.Maybe').apply([Type.var('t1')])) }
+        its(:errors) { is_expected.to be_empty }
+
+        describe 'and call' do
+          let(:text) do
+            <<~JADE
+              type Maybe(a) = Just(a) | Nothing
+              Just(12)
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.constructor('__Test__.Maybe').apply([Type.int]) }
+          its(:errors) { is_expected.to be_empty }
+        end
+
+        describe 'and call with different type application' do
+          let(:text) do
+            <<~JADE
+              type Maybe(a) = Just(a) | Nothing
+              Just(12)
+              Just("Hello")
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.constructor('__Test__.Maybe').apply([Type.string]) }
+          its(:errors) { is_expected.to be_empty }
+        end
+
+        describe 'and call with wrong params' do
+          let(:text) do
+            <<~JADE
+              type Maybe(a) = Just(a, a) | Nothing
+              Just(12, "Hello")
+            JADE
+          end
+
+          its(:errors) { is_expected.to have(1).item }
+
+          describe 'the error' do
+            subject { super().errors.first }
+
+            its(:message) { is_expected.to eql "Function call mismatch, expected (Int, Int) -> Maybe(Int) but found (Int, String) -> Maybe(Int)" }
+          end
+        end
+      end
     end
   end
 end

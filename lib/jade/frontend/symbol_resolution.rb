@@ -20,6 +20,12 @@ module Jade
         in AST::VariableReference
           node
 
+        in AST::ConstructorReference(name:)
+          current_entry
+            .lookup_value(name)
+            .to_ref
+            .then { node.with(symbol: it) }
+
         in AST::FunctionDeclaration(name:, body:)
           symbol = current_entry
             .lookup_value(name)
@@ -42,6 +48,20 @@ module Jade
           node
             .with(callee: resolve(callee, registry, current_entry))
             .with(args: args.map { resolve(it, registry, current_entry) })
+
+        in AST::TypeDeclaration(name:, variants:)
+          symbol = current_entry
+            .lookup_type(name)
+            .to_ref
+
+          node
+            .with(symbol:, variants: variants.map { resolve(it, registry, current_entry) })
+
+        in AST::VariantDeclaration(name:)
+          current_entry
+            .lookup_value(name)
+            .to_ref
+            .then { node.with(symbol: it) }
         end
       end
 

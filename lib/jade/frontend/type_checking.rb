@@ -1,11 +1,13 @@
 require 'jade/frontend/type_checking/substitution'
 require 'jade/frontend/type_checking/unification'
 require 'jade/frontend/type_checking/generalization'
+require 'jade/frontend/type_checking/instantiation'
 require 'jade/frontend/type_checking/inference'
 
 module Jade
   module Frontend
     module TypeChecking
+      extend Inference::Helpers
       extend self
 
       Result = Data.define(:type, :substitution, :env, :errors) do
@@ -54,11 +56,17 @@ module Jade
         in AST::FunctionDeclaration
           Inference::FunctionDeclaration.infer(node, registry, env, var_gen)
 
+        in AST::TypeDeclaration
+          Inference::TypeDeclaration.infer(node, registry, env, var_gen)
+
         in AST::InfixApplication
           Inference::InfixApplication.infer(node, registry, env, var_gen)
 
         in AST::FunctionCall
           Inference::FunctionCall.infer(node, registry, env, var_gen)
+
+        in AST::ConstructorReference
+          Inference::ConstructorReference.infer(node, registry, env, var_gen)
 
         in AST::VariableReference
           infer_variable_reference(node, registry, env, var_gen)
@@ -97,7 +105,7 @@ module Jade
 
         env
           .bindings[name]
-          .then { instantiate(it) }
+          .then { instantiate(it, var_gen) }
           .then { Result[it, Substitution.new, env, []] }
       end
 
@@ -132,10 +140,6 @@ module Jade
 
       def unify(type1, type2)
         Unification.unify(type1, type2)
-      end
-
-      def instantiate(scheme)
-        scheme.type
       end
 
       Env = Data.define(:bindings) do
