@@ -83,7 +83,6 @@ module Jade
         .on_err { return Err[it.message] } => Ok(ast)
 
       Frontend::FixityFixer.fix(ast)
-        # .then { puts it.inspect.orange }
 
       Frontend
         .run_repl(ast, registry, current_entry, scope, env, var_gen)

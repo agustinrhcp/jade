@@ -3,6 +3,11 @@ module Jade
     module SemanticAnalyzer
       extend self
 
+      def analyze_entry(entry, registry)
+        analyze(entry.ast, registry)
+          .map { entry }
+      end
+
       def analyze(ast, registry)
         analyze_r(ast, registry, Scope.new)
           .to_result
@@ -18,6 +23,13 @@ module Jade
 
       def analyze_r(ast, registry, scope)
         case ast
+        in AST::Module(body:)
+          # TODO: [SemanticAnalysis::Exposed]
+          analyze_r(body, registry, scope)
+
+        in AST::ImportDeclaration
+          Result[scope, []]
+
         in AST::Literal
           Result[scope, []]
 
@@ -75,7 +87,10 @@ module Jade
               bind(acc.scope, variant.name, symbol)
                 .add_errors(acc.errors)
             end
-          end
+
+        in AST::MemberAccess
+          Result[scope, []]
+        end
       end
 
       def bind(scope, name, symbol)

@@ -1,3 +1,5 @@
+require 'result'
+
 module Jade
   module Parser
     extend self
@@ -21,7 +23,22 @@ module Jade
         .map_error(&:first)
     end
 
+    def module_
+      (
+        type(:module).skip >>
+        (
+          module_name >>
+          exposing >>
+          program_body
+        ).map_error(&:commit)
+      ).map(&AST.module_)
+    end
+
     def program
+      module_ | program_body
+    end
+
+    def program_body
       sequence(declaration | statement).map(&AST.body)
     end
 
@@ -30,7 +47,7 @@ module Jade
     end
 
     def declaration
-      function_declaration | type_declaration
+      function_declaration | type_declaration | import_declaration
     end
 
     def expression
@@ -63,6 +80,10 @@ module Jade
       function_call | member_access
     end
 
+    def module_name
+      sequence(constant, separated_by: type(:dot).skip).map { [it] }
+    end
+
     def function_call
       (
         type(:lparen) >> 
@@ -73,8 +94,24 @@ module Jade
     end
 
     def member_access
-      (type(:dot) >> identifier)
+      (type(:dot) >> (variable_reference | constructor_reference))
         .map { MemberAccessPostfix[*it] }
+    end
+
+    def import_declaration
+      (
+        type(:import) >>
+        module_name >>
+        (exposing | none.map { [[]] })
+      ).map(&AST.import_declaration)
+    end
+
+    def exposing
+      (type(:exposing).skip >>
+          type(:lparen).skip >>
+          sequence(variable_reference | type_name, separated_by: type(:comma).skip) >>
+          type(:rparen).skip
+      )
     end
 
     def function_declaration
@@ -95,7 +132,7 @@ module Jade
       (
         type(:type) >>
           constant >>
-          (type_params | none.map { [] }) >>
+          (type_params | none.map { [[]] }) >>
           type(:assign).skip >>
           sequence(variant_declaration, separated_by: type(:pipe).skip).map { [it] }
       ).map(&AST.type_declaration)
@@ -149,10 +186,12 @@ module Jade
       string | int | bool
     end
 
+    # Should refactor to just an Identifier node
     def variable_reference
       identifier.map(&AST.variable_reference)
     end
 
+    # Should refactor to just an Constant node
     def constructor_reference
       constant.map(&AST.constructor_reference)
     end

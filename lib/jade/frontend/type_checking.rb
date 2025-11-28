@@ -43,6 +43,12 @@ module Jade
         end
       end
 
+      def check_entry(entry, registry)
+        check(entry.ast, registry)
+          .to_result
+          .map { entry }
+      end
+
       def check_repl(node, registry, env = Env.new, var_gen = VarGen.new)
         check(node, registry, env, var_gen)
           .to_result
@@ -50,6 +56,12 @@ module Jade
 
       def check(node, registry, env = Env.new, var_gen = VarGen.new)
         case node
+        in AST::Module(body:)
+          check(body, registry, env, var_gen)
+
+        in AST::ImportDeclaration
+          Result[Type.unit, Substitution.new, env, []]
+
         in AST::Literal
           infer_literal(node, registry, env, var_gen)
 
@@ -76,6 +88,12 @@ module Jade
 
         in AST::Body
           infer_body(node, registry, env, var_gen)
+
+        in AST::MemberAccess
+          node => AST::MemberAccess(symbol:)
+
+          type_from_symbol(symbol, registry)
+            .then { Result[it, Substitution.new, env, []] }
         end
       end
 
@@ -94,7 +112,7 @@ module Jade
         in Symbol::Function | Symbol::StdlibFunction
           Type
             .function(
-              symbol.params.transform_values { type_from_symbol(it, registry) },
+              symbol.params.values.map { type_from_symbol(it, registry) },
               type_from_symbol(symbol.return_type, registry)
             )
         end

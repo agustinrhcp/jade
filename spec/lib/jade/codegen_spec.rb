@@ -86,7 +86,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "def add; ->(a, b) { (->(a, b) { a + b }).call(a, b) }; end; add.call(1, 2)" }
+      it { is_expected.to eql "def add; ->(a, b) { Jade::Runtime.intr('Basics.(+)').call(a, b) }; end; add.call(1, 2)" }
     end
 
     context 'type def' do
@@ -111,6 +111,32 @@ module Jade
         its([1]) { is_expected.to eql "Nothing = Data.define" }
         its([2]) { is_expected.to eql "->(*args) { Just[*args] }.call(12)" }
       end
+    end
+
+    context 'qualified and unqualified references' do
+      let(:text) do
+        <<~JADE
+          def is_empty(str: String) -> Bool
+            String.is_empty(str)
+          end
+        JADE
+      end
+
+      it { is_expected.to eql "def is_empty; ->(str) { Jade::Runtime.intr('String.is_empty').call(str) }; end" }
+    end
+
+    context 'module' do
+      let(:text) do
+        <<~JADE
+          module Test exposing (hello)
+
+          def hello(str: String) -> Bool
+            String.is_empty(str)
+          end
+        JADE
+      end
+
+      it { is_expected.to eql "require 'jade/runtime'; module Test; extend self; def hello; ->(str) { Jade::Runtime.intr('String.is_empty').call(str) }; end; end" }
     end
   end
 end

@@ -59,6 +59,10 @@ module Jade
 
     TypeRef = Data.define(:qualified_name) do
       include Symbol
+
+      def to_ref
+        self
+      end
     end
 
     Function = Data.define(:module_name, :name, :params, :return_type) do

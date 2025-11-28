@@ -9,6 +9,15 @@ require 'jade/ast/pretty_printer'
 
 module Jade
   describe Frontend do
+    shared_context "single expression body" do
+      subject do
+        body = super()
+        expect(body).to be_a(AST::Body)
+        expect(body.expressions).to have(1).item
+        body.expressions.first
+      end
+    end
+
     let(:source) do
       Source.new(uri: 'test', text:)
     end
@@ -23,6 +32,8 @@ module Jade
     subject { frontend => Ok([node, _]); node }
 
     context 'literals' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           42
@@ -56,6 +67,8 @@ module Jade
     end
 
     context 'variable binding' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           hello = "Hola"
@@ -104,6 +117,8 @@ module Jade
     end
 
     context 'infix operations' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           1 + 2 * 3 - 4 / 5
@@ -132,6 +147,8 @@ module Jade
     end
 
     context 'a function declaration' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           def add(a: Int, b: Int) -> Int
@@ -192,7 +209,29 @@ module Jade
       end
     end
 
+    context 'member access' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          String.is_empty
+        JADE
+      end
+
+      let(:frontend) do
+        Lexer
+          .tokenize(source)
+          .then { Parser.parse(it) }
+          .and_then  { Frontend.run_up_to_semantic_analysis(it) }
+      end
+
+      it { is_expected.to be_a(AST::MemberAccess) }
+      its(:symbol) { is_expected.to eql Symbol::ValueRef['String.is_empty']}
+    end
+
     context 'type def' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           type Maybe(a) = Just(a) | Nothing
@@ -240,6 +279,31 @@ module Jade
 
         it { is_expected.to be_a(AST::ConstructorReference) }
         its(:symbol) { is_expected.to eql Symbol.value_ref('__Test__.Just') }
+      end
+    end
+
+    context 'module' do
+      let(:text) do
+        <<~JADE
+          module Test exposing (hello)
+
+          def hello(str: String) -> Bool
+            String.is_empty(str)
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Module) }
+
+      describe 'the registry' do
+        subject { frontend => Ok([_, registry]); registry }
+
+        it 'contains the function symbol' do
+          symbol = subject.lookup(Symbol::ValueRef['Test.hello'])
+
+          expect(symbol).to be_a(Symbol::Function)
+          expect(symbol.module_name).to eql 'Test'
+        end
       end
     end
   end

@@ -6,6 +6,15 @@ require 'jade/ast'
 
 module Jade
   describe Parser do
+    shared_context "single expression body" do
+      subject do
+        body = super()
+        expect(body).to be_a(AST::Body)
+        expect(body.expressions).to have(1).item
+        body.expressions.first
+      end
+    end
+
     let(:source) do
       Source.new(uri: 'test', text:)
     end
@@ -14,6 +23,8 @@ module Jade
     subject { parse => Ok(node); node }
 
     context 'literals' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           42
@@ -60,6 +71,8 @@ module Jade
     end
 
     context 'variable binding' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           forty_two = 42
@@ -99,6 +112,8 @@ module Jade
     end 
 
     context 'a function declaration' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           def add(a: Int, b: Int) -> Int
@@ -114,6 +129,8 @@ module Jade
     end
 
     context 'operators' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           12 + 12
@@ -140,6 +157,8 @@ module Jade
     end
 
     context 'function calls' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           add(1, 2)
@@ -186,6 +205,8 @@ module Jade
     end
 
     context 'type def' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           type Maybe(a) = Just(a) | Nothing
@@ -203,9 +224,23 @@ module Jade
         its([0]) { is_expected.to be_a(AST::VariantDeclaration).and have_attributes(name: 'Just') }
         its([1]) { is_expected.to be_a(AST::VariantDeclaration).and have_attributes(name: 'Nothing', args: []) }
       end
+
+      context 'a single variant' do
+        let(:text) do
+          <<~JADE
+            type Int = Int
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::TypeDeclaration) }
+        its(:name) { is_expected.to eql 'Int' }
+        its(:variants) { is_expected.to have(1).items }
+      end
     end
 
     context 'a constructor reference' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           Just
@@ -213,6 +248,106 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::ConstructorReference).and have_attributes(name: 'Just') }
+    end
+
+    context 'an import declaration' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          import Maybe
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::ImportDeclaration).and have_attributes(module_name: 'Maybe') }
+
+      context 'with exposing' do
+        let(:text) do
+          <<~JADE
+            import Maybe exposing (Maybe)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::ImportDeclaration).and have_attributes(module_name: 'Maybe') }
+
+        describe 'its exposing' do
+          subject { super().exposing }
+
+          it { is_expected.to have(1).item }
+          its(:first) { is_expected.to be_a(AST::TypeName).and have_attributes(type: 'Maybe') }
+        end
+      end
+    end
+
+    context 'member access' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          String.is_empty
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::MemberAccess) }
+      its(:target) { is_expected.to be_a(AST::ConstructorReference).and have_attributes(name: 'String') }
+      its(:name) { is_expected.to be_a(AST::VariableReference) }
+
+      describe 'a longer chain' do
+        let(:text) do
+          <<~JADE
+            String.Utils.is_empty
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::MemberAccess) }
+        its(:target) { is_expected.to be_a(AST::MemberAccess) }
+        its(:name) { is_expected.to be_a(AST::VariableReference) }
+      end
+    end
+
+    context 'qualified call' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          def is_empty(str: String) -> String
+            String.is_empty(str)
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+      describe 'the qualified call' do
+        subject do
+          super().body.expressions.first
+        end
+
+        it { is_expected.to be_a(AST::FunctionCall) }
+
+        describe 'the callee' do
+          subject { super().callee }
+
+          it { is_expected.to be_a(AST::MemberAccess) }
+        end
+      end
+    end
+
+    context 'module' do
+      let(:text) do
+        <<~JADE
+          module Test exposing (hello)
+
+          def hello(str: String) -> Bool
+            String.is_empty(str)
+          end
+        JADE
+      end
+
+      it do
+        subject
+      end
+      it { is_expected.to be_a(AST::Module) }
     end
   end
 end

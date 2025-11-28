@@ -2,8 +2,20 @@ module Jade
   module Codegen
     extend self
 
+    def generate_entry(entry, registry)
+      generate(entry.ast, registry)
+        .then { entry.entry ? "#{load_path} #{it}" : it }
+        .then { entry.with(generated: it) }
+    end
+
     def generate(node, registry)
       case node
+      in AST::Module(name:, body:)
+        "require 'jade/runtime'; module #{name}; extend self; #{generate(body, registry)}; end"
+      in AST::ImportDeclaration(module_name:)
+        registry.get(module_name).path
+          .then { "require '#{it}'" }
+
       in AST::Body(expressions:)
         expressions
           .map { generate(it, registry) }.join("; ")
@@ -50,9 +62,19 @@ module Jade
         args.map.with_index { |_, i| ":_#{i + 1}" }
           .then { it.empty? ? "" : "(#{it.join(", ")})"}
           .then { "#{name} = Data.define#{it}" }
+
+      in AST::MemberAccess(symbol:)
+        case registry.lookup(symbol)
+        in Symbol::StdlibFunction(codegen:)
+          codegen
+        end
       end
     end
 
     private
+
+    def load_path
+      return '$LOAD_PATH.unshift(File.expand_path("lib"));'
+    end
   end
 end

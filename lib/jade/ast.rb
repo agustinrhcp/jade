@@ -24,6 +24,7 @@ module Jade
     define_ast_node(:VariableReference, :name)
     define_ast_node(:ConstructorReference, :name)
 
+    define_ast_node(:Module, :name, :exposing, :body)
     define_ast_node(:Body, :expressions)
 
     define_ast_node(:FunctionDeclaration, :name, :params, :return_type, :body)
@@ -31,12 +32,13 @@ module Jade
     define_ast_node(:TypeDeclaration, :name, :type_params, :variants)
     define_ast_node(:VariantDeclaration, :name, :args)
     define_ast_node(:TypeParam, :name)
+    define_ast_node(:ImportDeclaration, :module_name, :exposing)
 
     define_ast_node(:InfixApplication, :left, :operator, :right)
     define_ast_node(:InfixOperator, :value)
 
     define_ast_node(:FunctionCall, :callee, :args)
-    define_ast_node(:MemberAccess, :record, :field)
+    define_ast_node(:MemberAccess, :target, :name)
 
     define_ast_node(:TypeName, :type)
     define_ast_node(:TypeVar, :type)
@@ -98,10 +100,7 @@ module Jade
 
     def body
       ->(expressions) do
-        if expressions.size == 1
-          expressions.first
-
-        elsif expressions.size == 0
+        if expressions.empty?
           Body[[], nil]
 
         else
@@ -179,11 +178,11 @@ module Jade
     end
 
     def member_access
-      ->(record, dot, field) do
-        FunctionCall[
-          record,
-          field.value,
-          dot.range.begin..field.range.end,
+      ->(target, dot, name) do
+        MemberAccess[
+          target,
+          name,
+          dot.range.begin..name.range.end,
         ]
       end
     end
@@ -211,6 +210,27 @@ module Jade
           name.value,
           args,
           name.range.begin..(args&.last || name).range.end,
+        ]
+      end
+    end
+
+    def import_declaration
+      ->((import, module_parts, *exposing)) do
+        ImportDeclaration[
+          module_parts.map(&:value).join('.'),
+          exposing,
+          import.range.begin..(module_parts.last.range.end),
+        ]
+      end
+    end
+
+    def module_
+      ->((module_parts, exposing, body)) do
+        Module[
+          module_parts.map(&:value).join('.'),
+          exposing,
+          body,
+          module_parts.first.range.begin..(body.expressions.last.range.end),
         ]
       end
     end
