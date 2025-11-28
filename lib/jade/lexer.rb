@@ -13,6 +13,9 @@ module Jade
       'def',
       'end',
       'type',
+      'module',
+      'import',
+      'exposing',
     ].freeze
 
     SYMBOLS = {

@@ -1,11 +1,32 @@
+require 'jade/module_loader'
+
 module Jade
   class Registry
+    attr_reader :dependency_graph, :modules, :source_root
+
     def initialize
+      @source_root = nil
       @modules = {}
+      @dependency_graph = ModuleLoader::DependencyGraph.new
+    end
+
+    def with(**kwargs)
+      @source_root = kwargs[:source_root] if kwargs.key?(:source_root)
+      self
     end
 
     def self.entry(name)
-      ModuleEntry.new(name:, values: {}, types: {}, imports: Set[], exports: [])
+      ModuleEntry.new(name:, values: {}, types: {}, imports: Set[], exports: [], ast: nil, source: nil, generated: nil, entry: false)
+    end
+
+    def modules_in_topo_order
+      ModuleLoader::TopologicalSort
+        .sort(@dependency_graph)
+        .map { get(it) }
+    end
+
+    def get(module_name)
+      @modules.dig(module_name)
     end
 
     def add_module(entry)
@@ -15,10 +36,18 @@ module Jade
       self
     end
 
+    def add_dependencies(entry, imports)
+      entry => ModuleEntry(name:)
+
+      @dependency_graph = dependency_graph.add(name, imports)
+      self
+    end
+
     def lookup(symbol)
       *module_parts, name = symbol.qualified_name.split('.')
       module_entry = module_parts.join('.').then { @modules[it] }
 
+      # TODO: [SemanticAnalysis::Exposed]
       case symbol
       in Symbol::ValueRef
         module_entry.values[name]
@@ -31,7 +60,7 @@ module Jade
 
   ImportEntry = Data.define(:module_name, :alias, :symbols)
 
-  ModuleEntry = Data.define(:name, :values, :types, :imports, :exports) do
+  ModuleEntry = Data.define(:name, :values, :types, :imports, :exports, :ast, :source, :generated, :entry) do
     def add_symbol(symbol)
       case symbol
       in Symbol::Union
@@ -52,12 +81,21 @@ module Jade
       end
     end
 
+    def add_import(entry, as: entry.name)
+      ImportEntry[entry.name, as, []]
+        .then { with(imports: imports + [it]) }
+    end
+
     def lookup_value(name)
       values[name] || find_import(name)
     end
 
     def lookup_type(name)
       types[name]
+    end
+
+    def path
+      source.uri.gsub('.jd', '.rb')
     end
 
     private

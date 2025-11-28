@@ -3,21 +3,37 @@ module Jade
     module ForwardDeclaration
       extend self
 
-      def declare(ast, entry)
-        shallow(ast, entry)
+      def declare(ast, registry, entry)
+        shallow(ast, registry, entry)
           .then { deep(ast, it) }
+      end
+
+      def declare_entry(entry, registry)
+        declare(entry.ast, registry, entry)
       end
 
       private
 
-      def shallow(ast, entry)
+      def shallow(ast, registry, entry)
         case ast
+        in AST::Module(body:)
+          shallow(body, registry, entry)
+
+        in AST::ImportDeclaration(module_name:)
+          registry.get(module_name) => { types:, values: }
+
+          (types.values + values.values)
+            .map(&:to_ref)
+            .reduce(entry) do |acc, sym|
+              acc.add_imported_symbol(sym)
+            end
+
         in AST::FunctionDeclaration(name:)
           Symbol.predeclared_function(name)
             .then { entry.add_symbol(it) }
 
         in AST::Body(expressions:)
-          expressions.reduce(entry) { |acc, expr| shallow(expr, acc) }
+          expressions.reduce(entry) { |acc, expr| shallow(expr, registry, acc) }
 
         in AST::TypeDeclaration(name:, type_params:)
           ast.type_params.map(&:name).map { Symbol.var(it) }
@@ -32,6 +48,12 @@ module Jade
       # TODO: [ForwardDeclaration:HandleErrors]
       def deep(ast, entry)
         case ast
+        in AST::Module(body:)
+          deep(body, entry)
+
+        in AST::ImportDeclaration
+          entry
+
         in AST::FunctionDeclaration(name:, params:, return_type:)
           params_types = params
             .map do |param|

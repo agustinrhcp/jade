@@ -44,6 +44,11 @@ module Jade
         '/' => Fixity[7, :left],
       }.freeze
 
+      def fix_entry(entry)
+        fix(entry.ast)
+          .then { entry.with(ast: it) }
+      end
+
       def fix(ast)
         case ast
         in AST::InfixApplication

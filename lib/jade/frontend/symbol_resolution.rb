@@ -1,10 +1,24 @@
+require 'jade/frontend/symbol_resolution/member_access'
+
 module Jade
   module Frontend
     module SymbolResolution
       extend self
 
+      def resolve_entry(entry, registry)
+        resolve(entry.ast, registry, entry)
+          .then { entry.with(ast: it) }
+      end
+
       def resolve(node, registry, current_entry)
         case node
+        in AST::Module(body:)
+          node
+            .with(body: resolve(body, registry, current_entry))
+
+        in AST::ImportDeclaration
+          node
+
         in AST::Literal
           resolve_literal(node, registry, current_entry) 
 
@@ -62,6 +76,9 @@ module Jade
             .lookup_value(name)
             .to_ref
             .then { node.with(symbol: it) }
+
+        in AST::MemberAccess(target:, name:)
+          MemberAccess.resolve(node, registry, current_entry)
         end
       end
 

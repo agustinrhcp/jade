@@ -141,5 +141,21 @@ module Jade
       its([0])  { is_expected.to be_token.of_type(:type).at(0...4) }
       its([1])  { is_expected.to be_token.of_type(:constant).with('Maybe').at(5...10) }
     end
+
+    context 'module' do
+      let(:text) do
+        <<~JADE
+          module Test exposing (hello)
+
+          def hello(str: String) -> Bool
+            String.is_empty(str)
+          end
+        JADE
+      end
+
+      it { is_expected.to have(22).item.and all(be_a(Token)) }
+      its([0])  { is_expected.to be_token.of_type(:module).at(0...6) }
+      its([1])  { is_expected.to be_token.of_type(:constant).with('Test').at(7...11) }
+    end
   end
 end
