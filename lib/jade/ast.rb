@@ -44,6 +44,8 @@ module Jade
     define_ast_node(:TypeVar, :type)
     define_ast_node(:TypeApplication, :constructor, :args)
 
+    define_ast_node(:IfThenElse, :condition, :if_branch, :else_branch)
+
     def string_literal
       ->(tokens) do
         tokens => [open, token, close]
@@ -215,7 +217,7 @@ module Jade
     end
 
     def import_declaration
-      ->((import, module_parts, *exposing)) do
+      ->((import, module_parts, exposing)) do
         ImportDeclaration[
           module_parts.map(&:value).join('.'),
           exposing,
@@ -231,6 +233,17 @@ module Jade
           exposing,
           body,
           module_parts.first.range.begin..(body.expressions.last.range.end),
+        ]
+      end
+    end
+
+    def if_then_else
+      ->((if_token, condition, if_branch, else_branch, end_token)) do
+        IfThenElse[
+          condition,
+          if_branch,
+          else_branch,
+          if_token.range.begin..(end_token.range.end),
         ]
       end
     end

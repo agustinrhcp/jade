@@ -77,6 +77,12 @@ module Jade
             .to_ref
             .then { node.with(symbol: it) }
 
+        in AST::IfThenElse(condition:, if_branch:, else_branch:)
+          node
+            .with(condition: resolve(condition, registry, current_entry))
+            .with(if_branch: resolve(if_branch, registry, current_entry))
+            .with(else_branch: resolve(else_branch, registry, current_entry))
+
         in AST::MemberAccess(target:, name:)
           MemberAccess.resolve(node, registry, current_entry)
         end

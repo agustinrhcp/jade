@@ -6,15 +6,6 @@ require 'jade/ast'
 
 module Jade
   describe Parser do
-    shared_context "single expression body" do
-      subject do
-        body = super()
-        expect(body).to be_a(AST::Body)
-        expect(body.expressions).to have(1).item
-        body.expressions.first
-      end
-    end
-
     let(:source) do
       Source.new(uri: 'test', text:)
     end
@@ -344,10 +335,51 @@ module Jade
         JADE
       end
 
-      it do
-        subject
-      end
       it { is_expected.to be_a(AST::Module) }
+      its(:exposing) { is_expected.to be_a(Array) }
+
+      describe 'its exposing' do
+        subject { super().exposing }
+
+        its(:size) { is_expected.to eql 1 }
+
+        it 'includes hello' do
+          expect(subject.first).to be_a(AST::VariableReference)
+          expect(subject.first.name).to eql 'hello'
+        end
+      end
+    end
+
+    context 'if then else' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          if String.is_empty("") then
+            1
+          else
+            2
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::IfThenElse) }
+      its(:condition) { is_expected.to be_a AST::FunctionCall }
+
+      its(:if_branch) { is_expected.to be_a AST::Body }
+      its(:else_branch) { is_expected.to be_a AST::Body }
+
+      describe 'if branch' do
+        subject { super().if_branch.expressions }
+
+        it { is_expected.to have(1).item.and all(be_a(AST::Literal)) }
+      end
+
+      describe 'else branch' do
+        subject { super().if_branch.expressions }
+
+        it { is_expected.to have(1).item.and all(be_a(AST::Literal)) }
+      end
     end
   end
 end

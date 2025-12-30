@@ -88,6 +88,13 @@ module Jade
                 .add_errors(acc.errors)
             end
 
+        in AST::IfThenElse(condition:, if_branch:, else_branch:)
+          analyze_r(condition, registry, scope) => { errors: condition_errors }
+          analyze_r(if_branch, registry, scope) => { errors: if_errors }
+          analyze_r(else_branch, registry, scope) => { errors: else_errors }
+
+          Result[scope, condition_errors + if_errors + else_errors]
+
         in AST::MemberAccess
           Result[scope, []]
         end

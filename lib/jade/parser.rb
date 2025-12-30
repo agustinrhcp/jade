@@ -51,12 +51,28 @@ module Jade
     end
 
     def expression
+      if_then_else | infix_expression
+    end
+
+    def infix_expression
       (primary >> many(operator >> primary))
         .map do |(head, *tail)|
           tail.reduce(head) do |left, (op, right)|
             AST.infix_application.call(left, op, right)
           end
         end
+    end
+
+    def if_then_else
+      (
+        type(:if) >>
+          lazy { expression } >>
+          type(:then).skip >>
+          sequence(lazy { expression }).map(&AST.body) >>
+          type(:else).skip >>
+          sequence(lazy { expression }).map(&AST.body) >>
+          type(:end)
+      ).map(&AST.if_then_else)
     end
 
     def operator
@@ -109,7 +125,7 @@ module Jade
     def exposing
       (type(:exposing).skip >>
           type(:lparen).skip >>
-          sequence(variable_reference | type_name, separated_by: type(:comma).skip) >>
+          sequence(variable_reference | type_name, separated_by: type(:comma).skip).map { [it] } >>
           type(:rparen).skip
       )
     end

@@ -157,5 +157,22 @@ module Jade
       its([0])  { is_expected.to be_token.of_type(:module).at(0...6) }
       its([1])  { is_expected.to be_token.of_type(:constant).with('Test').at(7...11) }
     end
+
+    context 'if then else' do
+      let(:text) do
+        <<~JADE
+          if String.is_empty("") then
+            1
+          else
+            2
+          end
+        JADE
+      end
+
+      it { is_expected.to have(14).item.and all(be_a(Token)) }
+      its([0])  { is_expected.to be_token.of_type(:if).at(0...2) }
+      its([9])  { is_expected.to be_token.of_type(:then).at(23...27) }
+      its([11])  { is_expected.to be_token.of_type(:else).at(32...36) }
+    end
   end
 end

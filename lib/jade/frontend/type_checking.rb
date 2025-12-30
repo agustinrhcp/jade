@@ -89,6 +89,9 @@ module Jade
         in AST::Body
           infer_body(node, registry, env, var_gen)
 
+        in AST::IfThenElse
+          Inference::IfThenElse.infer(node, registry, env, var_gen)
+
         in AST::MemberAccess
           node => AST::MemberAccess(symbol:)
 
@@ -218,6 +221,30 @@ module Jade
 
         def message
           "Function call mismatch, expected #{@expected} but found #{@actual}"
+        end
+      end
+
+      class IfConditionTypeMismatchError
+        def initialize(node, expected, actual)
+          @node = node
+          @expected = expected
+          @actual = actual
+        end
+
+        def message
+          "If condition expects Bool but found #{@actual}"
+        end
+      end
+
+      class IfBranchesTypeMismatchError
+        def initialize(node, expected, actual)
+          @node = node
+          @expected = expected
+          @actual = actual
+        end
+
+        def message
+          "If branches must preturn the same type. The if branch produces #{@actual} but the else branch produces #{@expected}"
         end
       end
     end
