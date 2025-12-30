@@ -1,0 +1,5 @@
+module Required exposing (is_empty)
+
+def is_empty(str: String) -> Bool
+  String.is_empty(str)
+end
