@@ -67,7 +67,12 @@ module Jade
         case registry.lookup(symbol)
         in Symbol::StdlibFunction(codegen:)
           codegen
+        # TODO: NonStdlibImports
+
         end
+
+      in AST::IfThenElse(condition:, if_branch:, else_branch:)
+        "if (#{generate(condition, registry)}) then; #{generate(if_branch, registry)}; else; #{generate(else_branch, registry)}; end"
       end
     end
 

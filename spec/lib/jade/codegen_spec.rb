@@ -138,5 +138,19 @@ module Jade
 
       it { is_expected.to eql "require 'jade/runtime'; module Test; extend self; def hello; ->(str) { Jade::Runtime.intr('String.is_empty').call(str) }; end; end" }
     end
+
+    context 'if then else' do
+      let(:text) do
+        <<~JADE
+          if String.is_empty("") then
+            1
+          else
+            2
+          end
+        JADE
+      end
+
+      it { is_expected.to eql "if (Jade::Runtime.intr('String.is_empty').call(\"\")) then; 1; else; 2; end" }
+    end
   end
 end

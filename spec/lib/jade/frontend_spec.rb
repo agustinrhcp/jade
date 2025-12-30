@@ -9,15 +9,6 @@ require 'jade/ast/pretty_printer'
 
 module Jade
   describe Frontend do
-    shared_context "single expression body" do
-      subject do
-        body = super()
-        expect(body).to be_a(AST::Body)
-        expect(body.expressions).to have(1).item
-        body.expressions.first
-      end
-    end
-
     let(:source) do
       Source.new(uri: 'test', text:)
     end
@@ -305,6 +296,22 @@ module Jade
           expect(symbol.module_name).to eql 'Test'
         end
       end
+    end
+
+    context 'if then else' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          if String.is_empty("") then
+            1
+          else
+            2
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::IfThenElse) }
     end
   end
 end

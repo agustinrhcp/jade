@@ -229,6 +229,65 @@ module Jade
           end
         end
       end
+
+      context 'if then else' do
+        let(:text) do
+          <<~JADE
+            if String.is_empty("") then
+              1
+            else
+              2
+            end
+          JADE
+        end
+
+        its(:type) { is_expected.to eql Type.int }
+        its(:errors) { is_expected.to be_empty }
+
+        context 'when the condition is not a boolean' do
+          let(:text) do
+            <<~JADE
+              if "" then
+                1
+              else
+                2
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to_not be_empty }
+
+          describe 'the error' do
+            subject { super().errors.first }
+
+            it { is_expected.to be_a(TypeChecking::IfConditionTypeMismatchError) }
+            its(:message) { is_expected.to include('If condition expects Bool but found String') }
+          end
+        end
+
+        context 'when the branches have different types' do
+          let(:text) do
+            <<~JADE
+              if String.is_empty("") then
+                1
+              else
+                "two"
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to_not be_empty }
+
+          describe 'the error' do
+            subject { super().errors.first }
+
+            it { is_expected.to be_a(TypeChecking::IfBranchesTypeMismatchError) }
+            its(:message) { is_expected.to include('If branches must preturn the same type. The if branch produces Int but the else branch produces String') }
+          end
+        end
+      end
     end
   end
 end

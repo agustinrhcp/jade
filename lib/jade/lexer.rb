@@ -16,6 +16,9 @@ module Jade
       'module',
       'import',
       'exposing',
+      'if',
+      'then',
+      'else',
     ].freeze
 
     SYMBOLS = {
