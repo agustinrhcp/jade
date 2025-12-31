@@ -92,6 +92,15 @@ module Jade
         in AST::IfThenElse
           Inference::IfThenElse.infer(node, registry, env, var_gen)
 
+        in AST::CaseOf
+          Inference::CaseOf.infer(node, registry, env, var_gen)
+
+        in AST::Pattern::Literal(literal:)
+          check(literal, registry, env, var_gen)
+
+        in AST::Pattern::Wildcard
+          Result[Type.var(var_gen.fresh), Substitution.new, env, []]
+
         in AST::MemberAccess
           node => AST::MemberAccess(symbol:)
 

@@ -288,6 +288,20 @@ module Jade
           end
         end
       end
+
+      context 'case of' do
+        let(:text) do
+          <<~JADE
+            case 1 of
+            1 then 1
+            _ then 2
+            end
+          JADE
+        end
+
+        its(:type) { is_expected.to eql Type.int }
+        its(:errors) { is_expected.to be_empty }
+      end
     end
   end
 end

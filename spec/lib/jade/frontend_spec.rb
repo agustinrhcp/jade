@@ -313,5 +313,20 @@ module Jade
 
       it { is_expected.to be_a(AST::IfThenElse) }
     end
+
+    context 'case of' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          case 1 of
+          1 then 1
+          _ then 2
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::CaseOf) }
+    end
   end
 end

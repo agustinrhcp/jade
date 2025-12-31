@@ -41,7 +41,7 @@ module Jade
       extend Nodes
 
       define(:Wildcard)
-      define(:Literal)
+      define(:Literal, :literal)
     end
 
     def string_literal

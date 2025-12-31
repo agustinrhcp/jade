@@ -388,6 +388,7 @@ module Jade
       let(:text) do
         <<~JADE
           case 1 of
+          1 then 1
           _ then 2
           end
         JADE
@@ -396,10 +397,17 @@ module Jade
       it { is_expected.to be_a(AST::CaseOf) }
 
       its(:expression) { is_expected.to be_a AST::Literal }
-      its(:branches) { is_expected.to have(1).items.and all(be_a(AST::CaseOfBranch)) }
+      its(:branches) { is_expected.to have(2).items.and all(be_a(AST::CaseOfBranch)) }
 
-      describe 'the branch' do
+      describe 'the literal branch' do
         subject { super().branches.first }
+
+        its(:pattern) { is_expected.to be_a(AST::Pattern::Literal) }
+        its(:body) { is_expected.to be_a(AST::Body) }
+      end
+
+      describe 'the wildcard branch' do
+        subject { super().branches[1] }
 
         its(:pattern) { is_expected.to be_a(AST::Pattern::Wildcard) }
         its(:body) { is_expected.to be_a(AST::Body) }
