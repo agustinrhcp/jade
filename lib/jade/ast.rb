@@ -1,69 +1,47 @@
 require 'jade/ast/pretty_printer'
+require 'jade/ast/nodes'
 
 module Jade
   module AST
     extend self
+    extend Nodes
 
-    module Node
-    end
+    define(:Literal, :value)
 
-    def define_ast_node(name, *fields)
-      const_set(name, Data.define(*fields, :range, :symbol) {
-        include Node
+    define(:VariableBinding, :name, :expression)
+    define(:VariableReference, :name)
+    define(:ConstructorReference, :name)
 
-        define_method(:initialize) do |**kwargs|
-          kwargs[:symbol] ||= nil
-          super(**kwargs)
-        end
-      })
-    end
+    define(:Module, :name, :exposing, :body)
+    define(:Body, :expressions)
 
-    define_ast_node(:Literal, :value)
+    define(:FunctionDeclaration, :name, :params, :return_type, :body)
+    define(:FunctionDeclarationParam, :name, :type)
+    define(:TypeDeclaration, :name, :type_params, :variants)
+    define(:VariantDeclaration, :name, :args)
+    define(:TypeParam, :name)
+    define(:ImportDeclaration, :module_name, :exposing)
 
-    define_ast_node(:VariableBinding, :name, :expression)
-    define_ast_node(:VariableReference, :name)
-    define_ast_node(:ConstructorReference, :name)
+    define(:InfixApplication, :left, :operator, :right)
+    define(:InfixOperator, :value)
 
-    define_ast_node(:Module, :name, :exposing, :body)
-    define_ast_node(:Body, :expressions)
+    define(:FunctionCall, :callee, :args)
+    define(:MemberAccess, :target, :name)
 
-    define_ast_node(:FunctionDeclaration, :name, :params, :return_type, :body)
-    define_ast_node(:FunctionDeclarationParam, :name, :type)
-    define_ast_node(:TypeDeclaration, :name, :type_params, :variants)
-    define_ast_node(:VariantDeclaration, :name, :args)
-    define_ast_node(:TypeParam, :name)
-    define_ast_node(:ImportDeclaration, :module_name, :exposing)
+    define(:TypeName, :type)
+    define(:TypeVar, :type)
+    define(:TypeApplication, :constructor, :args)
 
-    define_ast_node(:InfixApplication, :left, :operator, :right)
-    define_ast_node(:InfixOperator, :value)
-
-    define_ast_node(:FunctionCall, :callee, :args)
-    define_ast_node(:MemberAccess, :target, :name)
-
-    define_ast_node(:TypeName, :type)
-    define_ast_node(:TypeVar, :type)
-    define_ast_node(:TypeApplication, :constructor, :args)
-
-    define_ast_node(:IfThenElse, :condition, :if_branch, :else_branch)
-    define_ast_node(:CaseOf, :expression, :branches)
-    define_ast_node(:CaseOfBranch, :pattern, :body)
+    define(:IfThenElse, :condition, :if_branch, :else_branch)
+    define(:CaseOf, :expression, :branches)
+    define(:CaseOfBranch, :pattern, :body)
 
     module Pattern
       extend self
+      extend Nodes
 
-      def define_ast_node(name, *fields)
-        const_set(name, Data.define(*fields, :range, :symbol) {
-          include Node
-
-          define_method(:initialize) do |**kwargs|
-            kwargs[:symbol] ||= nil
-            super(**kwargs)
-          end
-        })
-      end
-
-      define_ast_node(:Wildcard)
-      define_ast_node(:Literal)
+      define(:Wildcard)
+      define(:Literal)
     end
 
     def string_literal
