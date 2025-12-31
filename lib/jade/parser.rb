@@ -51,7 +51,7 @@ module Jade
     end
 
     def expression
-      if_then_else | infix_expression
+      case_of | if_then_else | infix_expression
     end
 
     def infix_expression
@@ -68,11 +68,53 @@ module Jade
         type(:if) >>
           lazy { expression } >>
           type(:then).skip >>
-          sequence(lazy { expression }).map(&AST.body) >>
+          body >>
           type(:else).skip >>
-          sequence(lazy { expression }).map(&AST.body) >>
+          body >>
           type(:end)
       ).map(&AST.if_then_else)
+    end
+
+    def case_of
+      (
+        type(:case) >>
+          lazy { expression } >>
+          sequence(case_of_branch).map { [it] } >>
+          type(:end)
+      ).map(&AST.case_of)
+    end
+
+    def case_of_branch
+      (type(:of) >> pattern >> type(:then).skip >> body).map(&AST.case_of_branch)
+    end
+
+    def pattern
+      wildcard_pattern | literal_pattern | binding_pattern | constructor_pattern
+    end
+
+    def wildcard_pattern
+      type(:wildcard).map(&AST.wildcard_pattern)
+    end
+
+    def binding_pattern
+      identifier.map(&AST.binding_pattern)
+    end
+
+    def literal_pattern
+      literal.map(&AST.literal_pattern)
+    end
+
+    def constructor_pattern
+      (constant >>
+        ((type(:lparen).skip >>
+        (sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } |
+          none.map { [[]] }) >>
+        type(:rparen)) | none.map { [[]] })
+      ).map(&AST.constructor_pattern)
+    end
+
+    def body
+      sequence(lazy { expression }).map(&AST.body)
     end
 
     def operator

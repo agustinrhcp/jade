@@ -174,5 +174,21 @@ module Jade
       its([9])  { is_expected.to be_token.of_type(:then).at(23...27) }
       its([11])  { is_expected.to be_token.of_type(:else).at(32...36) }
     end
+
+    context 'case of' do
+      let(:text) do
+        <<~JADE
+          case 1 of
+          _ then 2
+          end
+        JADE
+      end
+
+      it { is_expected.to have(7).item.and all(be_a(Token)) }
+      its([0])  { is_expected.to be_token.of_type(:case).at(0...4) }
+      its([2])  { is_expected.to be_token.of_type(:of).at(7...9) }
+      its([3])  { is_expected.to be_token.of_type(:wildcard).at(10...11) }
+      its([6])  { is_expected.to be_token.of_type(:end).at(19...22) }
+    end
   end
 end

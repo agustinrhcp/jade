@@ -288,6 +288,92 @@ module Jade
           end
         end
       end
+
+      context 'case of' do
+        let(:text) do
+          <<~JADE
+            case 1
+            of 1 then 1
+            of _ then 2
+            end
+          JADE
+        end
+
+        its(:type) { is_expected.to eql Type.int }
+        its(:errors) { is_expected.to be_empty }
+
+        context 'when pattern type is invalid' do
+          let(:text) do
+            <<~JADE
+              case 1
+              of "" then 1
+              of _ then 2
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to_not be_empty }
+
+          describe 'the error' do
+            subject { super().errors.first }
+            it { is_expected.to be_a TypeChecking::PatternTypeMismatchError }
+
+            its(:message) { is_expected.to include 'Pattern is trying to match Int with String' }
+          end
+        end
+
+        context 'when branches are of different type' do
+          let(:text) do
+            <<~JADE
+              case 1
+              of 1 then 1
+              of _ then "two"
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to_not be_empty }
+
+          describe 'the error' do
+            subject { super().errors.first }
+            it { is_expected.to be_a TypeChecking::CaseOfBranchesTypeMismatchError }
+
+            its(:message) { is_expected.to include 'First branch of this case statement is Int but branch 2 is String' }
+          end
+        end
+
+        context 'with variable binding branches' do
+          let(:text) do
+            <<~JADE
+              case 1
+              of 1 then 1
+              of x then x
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to be_empty }
+        end
+
+        context 'with constructor pattern' do
+          let(:text) do
+            <<~JADE
+              type Maybe(a) = Just(a) | Nothing
+
+              case Just(1)
+              of Nothing then 0
+              of Just(x) then x
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to be_empty }
+        end
+      end
     end
   end
 end

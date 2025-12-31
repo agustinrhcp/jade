@@ -19,6 +19,8 @@ module Jade
       'if',
       'then',
       'else',
+      'case',
+      'of',
     ].freeze
 
     SYMBOLS = {
@@ -54,6 +56,8 @@ module Jade
       '='  => :assign,
 
       '|>' => :pipe_forward,
+
+      '_' => :wildcard, # also used as placeholder
     }.freeze
 
     SYMBOLS_REGEX = Regexp.union(SYMBOLS.keys.sort_by { |k| -k.length })

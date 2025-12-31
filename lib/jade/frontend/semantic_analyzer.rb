@@ -46,11 +46,7 @@ module Jade
           lookup(scope, name)
 
         in AST::Body(expressions:)
-          expressions
-            .reduce(Result[scope, []]) do |acc, expression|
-              analyze_r(expression, registry, acc.scope) => Result[expr_scope, expr_errors]
-              Result[expr_scope, expr_errors + acc.errors]
-            end
+          analyze_many(expressions, registry, scope)
 
         in AST::FunctionDeclaration(name:, params:, body:, symbol:)
           params
@@ -71,12 +67,7 @@ module Jade
           Result[scope, l_errors + r_errors]
 
         in AST::FunctionCall(callee:, args:)
-          # TODO: Shameless copy paste from body
-          args
-            .reduce(Result[scope, []]) do |acc, arg|
-              analyze_r(arg, registry, acc.scope) => Result[arg_scope, arg_errors]
-              Result[arg_scope, arg_errors + acc.errors]
-            end => { errors: args_errors, scope: args_scope }
+          analyze_many(args, registry, scope) => { errors: args_errors, scope: args_scope }
 
           analyze_r(callee, registry, args_scope)
             .add_errors(args_errors)
@@ -97,7 +88,48 @@ module Jade
 
         in AST::MemberAccess
           Result[scope, []]
+
+        in AST::CaseOf(expression:, branches:)
+          analyze_r(expression, registry, scope) => { errors: exp_errors }
+
+          analyze_many(branches, registry, scope)
+            .add_errors(exp_errors)
+
+        in AST::CaseOfBranch(pattern:, body:)
+          analyze_r(pattern, registry, scope) => { scope: ptn_scope, errors: ptn_errors }
+          analyze_r(body, registry, ptn_scope) => { errors: body_errors }
+
+          # TODO: Analyze unreachability
+          Result[scope, ptn_errors + body_errors]
+
+        in AST::Pattern::Wildcard
+          Result[scope, []]
+
+        in AST::Pattern::Literal
+          Result[scope, []]
+
+        in AST::Pattern::Binding(name:)
+          bind(scope, name, Symbol.var(name))
+
+        in AST::Pattern::Constructor(constructor:, patterns:, symbol:)
+          symbol = registry.lookup(symbol)
+
+          if symbol.args.size != patterns.size
+            return PaterrnConstructorArityMismatchError
+              .new(constructor, symbol.args.size, patterns.size)
+              .then { Result[scope, [it]] }
+          end
+
+          analyze_many(patterns, registry, scope)
         end
+      end
+
+      def analyze_many(nodes, registry, scope)
+        nodes
+          .reduce(Result[scope, []]) do |acc, node|
+            analyze_r(node, registry, acc.scope) => Result[node_scope, node_errors]
+            Result[node_scope, node_errors + acc.errors]
+          end
       end
 
       def bind(scope, name, symbol)
@@ -164,6 +196,19 @@ module Jade
 
         def message
           "Undefined variable #{@var_ref}"
+        end
+      end
+
+      class ConstructorPatternArityMismatch < Error
+        def initialize(constructor, expected_arity, actual_arity)
+          super()
+          @constructor = constructor
+          @expected_arity = expected_arity
+          @actual_arity = actual_arity
+        end
+
+        def message
+          "Arity mismatch, #{constructor} expects #{expected_arity} patterns but found #{actual_arity}"
         end
       end
     end

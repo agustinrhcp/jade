@@ -29,6 +29,14 @@ is a mistake. We don't know what they actually are until we start semantic
 analysis. We should record what the user wrote, not what it means at parse
 time.
 
+### Expected type
+
+Some nodes, like if or case statements could benefit from getting an expected
+type. We can assume the expected type of an if or a case is the first branch
+but that'd be wrong if the is a type already expected from above. This is a
+problem of having all the typechecking happening bottom up, so maybe adding
+some top down expected type could help.
+
 ### Holes for currying
 
 Person(_, _, _, _)

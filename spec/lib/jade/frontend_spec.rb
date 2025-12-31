@@ -313,5 +313,50 @@ module Jade
 
       it { is_expected.to be_a(AST::IfThenElse) }
     end
+
+    context 'case of' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          case 1
+          of 1 then 1
+          of _ then 2
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::CaseOf) }
+
+      context 'var binding' do
+        let(:text) do
+          <<~JADE
+            case 1
+            of 1 then 1
+            of x then x
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::CaseOf) }
+      end
+    end
+
+    context 'case of with constructor' do
+      let(:text) do
+        <<~JADE
+          type Maybe(a) = Just(a) | Nothing
+
+          case Just(1)
+          of Nothing then 0
+          of Just(x) then x
+          end
+        JADE
+      end
+
+      subject { super().expressions.last }
+
+      it { is_expected.to be_a(AST::CaseOf) }
+    end
   end
 end

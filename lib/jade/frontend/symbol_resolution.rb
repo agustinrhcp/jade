@@ -69,7 +69,10 @@ module Jade
             .to_ref
 
           node
-            .with(symbol:, variants: variants.map { resolve(it, registry, current_entry) })
+            .with(
+              symbol:,
+              variants: variants.map { resolve(it, registry, current_entry) },
+            )
 
         in AST::VariantDeclaration(name:)
           current_entry
@@ -83,6 +86,35 @@ module Jade
             .with(if_branch: resolve(if_branch, registry, current_entry))
             .with(else_branch: resolve(else_branch, registry, current_entry))
 
+        in AST::CaseOf(expression:, branches:)
+          branches
+            .map { resolve(it, registry, current_entry) }
+            .then { node.with(branches: it) }
+            .with(expression: resolve(expression, registry, current_entry))
+
+        in AST::CaseOfBranch(pattern:, body:)
+          node
+            .with(pattern: resolve(pattern, registry, current_entry)) 
+            .with(body: resolve(body, registry, current_entry)) 
+
+        in AST::Pattern::Literal(literal:)
+          node.with(literal: resolve(literal, registry, current_entry))
+
+        in AST::Pattern::Binding
+          node
+
+        in AST::Pattern::Wildcard
+          node
+
+        in AST::Pattern::Constructor(constructor:, patterns:)
+          symbol = current_entry
+            .lookup_value(constructor)
+            .to_ref
+
+          patterns
+            .map { resolve(it, registry, current_entry) }
+            .then { node.with(patterns: it, symbol:) }
+
         in AST::MemberAccess(target:, name:)
           MemberAccess.resolve(node, registry, current_entry)
         end
@@ -93,19 +125,21 @@ module Jade
       def resolve_literal(node, _registry, _current_entry)
         node => AST::Literal(value:)
 
-        symbol =
-          case value
-          in Integer
-            Symbol::TypeRef['Basics.Int']
+        symbol_from_literal_value(value)
+          .then { node.with(symbol: it) }
+      end
 
-          in TrueClass | FalseClass
-            Symbol::TypeRef['Basics.Bool']
+      def symbol_from_literal_value(value)
+        case value
+        in Integer
+          Symbol::TypeRef['Basics.Int']
 
-          in String
-            Symbol::TypeRef['String.String']
-          end
+        in TrueClass | FalseClass
+          Symbol::TypeRef['Basics.Bool']
 
-        node.with(symbol:)
+        in String
+          Symbol::TypeRef['String.String']
+        end
       end
     end
   end

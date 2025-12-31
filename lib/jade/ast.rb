@@ -1,50 +1,50 @@
 require 'jade/ast/pretty_printer'
+require 'jade/ast/nodes'
 
 module Jade
   module AST
     extend self
+    extend Nodes
 
-    module Node
+    define(:Literal, :value)
+
+    define(:VariableBinding, :name, :expression)
+    define(:VariableReference, :name)
+    define(:ConstructorReference, :name)
+
+    define(:Module, :name, :exposing, :body)
+    define(:Body, :expressions)
+
+    define(:FunctionDeclaration, :name, :params, :return_type, :body)
+    define(:FunctionDeclarationParam, :name, :type)
+    define(:TypeDeclaration, :name, :type_params, :variants)
+    define(:VariantDeclaration, :name, :args)
+    define(:TypeParam, :name)
+    define(:ImportDeclaration, :module_name, :exposing)
+
+    define(:InfixApplication, :left, :operator, :right)
+    define(:InfixOperator, :value)
+
+    define(:FunctionCall, :callee, :args)
+    define(:MemberAccess, :target, :name)
+
+    define(:TypeName, :type)
+    define(:TypeVar, :type)
+    define(:TypeApplication, :constructor, :args)
+
+    define(:IfThenElse, :condition, :if_branch, :else_branch)
+    define(:CaseOf, :expression, :branches)
+    define(:CaseOfBranch, :pattern, :body)
+
+    module Pattern
+      extend self
+      extend Nodes
+
+      define(:Wildcard)
+      define(:Literal, :literal)
+      define(:Binding, :name)
+      define(:Constructor, :constructor, :patterns)
     end
-
-    def define_ast_node(name, *fields)
-      const_set(name, Data.define(*fields, :range, :symbol) {
-        include Node
-
-        define_method(:initialize) do |**kwargs|
-          kwargs[:symbol] ||= nil
-          super(**kwargs)
-        end
-      })
-    end
-
-    define_ast_node(:Literal, :value)
-
-    define_ast_node(:VariableBinding, :name, :expression)
-    define_ast_node(:VariableReference, :name)
-    define_ast_node(:ConstructorReference, :name)
-
-    define_ast_node(:Module, :name, :exposing, :body)
-    define_ast_node(:Body, :expressions)
-
-    define_ast_node(:FunctionDeclaration, :name, :params, :return_type, :body)
-    define_ast_node(:FunctionDeclarationParam, :name, :type)
-    define_ast_node(:TypeDeclaration, :name, :type_params, :variants)
-    define_ast_node(:VariantDeclaration, :name, :args)
-    define_ast_node(:TypeParam, :name)
-    define_ast_node(:ImportDeclaration, :module_name, :exposing)
-
-    define_ast_node(:InfixApplication, :left, :operator, :right)
-    define_ast_node(:InfixOperator, :value)
-
-    define_ast_node(:FunctionCall, :callee, :args)
-    define_ast_node(:MemberAccess, :target, :name)
-
-    define_ast_node(:TypeName, :type)
-    define_ast_node(:TypeVar, :type)
-    define_ast_node(:TypeApplication, :constructor, :args)
-
-    define_ast_node(:IfThenElse, :condition, :if_branch, :else_branch)
 
     def string_literal
       ->(tokens) do
@@ -244,6 +244,54 @@ module Jade
           if_branch,
           else_branch,
           if_token.range.begin..(end_token.range.end),
+        ]
+      end
+    end
+
+    def case_of
+      ->((case_token, expression, branches, end_token)) do
+        CaseOf[
+          expression,
+          branches,
+          case_token.range.begin..(end_token.range.end),
+        ]
+      end
+    end
+
+    def case_of_branch
+      ->((of_token, pattern, body)) do
+        CaseOfBranch[
+          pattern,
+          body,
+          of_token.range.begin..(body.range.end),
+        ]
+      end
+    end
+
+    def wildcard_pattern
+      ->(token) do
+        Pattern::Wildcard[token.range]
+      end
+    end
+
+    def literal_pattern
+      ->(literal) do
+        Pattern::Literal[literal, literal.range]
+      end
+    end
+
+    def binding_pattern
+      ->(identifier) do
+        Pattern::Binding[identifier.value, identifier.range]
+      end
+    end
+
+    def constructor_pattern
+      ->((constructor, patterns)) do
+        Pattern::Constructor[
+          constructor.value,
+          patterns,
+          constructor.range.begin..(patterns.first&.range&.end || constructor.range.end)
         ]
       end
     end

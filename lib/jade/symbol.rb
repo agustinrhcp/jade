@@ -78,8 +78,12 @@ module Jade
       include Symbol
 
       def to_ref
-        [module_name, name].join('.')
+        qualified_name
           .then { ValueRef[it] }
+      end
+
+      def qualified_name
+        [module_name, name].join('.')
       end
     end
 
