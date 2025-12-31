@@ -381,5 +381,29 @@ module Jade
         it { is_expected.to have(1).item.and all(be_a(AST::Literal)) }
       end
     end
+
+    context 'case of' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          case 1 of
+          _ then 2
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::CaseOf) }
+
+      its(:expression) { is_expected.to be_a AST::Literal }
+      its(:branches) { is_expected.to have(1).items.and all(be_a(AST::CaseOfBranch)) }
+
+      describe 'the branch' do
+        subject { super().branches.first }
+
+        its(:pattern) { is_expected.to be_a(AST::Pattern::Wildcard) }
+        its(:body) { is_expected.to be_a(AST::Body) }
+      end
+    end
   end
 end

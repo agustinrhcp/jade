@@ -45,6 +45,26 @@ module Jade
     define_ast_node(:TypeApplication, :constructor, :args)
 
     define_ast_node(:IfThenElse, :condition, :if_branch, :else_branch)
+    define_ast_node(:CaseOf, :expression, :branches)
+    define_ast_node(:CaseOfBranch, :pattern, :body)
+
+    module Pattern
+      extend self
+
+      def define_ast_node(name, *fields)
+        const_set(name, Data.define(*fields, :range, :symbol) {
+          include Node
+
+          define_method(:initialize) do |**kwargs|
+            kwargs[:symbol] ||= nil
+            super(**kwargs)
+          end
+        })
+      end
+
+      define_ast_node(:Wildcard)
+      define_ast_node(:Literal)
+    end
 
     def string_literal
       ->(tokens) do
@@ -245,6 +265,38 @@ module Jade
           else_branch,
           if_token.range.begin..(end_token.range.end),
         ]
+      end
+    end
+
+    def case_of
+      ->((case_token, expression, branches, end_token)) do
+        CaseOf[
+          expression,
+          branches,
+          case_token.range.begin..(end_token.range.end),
+        ]
+      end
+    end
+
+    def case_of_branch
+      ->((pattern, body)) do
+        CaseOfBranch[
+          pattern,
+          body,
+          pattern.range.begin..(body.range.end),
+        ]
+      end
+    end
+
+    def wildcard_pattern
+      ->(token) do
+        Pattern::Wildcard[token.range]
+      end
+    end
+
+    def literal_pattern
+      ->(literal) do
+        Pattern::Literal[literal, literal.range]
       end
     end
   end
