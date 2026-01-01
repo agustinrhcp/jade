@@ -17,7 +17,9 @@ module Jade
 
                 pattern_result = check(pattern, registry, env, var_gen)
                   .compose_substitution(expression_result.substitution)
-                  .and_unify(expression_result.type)
+                  .and_unify(expression_result.type) do
+                    PatternTypeMismatchError.new(node, it.expected, it.actual)
+                  end
 
                 check(body, registry, pattern_result.env, var_gen)
                   .compose_substitution(pattern_result.substitution)
@@ -29,7 +31,9 @@ module Jade
                 acc
                   .compose_substitution(branch.substitution)
                   .add_errors(branch.errors)
-                  .and_unify(branch.type)
+                  .and_unify(branch.type) do
+                    CaseOfBranchesTypeMismatchError.new(node, it.actual, it.expected, i + 2)
+                  end
               end
           end
         end

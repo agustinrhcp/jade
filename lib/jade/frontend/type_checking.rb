@@ -17,6 +17,8 @@ module Jade
             compose_substitution(sub)
               .apply
           in Err(error)
+            fail "block is mandatory" unless block
+
             add_errors([block.call(error)])
               .with(type: error.actual)
           end
@@ -253,7 +255,34 @@ module Jade
         end
 
         def message
-          "If branches must preturn the same type. The if branch produces #{@actual} but the else branch produces #{@expected}"
+          "If branches must preturn the same type. The if branch produces " +
+            "#{@actual} but the else branch produces #{@expected}"
+        end
+      end
+
+      class PatternTypeMismatchError
+        def initialize(node, expected, actual)
+          @node = node
+          @expected = expected
+          @actual = actual
+        end
+
+        def message
+          "Pattern is trying to match #{@expected} with #{@actual}"
+        end
+      end
+
+      class CaseOfBranchesTypeMismatchError
+        def initialize(node, first_branch_type, actual, actual_index)
+          @node = node
+          @first_branch_type = first_branch_type
+          @actual = actual
+          @actual_index = actual_index
+        end
+
+        def message
+          "First branch of this case statement is #{@first_branch_type} " +
+            "but branch #{@actual_index} is #{@actual}"
         end
       end
     end

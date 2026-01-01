@@ -301,6 +301,48 @@ module Jade
 
         its(:type) { is_expected.to eql Type.int }
         its(:errors) { is_expected.to be_empty }
+
+        context 'when pattern type is invalid' do
+          let(:text) do
+            <<~JADE
+              case 1 of
+              "" then 1
+              _ then 2
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to_not be_empty }
+
+          describe 'the error' do
+            subject { super().errors.first }
+            it { is_expected.to be_a TypeChecking::PatternTypeMismatchError }
+
+            its(:message) { is_expected.to include 'Pattern is trying to match Int with String' }
+          end
+        end
+
+        context 'when branches are of different type' do
+          let(:text) do
+            <<~JADE
+              case 1 of
+              1 then 1
+              _ then "two"
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to_not be_empty }
+
+          describe 'the error' do
+            subject { super().errors.first }
+            it { is_expected.to be_a TypeChecking::CaseOfBranchesTypeMismatchError }
+
+            its(:message) { is_expected.to include 'First branch of this case statement is Int but branch 2 is String' }
+          end
+        end
       end
     end
   end
