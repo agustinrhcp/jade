@@ -387,9 +387,9 @@ module Jade
 
       let(:text) do
         <<~JADE
-          case 1 of
-          1 then 1
-          _ then 2
+          case 1
+          of 1 then 1
+          of _ then 2
           end
         JADE
       end

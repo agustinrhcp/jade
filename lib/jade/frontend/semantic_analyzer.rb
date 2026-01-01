@@ -107,6 +107,9 @@ module Jade
 
         in AST::Pattern::Literal
           Result[scope, []]
+
+        in AST::Pattern::Binding(name:)
+          bind(scope, name, Symbol.var(name))
         end
       end
 

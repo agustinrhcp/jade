@@ -15,7 +15,7 @@ module Jade
               .map do |br|
                 br => AST::CaseOfBranch(pattern:, body:)
 
-                pattern_result = check(pattern, registry, env, var_gen)
+                pattern_result = infer_pattern(pattern, expression_result.type, registry, env, var_gen)
                   .compose_substitution(expression_result.substitution)
                   .and_unify(expression_result.type) do
                     PatternTypeMismatchError.new(node, it.expected, it.actual)
@@ -35,6 +35,24 @@ module Jade
                     CaseOfBranchesTypeMismatchError.new(node, it.actual, it.expected, i + 2)
                   end
               end
+          end
+
+          def infer_pattern(pattern, matched_type, registry, env, var_gen)
+            case pattern
+            in AST::Pattern::Literal(literal:)
+              check(literal, registry, env, var_gen)
+
+            in AST::Pattern::Wildcard
+              Result[Type.var(var_gen.fresh), Substitution.new, env, []]
+
+            in AST::Pattern::Binding(name:)
+              Result[
+                Type.var(var_gen.fresh),
+                Substitution.new,
+                env.bind(name, generalize(matched_type)),
+                [],
+              ].and_unify(matched_type)
+            end
           end
         end
       end

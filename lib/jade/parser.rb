@@ -79,22 +79,25 @@ module Jade
       (
         type(:case) >>
           lazy { expression } >>
-          type(:of).skip >>
           sequence(case_of_branch).map { [it] } >>
           type(:end)
       ).map(&AST.case_of)
     end
 
     def case_of_branch
-      (pattern >> type(:then).skip >> body).map(&AST.case_of_branch)
+      (type(:of) >> pattern >> type(:then).skip >> body).map(&AST.case_of_branch)
     end
 
     def pattern
-      wildcard_pattern | literal_pattern# | constructor_pattern | binding_pattern
+      wildcard_pattern | literal_pattern | binding_pattern # | constructor_pattern | binding_pattern
     end
 
     def wildcard_pattern
       type(:wildcard).map(&AST.wildcard_pattern)
+    end
+
+    def binding_pattern
+      identifier.map(&AST.binding_pattern)
     end
 
     def literal_pattern

@@ -292,9 +292,9 @@ module Jade
       context 'case of' do
         let(:text) do
           <<~JADE
-            case 1 of
-            1 then 1
-            _ then 2
+            case 1
+            of 1 then 1
+            of _ then 2
             end
           JADE
         end
@@ -305,9 +305,9 @@ module Jade
         context 'when pattern type is invalid' do
           let(:text) do
             <<~JADE
-              case 1 of
-              "" then 1
-              _ then 2
+              case 1
+              of "" then 1
+              of _ then 2
               end
             JADE
           end
@@ -326,9 +326,9 @@ module Jade
         context 'when branches are of different type' do
           let(:text) do
             <<~JADE
-              case 1 of
-              1 then 1
-              _ then "two"
+              case 1
+              of 1 then 1
+              of _ then "two"
               end
             JADE
           end
@@ -342,6 +342,20 @@ module Jade
 
             its(:message) { is_expected.to include 'First branch of this case statement is Int but branch 2 is String' }
           end
+        end
+
+        context 'with variable binding branches' do
+          let(:text) do
+            <<~JADE
+              case 1
+              of 1 then 1
+              of x then x
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to be_empty }
         end
       end
     end

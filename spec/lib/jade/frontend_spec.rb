@@ -319,14 +319,27 @@ module Jade
 
       let(:text) do
         <<~JADE
-          case 1 of
-          1 then 1
-          _ then 2
+          case 1
+          of 1 then 1
+          of _ then 2
           end
         JADE
       end
 
       it { is_expected.to be_a(AST::CaseOf) }
+
+      context 'var binding' do
+        let(:text) do
+          <<~JADE
+            case 1
+            of 1 then 1
+            of x then x
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::CaseOf) }
+      end
     end
   end
 end

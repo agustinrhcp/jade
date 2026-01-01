@@ -42,6 +42,7 @@ module Jade
 
       define(:Wildcard)
       define(:Literal, :literal)
+      define(:Binding, :name)
     end
 
     def string_literal
@@ -257,11 +258,11 @@ module Jade
     end
 
     def case_of_branch
-      ->((pattern, body)) do
+      ->((of_token, pattern, body)) do
         CaseOfBranch[
           pattern,
           body,
-          pattern.range.begin..(body.range.end),
+          of_token.range.begin..(body.range.end),
         ]
       end
     end
@@ -275,6 +276,12 @@ module Jade
     def literal_pattern
       ->(literal) do
         Pattern::Literal[literal, literal.range]
+      end
+    end
+
+    def binding_pattern
+      ->(identifier) do
+        Pattern::Binding[identifier.value, identifier.range]
       end
     end
   end

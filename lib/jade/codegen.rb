@@ -85,6 +85,9 @@ module Jade
 
       in AST::Pattern::Wildcard
         "_"
+
+      in AST::Pattern::Binding(name:)
+        name
       end
     end
 

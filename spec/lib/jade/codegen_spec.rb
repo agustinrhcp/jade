@@ -156,14 +156,27 @@ module Jade
     context 'case of' do
       let(:text) do
         <<~JADE
-          case 1 of
-          1 then 1
-          _ then 2
+          case 1
+          of 1 then 1
+          of _ then 2
           end
         JADE
       end
 
       it { is_expected.to eql "case 1; in 1; 1; in _; 2; end" }
+
+      context 'with variable binding branches' do
+        let(:text) do
+          <<~JADE
+            case 1
+            of 1 then 1
+            of x then x
+            end
+          JADE
+        end
+
+        it { is_expected.to eql "case 1; in 1; 1; in x; x; end" }
+      end
     end
   end
 end

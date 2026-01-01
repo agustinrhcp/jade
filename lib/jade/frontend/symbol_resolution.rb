@@ -100,6 +100,9 @@ module Jade
         in AST::Pattern::Literal(literal:)
           node.with(literal: resolve(literal, registry, current_entry))
 
+        in AST::Pattern::Binding
+          node
+
         in AST::Pattern::Wildcard
           node
 
