@@ -152,5 +152,18 @@ module Jade
 
       it { is_expected.to eql "if (Jade::Runtime.intr('String.is_empty').call(\"\")) then; 1; else; 2; end" }
     end
+
+    context 'case of' do
+      let(:text) do
+        <<~JADE
+          case 1 of
+          1 then 1
+          _ then 2
+          end
+        JADE
+      end
+
+      it { is_expected.to eql "case 1; in 1; 1; in _; 2; end" }
+    end
   end
 end

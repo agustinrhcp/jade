@@ -73,6 +73,18 @@ module Jade
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)
         "if (#{generate(condition, registry)}) then; #{generate(if_branch, registry)}; else; #{generate(else_branch, registry)}; end"
+
+      in AST::CaseOf(expression:, branches:)
+        "case #{generate(expression, registry)}; " + branches.map { generate(it, registry) }.join + "end"
+
+      in AST::CaseOfBranch(pattern:, body:)
+        "in #{generate(pattern, registry)}; #{generate(body, registry)}; "
+
+      in AST::Pattern::Literal(literal:)
+        generate(literal, registry)
+
+      in AST::Pattern::Wildcard
+        "_"
       end
     end
 
