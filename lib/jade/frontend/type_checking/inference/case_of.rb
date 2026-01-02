@@ -52,6 +52,24 @@ module Jade
                 env.bind(name, generalize(matched_type)),
                 [],
               ].and_unify(matched_type)
+
+            in AST::Pattern::Constructor(symbol:, patterns:)
+              constructor_type = type_from_symbol(symbol, registry)
+
+              patterns_result = constructor_type
+                .args.zip(patterns)
+                .reduce(Result.new([], Substitution.new, env, [])) do |acc, (expected, pattern)|
+                  infer_pattern(pattern, expected, registry, acc.env, var_gen)
+                    .then { it.with(type: acc.type + [it.type]) }
+                    .compose_substitution(acc.substitution)
+                    .add_errors(acc.errors)
+                end
+
+              constructor_type
+                .then { generalize(it) }
+                .then { instantiate(it, var_gen) }
+                .then { patterns_result.substitution.apply(it).return_type }
+                .then { patterns_result.with(type: it ) }
             end
           end
         end

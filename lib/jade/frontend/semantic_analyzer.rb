@@ -110,6 +110,17 @@ module Jade
 
         in AST::Pattern::Binding(name:)
           bind(scope, name, Symbol.var(name))
+
+        in AST::Pattern::Constructor(constructor:, patterns:, symbol:)
+          symbol = registry.lookup(symbol)
+
+          if symbol.args.size != patterns.size
+            return PaterrnConstructorArityMismatchError
+              .new(constructor, symbol.args.size, patterns.size)
+              .then { Result[scope, [it]] }
+          end
+
+          analyze_many(patterns, registry, scope)
         end
       end
 
@@ -185,6 +196,19 @@ module Jade
 
         def message
           "Undefined variable #{@var_ref}"
+        end
+      end
+
+      class ConstructorPatternArityMismatch < Error
+        def initialize(constructor, expected_arity, actual_arity)
+          super()
+          @constructor = constructor
+          @expected_arity = expected_arity
+          @actual_arity = actual_arity
+        end
+
+        def message
+          "Arity mismatch, #{constructor} expects #{expected_arity} patterns but found #{actual_arity}"
         end
       end
     end

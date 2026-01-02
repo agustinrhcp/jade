@@ -163,7 +163,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "case 1; in 1; 1; in _; 2; end" }
+      it { is_expected.to eql "case 1; in 1 then 1; in _ then 2; end" }
 
       context 'with variable binding branches' do
         let(:text) do
@@ -175,7 +175,21 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "case 1; in 1; 1; in x; x; end" }
+        it { is_expected.to eql "case 1; in 1 then 1; in x then x; end" }
+      end
+
+      context 'with constructor branches' do
+        let(:text) do
+          <<~JADE
+            type Maybe(a) = Just(a) | Nothing
+            case Just(1)
+            of Nothing then 0
+            of Just(x) then x
+            end
+          JADE
+        end
+
+        it { is_expected.to include "in __Test__::Nothing then 0; in __Test__::Just(x) then x; end" }
       end
     end
   end

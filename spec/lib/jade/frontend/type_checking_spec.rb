@@ -357,6 +357,22 @@ module Jade
           its(:type) { is_expected.to eql Type.int }
           its(:errors) { is_expected.to be_empty }
         end
+
+        context 'with constructor pattern' do
+          let(:text) do
+            <<~JADE
+              type Maybe(a) = Just(a) | Nothing
+
+              case Just(1)
+              of Nothing then 0
+              of Just(x) then x
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.int }
+          its(:errors) { is_expected.to be_empty }
+        end
       end
     end
   end

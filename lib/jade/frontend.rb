@@ -34,7 +34,7 @@ module Jade
 
     def run_repl(ast, registry, current_entry, scope, env, var_gen)
       registry ||= registry_with_basics
-      current_entry ||= entry_with_basics('__Repl__', basics: true)
+      current_entry ||= entry_with_basics('JadeRepl', basics: true)
       scope ||= SemanticAnalyzer::Scope.new
       env ||= TypeChecking::Env.new
       var_gen ||= TypeChecking::VarGen.new

@@ -78,7 +78,7 @@ module Jade
         "case #{generate(expression, registry)}; " + branches.map { generate(it, registry) }.join + "end"
 
       in AST::CaseOfBranch(pattern:, body:)
-        "in #{generate(pattern, registry)}; #{generate(body, registry)}; "
+        "in #{generate(pattern, registry)} then #{generate(body, registry)}; "
 
       in AST::Pattern::Literal(literal:)
         generate(literal, registry)
@@ -88,6 +88,15 @@ module Jade
 
       in AST::Pattern::Binding(name:)
         name
+
+      in AST::Pattern::Constructor(symbol:, patterns:)
+        sym = registry.lookup(symbol)
+
+        patterns
+          .map { generate(it, registry) }
+          .join(', ')
+          .then { it.empty? ? it : "(#{it})"}
+          .then { "#{sym.qualified_name.gsub('.', '::')}#{it}" }
       end
     end
 

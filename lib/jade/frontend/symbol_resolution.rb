@@ -106,6 +106,15 @@ module Jade
         in AST::Pattern::Wildcard
           node
 
+        in AST::Pattern::Constructor(constructor:, patterns:)
+          symbol = current_entry
+            .lookup_value(constructor)
+            .to_ref
+
+          patterns
+            .map { resolve(it, registry, current_entry) }
+            .then { node.with(patterns: it, symbol:) }
+
         in AST::MemberAccess(target:, name:)
           MemberAccess.resolve(node, registry, current_entry)
         end

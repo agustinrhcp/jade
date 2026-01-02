@@ -341,5 +341,22 @@ module Jade
         it { is_expected.to be_a(AST::CaseOf) }
       end
     end
+
+    context 'case of with constructor' do
+      let(:text) do
+        <<~JADE
+          type Maybe(a) = Just(a) | Nothing
+
+          case Just(1)
+          of Nothing then 0
+          of Just(x) then x
+          end
+        JADE
+      end
+
+      subject { super().expressions.last }
+
+      it { is_expected.to be_a(AST::CaseOf) }
+    end
   end
 end
