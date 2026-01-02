@@ -417,7 +417,7 @@ module Jade
         let(:text) do
           <<~JADE
             case Just(1)
-            of Nothing() then 0
+            of Nothing then 0
             of Just(x) then x
             end
           JADE

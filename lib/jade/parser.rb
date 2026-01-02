@@ -106,10 +106,10 @@ module Jade
 
     def constructor_pattern
       (constant >>
-        type(:lparen).skip >>
+        ((type(:lparen).skip >>
         (sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } |
           none.map { [[]] }) >>
-        type(:rparen)
+        type(:rparen)) | none.map { [[]] })
       ).map(&AST.constructor_pattern)
     end
 
