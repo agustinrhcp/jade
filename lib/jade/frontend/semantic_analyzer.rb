@@ -1,3 +1,5 @@
+require 'jade/frontend/semantic_analysis/error'
+
 module Jade
   module Frontend
     module SemanticAnalyzer
@@ -52,7 +54,7 @@ module Jade
           if scope.lookup(name)
             return Result[
               scope,
-              [DuplicateFunctionDeclarationError.new(ast)],
+              [SemanticAnalysis::Error::DuplicateFunctionDeclaration.new(ast)],
             ]
           end
 
@@ -216,19 +218,6 @@ module Jade
 
         def message
           "Arity mismatch, #{constructor} expects #{expected_arity} patterns but found #{actual_arity}"
-        end
-      end
-
-      class DuplicateFunctionDeclarationError < Error
-        def initialize(node)
-          super()
-          @node = node
-        end
-
-        def message
-          @node => AST::FunctionDeclaration(name:)
-
-          "Duplicate function definition `#{name}`"
         end
       end
     end

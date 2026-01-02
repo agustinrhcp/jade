@@ -1,4 +1,8 @@
 require 'jade/frontend/symbol_resolution/member_access'
+require 'jade/frontend/symbol_resolution/literal'
+require 'jade/frontend/symbol_resolution/variable_binding'
+require 'jade/frontend/symbol_resolution/module'
+require 'jade/frontend/symbol_resolution/import_declaration'
 
 module Jade
   module Frontend
@@ -12,19 +16,17 @@ module Jade
 
       def resolve(node, registry, current_entry)
         case node
-        in AST::Module(body:)
-          node
-            .with(body: resolve(body, registry, current_entry))
+        in AST::Module
+          Module.resolve(node, registry, current_entry)
 
         in AST::ImportDeclaration
-          node
+          ImportDeclaration.resolve(node, registry, current_entry)
 
         in AST::Literal
-          resolve_literal(node, registry, current_entry) 
+          Literal.resolve(node, registry, current_entry) 
 
-        in AST::VariableBinding(expression:)
-          node
-            .with(expression: resolve(expression, registry, current_entry))
+        in AST::VariableBinding
+          VariableBinding.resolve(node, registry, current_entry)
 
         in AST::Body(expressions:)
           expressions
