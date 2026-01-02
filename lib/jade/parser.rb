@@ -177,7 +177,7 @@ module Jade
         type(:def) >>
           identifier >>
           type(:lparen).skip >>
-          sequence(param, separated_by: type(:comma).skip).map { [it] } >>
+          (sequence(param, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
           type(:rparen).skip >>
           type(:arrow).skip >>
           type_expression >>

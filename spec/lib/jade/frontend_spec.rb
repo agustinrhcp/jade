@@ -173,6 +173,25 @@ module Jade
       end
     end
 
+    context 'a function declaration with a type var' do
+      let(:text) do
+        <<~JADE
+          type Maybe(a) = Just(a) | Nothing
+
+          def with_default(maybe: Maybe(a), default: a) -> a
+            case maybe
+            of Nothing then default
+            of Just(x) then x
+            end
+          end
+        JADE
+      end
+
+      subject { super().expressions.last }
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+    end
+
     context 'function call' do
       let(:text) do
         <<~JADE

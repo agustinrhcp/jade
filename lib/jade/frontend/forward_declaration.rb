@@ -97,8 +97,12 @@ module Jade
         case type
         in AST::TypeVar(type:)
           Symbol.var(type)
+
         in AST::TypeName(type:)
           entry.lookup_type(type)
+
+        in AST::TypeApplication(constructor:)
+          entry.lookup_type(constructor.type)
         end
       end
     end

@@ -36,7 +36,8 @@ module Jade
       compiler.require('maybe')
 
       it 'works' do
-        expect(Maybe.with_default.call(1)).to be 1
+        expect(Maybe.with_default.call(Maybe::Just[2], 0)).to be 2
+        expect(Maybe.with_default.call(Maybe::Nothing[], 0)).to be 0
       end
     end
   end
