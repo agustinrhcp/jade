@@ -49,6 +49,13 @@ module Jade
           analyze_many(expressions, registry, scope)
 
         in AST::FunctionDeclaration(name:, params:, body:, symbol:)
+          if scope.lookup(name)
+            return Result[
+              scope,
+              [DuplicateFunctionDeclarationError.new(ast)],
+            ]
+          end
+
           params
             .reduce(Result[scope, []]) do |acc, param|
               bind(acc.scope, param.name, Symbol.param(param.name))
@@ -209,6 +216,19 @@ module Jade
 
         def message
           "Arity mismatch, #{constructor} expects #{expected_arity} patterns but found #{actual_arity}"
+        end
+      end
+
+      class DuplicateFunctionDeclarationError < Error
+        def initialize(node)
+          super()
+          @node = node
+        end
+
+        def message
+          @node => AST::FunctionDeclaration(name:)
+
+          "Duplicate function definition `#{name}`"
         end
       end
     end

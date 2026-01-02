@@ -192,6 +192,25 @@ module Jade
       it { is_expected.to be_a(AST::FunctionDeclaration) }
     end
 
+    context 'a duped function declaration' do
+      let(:text) do
+        <<~JADE
+          def add(a: Int, b: Int) -> Int
+            a
+          end
+
+          def add(a: Int, b: Int) -> Int
+            a
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::SemanticAnalyzer::DuplicateFunctionDeclarationError) }
+    end
+
     context 'function call' do
       let(:text) do
         <<~JADE
