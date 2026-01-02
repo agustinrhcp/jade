@@ -153,8 +153,8 @@ module Jade
     end
 
     def type_application
-      ->(constructor, _lparen, args, rparen) do
-        TypeVarVar[constructor, args, constructor.range.begin..rparen.range.end]
+      ->((constructor, _lparen, args, rparen)) do
+        TypeApplication[constructor, args, constructor.range.begin..rparen.range.end]
       end
     end
 

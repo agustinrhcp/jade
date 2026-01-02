@@ -173,6 +173,44 @@ module Jade
       end
     end
 
+    context 'a function declaration with a type var' do
+      let(:text) do
+        <<~JADE
+          type Maybe(a) = Just(a) | Nothing
+
+          def with_default(maybe: Maybe(a), default: a) -> a
+            case maybe
+            of Nothing then default
+            of Just(x) then x
+            end
+          end
+        JADE
+      end
+
+      subject { super().expressions.last }
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+    end
+
+    context 'a duped function declaration' do
+      let(:text) do
+        <<~JADE
+          def add(a: Int, b: Int) -> Int
+            a
+          end
+
+          def add(a: Int, b: Int) -> Int
+            a
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::DuplicateFunctionDeclaration) }
+    end
+
     context 'function call' do
       let(:text) do
         <<~JADE
@@ -218,6 +256,46 @@ module Jade
 
       it { is_expected.to be_a(AST::MemberAccess) }
       its(:symbol) { is_expected.to eql Symbol::ValueRef['String.is_empty']}
+
+      context 'when calling a not exposed function' do
+        let(:text) do
+          <<~JADE
+            String.not_exposed_thingy
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+
+        describe 'the error' do
+          subject { super().first }
+
+          it { is_expected.to be_a Frontend::SymbolResolution::Error::VariableNotFound }
+          its(:message) { is_expected.to include 'I cannot find a `String.not_exposed_thingy` variable' }
+          its(:causes) { is_expected.to have(1).item.and all(be_a(Frontend::SymbolResolution::Error::ValueNotExposed)) }
+        end
+      end
+
+      context 'when calling a non existing module' do
+        let(:text) do
+          <<~JADE
+            Strong.is_empty
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+
+        describe 'the error' do
+          subject { super().first }
+
+          it { is_expected.to be_a Frontend::SymbolResolution::Error::VariableNotFound }
+          its(:message) { is_expected.to include 'I cannot find a `Strong.is_empty` variable' }
+          its(:causes) { is_expected.to have(1).item.and all(be_a(Frontend::SymbolResolution::Error::ModuleNotFound)) }
+        end
+      end
     end
 
     context 'type def' do
@@ -271,6 +349,24 @@ module Jade
         it { is_expected.to be_a(AST::ConstructorReference) }
         its(:symbol) { is_expected.to eql Symbol.value_ref('__Test__.Just') }
       end
+
+      context 'referencing a constructor that doesn\'t exist' do
+        let(:text) do
+          <<~JADE
+            Just
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+
+        describe 'the error' do
+          subject { super().first }
+          it { is_expected.to be_a Frontend::SymbolResolution::Error::ConstructorNotFound }
+          its(:message) { is_expected.to include 'I cannot find a `Just` constructor' }
+        end
+      end
     end
 
     context 'module' do
@@ -294,6 +390,14 @@ module Jade
 
           expect(symbol).to be_a(Symbol::Function)
           expect(symbol.module_name).to eql 'Test'
+        end
+
+        describe 'the Test entry' do
+          subject { super().modules['Test'] }
+
+          it 'has the right exposed symbols' do
+            expect(subject.exposes).to include('hello' => Symbol::ValueRef['Test.hello'])
+          end
         end
       end
     end

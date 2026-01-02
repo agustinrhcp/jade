@@ -12,9 +12,10 @@ module Jade
       case node
       in AST::Module(name:, body:)
         "require 'jade/runtime'; module #{name}; extend self; #{generate(body, registry)}; end"
+
       in AST::ImportDeclaration(module_name:)
         registry.get(module_name).path
-          .then { "require '#{it}'" }
+          .then { "require_relative '#{it}'" }
 
       in AST::Body(expressions:)
         expressions
@@ -67,8 +68,9 @@ module Jade
         case registry.lookup(symbol)
         in Symbol::StdlibFunction(codegen:)
           codegen
-        # TODO: NonStdlibImports
 
+        in Symbol::Function(module_name:, name:)
+          "#{module_name.gsub('.', '::')}.#{name}"
         end
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)

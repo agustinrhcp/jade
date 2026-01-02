@@ -107,25 +107,6 @@ module Jade
 
       private
 
-      def type_from_symbol(symbol, registry)
-        case symbol
-        in Symbol::TypeRef | Symbol::ValueRef
-          registry
-            .lookup(symbol)
-            .then { type_from_symbol(it, registry) }
-
-        in Symbol::Union
-          Type.constructor(symbol.qualified_name)
-
-        in Symbol::Function | Symbol::StdlibFunction
-          Type
-            .function(
-              symbol.params.values.map { type_from_symbol(it, registry) },
-              type_from_symbol(symbol.return_type, registry)
-            )
-        end
-      end
-
       def infer_variable_reference(node, registry, env, var_gen)
         node => AST::VariableReference(name:)
 

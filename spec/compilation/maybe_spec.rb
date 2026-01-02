@@ -4,39 +4,58 @@ require 'jade'
 require 'jade/module_loader'
 
 module Jade
-  describe 'Compiling a jd file' do
-    subject { ModuleLoader.load('spec/compilation', 'maybe.jd') }
+  describe 'examples' do
+    let(:maybe_source) do
+      <<~JADE
+        module Maybe exposing (with_default)
 
-    it { is_expected.to be_a Registry }
+        type Maybe = Just(a) | Nothing
 
-    it 'does not throw errors' do
-      expect { subject }.to_not raise_error
-    end
-
-    context 'emiting' do
-      subject { super().then { ModuleLoader.emit(it) } }
-
-      before do
-        File.delete(".jade/build/maybe.rb") if File.exist?(".jade/build/maybe.rb")
-      end
-
-      it 'writes a file for the compiled module' do
-        expect { subject }
-          .to change { File.exist?(".jade/build/maybe.rb") }
-          .from(false).to(true)
-      end
+        def with_default(maybe: Maybe(a), default: a) -> a
+          case maybe
+          of Just(something) then something
+          of Nothing then default
+          end
+        end
+      JADE
     end
 
     describe 'requiring the generated file' do
-      compiler = Jade::Compiler.new do |c|
-        c.source_root = 'spec/compilation'
-        c.project_root = File.expand_path("../..", __dir__)
+      include_context 'with test compiler'
+
+      before do
+        test_compiler.require('maybe', maybe_source)
       end
 
-      compiler.require('maybe')
+      it 'works' do
+        expect(Maybe.with_default.call(Maybe::Just[2], 0)).to be 2
+        expect(Maybe.with_default.call(Maybe::Nothing[], 0)).to be 0
+      end
+    end
+
+    context 'test import' do
+      include_context 'with test compiler'
+
+      let(:pepe_source) do
+        <<~JADE
+          module Pepe exposing (hello)
+
+          import Maybe
+
+          def hello(maybe: Maybe(String)) -> String
+            Maybe.with_default(maybe, "Hello pepe")
+          end
+        JADE
+      end
+
+      before do
+        test_compiler.require('maybe', maybe_source)
+        test_compiler.require('pepe', pepe_source)
+      end
 
       it 'works' do
-        expect(Maybe.with_default.call(1)).to be 1
+        expect(Pepe.hello.call(Maybe::Just["Hello lala"])).to eql "Hello lala"
+        expect(Pepe.hello.call(Maybe::Nothing[])).to eql "Hello pepe"
       end
     end
   end

@@ -48,7 +48,10 @@ module Jade
             .run_entry(entry, acc)
             .map { Codegen.generate_entry(it, acc.add_module(it)) }
             .map { acc.add_module(it) }
-            .on_err { puts Array(it).map(&:messages) and return } => Ok(new)
+            .on_err do
+              puts Array(it).map(&:message)
+              fail("Compilation error")
+            end => Ok(new)
           new
         end
     end

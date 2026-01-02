@@ -1,0 +1,37 @@
+require "tmpdir"
+
+module Jade
+  class TestCompiler
+    attr_reader :compiler
+
+    def initialize
+      @project_root = Dir.mktmpdir("jade-spec")
+      @source_root  = File.join(@project_root, "src")
+      @build_root   = File.join(@project_root, ".jade", "build")
+
+      FileUtils.mkdir_p(@source_root)
+      FileUtils.mkdir_p(@build_root)
+
+      @compiler = Compiler.new do |c|
+        c.source_root  = @source_root
+        c.project_root = @project_root
+      end
+    end
+
+    def require(module_name, source)
+      File.write(
+        File.join(@source_root, "#{module_name}.jd"),
+        source
+      )
+
+      compiler.require(module_name)
+
+      rb_file = File.join(@build_root, "#{module_name}.rb")
+      raise "Expected #{rb_file} to exist" unless File.exist?(rb_file)
+    end
+
+    def cleanup
+      FileUtils.rm_rf(@project_root)
+    end
+  end
+end

@@ -1,3 +1,5 @@
+require 'jade/frontend/semantic_analysis/error'
+
 module Jade
   module Frontend
     module SemanticAnalyzer
@@ -49,6 +51,17 @@ module Jade
           analyze_many(expressions, registry, scope)
 
         in AST::FunctionDeclaration(name:, params:, body:, symbol:)
+          if scope.lookup(name)
+            return Result[
+              scope,
+              [
+                SemanticAnalysis::Error::DuplicateFunctionDeclaration
+                  # TODO: current entry should always be available
+                  .new(nil, ast.range, name:),
+              ],
+            ]
+          end
+
           params
             .reduce(Result[scope, []]) do |acc, param|
               bind(acc.scope, param.name, Symbol.param(param.name))

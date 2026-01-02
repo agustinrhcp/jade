@@ -1,144 +1,132 @@
+require 'jade/frontend/symbol_resolution/helper'
+require 'jade/frontend/symbol_resolution/error'
+
+require 'jade/frontend/symbol_resolution/body'
+require 'jade/frontend/symbol_resolution/case_of'
+require 'jade/frontend/symbol_resolution/case_of_branch'
+require 'jade/frontend/symbol_resolution/constructor_reference'
+require 'jade/frontend/symbol_resolution/function_call'
+require 'jade/frontend/symbol_resolution/function_declaration'
+require 'jade/frontend/symbol_resolution/if_then_else'
+require 'jade/frontend/symbol_resolution/import_declaration'
+require 'jade/frontend/symbol_resolution/infix_application'
+require 'jade/frontend/symbol_resolution/literal'
 require 'jade/frontend/symbol_resolution/member_access'
+require 'jade/frontend/symbol_resolution/module'
+require 'jade/frontend/symbol_resolution/pattern/binding'
+require 'jade/frontend/symbol_resolution/pattern/constructor'
+require 'jade/frontend/symbol_resolution/pattern/literal'
+require 'jade/frontend/symbol_resolution/pattern/wildcard'
+require 'jade/frontend/symbol_resolution/type_declaration'
+require 'jade/frontend/symbol_resolution/variable_binding'
+require 'jade/frontend/symbol_resolution/variable_reference'
+require 'jade/frontend/symbol_resolution/variant_declaration'
 
 module Jade
   module Frontend
     module SymbolResolution
       extend self
 
-      def resolve_entry(entry, registry)
-        resolve(entry.ast, registry, entry)
-          .then { entry.with(ast: it) }
-      end
+      Result = Data.define(:node, :errors) do
+        def map
+          with(node: yield(node))
+        end
 
-      def resolve(node, registry, current_entry)
-        case node
-        in AST::Module(body:)
-          node
-            .with(body: resolve(body, registry, current_entry))
+        def self.sequence(results)
+          nodes  = []
+          errors = []
 
-        in AST::ImportDeclaration
-          node
+          results.each do |result|
+            nodes << result.node
+            errors.concat(result.errors)
+          end
 
-        in AST::Literal
-          resolve_literal(node, registry, current_entry) 
+          Result[nodes, errors]
+        end
 
-        in AST::VariableBinding(expression:)
-          node
-            .with(expression: resolve(expression, registry, current_entry))
+        def add_errors(errors_)
+          with(errors: errors + errors_)
+        end
 
-        in AST::Body(expressions:)
-          expressions
-            .map { resolve(it, registry, current_entry) }
-            .then { node.with(expressions: it) }
+        def to_result
+          return Err[errors] if errors.any?
 
-        in AST::VariableReference
-          node
-
-        in AST::ConstructorReference(name:)
-          current_entry
-            .lookup_value(name)
-            .to_ref
-            .then { node.with(symbol: it) }
-
-        in AST::FunctionDeclaration(name:, body:)
-          symbol = current_entry
-            .lookup_value(name)
-            .to_ref
-
-          resolve(body, registry, current_entry)
-            .then { node.with(body: it, symbol:) }
-
-        in AST::InfixApplication(left:, operator:, right:)
-          symbol = current_entry
-            .lookup_value("(#{operator.value})")
-            .to_ref
-
-          node
-            .with(left: resolve(left, registry, current_entry))
-            .with(right: resolve(right, registry, current_entry))
-            .with(operator: operator.with(symbol:))
-
-        in AST::FunctionCall(callee:, args:)
-          node
-            .with(callee: resolve(callee, registry, current_entry))
-            .with(args: args.map { resolve(it, registry, current_entry) })
-
-        in AST::TypeDeclaration(name:, variants:)
-          symbol = current_entry
-            .lookup_type(name)
-            .to_ref
-
-          node
-            .with(
-              symbol:,
-              variants: variants.map { resolve(it, registry, current_entry) },
-            )
-
-        in AST::VariantDeclaration(name:)
-          current_entry
-            .lookup_value(name)
-            .to_ref
-            .then { node.with(symbol: it) }
-
-        in AST::IfThenElse(condition:, if_branch:, else_branch:)
-          node
-            .with(condition: resolve(condition, registry, current_entry))
-            .with(if_branch: resolve(if_branch, registry, current_entry))
-            .with(else_branch: resolve(else_branch, registry, current_entry))
-
-        in AST::CaseOf(expression:, branches:)
-          branches
-            .map { resolve(it, registry, current_entry) }
-            .then { node.with(branches: it) }
-            .with(expression: resolve(expression, registry, current_entry))
-
-        in AST::CaseOfBranch(pattern:, body:)
-          node
-            .with(pattern: resolve(pattern, registry, current_entry)) 
-            .with(body: resolve(body, registry, current_entry)) 
-
-        in AST::Pattern::Literal(literal:)
-          node.with(literal: resolve(literal, registry, current_entry))
-
-        in AST::Pattern::Binding
-          node
-
-        in AST::Pattern::Wildcard
-          node
-
-        in AST::Pattern::Constructor(constructor:, patterns:)
-          symbol = current_entry
-            .lookup_value(constructor)
-            .to_ref
-
-          patterns
-            .map { resolve(it, registry, current_entry) }
-            .then { node.with(patterns: it, symbol:) }
-
-        in AST::MemberAccess(target:, name:)
-          MemberAccess.resolve(node, registry, current_entry)
+          Ok[node]
         end
       end
 
-      private
-
-      def resolve_literal(node, _registry, _current_entry)
-        node => AST::Literal(value:)
-
-        symbol_from_literal_value(value)
-          .then { node.with(symbol: it) }
+      def resolve_entry(entry, registry)
+        resolve_node(entry.ast, registry, entry)
+          .map { entry.with(ast: it) }
+          .to_result
       end
 
-      def symbol_from_literal_value(value)
-        case value
-        in Integer
-          Symbol::TypeRef['Basics.Int']
+      def resolve(node, registry, current_entry)
+        resolve_node(node, registry, current_entry)
+          .to_result
+      end
 
-        in TrueClass | FalseClass
-          Symbol::TypeRef['Basics.Bool']
+      def resolve_node(node, registry, current_entry)
+        case node
+        in AST::Module
+          Module.resolve(node, registry, current_entry)
 
-        in String
-          Symbol::TypeRef['String.String']
+        in AST::ImportDeclaration
+          ImportDeclaration.resolve(node, registry, current_entry)
+
+        in AST::Literal
+          Literal.resolve(node, registry, current_entry) 
+
+        in AST::VariableBinding
+          VariableBinding.resolve(node, registry, current_entry)
+
+        in AST::Body
+          Body.resolve(node, registry, current_entry)
+
+        in AST::VariableReference
+          VariableReference.resolve(node, registry, current_entry)
+
+        in AST::ConstructorReference
+          ConstructorReference.resolve(node, registry, current_entry)
+
+        in AST::FunctionDeclaration
+          FunctionDeclaration.resolve(node, registry, current_entry)
+
+        in AST::InfixApplication
+          InfixApplication.resolve(node, registry, current_entry)
+
+        in AST::FunctionCall
+          FunctionCall.resolve(node, registry, current_entry)
+
+        in AST::TypeDeclaration
+          TypeDeclaration.resolve(node, registry, current_entry)
+
+        in AST::VariantDeclaration
+          VariantDeclaration.resolve(node, registry, current_entry)
+
+        in AST::IfThenElse
+          IfThenElse.resolve(node, registry, current_entry)
+
+        in AST::CaseOf
+          CaseOf.resolve(node, registry, current_entry)
+
+        in AST::CaseOfBranch
+          CaseOfBranch.resolve(node, registry, current_entry)
+
+        in AST::Pattern::Literal
+          Pattern::Literal.resolve(node, registry, current_entry)
+
+        in AST::Pattern::Binding
+          Pattern::Binding.resolve(node, registry, current_entry)
+
+        in AST::Pattern::Wildcard
+          Pattern::Wildcard.resolve(node, registry, current_entry)
+
+        in AST::Pattern::Constructor
+          Pattern::Constructor.resolve(node, registry, current_entry)
+
+        in AST::MemberAccess
+          MemberAccess.resolve(node, registry, current_entry)
         end
       end
     end

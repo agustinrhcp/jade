@@ -117,6 +117,18 @@ module Jade
       its(:name) { is_expected.to eql 'add' }
       its(:params) { is_expected.to have(2).items.and all(be_a(AST::FunctionDeclarationParam)) }
       its(:return_type) { is_expected.to be_a(AST::TypeName) }
+
+      context 'without arguments' do
+        let(:text) do
+          <<~JADE
+            def two() -> Int
+              2
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::FunctionDeclaration) }
+      end
     end
 
     context 'operators' do
