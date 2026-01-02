@@ -43,6 +43,7 @@ module Jade
       define(:Wildcard)
       define(:Literal, :literal)
       define(:Binding, :name)
+      define(:Constructor, :constructor, :patterns)
     end
 
     def string_literal
@@ -282,6 +283,16 @@ module Jade
     def binding_pattern
       ->(identifier) do
         Pattern::Binding[identifier.value, identifier.range]
+      end
+    end
+
+    def constructor_pattern
+      ->((constructor, patterns)) do
+        Pattern::Constructor[
+          constructor.value,
+          patterns,
+          constructor.range.begin..(patterns.first&.range&.end || constructor.range.end)
+        ]
       end
     end
   end

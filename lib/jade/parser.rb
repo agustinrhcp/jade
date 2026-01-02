@@ -89,7 +89,7 @@ module Jade
     end
 
     def pattern
-      wildcard_pattern | literal_pattern | binding_pattern # | constructor_pattern | binding_pattern
+      wildcard_pattern | literal_pattern | binding_pattern | constructor_pattern
     end
 
     def wildcard_pattern
@@ -102,6 +102,15 @@ module Jade
 
     def literal_pattern
       literal.map(&AST.literal_pattern)
+    end
+
+    def constructor_pattern
+      (constant >>
+        type(:lparen).skip >>
+        (sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } |
+          none.map { [[]] }) >>
+        type(:rparen)
+      ).map(&AST.constructor_pattern)
     end
 
     def body

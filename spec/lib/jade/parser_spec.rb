@@ -412,6 +412,36 @@ module Jade
         its(:pattern) { is_expected.to be_a(AST::Pattern::Wildcard) }
         its(:body) { is_expected.to be_a(AST::Body) }
       end
+
+      context 'with binding and constructor' do
+        let(:text) do
+          <<~JADE
+            case Just(1)
+            of Nothing() then 0
+            of Just(x) then x
+            end
+          JADE
+        end
+
+        describe 'the Nothing branch' do
+          subject { super().branches.first }
+
+          its(:pattern) { is_expected.to be_a(AST::Pattern::Constructor) }
+        end
+
+        describe 'the Just branch' do
+          subject { super().branches[1] }
+
+          its(:pattern) { is_expected.to be_a(AST::Pattern::Constructor) }
+
+          context 'its patterns' do
+            subject { super().pattern }
+
+            its(:constructor) { is_expected.to eql 'Just' }
+            its(:patterns) { is_expected.to have(1).item.and all(be_a(AST::Pattern::Binding)) }
+          end
+        end
+      end
     end
   end
 end
