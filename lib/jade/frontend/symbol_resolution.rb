@@ -3,6 +3,21 @@ require 'jade/frontend/symbol_resolution/literal'
 require 'jade/frontend/symbol_resolution/variable_binding'
 require 'jade/frontend/symbol_resolution/module'
 require 'jade/frontend/symbol_resolution/import_declaration'
+require 'jade/frontend/symbol_resolution/body'
+require 'jade/frontend/symbol_resolution/variable_reference'
+require 'jade/frontend/symbol_resolution/function_declaration'
+require 'jade/frontend/symbol_resolution/constructor_reference'
+require 'jade/frontend/symbol_resolution/infix_application'
+require 'jade/frontend/symbol_resolution/function_call'
+require 'jade/frontend/symbol_resolution/type_declaration'
+require 'jade/frontend/symbol_resolution/variant_declaration'
+require 'jade/frontend/symbol_resolution/if_then_else'
+require 'jade/frontend/symbol_resolution/case_of'
+require 'jade/frontend/symbol_resolution/case_of_branch'
+require 'jade/frontend/symbol_resolution/pattern/literal'
+require 'jade/frontend/symbol_resolution/pattern/binding'
+require 'jade/frontend/symbol_resolution/pattern/wildcard'
+require 'jade/frontend/symbol_resolution/pattern/constructor'
 
 module Jade
   module Frontend
@@ -28,119 +43,53 @@ module Jade
         in AST::VariableBinding
           VariableBinding.resolve(node, registry, current_entry)
 
-        in AST::Body(expressions:)
-          expressions
-            .map { resolve(it, registry, current_entry) }
-            .then { node.with(expressions: it) }
+        in AST::Body
+          Body.resolve(node, registry, current_entry)
 
         in AST::VariableReference
-          node
+          VariableReference.resolve(node, registry, current_entry)
 
-        in AST::ConstructorReference(name:)
-          current_entry
-            .lookup_value(name)
-            .to_ref
-            .then { node.with(symbol: it) }
+        in AST::ConstructorReference
+          ConstructorReference.resolve(node, registry, current_entry)
 
-        in AST::FunctionDeclaration(name:, body:)
-          symbol = current_entry
-            .lookup_value(name)
-            .to_ref
+        in AST::FunctionDeclaration
+          FunctionDeclaration.resolve(node, registry, current_entry)
 
-          resolve(body, registry, current_entry)
-            .then { node.with(body: it, symbol:) }
+        in AST::InfixApplication
+          InfixApplication.resolve(node, registry, current_entry)
 
-        in AST::InfixApplication(left:, operator:, right:)
-          symbol = current_entry
-            .lookup_value("(#{operator.value})")
-            .to_ref
+        in AST::FunctionCall
+          FunctionCall.resolve(node, registry, current_entry)
 
-          node
-            .with(left: resolve(left, registry, current_entry))
-            .with(right: resolve(right, registry, current_entry))
-            .with(operator: operator.with(symbol:))
+        in AST::TypeDeclaration
+          TypeDeclaration.resolve(node, registry, current_entry)
 
-        in AST::FunctionCall(callee:, args:)
-          node
-            .with(callee: resolve(callee, registry, current_entry))
-            .with(args: args.map { resolve(it, registry, current_entry) })
+        in AST::VariantDeclaration
+          VariantDeclaration.resolve(node, registry, current_entry)
 
-        in AST::TypeDeclaration(name:, variants:)
-          symbol = current_entry
-            .lookup_type(name)
-            .to_ref
+        in AST::IfThenElse
+          IfThenElse.resolve(node, registry, current_entry)
 
-          node
-            .with(
-              symbol:,
-              variants: variants.map { resolve(it, registry, current_entry) },
-            )
+        in AST::CaseOf
+          CaseOf.resolve(node, registry, current_entry)
 
-        in AST::VariantDeclaration(name:)
-          current_entry
-            .lookup_value(name)
-            .to_ref
-            .then { node.with(symbol: it) }
+        in AST::CaseOfBranch
+          CaseOfBranch.resolve(node, registry, current_entry)
 
-        in AST::IfThenElse(condition:, if_branch:, else_branch:)
-          node
-            .with(condition: resolve(condition, registry, current_entry))
-            .with(if_branch: resolve(if_branch, registry, current_entry))
-            .with(else_branch: resolve(else_branch, registry, current_entry))
-
-        in AST::CaseOf(expression:, branches:)
-          branches
-            .map { resolve(it, registry, current_entry) }
-            .then { node.with(branches: it) }
-            .with(expression: resolve(expression, registry, current_entry))
-
-        in AST::CaseOfBranch(pattern:, body:)
-          node
-            .with(pattern: resolve(pattern, registry, current_entry)) 
-            .with(body: resolve(body, registry, current_entry)) 
-
-        in AST::Pattern::Literal(literal:)
-          node.with(literal: resolve(literal, registry, current_entry))
+        in AST::Pattern::Literal
+          Pattern::Literal.resolve(node, registry, current_entry)
 
         in AST::Pattern::Binding
-          node
+          Pattern::Binding.resolve(node, registry, current_entry)
 
         in AST::Pattern::Wildcard
-          node
+          Pattern::Wildcard.resolve(node, registry, current_entry)
 
-        in AST::Pattern::Constructor(constructor:, patterns:)
-          symbol = current_entry
-            .lookup_value(constructor)
-            .to_ref
+        in AST::Pattern::Constructor
+          Pattern::Constructor.resolve(node, registry, current_entry)
 
-          patterns
-            .map { resolve(it, registry, current_entry) }
-            .then { node.with(patterns: it, symbol:) }
-
-        in AST::MemberAccess(target:, name:)
+        in AST::MemberAccess
           MemberAccess.resolve(node, registry, current_entry)
-        end
-      end
-
-      private
-
-      def resolve_literal(node, _registry, _current_entry)
-        node => AST::Literal(value:)
-
-        symbol_from_literal_value(value)
-          .then { node.with(symbol: it) }
-      end
-
-      def symbol_from_literal_value(value)
-        case value
-        in Integer
-          Symbol::TypeRef['Basics.Int']
-
-        in TrueClass | FalseClass
-          Symbol::TypeRef['Basics.Bool']
-
-        in String
-          Symbol::TypeRef['String.String']
         end
       end
     end
