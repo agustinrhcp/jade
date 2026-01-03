@@ -3,6 +3,7 @@ module Jade
     module SymbolResolution
       module MemberAccess
         extend self
+        extend Helper
 
         def resolve(node, registry, current_entry)
           node => AST::MemberAccess(target:, name:)
@@ -14,10 +15,11 @@ module Jade
 
             resolve_qualified_access(path, name, registry, current_entry)
               .then { node.with(symbol: it) }
+              .then { Result[it, []] }
 
           else
-            SymbolResolution.resolve(target)
-              .then { node.with(target: it) }
+            resolve_node(target)
+              .map { node.with(target: it) }
           end
         end
 

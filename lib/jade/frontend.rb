@@ -18,7 +18,7 @@ module Jade
         .then { ForwardDeclaration.declare_entry(it, registry) }
         .then { FixityFixer.fix_entry(it) }
         .then { SymbolResolution.resolve_entry(it, registry.add_module(it)) }
-        .then { SemanticAnalyzer.analyze_entry(it, registry.add_module(it)) }
+        .and_then { SemanticAnalyzer.analyze_entry(it, registry.add_module(it)) }
         .and_then { TypeChecking.check_entry(it, registry.add_module(it)) }
     end
 
@@ -74,7 +74,7 @@ module Jade
         .then { |entry| FixityFixer.fix(ast).then { [it, entry] } }
         # TODO: [Frontend:HandleErrors]
         .then { |enh_ast, entry| SymbolResolution.resolve(enh_ast, registry.add_module(entry), entry) }
-        .then { SemanticAnalyzer.analyze(it, registry) }
+        .and_then { SemanticAnalyzer.analyze(it, registry) }
     end
 
     def entry_with_basics(name, basics:)

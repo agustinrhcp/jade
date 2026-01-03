@@ -8,7 +8,7 @@ module Jade
           def resolve(node, _, _)
             node => AST::Pattern::Wildcard
 
-            node
+            Result[node, []]
           end
         end
       end

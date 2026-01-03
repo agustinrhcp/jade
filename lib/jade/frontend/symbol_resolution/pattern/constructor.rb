@@ -4,6 +4,7 @@ module Jade
       module Pattern
         module Constructor
           extend self
+          extend Helper
 
           def resolve(node, registry, current_entry)
             node => AST::Pattern::Constructor(constructor:, patterns:)
@@ -13,8 +14,9 @@ module Jade
               .to_ref
 
             patterns
-              .map { SymbolResolution.resolve(it, registry, current_entry) }
-              .then { node.with(patterns: it, symbol:) }
+              .map { resolve_node(it, registry, current_entry) }
+              .then { Result.sequence(it) }
+              .map { node.with(patterns: it, symbol:) }
           end
         end
       end

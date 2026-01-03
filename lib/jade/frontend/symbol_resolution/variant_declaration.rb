@@ -11,6 +11,7 @@ module Jade
             .lookup_value(name)
             .to_ref
             .then { node.with(symbol: it) }
+            .then { Result[it, []] }
         end
       end
     end

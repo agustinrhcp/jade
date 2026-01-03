@@ -3,6 +3,7 @@ module Jade
     module SymbolResolution
       module InfixApplication
         extend self
+        extend Helper
 
         def resolve(node, registry, current_entry)
           node => AST::InfixApplication(left:, operator:, right:)
@@ -11,10 +12,13 @@ module Jade
             .lookup_value("(#{operator.value})")
             .to_ref
 
-          node
-            .with(left: SymbolResolution.resolve(left, registry, current_entry))
-            .with(right: SymbolResolution.resolve(right, registry, current_entry))
-            .with(operator: operator.with(symbol:))
+          resolve_node(left, registry, current_entry) => {
+            node: left_resolved, errors: left_errors,
+          }
+
+          resolve_node(right, registry, current_entry)
+            .map { node.with(right: it, left: left_resolved, operator: operator.with(symbol:)) }
+            .add_errors(left_errors)
         end
       end
     end

@@ -3,6 +3,7 @@ module Jade
     module SymbolResolution
       module FunctionDeclaration
         extend self
+        extend Helper
 
         def resolve(node, registry, current_entry)
           node => AST::FunctionDeclaration(name:, body:)
@@ -11,8 +12,8 @@ module Jade
             .lookup_value(name)
             .to_ref
 
-          SymbolResolution.resolve(body, registry, current_entry)
-            .then { node.with(body: it, symbol:) }
+          resolve_node(body, registry, current_entry)
+            .map { node.with(body: it, symbol:) }
         end
       end
     end

@@ -1,15 +1,14 @@
 module Jade
   module Frontend
-    module SemanticAnalysis
+    module SymbolResolution
       module Error
-        class DuplicateFunctionDeclaration < ::Error
-          def initialize(entry, span, name)
+        class ConstructorNotFound < ::Error
+          def initialize(entry, span, name:)
             @name = name
             super(entry:, span:)
           end
-
           def message
-            "Duplicate function definition `#{@name}`"
+            "I cannot find a `#{@name}` constructor"
           end
         end
       end

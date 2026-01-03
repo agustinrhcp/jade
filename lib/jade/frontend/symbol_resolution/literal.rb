@@ -9,6 +9,7 @@ module Jade
 
           symbol_from_literal_value(value)
             .then { node.with(symbol: it) }
+            .then { Result[it, []] }
         end
 
         private

@@ -320,6 +320,12 @@ module Jade
         subject { frontend => Err(errors); errors }
 
         it { is_expected.to have(1).item }
+
+        describe 'the error' do
+          subject { super().first }
+          it { is_expected.to be_a Frontend::SymbolResolution::Error::ConstructorNotFound }
+          its(:message) { is_expected.to include 'I cannot find a `Just` constructor' }
+        end
       end
     end
 

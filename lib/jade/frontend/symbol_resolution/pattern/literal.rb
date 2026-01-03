@@ -4,12 +4,13 @@ module Jade
       module Pattern
         module Literal
           extend self
+          extend Helper
 
           def resolve(node, registry, current_entry)
             node => AST::Pattern::Literal(literal:)
 
-            SymbolResolution.resolve(literal, registry, current_entry)
-              .then { node.with(literal: it) }
+            resolve_node(literal, registry, current_entry)
+              .map { node.with(literal: it) }
           end
         end
       end

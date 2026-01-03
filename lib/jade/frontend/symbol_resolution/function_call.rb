@@ -3,13 +3,20 @@ module Jade
     module SymbolResolution
       module FunctionCall
         extend self
+        extend Helper
 
         def resolve(node, registry, current_entry)
           node => AST::FunctionCall(callee:, args:)
 
-          node
-            .with(callee: SymbolResolution.resolve(callee, registry, current_entry))
-            .with(args: args.map { SymbolResolution.resolve(it, registry, current_entry) })
+          resolve_node(callee, registry, current_entry) => {
+            node: callee_resolved, errors: callee_errors,
+          }
+
+          args
+            .map { resolve_node(it, registry, current_entry) }
+            .then { Result.sequence(it) }
+            .map { node.with(args: it, callee: callee_resolved) }
+            .add_errors(callee_errors)
         end
       end
     end

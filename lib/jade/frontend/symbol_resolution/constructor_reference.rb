@@ -7,10 +7,17 @@ module Jade
         def resolve(node, registry, current_entry)
           node => AST::ConstructorReference(name:)
 
-          current_entry
-            .lookup_value(name)
-            .to_ref
-            .then { node.with(symbol: it) }
+          case current_entry.lookup_value(name)
+          in nil
+            Error::ConstructorNotFound
+              .new(current_entry.name, node.range, name:)
+              .then { Result[node, [it]] }
+
+          in symbol
+            symbol.to_ref
+              .then { node.with(symbol: it) }
+              .then { Result[it, []] }
+          end
         end
       end
     end

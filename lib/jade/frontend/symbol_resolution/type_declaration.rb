@@ -3,6 +3,7 @@ module Jade
     module SymbolResolution
       module TypeDeclaration
         extend self
+        extend Helper
 
         def resolve(node, registry, current_entry)
           node => AST::TypeDeclaration(name:, variants:)
@@ -12,8 +13,9 @@ module Jade
             .to_ref
 
           variants
-            .map { SymbolResolution.resolve(it, registry, current_entry) }
-            .then { node.with(symbol:, variants: it) }
+            .map { resolve_node(it, registry, current_entry) }
+            .then { Result.sequence(it) }
+            .map { node.with(symbol:, variants: it) }
         end
       end
     end

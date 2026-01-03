@@ -3,13 +3,13 @@ module Jade
     module SymbolResolution
       module VariableBinding
         extend self
+        extend Helper
 
         def resolve(node, registry, current_entry)
           node => AST::VariableBinding(expression:)
 
-          SymbolResolution
-            .resolve(expression, registry, current_entry)
-            .then { node.with(expression: it) }
+          resolve_node(expression, registry, current_entry)
+            .map { node.with(expression: it) }
         end
       end
     end

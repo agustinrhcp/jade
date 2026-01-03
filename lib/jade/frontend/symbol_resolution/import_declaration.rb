@@ -5,7 +5,7 @@ module Jade
         extend self
 
         def resolve(node, _, _)
-          node
+          Result[node, []]
         end
       end
     end

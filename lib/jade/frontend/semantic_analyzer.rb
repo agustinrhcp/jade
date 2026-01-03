@@ -54,7 +54,11 @@ module Jade
           if scope.lookup(name)
             return Result[
               scope,
-              [SemanticAnalysis::Error::DuplicateFunctionDeclaration.new(ast)],
+              [
+                SemanticAnalysis::Error::DuplicateFunctionDeclaration
+                  # TODO: current entry should always be available
+                  .new(nil, ast.range, name:),
+              ],
             ]
           end
 
