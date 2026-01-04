@@ -49,26 +49,54 @@ module Jade
           .then { entry.with(ast: it) }
       end
 
-      def fix(ast)
-        case ast
+      def fix(node)
+        case node
+        in AST::Module(body:)
+          fix(body)
+            .then { node.with(body:) }
+
         in AST::InfixApplication
-          flatten(ast)
+          flatten(node)
             .then { shunting_yard(it) }
             .then { unflatten(it) }
 
         in AST::VariableBinding(expression:)
-          ast.with(expression: fix(expression))
+          node.with(expression: fix(expression))
 
         in AST::FunctionDeclaration(body:)
-          ast.with(body: fix(body))
+          node.with(body: fix(body))
 
         in AST::Body(expressions:)
           expressions
             .map { fix(it) }
-            .then { ast.with(expressions: it) } 
+            .then { node.with(expressions: it) } 
 
-        else
-          ast
+        in AST::FunctionCall(callee:, args:)
+          args.map { fix(it) }
+            .then { node.with(args: it, callee: fix(callee)) }
+
+        in AST::MemberAccess(target:)
+          fix(target)
+            .then { node.with(target: it) }
+
+        in AST::CaseOf(expression:, branches:)
+          branches.map { fix(it) }
+            .then { node.with(branches:, expression: fix(expression)) }
+
+        in AST::CaseOfBranch(body:)
+          node.with(body: fix(body))
+
+        in AST::IfThenElse(condition:, if_branch:, else_branch:)
+          node.with(
+            condition: fix(condition),
+            if_branch: fix(if_branch),
+            else_branch: fix(else_branch),
+          )
+
+        in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
+          AST::ImportDeclaration | AST::Literal
+
+          node
         end
       end
 

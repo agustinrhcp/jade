@@ -15,10 +15,8 @@ a type, but " > chunk > "
 
 ### Frontend:HandleErrors
 
-ForwardDeclaration: looking up undeclared symbols can return nil. That needs to fail
-and return a helpful error.
-
 FixityFixer: can fail if invalid operators are chained
+
 
 ### AST Nodes
 
@@ -58,3 +56,9 @@ Split entry into it's own file and.
 
 Scope should collect types and values independently, so
 type and variant constructor can both be added.
+
+
+### Reference Index Phase
+
+New pass to track usages of symbols. This is helpful for duplicate error
+(now being raised by semantic analysis), unused imports and dead code detection.
