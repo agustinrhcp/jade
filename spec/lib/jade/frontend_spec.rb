@@ -256,6 +256,46 @@ module Jade
 
       it { is_expected.to be_a(AST::MemberAccess) }
       its(:symbol) { is_expected.to eql Symbol::ValueRef['String.is_empty']}
+
+      context 'when calling a not exposed function' do
+        let(:text) do
+          <<~JADE
+            String.not_exposed_thingy
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+
+        describe 'the error' do
+          subject { super().first }
+
+          it { is_expected.to be_a Frontend::SymbolResolution::Error::VariableNotFound }
+          its(:message) { is_expected.to include 'I cannot find a `String.not_exposed_thingy` variable' }
+          its(:causes) { is_expected.to have(1).item.and all(be_a(Frontend::SymbolResolution::Error::ValueNotExposed)) }
+        end
+      end
+
+      context 'when calling a non existing module' do
+        let(:text) do
+          <<~JADE
+            Strong.is_empty
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+
+        describe 'the error' do
+          subject { super().first }
+
+          it { is_expected.to be_a Frontend::SymbolResolution::Error::VariableNotFound }
+          its(:message) { is_expected.to include 'I cannot find a `Strong.is_empty` variable' }
+          its(:causes) { is_expected.to have(1).item.and all(be_a(Frontend::SymbolResolution::Error::ModuleNotFound)) }
+        end
+      end
     end
 
     context 'type def' do

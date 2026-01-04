@@ -2,14 +2,17 @@ module Jade
   module Frontend
     module SymbolResolution
       module Error
-        class ConstructorNotFound < ::Error
-          def initialize(entry, span, name:)
+        class VariableNotFound < ::Error
+          attr_reader :causes
+
+          def initialize(entry, span, name:, causes: [])
             @name = name
+            @causes = causes
             super(entry:, span:)
           end
 
           def message
-            "I cannot find a `#{@name}` constructor"
+            "I cannot find a `#{@name}` variable"
           end
         end
       end

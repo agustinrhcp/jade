@@ -6,16 +6,21 @@ module Jade
         extend Helper
 
         def resolve(node, registry, current_entry)
-          node => AST::MemberAccess(target:, name:)
+          node => AST::MemberAccess(target:)
 
           qualified_names = collect_qualified_names(node)
 
           if qualified_names
             *path, access = qualified_names
 
-            resolve_qualified_access(path, name, registry, current_entry)
-              .then { node.with(symbol: it) }
-              .then { Result[it, []] }
+            case resolve_qualified_access(path, node, registry, current_entry)
+            in Ok(symbol)
+              node.with(symbol:)
+                .then { Result[it, []] }
+
+            in Err(error)
+              Result[node, [error]]
+            end
 
           else
             resolve_node(target)
@@ -36,9 +41,38 @@ module Jade
           end
         end
 
-        def resolve_qualified_access(path, accessed, registry, current_entry)
-          imported = current_entry.imports.find { it.alias == path.join('.') } || fail("Module #{path.join('.')} not found")
-          registry.get(imported.module_name).exports[accessed.name] || fail('Symbol is not exposed')
+        def resolve_qualified_access(path, node, registry, current_entry)
+          node => AST::MemberAccess(name:, target:)
+
+          module_name = path.join('.')
+          import = current_entry
+            .imports
+            .find { it.alias == module_name }
+
+          if import.nil?
+            Error::ModuleNotFound
+              .new(current_entry.name, node.target.range, name: import)
+
+          else
+            case registry.get(module_name).exports[name.name]
+            in nil
+              Error::ValueNotExposed
+                .new(current_entry.name, name.range, module_name:, name: name.name)
+
+            in symbol
+              return Ok[symbol]
+            end
+          end
+            .then do
+              Error::VariableNotFound
+                .new(
+                  current_entry.name,
+                  node.range,
+                  name: [module_name, name.name].join('.'),
+                  causes: [it],
+                )
+            end
+            .then { Err[it] }
         end
       end
     end

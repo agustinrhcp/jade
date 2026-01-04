@@ -2,14 +2,15 @@ module Jade
   module Frontend
     module SymbolResolution
       module Error
-        class ConstructorNotFound < ::Error
-          def initialize(entry, span, name:)
+        class ValueNotExposed < ::Error
+          def initialize(entry, span, name:, module_name:)
             @name = name
+            @module_name = module_name
             super(entry:, span:)
           end
 
           def message
-            "I cannot find a `#{@name}` constructor"
+            "#{@module_name} does not a expose `#{@name}`"
           end
         end
       end
