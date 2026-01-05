@@ -1,3 +1,5 @@
+require "tmpdir"
+
 module Jade
   class TestCompiler
     attr_reader :compiler

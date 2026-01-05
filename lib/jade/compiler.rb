@@ -9,10 +9,10 @@ module Jade
     def require(path)
       ModuleLoader
         .load(config.source_root.first, path + '.jd')
-        .then { ModuleLoader.emit(it, path: config.build_dir) }
+        .then { ModuleLoader.emit(it, path: build_root) }
 
       compiled_path = File.expand_path(
-        "#{config.build_dir}/#{path}.rb",
+        "#{build_root}/#{path}.rb",
         config.project_root
       )
 
@@ -23,6 +23,10 @@ module Jade
 
     def config
       @config ||= Config.new
+    end
+
+    def build_root
+      File.expand_path(config.build_dir, config.project_root)
     end
 
     class Config
