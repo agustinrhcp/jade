@@ -99,6 +99,12 @@ module Jade
           .join(', ')
           .then { it.empty? ? it : "(#{it})"}
           .then { "#{sym.qualified_name.gsub('.', '::')}#{it}" }
+
+      in AST::Lambda(params:, body:)
+        "->(#{params.map(&:name).join(', ')}) { #{generate(body, registry)} }"
+
+      in AST::Grouping(expression:)
+        "(#{generate(expression, registry)})"
       end
     end
 

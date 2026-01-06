@@ -51,7 +51,11 @@ module Jade
     end
 
     def expression
-      case_of | if_then_else | infix_expression
+      case_of | if_then_else | lambda | infix_expression
+    end
+
+    def grouping
+      (type(:lparen) >> lazy { expression } >> type(:rparen)).map(&AST.grouping)
     end
 
     def infix_expression
@@ -61,6 +65,22 @@ module Jade
             AST.infix_application.call(left, op, right)
           end
         end
+    end
+
+    def lambda
+      (
+        type(:lparen) >>
+          (sequence(lambda_param, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
+          type(:rparen).skip >>
+          type(:arrow).skip >>
+          type(:lbrace).skip >>
+          body >>
+          type(:rbrace)
+      ).map(&AST.lambda)
+    end
+
+    def lambda_param
+      identifier.map(&AST.lambda_param)
     end
 
     def if_then_else
@@ -131,7 +151,7 @@ module Jade
     end
 
     def atom
-      variable_reference | literal | constructor_reference
+      variable_reference | literal | constructor_reference | grouping
     end
 
     def postfix
@@ -175,14 +195,16 @@ module Jade
     def function_declaration
       (
         type(:def) >>
-          identifier >>
-          type(:lparen).skip >>
-          (sequence(param, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
-          type(:rparen).skip >>
-          type(:arrow).skip >>
-          type_expression >>
-          sequence(statement).map(&AST.body) >>
-          type(:end)
+          (
+            identifier >>
+            type(:lparen).skip >>
+            (sequence(param, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
+            type(:rparen).skip >>
+            type(:arrow).skip >>
+            type_expression >>
+            sequence(statement).map(&AST.body) >>
+            type(:end)
+          ).map_error(&:commit)
       ).map(&AST.function_declaration)
     end
 
@@ -223,8 +245,12 @@ module Jade
       identifier.map(&AST.type_param)
     end
 
+    def type_atom
+      type_var | type_application | type_name | grouped(lazy { type_function })
+    end
+
     def type_expression
-      type_var | type_application | type_name
+      type_function | type_atom
     end
 
     def type_name
@@ -233,6 +259,17 @@ module Jade
 
     def type_var
       identifier.map(&AST.type_var)
+    end
+
+    def type_function
+      (sequence(type_atom, separated_by: type(:comma).skip).map { [it] } >>
+        type(:arrow).skip >>
+        type_atom
+      ).map(&AST.type_function)
+    end
+
+    def grouped(parser)
+      type(:lparen).skip >> parser >> type(:rparen).skip
     end
 
     def type_application

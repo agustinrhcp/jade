@@ -39,6 +39,13 @@ module Jade
                   type_from_symbol(symbol.return_type, registry)
                 )
 
+            in Symbol::FunctionType
+              Type
+                .function(
+                  symbol.params.map { type_from_symbol(it, registry) },
+                  type_from_symbol(symbol.return_type, registry)
+                )
+
             in Symbol::Variant
               Type
                 .function(

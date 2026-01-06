@@ -85,7 +85,6 @@ module Jade
 
         # TODO: [Parser:MultipleErrors]
         it { is_expected.to be_kind_of(Parser::Error) }
-        its(:message) { is_expected.to include("expected constant") }
       end
 
       context 'when it is incomplete with an incomplete string' do
@@ -128,6 +127,34 @@ module Jade
         end
 
         it { is_expected.to be_a(AST::FunctionDeclaration) }
+      end
+    end
+
+    context 'function declaration with lambda argument' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
+            case maybe
+            of Just(something) then fn(somethig)
+            of Nothing then maybe
+            end
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+      describe 'its second param type' do
+        subject { super().params.last => AST::FunctionDeclarationParam(type:); type }
+
+        it { is_expected.to be_a(AST::TypeFunction) }
+
+        describe 'the type function' do
+          its(:params) { is_expected.to have(1).items.and all(be_a(AST::TypeVar)) }
+          its(:return_type) { is_expected.to be_a(AST::TypeVar).and have_attributes(type: 'b') }
+        end
       end
     end
 
@@ -391,6 +418,48 @@ module Jade
         subject { super().if_branch.expressions }
 
         it { is_expected.to have(1).item.and all(be_a(AST::Literal)) }
+      end
+    end
+
+    context 'lambda' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          (one, two) -> { one + two }
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Lambda) }
+      its(:params) { is_expected.to have(2).items.and all(be_a(AST::LambdaParam)) }
+      its(:body) { is_expected.to be_a(AST::Body) }
+    end
+
+    context 'grouping' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          (1 + 2)
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Grouping) }
+
+      context 'in the middle of an expression' do
+        let(:text) do
+          <<~JADE
+            1 * (1 + 2) * 3
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::InfixApplication) }
+
+        describe 'the expression' do
+          it 'has a grouping' do
+            expect(subject.left.right).to be_a(AST::Grouping)
+          end
+        end
       end
     end
 

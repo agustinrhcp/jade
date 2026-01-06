@@ -22,6 +22,10 @@ module Jade
     define(:TypeParam, :name)
     define(:ImportDeclaration, :module_name, :exposing)
 
+    define(:Lambda, :params, :body)
+    define(:LambdaParam, :name)
+
+    define(:Grouping, :expression)
     define(:InfixApplication, :left, :operator, :right)
     define(:InfixOperator, :value)
 
@@ -31,6 +35,7 @@ module Jade
     define(:TypeName, :type)
     define(:TypeVar, :type)
     define(:TypeApplication, :constructor, :args)
+    define(:TypeFunction, :params, :return_type)
 
     define(:IfThenElse, :condition, :if_branch, :else_branch)
     define(:CaseOf, :expression, :branches)
@@ -155,6 +160,12 @@ module Jade
     def type_application
       ->((constructor, _lparen, args, rparen)) do
         TypeApplication[constructor, args, constructor.range.begin..rparen.range.end]
+      end
+    end
+
+    def type_function
+      ->((params, return_type)) do
+        TypeFunction[params, return_type, params.first.range.begin..return_type.range.end]
       end
     end
 
@@ -293,6 +304,31 @@ module Jade
           patterns,
           constructor.range.begin..(patterns.first&.range&.end || constructor.range.end)
         ]
+      end
+    end
+
+    def grouping
+      ->((lparen_token, expression, rparen_token)) do
+        Grouping[
+          expression,
+          lparen_token.range.begin..rparen_token.range.end
+        ]
+      end
+    end
+
+    def lambda
+      ->((lparen_token, params, body, rbrace_token)) do
+        Lambda[
+          params,
+          body,
+          lparen_token.range.begin..rbrace_token.range.end,
+        ]
+      end
+    end
+
+    def lambda_param
+      ->(identifier) do
+        LambdaParam[identifier.value, identifier.range]
       end
     end
   end

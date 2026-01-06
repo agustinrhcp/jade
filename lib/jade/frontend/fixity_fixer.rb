@@ -53,7 +53,7 @@ module Jade
         case node
         in AST::Module(body:)
           fix(body)
-            .then { node.with(body:) }
+            .then { node.with(body: it) }
 
         in AST::InfixApplication
           flatten(node)
@@ -92,6 +92,12 @@ module Jade
             if_branch: fix(if_branch),
             else_branch: fix(else_branch),
           )
+
+        in AST::Lambda(body:)
+          node.with(body: fix(body))
+
+        in AST::Grouping(expression:)
+          node.with(expression: fix(expression))
 
         in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
           AST::ImportDeclaration | AST::Literal

@@ -134,6 +134,22 @@ module Jade
           end
 
           analyze_many(patterns, registry, scope)
+
+        in AST::Lambda(params:, body:)
+          params
+            .reduce(Result[scope, []]) do |acc, param|
+              bind(acc.scope, param.name, Symbol.param(param.name))
+                .add_errors(acc.errors)
+            end
+            .then do
+              analyze_r(body, registry, it.scope)
+                .add_errors(it.errors)
+            end
+            .with(scope:)
+
+        in AST::Grouping(expression:)
+          analyze_r(expression, registry, scope)
+      
         end
       end
 
