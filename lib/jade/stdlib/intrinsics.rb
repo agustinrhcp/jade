@@ -35,7 +35,7 @@ module Jade
           .reduce(Registry.entry(module_name)) do |acc, sym|
             acc.add_symbol(sym)
           end
-          .with(exports: exposed)
+          .with(exposes: exposed)
       end
 
       def exposing(val)

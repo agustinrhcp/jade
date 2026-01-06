@@ -6,7 +6,8 @@ module Jade
         extend Helper
 
         def resolve(node, registry, current_entry)
-          node => AST::Module(body:)
+          # TODO: Deal with exposing
+          node => AST::Module(body:, exposing:)
 
           resolve_node(body, registry, current_entry)
             .map { node.with(body: it) }

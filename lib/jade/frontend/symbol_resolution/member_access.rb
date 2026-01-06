@@ -54,7 +54,9 @@ module Jade
               .new(current_entry.name, node.target.range, name: import)
 
           else
-            case registry.get(module_name).exports[name.name]
+            # TODO: exposes is a list, not a hash. I could however
+            #   make it into a hash
+            case registry.get(module_name).exposes[name.name]
             in nil
               Error::ValueNotExposed
                 .new(current_entry.name, name.range, module_name:, name: name.name)

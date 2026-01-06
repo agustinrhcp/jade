@@ -16,7 +16,17 @@ module Jade
     end
 
     def self.entry(name)
-      ModuleEntry.new(name:, values: {}, types: {}, imports: Set[], exports: [], ast: nil, source: nil, generated: nil, entry: false)
+      ModuleEntry.new(
+        name:,
+        values: {},
+        types: {},
+        imports: Set[],
+        exposes: {},
+        ast: nil,
+        source: nil,
+        generated: nil,
+        entry: false,
+      )
     end
 
     def modules_in_topo_order
@@ -60,7 +70,11 @@ module Jade
 
   ImportEntry = Data.define(:module_name, :alias, :symbols)
 
-  ModuleEntry = Data.define(:name, :values, :types, :imports, :exports, :ast, :source, :generated, :entry) do
+  ModuleEntry = Data.define(:name, :values, :types, :imports, :exposes, :ast, :source, :generated, :entry) do
+    def add_expose(qualified_name, symbol)
+      with(exposes: exposes.merge(qualified_name => symbol))
+    end
+
     def add_symbol(symbol)
       case symbol
       in Symbol::Union

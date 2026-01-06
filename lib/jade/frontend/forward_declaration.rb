@@ -20,11 +20,14 @@ module Jade
           shallow(body, registry, entry)
 
         in AST::ImportDeclaration(module_name:)
-          registry.get(module_name) => { types:, values: }
+          imported_entry = registry.get(module_name) => { types:, values: }
 
+          # TODO:
+          # add module to imports
+          # only do this if import (..)
           (types.values + values.values)
             .map(&:to_ref)
-            .reduce(entry) do |acc, sym|
+            .reduce(entry.add_import(imported_entry)) do |acc, sym|
               acc.add_imported_symbol(sym)
             end
 
@@ -48,8 +51,22 @@ module Jade
       # TODO: [ForwardDeclaration:HandleErrors]
       def deep(ast, entry)
         case ast
-        in AST::Module(body:)
-          deep(body, entry)
+        in AST::Module(body:, exposing:)
+          exposing
+            .reduce(entry) do |acc, exposed|
+              case exposed
+              in AST::VariableReference(name:)
+                acc
+                  .lookup_value(name)
+                  .then { acc.add_expose(name, it.to_ref) }
+
+              in AST::TypeName(type:)
+                acc
+                  .lookup_type(type)
+                  .then { acc.add_expose(type, it.to_ref) }
+              end
+            end
+            .then { deep(body, it) }
 
         in AST::ImportDeclaration
           entry

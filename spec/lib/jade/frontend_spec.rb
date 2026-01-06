@@ -391,6 +391,14 @@ module Jade
           expect(symbol).to be_a(Symbol::Function)
           expect(symbol.module_name).to eql 'Test'
         end
+
+        describe 'the Test entry' do
+          subject { super().modules['Test'] }
+
+          it 'has the right exposed symbols' do
+            expect(subject.exposes).to include('hello' => Symbol::ValueRef['Test.hello'])
+          end
+        end
       end
     end
 
