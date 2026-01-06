@@ -22,6 +22,9 @@ module Jade
     define(:TypeParam, :name)
     define(:ImportDeclaration, :module_name, :exposing)
 
+    define(:Lambda, :params, :body)
+    define(:LambdaParam, :name)
+
     define(:InfixApplication, :left, :operator, :right)
     define(:InfixOperator, :value)
 
@@ -293,6 +296,22 @@ module Jade
           patterns,
           constructor.range.begin..(patterns.first&.range&.end || constructor.range.end)
         ]
+      end
+    end
+
+    def lambda
+      ->((lparen_token, params, body, rbrace_token)) do
+        Lambda[
+          params,
+          body,
+          lparen_token.range.begin..rbrace_token.range.end,
+        ]
+      end
+    end
+
+    def lambda_param
+      ->(identifier) do
+        LambdaParam[identifier.value, identifier.range]
       end
     end
   end

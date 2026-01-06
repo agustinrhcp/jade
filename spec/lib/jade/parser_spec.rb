@@ -394,6 +394,17 @@ module Jade
       end
     end
 
+    context 'lambda' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          (one, two) -> { one + two }
+        JADE
+      end
+      it { is_expected.to be_a(AST::Lambda) }
+    end
+
     context 'case of' do
       include_context "single expression body"
 

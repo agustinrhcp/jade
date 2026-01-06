@@ -51,7 +51,7 @@ module Jade
     end
 
     def expression
-      case_of | if_then_else | infix_expression
+      case_of | if_then_else | lambda | infix_expression
     end
 
     def infix_expression
@@ -61,6 +61,22 @@ module Jade
             AST.infix_application.call(left, op, right)
           end
         end
+    end
+
+    def lambda
+      (
+        type(:lparen) >>
+          (sequence(lambda_param, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
+          type(:rparen).skip >>
+          type(:arrow).skip >>
+          type(:lbrace).skip >>
+          body >>
+          type(:rbrace)
+      ).map(&AST.lambda)
+    end
+
+    def lambda_param
+      identifier.map(&AST.lambda_param)
     end
 
     def if_then_else
