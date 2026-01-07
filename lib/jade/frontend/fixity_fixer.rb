@@ -93,6 +93,9 @@ module Jade
             else_branch: fix(else_branch),
           )
 
+        in AST::Lambda(body:)
+          node.with(body: fix(body))
+
         in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
           AST::ImportDeclaration | AST::Literal
 

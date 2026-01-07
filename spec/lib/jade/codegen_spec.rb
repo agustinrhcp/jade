@@ -192,5 +192,15 @@ module Jade
         it { is_expected.to include "in __Test__::Nothing then 0; in __Test__::Just(x) then x; end" }
       end
     end
+
+    describe 'lambda' do
+      let(:text) do
+        <<~JADE
+          (a, b) -> { a + b }
+        JADE
+      end
+
+      it { is_expected.to eql "->(a, b) { Jade::Runtime.intr('Basics.(+)').call(a, b) }" }
+    end
   end
 end

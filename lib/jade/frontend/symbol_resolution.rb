@@ -10,6 +10,7 @@ require 'jade/frontend/symbol_resolution/function_declaration'
 require 'jade/frontend/symbol_resolution/if_then_else'
 require 'jade/frontend/symbol_resolution/import_declaration'
 require 'jade/frontend/symbol_resolution/infix_application'
+require 'jade/frontend/symbol_resolution/lambda'
 require 'jade/frontend/symbol_resolution/literal'
 require 'jade/frontend/symbol_resolution/member_access'
 require 'jade/frontend/symbol_resolution/module'
@@ -127,6 +128,9 @@ module Jade
 
         in AST::MemberAccess
           MemberAccess.resolve(node, registry, current_entry)
+
+        in AST::Lambda
+          Lambda.resolve(node, registry, current_entry)
         end
       end
     end

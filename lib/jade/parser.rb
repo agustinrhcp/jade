@@ -195,14 +195,16 @@ module Jade
     def function_declaration
       (
         type(:def) >>
-          identifier >>
-          type(:lparen).skip >>
-          (sequence(param, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
-          type(:rparen).skip >>
-          type(:arrow).skip >>
-          type_expression >>
-          sequence(statement).map(&AST.body) >>
-          type(:end)
+          (
+            identifier >>
+            type(:lparen).skip >>
+            (sequence(param, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
+            type(:rparen).skip >>
+            type(:arrow).skip >>
+            type_expression >>
+            sequence(statement).map(&AST.body) >>
+            type(:end)
+          ).map_error(&:commit)
       ).map(&AST.function_declaration)
     end
 
@@ -243,8 +245,12 @@ module Jade
       identifier.map(&AST.type_param)
     end
 
+    def type_atom
+      type_var | type_application | type_name | grouped(lazy { type_function })
+    end
+
     def type_expression
-      type_var | type_application | type_name
+      type_function | type_atom
     end
 
     def type_name
@@ -253,6 +259,17 @@ module Jade
 
     def type_var
       identifier.map(&AST.type_var)
+    end
+
+    def type_function
+      (sequence(type_atom, separated_by: type(:comma).skip).map { [it] } >>
+        type(:arrow).skip >>
+        type_atom
+      ).map(&AST.type_function)
+    end
+
+    def grouped(parser)
+      type(:lparen).skip >> parser >> type(:rparen).skip
     end
 
     def type_application

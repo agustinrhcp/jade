@@ -35,6 +35,7 @@ module Jade
     define(:TypeName, :type)
     define(:TypeVar, :type)
     define(:TypeApplication, :constructor, :args)
+    define(:TypeFunction, :params, :return_type)
 
     define(:IfThenElse, :condition, :if_branch, :else_branch)
     define(:CaseOf, :expression, :branches)
@@ -159,6 +160,12 @@ module Jade
     def type_application
       ->((constructor, _lparen, args, rparen)) do
         TypeApplication[constructor, args, constructor.range.begin..rparen.range.end]
+      end
+    end
+
+    def type_function
+      ->((params, return_type)) do
+        TypeFunction[params, return_type, params.first.range.begin..return_type.range.end]
       end
     end
 

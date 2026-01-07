@@ -120,6 +120,11 @@ module Jade
 
         in AST::TypeApplication(constructor:)
           entry.lookup_type(constructor.type)
+
+        in AST::TypeFunction(params:, return_type:)
+          params
+            .map { figure_out_type(entry, it) }
+            .then { Symbol.function_type(it, figure_out_type(entry, return_type)) }
         end
       end
     end

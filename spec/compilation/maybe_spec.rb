@@ -7,7 +7,7 @@ module Jade
   describe 'examples' do
     let(:maybe_source) do
       <<~JADE
-        module Maybe exposing (with_default)
+        module Maybe exposing (map, with_default)
 
         type Maybe = Just(a) | Nothing
 
@@ -15,6 +15,16 @@ module Jade
           case maybe
           of Just(something) then something
           of Nothing then default
+          end
+        end
+
+        def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
+          case maybe
+          of Just(something) then
+            Just(fn(something))
+
+          of Nothing then
+            maybe
           end
         end
       JADE
@@ -45,6 +55,10 @@ module Jade
           def hello(maybe: Maybe(String)) -> String
             Maybe.with_default(maybe, "Hello pepe")
           end
+
+          def sum_maybe(maybe: Maybe(Int), n: Int) -> Int
+            Maybe.with_default(Maybe.map(maybe, (m) -> { m + n }), 0)
+          end
         JADE
       end
 
@@ -56,6 +70,9 @@ module Jade
       it 'works' do
         expect(Pepe.hello.call(Maybe::Just["Hello lala"])).to eql "Hello lala"
         expect(Pepe.hello.call(Maybe::Nothing[])).to eql "Hello pepe"
+
+        expect(Pepe.sum_maybe.call(Maybe::Nothing[], 1)).to eql 0
+        expect(Pepe.sum_maybe.call(Maybe::Just[10], 1)).to eql 11
       end
     end
   end

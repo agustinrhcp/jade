@@ -130,6 +130,34 @@ module Jade
       end
     end
 
+    context 'function declaration with lambda argument' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
+            case maybe
+            of Just(something) then fn(somethig)
+            of Nothing then maybe
+            end
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+      describe 'its second param type' do
+        subject { super().params.last => AST::FunctionDeclarationParam(type:); type }
+
+        it { is_expected.to be_a(AST::TypeFunction) }
+
+        describe 'the type function' do
+          its(:params) { is_expected.to have(1).items.and all(be_a(AST::TypeVar)) }
+          its(:return_type) { is_expected.to be_a(AST::TypeVar).and have_attributes(type: 'b') }
+        end
+      end
+    end
+
     context 'operators' do
       include_context "single expression body"
 

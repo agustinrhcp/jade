@@ -17,6 +17,10 @@ module Jade
       Variant[nil, name, args, union]
     end
 
+    def self.lambda(arity)
+      Lambda[arity]
+    end
+
     def self.type_ref(qualified_name)
       TypeRef[qualified_name]
     end
@@ -39,6 +43,10 @@ module Jade
 
     def self.function(name, params, return_type)
       Function[nil, name, params, return_type]
+    end
+
+    def self.function_type(params, return_type)
+      FunctionType[params, return_type]
     end
 
     def self.stdlib_function(name, params, return_type, codegen)
@@ -66,12 +74,21 @@ module Jade
     end
 
     Function = Data.define(:module_name, :name, :params, :return_type) do
+      # TODO: Reuse FunctionTypeSmyobl
       include Symbol
 
       def to_ref
         [module_name, name].join('.')
           .then { ValueRef[it] }
       end
+    end
+
+    FunctionType = Data.define(:params, :return_type) do
+      include Symbol
+    end
+
+    Lambda = Data.define(:arity) do
+      include Symbol
     end
 
     Variant = Data.define(:module_name, :name, :args, :union) do

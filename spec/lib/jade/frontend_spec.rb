@@ -462,5 +462,36 @@ module Jade
 
       it { is_expected.to be_a(AST::CaseOf) }
     end
+
+    describe 'lambda' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          (a, b) -> { a + b }
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Lambda) }
+    end
+
+    describe 'function declaration with lambda' do
+      let(:text) do
+        <<~JADE
+          type Maybe = Just(a) | Nothing
+
+          def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
+            case maybe
+            of Just(something) then fn(something)
+            of Nothing then maybe
+            end
+          end
+        JADE
+      end
+
+      subject { super().expressions.last }
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+    end
   end
 end
