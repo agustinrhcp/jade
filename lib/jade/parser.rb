@@ -51,7 +51,11 @@ module Jade
     end
 
     def expression
-      case_of | if_then_else | lambda | infix_expression
+      case_of | if_then_else | lambda | infix_expression | grouping
+    end
+
+    def grouping
+      (type(:lparen) >> lazy { expression } >> type(:rparen)).map(&AST.grouping)
     end
 
     def infix_expression

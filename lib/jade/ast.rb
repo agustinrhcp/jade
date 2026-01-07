@@ -25,6 +25,7 @@ module Jade
     define(:Lambda, :params, :body)
     define(:LambdaParam, :name)
 
+    define(:Grouping, :expression)
     define(:InfixApplication, :left, :operator, :right)
     define(:InfixOperator, :value)
 
@@ -295,6 +296,15 @@ module Jade
           constructor.value,
           patterns,
           constructor.range.begin..(patterns.first&.range&.end || constructor.range.end)
+        ]
+      end
+    end
+
+    def grouping
+      ->((lparen_token, expression, rparen_token)) do
+        Grouping[
+          expression,
+          lparen_token.range.begin..rparen_token.range.end
         ]
       end
     end

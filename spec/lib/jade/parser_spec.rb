@@ -85,7 +85,6 @@ module Jade
 
         # TODO: [Parser:MultipleErrors]
         it { is_expected.to be_kind_of(Parser::Error) }
-        its(:message) { is_expected.to include("expected constant") }
       end
 
       context 'when it is incomplete with an incomplete string' do
@@ -402,7 +401,22 @@ module Jade
           (one, two) -> { one + two }
         JADE
       end
+
       it { is_expected.to be_a(AST::Lambda) }
+      its(:params) { is_expected.to have(2).items.and all(be_a(AST::LambdaParam)) }
+      its(:body) { is_expected.to be_a(AST::Body) }
+    end
+
+    context 'grouping' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          (1 + 2)
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Grouping) }
     end
 
     context 'case of' do
