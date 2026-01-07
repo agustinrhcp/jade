@@ -96,6 +96,9 @@ module Jade
         in AST::Lambda(body:)
           node.with(body: fix(body))
 
+        in AST::Grouping(expression:)
+          node.with(expression: fix(expression))
+
         in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
           AST::ImportDeclaration | AST::Literal
 

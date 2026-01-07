@@ -7,6 +7,7 @@ require 'jade/frontend/symbol_resolution/case_of_branch'
 require 'jade/frontend/symbol_resolution/constructor_reference'
 require 'jade/frontend/symbol_resolution/function_call'
 require 'jade/frontend/symbol_resolution/function_declaration'
+require 'jade/frontend/symbol_resolution/grouping'
 require 'jade/frontend/symbol_resolution/if_then_else'
 require 'jade/frontend/symbol_resolution/import_declaration'
 require 'jade/frontend/symbol_resolution/infix_application'
@@ -131,6 +132,9 @@ module Jade
 
         in AST::Lambda
           Lambda.resolve(node, registry, current_entry)
+
+        in AST::Grouping
+          Grouping.resolve(node, registry, current_entry)
         end
       end
     end

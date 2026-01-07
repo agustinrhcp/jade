@@ -146,7 +146,10 @@ module Jade
                 .add_errors(it.errors)
             end
             .with(scope:)
-          
+
+        in AST::Grouping(expression:)
+          analyze_r(expression, registry, scope)
+      
         end
       end
 

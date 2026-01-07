@@ -51,7 +51,7 @@ module Jade
     end
 
     def expression
-      case_of | if_then_else | lambda | infix_expression | grouping
+      case_of | if_then_else | lambda | infix_expression
     end
 
     def grouping
@@ -151,7 +151,7 @@ module Jade
     end
 
     def atom
-      variable_reference | literal | constructor_reference
+      variable_reference | literal | constructor_reference | grouping
     end
 
     def postfix

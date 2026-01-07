@@ -445,6 +445,22 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::Grouping) }
+
+      context 'in the middle of an expression' do
+        let(:text) do
+          <<~JADE
+            1 * (1 + 2) * 3
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::InfixApplication) }
+
+        describe 'the expression' do
+          it 'has a grouping' do
+            expect(subject.left.right).to be_a(AST::Grouping)
+          end
+        end
+      end
     end
 
     context 'case of' do

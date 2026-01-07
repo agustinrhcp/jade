@@ -135,6 +135,46 @@ module Jade
           expect(AST::PrettyPrinter.print(subject)).to eql "((2 * 2) + (3 * 3))"
         end
       end
+
+      context 'another case' do
+        let(:text) do
+          <<~JADE
+            1 + 2 * 3
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::InfixApplication) }
+
+        it 'precedence is respected' do
+          expect(AST::PrettyPrinter.print(subject)).to eql "(1 + (2 * 3))"
+        end
+      end
+
+      context 'inside a function declaration' do
+        let(:text) do
+          <<~JADE
+            def pepe() -> Int
+              2 * 2 + 3 * 3
+            end
+          JADE
+        end
+
+        it 'precedence is respected' do
+          expect(AST::PrettyPrinter.print(subject.body.expressions.first)).to eql "((2 * 2) + (3 * 3))"
+        end
+      end
+    end
+
+    context 'grouping' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          (2 + 3)
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Grouping) }
     end
 
     context 'a function declaration' do

@@ -202,5 +202,30 @@ module Jade
 
       it { is_expected.to eql "->(a, b) { Jade::Runtime.intr('Basics.(+)').call(a, b) }" }
     end
+
+    describe 'infix and groupings' do
+      subject { super().gsub('Jade::Runtime.intr', '') }
+
+      let(:text) do
+        <<~JADE
+          1 * 2 + 3 * 4
+        JADE
+      end
+
+      subject { super().gsub('Jade::Runtime.intr', '') }
+
+      it { is_expected.to eql "('Basics.(+)').call(('Basics.(*)').call(1, 2), ('Basics.(*)').call(3, 4))" }
+
+      context 'with grouping' do
+        let(:text) do
+          <<~JADE
+            1 * (2 + 3) * 4
+          JADE
+        end
+
+
+        it { is_expected.to eql "('Basics.(*)').call(('Basics.(*)').call(1, (('Basics.(+)').call(2, 3))), 4)" }
+      end
+    end
   end
 end

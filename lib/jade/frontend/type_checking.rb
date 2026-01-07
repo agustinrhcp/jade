@@ -100,6 +100,9 @@ module Jade
         in AST::Lambda
           Inference::Lambda.infer(node, registry, env, var_gen)
 
+        in AST::Grouping
+          Inference::Grouping.infer(node, registry, env, var_gen)
+
         in AST::MemberAccess
           node => AST::MemberAccess(symbol:)
 
