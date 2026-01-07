@@ -53,7 +53,7 @@ module Jade
         case node
         in AST::Module(body:)
           fix(body)
-            .then { node.with(body:) }
+            .then { node.with(body: it) }
 
         in AST::InfixApplication
           flatten(node)
