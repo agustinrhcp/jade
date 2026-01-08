@@ -17,13 +17,13 @@ module Jade
         def symbol_from_literal_value(value)
           case value
           in Integer
-            Symbol::TypeRef['Basics.Int']
+            Symbol::TypeRef['Basics', 'Int']
 
           in TrueClass | FalseClass
-            Symbol::TypeRef['Basics.Bool']
+            Symbol::TypeRef['Basics', 'Bool']
 
           in String
-            Symbol::TypeRef['String.String']
+            Symbol::TypeRef['String', 'String']
           end
         end
       end

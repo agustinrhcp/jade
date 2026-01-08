@@ -56,6 +56,7 @@ module Jade
       '='  => :assign,
 
       '|>' => :pipe_forward,
+      '<|' => :pipe_backward,
 
       '_' => :wildcard, # also used as placeholder
     }.freeze

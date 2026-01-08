@@ -16,6 +16,7 @@ module Jade
         module Math exposing (example1, example2)
 
         def example1() -> Int
+          pepe = Just(1)
           1 + 2 * 3
         end
 
@@ -32,52 +33,12 @@ module Jade
   end
 
   describe 'examples' do
-    let(:maybe_source) do
-      <<~JADE
-        module Maybe exposing (map, with_default)
-
-        type Maybe = Just(a) | Nothing
-
-        def with_default(maybe: Maybe(a), default: a) -> a
-          case maybe
-          of Just(something) then something
-          of Nothing then default
-          end
-        end
-
-        def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
-          case maybe
-          of Just(something) then
-            Just(fn(something))
-
-          of Nothing then
-            maybe
-          end
-        end
-      JADE
-    end
-
-    describe 'requiring the generated file' do
-      include_context 'with test compiler'
-
-      before do
-        test_compiler.require('maybe', maybe_source)
-      end
-
-      it 'works' do
-        expect(Maybe.with_default.call(Maybe::Just[2], 0)).to be 2
-        expect(Maybe.with_default.call(Maybe::Nothing[], 0)).to be 0
-      end
-    end
-
     context 'test import' do
       include_context 'with test compiler'
 
       let(:pepe_source) do
         <<~JADE
-          module Pepe exposing (hello)
-
-          import Maybe
+          module Pepe exposing (hello, sum_maybe, and_then_test)
 
           def hello(maybe: Maybe(String)) -> String
             Maybe.with_default(maybe, "Hello pepe")
@@ -86,11 +47,19 @@ module Jade
           def sum_maybe(maybe: Maybe(Int), n: Int) -> Int
             Maybe.with_default(Maybe.map(maybe, (m) -> { m + n }), 0)
           end
+
+          def and_then_test(n: Maybe(Int)) -> Maybe(String)
+            Maybe.and_then(n, (int) -> {
+              case int
+              of 1 then Just("ONE")
+              of _ then Nothing()
+              end
+            })
+          end
         JADE
       end
 
       before do
-        test_compiler.require('maybe', maybe_source)
         test_compiler.require('pepe', pepe_source)
       end
 
@@ -100,6 +69,10 @@ module Jade
 
         expect(Pepe.sum_maybe.call(Maybe::Nothing[], 1)).to eql 0
         expect(Pepe.sum_maybe.call(Maybe::Just[10], 1)).to eql 11
+
+        expect(Pepe.and_then_test.call(Maybe::Nothing[])).to eql Maybe::Nothing[]
+        expect(Pepe.and_then_test.call(Maybe::Just[2])).to eql Maybe::Nothing[]
+        expect(Pepe.and_then_test.call(Maybe::Just[1])).to eql Maybe::Just['ONE']
       end
     end
   end

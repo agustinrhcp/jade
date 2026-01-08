@@ -13,7 +13,7 @@ module Jade
 
       compiled_path = File.expand_path(
         "#{build_root}/#{path}.rb",
-        config.project_root
+        config.project_root,
       )
 
       load compiled_path

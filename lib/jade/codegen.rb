@@ -11,7 +11,7 @@ module Jade
     def generate(node, registry)
       case node
       in AST::Module(name:, body:)
-        "require 'jade/runtime'; module #{name}; extend self; #{generate(body, registry)}; end"
+        "require 'jade/runtime'; #{Stdlib.requires(name)}module #{name}; extend self; #{generate(body, registry)}; end"
 
       in AST::ImportDeclaration(module_name:)
         registry.get(module_name).path
@@ -53,8 +53,8 @@ module Jade
 
         "#{generate(callee, registry)}.call(#{args_code})"
 
-      in AST::ConstructorReference(name:)
-        "->(*args) { #{name}[*args] }"
+      in AST::ConstructorReference(name:, symbol:)
+        "->(*args) { #{symbol.qualified_name.gsub('.', '::')}[*args] }"
 
       in AST::TypeDeclaration(variants:)
         variants.map { generate(it, registry) }.join('; ')

@@ -2,7 +2,7 @@ module Jade
   module Frontend
     module SymbolResolution
       module Error
-        class ConstructorNotFound < ::Error
+        class ConstructorNotFound < Jade::Error
           def initialize(entry, span, name:)
             @name = name
             super(entry:, span:)

@@ -10,6 +10,8 @@ require 'jade/module_loader/dependency_resolver'
 require 'jade/module_loader/dependency_graph'
 require 'jade/module_loader/topological_sort'
 
+require 'jade/stdlib'
+
 module Jade
   module ModuleLoader
     extend self
@@ -17,6 +19,7 @@ module Jade
     def load(source_root, path)
       Source.load(source_root, path)
         .then { load_(it, new_registry(source_root), entry: true) }
+        .then { Stdlib.apply(it) }
         .then { compile(it) }
     end
 
@@ -28,7 +31,7 @@ module Jade
 
     def emit(registry, path: '.jade/build')
       registry.modules.each do |(_, entry)|
-        next if is_intrinsic?(entry)
+        next if Stdlib.is_intrinsic?(entry)
 
         full_path = File.join(path, entry.path)
         FileUtils.mkdir_p(File.dirname(full_path))
@@ -58,7 +61,7 @@ module Jade
 
     def load_(source, registry, entry: false)
       source
-        .then { Lexer .tokenize(it) }
+        .then { Lexer.tokenize(it) }
         .then { Parser.parse(it) } => Ok(ast)
 
       Registry
@@ -66,6 +69,7 @@ module Jade
         .with(ast:)
         .with(source:)
         .with(entry:)
+        .then { block_given? ? yield(it) : it }
         .then do |entry|
           registry
             .add_module(entry)
@@ -73,16 +77,18 @@ module Jade
         end
     end
 
+    def load_with_forward_declaration_(entry, registry)
+      load_(entry, registry) do
+        Frontend::ForwardDeclaration.declare_entry(it, registry) => Ok(declared)
+        declared
+      end
+    end
+
     def new_registry(source_root)
       Registry
         .new
         .with(source_root:)
-        .add_module(Stdlib::Basics.entry)
-        .add_module(Stdlib::String.entry)
-    end
-
-    def is_intrinsic?(entry)
-      ['Basics', 'String'].include? entry.name
+        .then { Stdlib.load(it) }
     end
   end
 end

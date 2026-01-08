@@ -56,7 +56,7 @@ module Jade
           end
 
           def check(node, registry, env, var_gen)
-            TypeChecking.check(node, registry, env, var_gen)
+            TypeChecking.check_node(node, registry, env, var_gen)
           end
         end
       end

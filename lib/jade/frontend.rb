@@ -8,6 +8,7 @@ require 'jade/frontend/semantic_analyzer'
 require 'jade/frontend/symbol_resolution'
 require 'jade/frontend/type_checking'
 require 'jade/frontend/fixity_fixer'
+require 'jade/frontend/desugaring'
 
 module Jade
   module Frontend
@@ -16,19 +17,19 @@ module Jade
     def run_entry(initial, registry, basics: true)
       auto_import_stdlib(initial)
         .then { ForwardDeclaration.declare_entry(it, registry) }
-        .then { FixityFixer.fix_entry(it) }
-        .then { SymbolResolution.resolve_entry(it, registry.add_module(it)) }
-        .and_then { SemanticAnalyzer.analyze_entry(it, registry.add_module(it)) }
-        .and_then { TypeChecking.check_entry(it, registry.add_module(it)) }
+        .map { FixityFixer.fix_entry(it) }
+        .map { Desugaring.desugar_entry(it) }
+        .and_then { SymbolResolution.resolve_entry(it, registry.add_module(it)) }
+        .and_then { SemanticAnalyzer.analyze(it, registry.add_module(it)) }
+        .and_then { TypeChecking.check(it, registry.add_module(it)) }
     end
 
     def run(ast, basics: true)
       run_up_to_semantic_analysis(ast, basics:)
-        .and_then do |(enhanced_ast, registry)|
-           TypeChecking
-             .check(enhanced_ast, registry)
-             .to_result
-             .map { [enhanced_ast, registry] }
+        .and_then do |(entry, registry)|
+          TypeChecking
+            .check(entry, registry)
+            .map { [entry.ast, registry] }
        end
     end
 
@@ -71,10 +72,15 @@ module Jade
       ForwardDeclaration
         .declare(ast, registry, current_entry)
         # TODO: [Frontend:HandleErrors]
-        .then { |entry| FixityFixer.fix(ast).then { [it, entry] } }
-        # TODO: [Frontend:HandleErrors]
-        .then { |enh_ast, entry| SymbolResolution.resolve(enh_ast, registry.add_module(entry), entry) }
-        .and_then { SemanticAnalyzer.analyze(it, registry) }
+        .map { |entry| FixityFixer.fix(ast).then { [it, entry] } }
+        .map { |enh_ast, entry| Desugaring.desugar(enh_ast).then { [it, entry] } }
+        .and_then do |enh_ast, entry|
+          SymbolResolution
+            .resolve(enh_ast, registry.add_module(entry), entry)
+            .map { entry.with(ast: it) }
+        end
+        .and_then { |entry| SemanticAnalyzer.analyze(entry, registry.add_module(entry)) }
+        .map { [it, registry.add_module(it)] }
     end
 
     def entry_with_basics(name, basics:)
@@ -85,6 +91,7 @@ module Jade
     end
 
     def auto_import_stdlib(entry)
+      # TODO: Improve this when working on imports.
       [Stdlib::Basics.exposed.values, Stdlib::String.exposed.values]
         .flatten
         .reduce(entry) do |acc, sym|

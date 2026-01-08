@@ -38,7 +38,7 @@ module Jade
     describe 'the dependency graph' do
       subject { super().dependency_graph }
 
-      its(:size) { is_expected.to eql 3 }
+      its(:size) { is_expected.to eql 4 }
 
       its(:nodes) { is_expected.to include('Test.Path' => ['Test.Basics', 'Test.String']) }
       its(:nodes) { is_expected.to include('Test.String' => ['Test.Basics']) }
@@ -48,7 +48,7 @@ module Jade
     describe 'its modules in topo order' do
       subject { super().modules_in_topo_order.map(&:name) }
 
-      it { is_expected.to eql %w[Test.Basics Test.String Test.Path] }
+      it { is_expected.to eql %w[Maybe Test.Basics Test.String Test.Path] }
     end
 
     describe 'its modules' do
@@ -62,7 +62,8 @@ module Jade
       subject { super().then { ModuleLoader.emit(it) } }
 
       it 'writes ruby files' do
-        expect(FileUtils).to receive(:mkdir_p).exactly(3).times
+        expect(FileUtils).to receive(:mkdir_p).exactly(4).times
+        expect(File).to receive(:write).with('.jade/build/maybe.rb', anything)
         expect(File).to receive(:write).with('.jade/build/test/path.rb', anything)
         expect(File).to receive(:write).with('.jade/build/test/basics.rb', anything)
         expect(File).to receive(:write).with('.jade/build/test/string.rb', anything)

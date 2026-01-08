@@ -6,7 +6,7 @@ module Jade
     module Intrinsics
       def union(name)
         Symbol
-          .union(name.to_s)
+          .union(name.to_s, [], [])
           .with(module_name:)
           .then { store(it) }
       end
@@ -58,10 +58,15 @@ module Jade
 
       def string_to_ref(str)
         case str
-        in 'Int' then Symbol::TypeRef['Basics.Int']
-        in 'Float' then Symbol::TypeRef['Basics.Float']
-        in 'Bool' then Symbol::TypeRef['Basics.Bool']
-        in 'String' then Symbol::TypeRef['String.String']
+        in 'Int' then Symbol::TypeRef['Basics', 'Int']
+        in 'Float' then Symbol::TypeRef['Basics', 'Float']
+        in 'Bool' then Symbol::TypeRef['Basics', 'Bool']
+        in 'String' then Symbol::TypeRef['String', 'String']
+
+      # TODO: don't hardcode thaaat much
+        in 'a' then Symbol.var('a')
+        in 'b' then Symbol.var('b')
+        in 'a -> b' then Symbol.function_type([Symbol.var('a')], Symbol.var('b'))
         end
       end
 

@@ -4,6 +4,7 @@ require 'jade/frontend/type_checking/generalization'
 require 'jade/frontend/type_checking/instantiation'
 require 'jade/frontend/type_checking/inference'
 
+require 'jade/frontend/type_checking/inference/module'
 module Jade
   module Frontend
     module TypeChecking
@@ -45,24 +46,33 @@ module Jade
         end
       end
 
-      def check_entry(entry, registry)
-        check(entry.ast, registry)
+      def initiate_env(entry, registry)
+        entry
+          .values
+          .reduce(Env.new) do |env, (unq, sym)|
+            env.bind(unq, generalize(type_from_symbol(sym, registry)))
+          end
+      end
+
+      def check(entry, registry)
+        initiate_env(entry, registry)
+          .then { check_node(entry.ast, registry, it, VarGen.new) }
           .to_result
           .map { entry }
       end
 
       def check_repl(node, registry, env = Env.new, var_gen = VarGen.new)
-        check(node, registry, env, var_gen)
+        check_node(node, registry, env, var_gen)
           .to_result
       end
 
-      def check(node, registry, env = Env.new, var_gen = VarGen.new)
+      def check_node(node, registry, env, var_gen)
         case node
-        in AST::Module(body:)
-          check(body, registry, env, var_gen)
+        in AST::Module
+          Inference::Module.infer(node, registry, env, var_gen)
 
         in AST::ImportDeclaration
-          Result[Type.unit, Substitution.new, env, []]
+          Inference::ImportDeclaration.infer(node, registry, env, var_gen)
 
         in AST::Literal
           infer_literal(node, registry, env, var_gen)
@@ -115,7 +125,7 @@ module Jade
 
       def infer_variable_reference(node, registry, env, var_gen)
         node => AST::VariableReference(name:)
-
+        
         env
           .bindings[name]
           .then { instantiate(it, var_gen) }
@@ -132,7 +142,7 @@ module Jade
       def infer_variable_binding(node, registry, env, var_gen)
         node => AST::VariableBinding(name:, expression:)
 
-        check(expression, registry, env, var_gen)
+        check_node(expression, registry, env, var_gen)
           .then { it.with(env: it.env.bind(name, generalize(it.type))) }
       end
 
@@ -141,7 +151,7 @@ module Jade
 
         expressions
           .reduce(Result[Type.unit, Substitution.new, env, []]) do |acc, expr|
-            check(expr, registry, acc.env, var_gen)
+            check_node(expr, registry, acc.env, var_gen)
               .add_errors(acc.errors)
               .compose_substitution(acc.substitution)
           end
