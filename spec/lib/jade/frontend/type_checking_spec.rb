@@ -19,7 +19,8 @@ module Jade
           .tokenize(source)
           .then { Parser.parse(it) }
           .and_then { Frontend.run_up_to_semantic_analysis(it) }
-          .and_then { TypeChecking.check(*it) }
+          # TODO: Make this prettier
+          .and_then { |entry, registry| TypeChecking.check_node(entry.ast, registry, TypeChecking.initiate_env(entry, registry), TypeChecking::VarGen.new) }
       end
 
       subject { type_check }

@@ -2,7 +2,7 @@ module Jade
   module Frontend
     module SymbolResolution
       module Error
-        class VariableNotFound < ::Error
+        class VariableNotFound < Jade::Error
           attr_reader :causes
 
           def initialize(entry, span, name:, causes: [])

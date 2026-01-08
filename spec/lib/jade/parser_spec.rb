@@ -156,6 +156,32 @@ module Jade
           its(:return_type) { is_expected.to be_a(AST::TypeVar).and have_attributes(type: 'b') }
         end
       end
+
+      context 'and type application' do
+        let(:text) do
+          <<~JADE
+            def and_then(maybe: Maybe(a), fn: a -> Maybe(b)) -> Maybe(b)
+              case maybe
+              of Just(something) then fn(something)
+              of Nothing then Nothing
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+        describe 'its second param type' do
+          subject { super().params.last => AST::FunctionDeclarationParam(type:); type }
+
+          it { is_expected.to be_a(AST::TypeFunction) }
+
+          describe 'the type function' do
+            its(:params) { is_expected.to have(1).items.and all(be_a(AST::TypeVar)) }
+            its(:return_type) { is_expected.to be_a(AST::TypeApplication) }
+          end
+        end
+      end
     end
 
     context 'operators' do
@@ -183,6 +209,16 @@ module Jade
         its(:left) { is_expected.to be_a(AST::InfixApplication) }
         its(:operator) { is_expected.to be_a(AST::InfixOperator).and have_attributes(value: '/') }
         its(:right) { is_expected.to be_a(AST::Literal).and have_attributes(value: 5) }
+      end
+
+      context 'pipe forward |>' do
+        let(:text) do
+          <<~JADE
+            12 |> identity()
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::InfixApplication) }
       end
     end
 
@@ -290,8 +326,9 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::ImportDeclaration).and have_attributes(module_name: 'Maybe') }
+      its(:exposing) { is_expected.to be_a AST::ExposeNone }
 
-      context 'with exposing' do
+      context 'with exposing list' do
         let(:text) do
           <<~JADE
             import Maybe exposing (Maybe)
@@ -303,9 +340,24 @@ module Jade
         describe 'its exposing' do
           subject { super().exposing }
 
-          it { is_expected.to have(1).item }
-          its(:first) { is_expected.to be_a(AST::TypeName).and have_attributes(type: 'Maybe') }
+          it { is_expected.to be_a(AST::ExposeList)}
+          its(:items) { is_expected.to have(1).item }
+
+          it 'includes Maybe' do
+            expect(subject.items.first).to be_a(AST::TypeName).and have_attributes(type: 'Maybe')
+          end
         end
+      end
+
+      context 'with exposing all' do
+        let(:text) do
+          <<~JADE
+            import Maybe exposing (..)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::ImportDeclaration).and have_attributes(module_name: 'Maybe') }
+        its(:exposing) { is_expected.to be_a(AST::ExposeAll) }
       end
     end
 
@@ -375,17 +427,32 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::Module) }
-      its(:exposing) { is_expected.to be_a(Array) }
+      its(:exposing) { is_expected.to be_a(AST::ExposeList) }
 
       describe 'its exposing' do
         subject { super().exposing }
 
-        its(:size) { is_expected.to eql 1 }
+        its(:items) { is_expected.to have(1).item }
 
         it 'includes hello' do
-          expect(subject.first).to be_a(AST::VariableReference)
-          expect(subject.first.name).to eql 'hello'
+          expect(subject.items.first).to be_a(AST::VariableReference)
+          expect(subject.items.first.name).to eql 'hello'
         end
+      end
+
+      context 'exposing everything' do
+        let(:text) do
+          <<~JADE
+            module Test exposing (..)
+
+            def hello(str: String) -> Bool
+              String.is_empty(str)
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::Module) }
+        its(:exposing) { is_expected.to be_a(AST::ExposeAll) }
       end
     end
 

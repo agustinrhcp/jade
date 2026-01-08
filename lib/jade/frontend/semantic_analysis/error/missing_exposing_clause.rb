@@ -2,14 +2,13 @@ module Jade
   module Frontend
     module SemanticAnalysis
       module Error
-        class DuplicateFunctionDeclaration < Jade::Error
-          def initialize(entry, span, name)
-            @name = name
+        class MissingExposingClause < Jade::Error
+          def initialize(entry, span)
             super(entry:, span:)
           end
 
           def message
-            "Duplicate function definition `#{@name}`"
+            "This module is missing an exposing clause"
           end
         end
       end

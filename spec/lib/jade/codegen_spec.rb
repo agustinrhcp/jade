@@ -109,7 +109,7 @@ module Jade
         subject { super().split('; ') }
         its([0]) { is_expected.to eql "Just = Data.define(:_1)" }
         its([1]) { is_expected.to eql "Nothing = Data.define" }
-        its([2]) { is_expected.to eql "->(*args) { Just[*args] }.call(12)" }
+        its([2]) { is_expected.to eql "->(*args) { __Test__::Just[*args] }.call(12)" }
       end
     end
 
@@ -136,7 +136,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "require 'jade/runtime'; module Test; extend self; def hello; ->(str) { Jade::Runtime.intr('String.is_empty').call(str) }; end; end" }
+      it { is_expected.to eql "require 'jade/runtime'; require_relative 'maybe'; module Test; extend self; def hello; ->(str) { Jade::Runtime.intr('String.is_empty').call(str) }; end; end" }
     end
 
     context 'if then else' do

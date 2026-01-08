@@ -21,6 +21,9 @@ module Jade
     define(:VariantDeclaration, :name, :args)
     define(:TypeParam, :name)
     define(:ImportDeclaration, :module_name, :exposing)
+    define(:ExposeAll)
+    define(:ExposeNone)
+    define(:ExposeList, :items)
 
     define(:Lambda, :params, :body)
     define(:LambdaParam, :name)
@@ -329,6 +332,24 @@ module Jade
     def lambda_param
       ->(identifier) do
         LambdaParam[identifier.value, identifier.range]
+      end
+    end
+
+    def expose_none
+      ->(_) do
+        ExposeNone[nil]
+      end
+    end
+
+    def expose_all
+      ->(dot_dot) do
+        ExposeAll[dot_dot.range]
+      end
+    end
+
+    def expose_list
+      ->((items)) do
+        ExposeList[items, items.first.range.begin..items.last.range.end]
       end
     end
   end

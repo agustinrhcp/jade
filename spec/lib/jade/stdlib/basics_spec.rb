@@ -46,7 +46,7 @@ module Jade
       describe 'it exposed functions and types' do
         subject { described_class.exposed }
 
-        it { is_expected.to include('Int' => Symbol::TypeRef['Basics.Int']) }
+        it { is_expected.to include('Int' => Symbol.type_ref('Basics', 'Int')) }
       end
     end
   end

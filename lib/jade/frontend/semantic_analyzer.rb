@@ -5,15 +5,11 @@ module Jade
     module SemanticAnalyzer
       extend self
 
-      def analyze_entry(entry, registry)
-        analyze(entry.ast, registry)
-          .map { entry }
-      end
-
-      def analyze(ast, registry)
-        analyze_r(ast, registry, Scope.new)
+      def analyze(entry, registry)
+        initialize_scope(entry)
+          .then { analyze_r(entry.ast, registry, it) }
           .to_result
-          .map { [ast, registry] }
+          .map { entry }
       end
 
       def analyze_repl(ast, registry, scope = Scope.new)
@@ -23,11 +19,27 @@ module Jade
 
       private
 
+      def initialize_scope(entry)
+        entry
+          .values
+          .reduce(Scope.new) { |acc, (unq_name, sym)| acc.bind(unq_name, sym) }
+      end
+
       def analyze_r(ast, registry, scope)
         case ast
-        in AST::Module(body:)
-          # TODO: [SemanticAnalysis::Exposed]
-          analyze_r(body, registry, scope)
+        in AST::Module(body:, exposing:)
+          case exposing 
+          in AST::ExposeNone
+            Result[
+              scope,
+              # TODO: Add entry to semantic analysis
+              # And add the span to the end of the module name
+              [SemanticAnalysis::Error::MissingExposingClause.new(nil, 0..0)]
+            ]
+          else
+            Result[scope, []]
+          end
+            .then { analyze_r(body, registry, it.scope).add_errors(it.errors) }
 
         in AST::ImportDeclaration
           Result[scope, []]
@@ -51,16 +63,17 @@ module Jade
           analyze_many(expressions, registry, scope)
 
         in AST::FunctionDeclaration(name:, params:, body:, symbol:)
-          if scope.lookup(name)
-            return Result[
-              scope,
-              [
-                SemanticAnalysis::Error::DuplicateFunctionDeclaration
-                  # TODO: current entry should always be available
-                  .new(nil, ast.range, name:),
-              ],
-            ]
-          end
+          # TODO: Needs to be done in forward resolution
+          # if scope.lookup(name)
+          #   return Result[
+          #     scope,
+          #     [
+          #       SemanticAnalysis::Error::DuplicateFunctionDeclaration
+          #         # TODO: current entry should always be available
+          #         .new(nil, ast.range, name:),
+          #     ],
+          #   ]
+          # end
 
           params
             .reduce(Result[scope, []]) do |acc, param|
@@ -71,7 +84,7 @@ module Jade
               analyze_r(body, registry, it.scope)
                 .add_errors(it.errors)
             end
-            .with(scope: scope.bind(name, symbol))
+              .with(scope:)
 
         in AST::InfixApplication(left:, right:)
           analyze_r(left, registry, scope) => { errors: l_errors }
@@ -86,11 +99,12 @@ module Jade
             .add_errors(args_errors)
 
         in AST::TypeDeclaration(name:, symbol:, variants:)
-          variants
-            .reduce(bind(scope, name, symbol)) do |acc, variant|
-              bind(acc.scope, variant.name, symbol)
-                .add_errors(acc.errors)
-            end
+          Result[scope, []]
+          # variants
+          #   .reduce(bind(scope, name, symbol)) do |acc, variant|
+          #     bind(acc.scope, variant.name, symbol)
+          #       .add_errors(acc.errors)
+          #   end
 
         in AST::IfThenElse(condition:, if_branch:, else_branch:)
           analyze_r(condition, registry, scope) => { errors: condition_errors }
@@ -124,8 +138,8 @@ module Jade
         in AST::Pattern::Binding(name:)
           bind(scope, name, Symbol.var(name))
 
-        in AST::Pattern::Constructor(constructor:, patterns:, symbol:)
-          symbol = registry.lookup(symbol)
+        in AST::Pattern::Constructor(constructor:, patterns:, symbol: sym_ref)
+          symbol = registry.lookup(sym_ref)
 
           if symbol.args.size != patterns.size
             return PaterrnConstructorArityMismatchError

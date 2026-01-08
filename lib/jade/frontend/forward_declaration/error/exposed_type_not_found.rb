@@ -1,15 +1,15 @@
 module Jade
   module Frontend
-    module SymbolResolution
+    module ForwardDeclaration
       module Error
-        class ModuleNotFound < Jade::Error
+        class ExposedTypeNotFound < Jade::Error
           def initialize(entry, span, name:)
             @name = name
             super(entry:, span:)
           end
 
           def message
-            "I cannot find a `#{@name}` module"
+            "Your are trying to expose a type named `#{@name}` but I cannot find its definition"
           end
         end
       end

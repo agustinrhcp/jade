@@ -1,8 +1,10 @@
 require 'jade/frontend/type_checking/inference/helpers'
 
+require 'jade/frontend/type_checking/inference/module'
 require 'jade/frontend/type_checking/inference/case_of'
 require 'jade/frontend/type_checking/inference/constructor_reference'
 require 'jade/frontend/type_checking/inference/function_call'
+require 'jade/frontend/type_checking/inference/import_declaration'
 require 'jade/frontend/type_checking/inference/function_declaration'
 require 'jade/frontend/type_checking/inference/grouping'
 require 'jade/frontend/type_checking/inference/if_then_else'

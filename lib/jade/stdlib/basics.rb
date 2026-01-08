@@ -25,6 +25,10 @@ module Jade
         a / b
       end
 
+      function('identity', { a: 'a' }, 'a') do |a|
+        a
+      end
+
       exposing :*
     end
   end

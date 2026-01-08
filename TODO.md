@@ -62,3 +62,12 @@ type and variant constructor can both be added.
 
 New pass to track usages of symbols. This is helpful for duplicate error
 (now being raised by semantic analysis), unused imports and dead code detection.
+
+
+
+### No args constructor into constants
+
+Having to do Nothing() is alien, and probably a trap. So having
+Just be a function but Nothing be a constant would make tons of sense.
+
+# return type_from_symbol(symbol.union, registry) if symbol.args.empty?

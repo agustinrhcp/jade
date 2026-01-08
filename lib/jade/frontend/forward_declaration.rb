@@ -1,131 +1,60 @@
+require 'jade/frontend/forward_declaration/helper'
+require 'jade/frontend/forward_declaration/error'
+
+require 'jade/frontend/forward_declaration/body'
+require 'jade/frontend/forward_declaration/function_declaration'
+require 'jade/frontend/forward_declaration/import_declaration'
+require 'jade/frontend/forward_declaration/module'
+require 'jade/frontend/forward_declaration/type_declaration'
+
 module Jade
   module Frontend
     module ForwardDeclaration
       extend self
 
-      def declare(ast, registry, entry)
-        shallow(ast, registry, entry)
-          .then { deep(ast, it) }
+      Result = Data.define(:entry, :errors) do
+        def add_errors(new_errors)
+          with(errors: errors + new_errors)
+        end
+
+        def to_result
+          errors.empty? ? Ok[entry] : Err[errors]
+        end
+      end
+
+      def declare(node, registry, entry)
+        shallow_declare_node(node, registry, entry)
+          .then { deep_declare_node(node, it.entry).add_errors(it.errors) }
+          .to_result
       end
 
       def declare_entry(entry, registry)
         declare(entry.ast, registry, entry)
       end
 
-      private
-
-      def shallow(ast, registry, entry)
-        case ast
-        in AST::Module(body:)
-          shallow(body, registry, entry)
-
-        in AST::ImportDeclaration(module_name:)
-          imported_entry = registry.get(module_name) => { types:, values: }
-
-          # TODO:
-          # add module to imports
-          # only do this if import (..)
-          (types.values + values.values)
-            .map(&:to_ref)
-            .reduce(entry.add_import(imported_entry)) do |acc, sym|
-              acc.add_imported_symbol(sym)
-            end
-
-        in AST::FunctionDeclaration(name:)
-          Symbol.predeclared_function(name)
-            .then { entry.add_symbol(it) }
-
-        in AST::Body(expressions:)
-          expressions.reduce(entry) { |acc, expr| shallow(expr, registry, acc) }
-
-        in AST::TypeDeclaration(name:, type_params:)
-          ast.type_params.map(&:name).map { Symbol.var(it) }
-            .then { Symbol.union(name, it) }
-            .then { entry.add_symbol(it) }
-
+      def shallow_declare_node(node, registry, entry)
+        case node
+        in AST::Module then Module
+        in AST::ImportDeclaration then ImportDeclaration
+        in AST::FunctionDeclaration then FunctionDeclaration
+        in AST::Body then Body
+        in AST::TypeDeclaration then TypeDeclaration
         else
-          entry
-        end
+          return Result[entry, []]
+        end.shallow(node, registry, entry)
       end
 
       # TODO: [ForwardDeclaration:HandleErrors]
-      def deep(ast, entry)
-        case ast
-        in AST::Module(body:, exposing:)
-          exposing
-            .reduce(entry) do |acc, exposed|
-              case exposed
-              in AST::VariableReference(name:)
-                acc
-                  .lookup_value(name)
-                  .then { acc.add_expose(name, it.to_ref) }
-
-              in AST::TypeName(type:)
-                acc
-                  .lookup_type(type)
-                  .then { acc.add_expose(type, it.to_ref) }
-              end
-            end
-            .then { deep(body, it) }
-
-        in AST::ImportDeclaration
-          entry
-
-        in AST::FunctionDeclaration(name:, params:, return_type:)
-          params_types = params
-            .map do |param|
-              param => { type: }
-
-              [param.name, figure_out_type(entry, type)]
-            end
-            .to_h
-
-          return_type_type = figure_out_type(entry, return_type)
-
-          Symbol
-            .function(name, params_types, return_type_type)
-            .then { entry.add_symbol(it) }
-
-
-        in AST::TypeDeclaration(name:, variants:)
-          symbol = entry.lookup_type(name)
-
-          variant_symbols = variants
-            .map do |var|
-              var
-                .args
-                .map { |arg| figure_out_type(entry, arg) }
-                .then { Symbol.variant(var.name, it, symbol.to_ref) }
-            end
-
-          variant_symbols
-            .reduce(entry) { |acc_entry, sym| acc_entry.add_symbol(sym) }
-            .then { it.add_symbol(symbol.with(variants: variant_symbols.map(&:to_ref))) }
-
-        in AST::Body(expressions:)
-          expressions.reduce(entry) { |acc, expr| deep(expr, acc) }
-
+      def deep_declare_node(node, entry)
+        case node
+        in AST::Module then Module
+        in AST::ImportDeclaration then ImportDeclaration
+        in AST::FunctionDeclaration then FunctionDeclaration
+        in AST::TypeDeclaration then TypeDeclaration
+        in AST::Body then Body
         else
-          entry
-        end
-      end
-
-      def figure_out_type(entry, type)
-        case type
-        in AST::TypeVar(type:)
-          Symbol.var(type)
-
-        in AST::TypeName(type:)
-          entry.lookup_type(type)
-
-        in AST::TypeApplication(constructor:)
-          entry.lookup_type(constructor.type)
-
-        in AST::TypeFunction(params:, return_type:)
-          params
-            .map { figure_out_type(entry, it) }
-            .then { Symbol.function_type(it, figure_out_type(entry, return_type)) }
-        end
+          return Result[entry, []]
+        end.deep(node, entry)
       end
     end
   end

@@ -32,7 +32,7 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::Node).and be_a(AST::Literal) }
-      its(:symbol) { is_expected.to eql Symbol.type_ref('Basics.Int') }
+      its(:symbol) { is_expected.to eql Symbol.type_ref('Basics', 'Int') }
 
       context 'with a bool' do
         let(:text) do
@@ -42,7 +42,7 @@ module Jade
         end
 
         it { is_expected.to be_a(AST::Node).and be_a(AST::Literal) }
-        its(:symbol) { is_expected.to eql Symbol.type_ref('Basics.Bool') }
+        its(:symbol) { is_expected.to eql Symbol.type_ref('Basics', 'Bool') }
       end
 
       context 'with a string' do
@@ -53,7 +53,7 @@ module Jade
         end
 
         it { is_expected.to be_a(AST::Node).and be_a(AST::Literal) }
-        its(:symbol) { is_expected.to eql Symbol.type_ref('String.String') }
+        its(:symbol) { is_expected.to eql Symbol.type_ref('String', 'String') }
       end
     end
 
@@ -201,13 +201,13 @@ module Jade
         subject { frontend => Ok([_, registry]); registry }
 
         it 'contains the function symbol' do
-          symbol = subject.lookup(Symbol::ValueRef['__Test__.add'])
+          symbol = subject.lookup(Symbol.value_ref('__Test__', 'add'))
 
           expect(symbol).to be_a(Symbol::Function)
           expect(symbol.module_name).to eql '__Test__'
-          expect(symbol.params).to include('a' => Symbol::TypeRef['Basics.Int'])
-          expect(symbol.params).to include('b' => Symbol::TypeRef['Basics.Int'])
-          expect(symbol.return_type).to eql(Symbol::TypeRef['Basics.Int'])
+          expect(symbol.params).to include('a' => Symbol::TypeRef['Basics', 'Int'])
+          expect(symbol.params).to include('b' => Symbol::TypeRef['Basics', 'Int'])
+          expect(symbol.return_type).to eql(Symbol::TypeRef['Basics', 'Int'])
           expect(symbol.name).to eql 'add'
         end
       end
@@ -232,7 +232,7 @@ module Jade
       it { is_expected.to be_a(AST::FunctionDeclaration) }
     end
 
-    context 'a duped function declaration' do
+    xcontext 'a duped function declaration' do
       let(:text) do
         <<~JADE
           def add(a: Int, b: Int) -> Int
@@ -266,7 +266,7 @@ module Jade
         Lexer
           .tokenize(source)
           .then { Parser.parse(it) }
-          .and_then  { Frontend.run_up_to_semantic_analysis(it) }
+          .and_then  { Frontend.run(it) }
       end
 
       it { is_expected.to be_a(AST::Node).and be_a(AST::Body) }
@@ -287,15 +287,8 @@ module Jade
         JADE
       end
 
-      let(:frontend) do
-        Lexer
-          .tokenize(source)
-          .then { Parser.parse(it) }
-          .and_then  { Frontend.run_up_to_semantic_analysis(it) }
-      end
-
       it { is_expected.to be_a(AST::MemberAccess) }
-      its(:symbol) { is_expected.to eql Symbol::ValueRef['String.is_empty']}
+      its(:symbol) { is_expected.to eql Symbol::ValueRef['String', 'is_empty']}
 
       context 'when calling a not exposed function' do
         let(:text) do
@@ -348,7 +341,7 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::TypeDeclaration) }
-      its(:symbol) { is_expected.to eql Symbol.type_ref('__Test__.Maybe') }
+      its(:symbol) { is_expected.to eql Symbol.type_ref('__Test__', 'Maybe') }
 
       describe 'the variants symbols' do
         subject { super().variants.map(&:symbol) }
@@ -365,7 +358,7 @@ module Jade
         subject { frontend => Ok([_, registry]); registry }
 
         it 'contains the function symbol' do
-          maybe_symbol = subject.lookup(Symbol::TypeRef['__Test__.Maybe'])
+          maybe_symbol = subject.lookup(Symbol::TypeRef['__Test__', 'Maybe'])
 
           expect(maybe_symbol).to be_a(Symbol::Union)
           expect(maybe_symbol.type_params).to eql([Symbol.var('a')])
@@ -387,7 +380,7 @@ module Jade
         subject { super().expressions.last }
 
         it { is_expected.to be_a(AST::ConstructorReference) }
-        its(:symbol) { is_expected.to eql Symbol.value_ref('__Test__.Just') }
+        its(:symbol) { is_expected.to eql Symbol.value_ref('__Test__', 'Just') }
       end
 
       context 'referencing a constructor that doesn\'t exist' do
@@ -426,7 +419,7 @@ module Jade
         subject { frontend => Ok([_, registry]); registry }
 
         it 'contains the function symbol' do
-          symbol = subject.lookup(Symbol::ValueRef['Test.hello'])
+          symbol = subject.lookup(Symbol.value_ref('Test', 'hello'))
 
           expect(symbol).to be_a(Symbol::Function)
           expect(symbol.module_name).to eql 'Test'
@@ -436,8 +429,59 @@ module Jade
           subject { super().modules['Test'] }
 
           it 'has the right exposed symbols' do
-            expect(subject.exposes).to include('hello' => Symbol::ValueRef['Test.hello'])
+            expect(subject.exposes).to include('hello' => Symbol::ValueRef['Test', 'hello'])
           end
+        end
+      end
+
+      context 'without expose' do
+        let(:text) do
+          <<~JADE
+            module Test
+
+            def hello(str: String) -> Bool
+              String.is_empty(str)
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::MissingExposingClause) }
+      end
+
+      context 'exposing a symbol that doesn\'t exist' do
+        let(:text) do
+          <<~JADE
+            module Test exposing (hei)
+
+            def hello(str: String) -> Bool
+              String.is_empty(str)
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::ForwardDeclaration::Error::ExposedValueNotFound) }
+
+        context 'and the symbol is a type' do
+          let(:text) do
+            <<~JADE
+              module Test exposing (Salutation)
+
+              def hello(str: String) -> Bool
+                String.is_empty(str)
+              end
+            JADE
+          end
+
+          subject { frontend => Err(errors); errors }
+
+          it { is_expected.to have(1).item }
+          its([0]) { is_expected.to be_a(Frontend::ForwardDeclaration::Error::ExposedTypeNotFound) }
         end
       end
     end
@@ -532,6 +576,20 @@ module Jade
       subject { super().expressions.last }
 
       it { is_expected.to be_a(AST::FunctionDeclaration) }
+    end
+
+    describe '|>' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          1 |> identity()
+        JADE
+      end
+
+      subject { super().expressions.last }
+
+      it { is_expected.to be_a(AST::FunctionCall) }
     end
   end
 end

@@ -9,24 +9,28 @@ module Jade
       qualified_name.split('.').last
     end
 
-    def self.union(name, type_params = [])
-      Union[nil, name, type_params, []]
+    def self.union(name, type_params, variants)
+      Union[nil, name, type_params, variants.map(&:to_ref)]
     end
 
     def self.variant(name, args, union)
       Variant[nil, name, args, union]
     end
 
+    def self.predeclared_variant(name)
+      Variant[nil, name, [], nil]
+    end
+
     def self.lambda(arity)
       Lambda[arity]
     end
 
-    def self.type_ref(qualified_name)
-      TypeRef[qualified_name]
+    def self.type_ref(module_name, name)
+      TypeRef[module_name, name]
     end
 
-    def self.value_ref(qualified_name)
-      ValueRef[qualified_name]
+    def self.value_ref(module_name, name)
+      ValueRef[module_name, name]
     end
 
     def self.var(name)
@@ -57,7 +61,7 @@ module Jade
       include Symbol
 
       def to_ref
-        TypeRef[qualified_name]
+        TypeRef[module_name, name]
       end
 
       def qualified_name
@@ -65,8 +69,12 @@ module Jade
       end
     end
 
-    TypeRef = Data.define(:qualified_name) do
+    TypeRef = Data.define(:module_name, :name) do
       include Symbol
+
+      def qualified_name
+        [module_name, name].join('.')
+      end
 
       def to_ref
         self
@@ -74,12 +82,10 @@ module Jade
     end
 
     Function = Data.define(:module_name, :name, :params, :return_type) do
-      # TODO: Reuse FunctionTypeSmyobl
       include Symbol
 
       def to_ref
-        [module_name, name].join('.')
-          .then { ValueRef[it] }
+        ValueRef[module_name, name]
       end
     end
 
@@ -95,8 +101,7 @@ module Jade
       include Symbol
 
       def to_ref
-        qualified_name
-          .then { ValueRef[it] }
+        ValueRef[module_name, name]
       end
 
       def qualified_name
@@ -108,16 +113,19 @@ module Jade
       include Symbol
 
       def to_ref
-        [module_name, name].join('.')
-          .then { ValueRef[it] }
+        ValueRef[module_name, name]
       end
     end
 
-    ValueRef = Data.define(:qualified_name) do
+    ValueRef = Data.define(:module_name, :name) do
       include Symbol
 
       def to_ref
         self
+      end
+
+      def qualified_name
+        [module_name, name].join('.')
       end
     end
 

@@ -138,7 +138,8 @@ module Jade
     end
 
     def operator
-      type(:plus) | type(:minus) | type(:star) | type(:slash)
+      type(:plus) | type(:minus) | type(:star) | type(:slash) |
+        type(:pipe_forward) | type(:pipe_backward)
     end
 
     def primary
@@ -187,9 +188,11 @@ module Jade
     def exposing
       (type(:exposing).skip >>
           type(:lparen).skip >>
-          sequence(variable_reference | type_name, separated_by: type(:comma).skip).map { [it] } >>
+          (sequence(variable_reference | type_name, separated_by: type(:comma).skip).map { [it] }.map(&AST.expose_list) |
+            type(:dotdot).map(&AST.expose_all)
+          ) >>
           type(:rparen).skip
-      )
+      ) | none.map(&AST.expose_none)
     end
 
     def function_declaration

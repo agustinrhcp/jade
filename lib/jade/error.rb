@@ -1,10 +1,12 @@
-class Error
-  def initialize(entry:, span:, **rest)
-    @entry = entry
-    @span = span
-  end
+module Jade
+  class Error
+    def initialize(entry:, span:, **rest)
+      @entry = entry
+      @span = span
+    end
 
-  def message
-    fail NotImplementedError
+    def message
+      fail NotImplementedError
+    end
   end
 end

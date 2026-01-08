@@ -130,7 +130,11 @@ module Jade
     end
 
     def add_local_type_symbol(symbol)
-      symbol.with(module_name: name)
+      symbol
+        .with(
+          module_name: name,
+          variants: symbol.variants.map { it.with(module_name: name) },
+        )
         .then { with(types: types.merge(it.name => it)) }
     end
   end
