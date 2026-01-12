@@ -1,10 +1,17 @@
+require 'jade/stdlib/compiled'
+
 module Jade
   module Stdlib
     module Maybe
       extend self
+      extend Compiled
 
       def uri
         'maybe.jd'
+      end
+
+      def imports
+        [Basics]
       end
 
       def code

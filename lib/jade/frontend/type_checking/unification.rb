@@ -49,7 +49,8 @@ module Jade
               Ok[Substitution.new] :
               Err[UnificationError.new(type1, type2)]
 
-          in [Type::Application, Type::Application]
+          else
+            Err[UnificationError.new(type1, type2)]
           end
         end
 

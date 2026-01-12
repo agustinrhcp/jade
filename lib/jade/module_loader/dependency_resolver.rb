@@ -22,6 +22,7 @@ module Jade
           .reduce([registry, []]) do |(acc_registry, acc_imports), ast_node|
             case ast_node
             in AST::ImportDeclaration(module_name:)
+              # TODO: [ModuleLoaderRefactor] This is more of DependencyLoader
               [ModuleLoader.load_import(module_name, registry), acc_imports + [module_name]]
 
             else

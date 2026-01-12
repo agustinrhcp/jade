@@ -5,6 +5,9 @@ module Jade
     module String
       extend Intrinsics
 
+      import Basics
+      # import Maybe
+
       union :String
 
       function :is_empty, { str: 'String'}, 'Bool' do |str|
@@ -25,6 +28,15 @@ module Jade
 
       function :repeat, { str: 'String', times: 'Int' }, 'String' do |str, times|
         str * times
+      end
+
+      function :to_int, { str: 'String' }, 'Maybe(Int)' do |str|
+        begin
+          Integer(str)
+            .then { ::Maybe::Just[it] }
+        rescue
+          ::Maybe::Nothing[]
+        end
       end
 
       exposing :*

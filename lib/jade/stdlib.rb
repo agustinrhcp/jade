@@ -1,21 +1,22 @@
 require 'jade/stdlib/basics'
-require 'jade/stdlib/string'
 require 'jade/stdlib/maybe'
+require 'jade/stdlib/string'
+require 'jade/stdlib/result'
 
 module Jade
   module Stdlib
     extend self
 
     INTRINSICS = %w[Basics String].freeze
-    COMPILED = %w[Maybe].freeze
+    COMPILED = %w[Maybe Result].freeze
 
     def load(registry)
       registry
-        .then { load_intrinsics(it) }
-        .then { load_compiled(it) }
+        .then { load_stdlib(registry) }
     end
 
     def apply(registry)
+      # TODO: [ModuleLoaderRefactor] This should live in registry probably
       stdlib_entries, user_entries = registry
         .modules
         .values
@@ -44,6 +45,8 @@ module Jade
     private
 
     def add_imports(entry, stdlib_entries)
+      # TODO: [ModuleLoaderRefactor] This should live in registry probably
+      # TODO: This is copy pasted from somewhere else
       stdlib_entries
         .reduce(entry) do |acc, stdlib|
           stdlib
@@ -56,17 +59,11 @@ module Jade
         end
     end
 
-    def load_intrinsics(registry)
-      registry
-        .add_module(Stdlib::Basics.entry)
-        .add_module(Stdlib::String.entry)
-    end
-
-    def load_compiled(registry)
-      [Stdlib::Maybe]
+    def load_stdlib(registry)
+      [Stdlib::Basics, Stdlib::Maybe, Stdlib::String, Stdlib::Result]
         .reduce(registry) do |acc, stdlib|
-          Source[stdlib.uri, stdlib.code]
-            .then { ModuleLoader.send(:load_with_forward_declaration_, it, registry) }
+          stdlib.generate_entry(acc)
+          registry.add_module(stdlib.entry)
         end
     end
 
