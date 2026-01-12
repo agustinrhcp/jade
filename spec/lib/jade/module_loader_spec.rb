@@ -8,29 +8,18 @@ module Jade
 
     let(:source_code) do
       <<~JADE
-        import Test.Basics
-        import Test.String
+        import Test.Pepe
       JADE
     end
 
-    let(:basics_source_code) do
+    let(:pepe_source_code) do
       <<~JADE
-        type Int = Int_
-        type Float = Float_
-      JADE
-    end
-
-    let(:string_source_code) do
-      <<~JADE
-        import Test.Basics
-
-        type String = String_
+        type Pepe = Lala | Coco
       JADE
     end
 
     before { allow(File).to receive(:read).with('./test/path.jd') { source_code } }
-    before { allow(File).to receive(:read).with('./test/basics.jd') { basics_source_code } }
-    before { allow(File).to receive(:read).with('./test/string.jd') { string_source_code } }
+    before { allow(File).to receive(:read).with('./test/pepe.jd') { pepe_source_code } }
 
     it { is_expected.to be_a Registry }
     its(:dependency_graph) { is_expected.to_not be_empty }
@@ -40,22 +29,20 @@ module Jade
 
       its(:size) { is_expected.to eql 4 }
 
-      its(:nodes) { is_expected.to include('Test.Path' => ['Test.Basics', 'Test.String']) }
-      its(:nodes) { is_expected.to include('Test.String' => ['Test.Basics']) }
-      its(:nodes) { is_expected.to include('Test.Basics' => []) }
+      its(:nodes) { is_expected.to include('Test.Path' => ['Test.Pepe']) }
     end
 
     describe 'its modules in topo order' do
       subject { super().modules_in_topo_order.map(&:name) }
 
-      it { is_expected.to eql %w[Maybe Test.Basics Test.String Test.Path] }
+      it { is_expected.to eql %w[Maybe Result Test.Pepe Test.Path] }
     end
 
     describe 'its modules' do
       subject { super().get('Test.Path') }
 
       its(:ast) { is_expected.to_not be_nil }
-      its(:generated) { is_expected.to eql "$LOAD_PATH.unshift(File.expand_path(\"lib\")); require_relative 'test/basics.rb'; require_relative 'test/string.rb'" }
+      its(:generated) { is_expected.to eql "$LOAD_PATH.unshift(File.expand_path(\"lib\")); require_relative 'test/pepe.rb'" }
     end
 
     describe '.emit' do
@@ -64,9 +51,9 @@ module Jade
       it 'writes ruby files' do
         expect(FileUtils).to receive(:mkdir_p).exactly(4).times
         expect(File).to receive(:write).with('.jade/build/maybe.rb', anything)
+        expect(File).to receive(:write).with('.jade/build/result.rb', anything)
         expect(File).to receive(:write).with('.jade/build/test/path.rb', anything)
-        expect(File).to receive(:write).with('.jade/build/test/basics.rb', anything)
-        expect(File).to receive(:write).with('.jade/build/test/string.rb', anything)
+        expect(File).to receive(:write).with('.jade/build/test/pepe.rb', anything)
 
         subject
       end

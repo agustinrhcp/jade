@@ -70,4 +70,16 @@ New pass to track usages of symbols. This is helpful for duplicate error
 Having to do Nothing() is alien, and probably a trap. So having
 Just be a function but Nothing be a constant would make tons of sense.
 
-# return type_from_symbol(symbol.union, registry) if symbol.args.empty?
+```ruby
+return type_from_symbol(symbol.union, registry) if symbol.args.empty?
+```
+
+
+### Typing errors
+
+* Over generalized stuff
+```jade
+  def nope(result: a) -> Result(Int, String)
+    Ok(result)
+  end
+```

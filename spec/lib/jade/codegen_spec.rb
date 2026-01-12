@@ -136,7 +136,8 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "require 'jade/runtime'; require_relative 'maybe'; module Test; extend self; def hello; ->(str) { Jade::Runtime.intr('String.is_empty').call(str) }; end; end" }
+      it { is_expected.to include "require 'jade/runtime'; require_relative 'maybe'; require_relative 'result';"}
+      it { is_expected.to include "module Test; extend self; def hello; ->(str) { Jade::Runtime.intr('String.is_empty').call(str) }; end; end" }
     end
 
     context 'if then else' do

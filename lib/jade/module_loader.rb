@@ -50,7 +50,7 @@ module Jade
           Frontend
             .run_entry(entry, acc)
             .map { Codegen.generate_entry(it, acc.add_module(it)) }
-            .map { acc.add_module(it) }
+            .map { acc.update_module(it) }
             .on_err do
               puts Array(it).map(&:message)
               fail("Compilation error")
@@ -69,19 +69,9 @@ module Jade
         .with(ast:)
         .with(source:)
         .with(entry:)
-        .then { block_given? ? yield(it) : it }
         .then do |entry|
-          registry
-            .add_module(entry)
-            .then { DependencyResolver.resolve(entry, it) }
+          registry.add_module(entry)
         end
-    end
-
-    def load_with_forward_declaration_(entry, registry)
-      load_(entry, registry) do
-        Frontend::ForwardDeclaration.declare_entry(it, registry) => Ok(declared)
-        declared
-      end
     end
 
     def new_registry(source_root)

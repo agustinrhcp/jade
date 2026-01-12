@@ -130,6 +130,23 @@ module Jade
       end
     end
 
+    context 'function declaration with type application' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          def map(result: Result(a, e), fn: a -> b) -> Result(b, e)
+            case result
+            of Ok(something) then Just(fn(somethig))
+            of _ then result
+            end
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+    end
+
     context 'function declaration with lambda argument' do
       include_context "single expression body"
 

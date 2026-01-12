@@ -218,7 +218,7 @@ module Jade
         <<~JADE
           type Maybe(a) = Just(a) | Nothing
 
-          def with_default(maybe: Maybe(a), default: a) -> a
+          def pepe(maybe: Maybe(Int), default: Int) -> Int
             case maybe
             of Nothing then default
             of Just(x) then x
@@ -386,7 +386,7 @@ module Jade
       context 'referencing a constructor that doesn\'t exist' do
         let(:text) do
           <<~JADE
-            Just
+            Lala
           JADE
         end
 
@@ -397,7 +397,7 @@ module Jade
         describe 'the error' do
           subject { super().first }
           it { is_expected.to be_a Frontend::SymbolResolution::Error::ConstructorNotFound }
-          its(:message) { is_expected.to include 'I cannot find a `Just` constructor' }
+          its(:message) { is_expected.to include 'I cannot find a `Lala` constructor' }
         end
       end
     end

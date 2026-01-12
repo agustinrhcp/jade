@@ -276,7 +276,7 @@ module Jade
     end
 
     def type_application
-      (type_name >> type(:lparen) >> sequence(lazy { type_expression }) >> type(:rparen))
+      (type_name >> type(:lparen) >> sequence(lazy { type_expression }, separated_by: type(:comma).skip) >> type(:rparen))
         .map(&AST.type_application)
     end
 

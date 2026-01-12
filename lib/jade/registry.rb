@@ -7,6 +7,7 @@ module Jade
     def initialize
       @source_root = nil
       @modules = {}
+      # TODO: [ModuleLoaderRefactor] Can leave outside module loader
       @dependency_graph = ModuleLoader::DependencyGraph.new
     end
 
@@ -30,6 +31,7 @@ module Jade
     end
 
     def modules_in_topo_order
+      # TODO: [ModuleLoaderRefactor] Can leave outside module loader
       ModuleLoader::TopologicalSort
         .sort(@dependency_graph)
         .map { get(it) }
@@ -39,10 +41,26 @@ module Jade
       @modules.dig(module_name)
     end
 
+    def update_module(entry)
+      fail 'cannot update entry that does not exist' unless @modules[entry.name]
+
+      entry => ModuleEntry(name:)
+
+      @modules = @modules.merge(name => entry)
+
+      self
+    end
+
     def add_module(entry)
       entry => ModuleEntry(name:)
 
       @modules = @modules.merge(name => entry)
+
+      if entry.ast
+        # Stdlib intrinsics don't have ast
+        ModuleLoader::DependencyResolver.resolve(entry, self)
+      end
+
       self
     end
 
@@ -50,6 +68,7 @@ module Jade
       entry => ModuleEntry(name:)
 
       @dependency_graph = dependency_graph.add(name, imports)
+
       self
     end
 

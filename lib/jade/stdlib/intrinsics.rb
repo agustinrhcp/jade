@@ -4,6 +4,10 @@ require 'jade/symbol'
 module Jade
   module Stdlib
     module Intrinsics
+      def generate_entry(_)
+        entry
+      end
+
       def union(name)
         Symbol
           .union(name.to_s, [], [])
@@ -36,6 +40,15 @@ module Jade
             acc.add_symbol(sym)
           end
           .with(exposes: exposed)
+          .then { resolve_imports(it) }
+      end
+
+      def import(module_name)
+        @imports = imports + [module_name]
+      end
+
+      def imports
+        @imports || []
       end
 
       def exposing(val)
@@ -50,6 +63,20 @@ module Jade
       end
 
       private
+
+      def resolve_imports(entry)
+        imports
+          .map(&:entry)
+          .reduce(entry) do |acc, stdlib|
+            stdlib
+              .exposes
+              .values
+              .reduce(acc) do |acc2, sym|
+                acc2.add_imported_symbol(sym)
+              end
+              .add_import(stdlib)
+          end
+      end
 
       def store(symbol)
         @symbols ||= []
@@ -67,6 +94,7 @@ module Jade
         in 'a' then Symbol.var('a')
         in 'b' then Symbol.var('b')
         in 'a -> b' then Symbol.function_type([Symbol.var('a')], Symbol.var('b'))
+        in 'Maybe(Int)' then Symbol.type_ref('Maybe', 'Maybe')
         end
       end
 
