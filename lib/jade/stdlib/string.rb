@@ -6,31 +6,40 @@ module Jade
       extend Intrinsics
 
       import Basics
-      # import Maybe
+      import Maybe
+      import List
 
       union :String
 
-      function :is_empty, { str: 'String'}, 'Bool' do |str|
-        str.empty?
-      end
+      function(
+        :is_empty,
+        { str: 'String'},
+        'Bool',
+      ) { it.empty? }
 
-      function :length, { str: 'String'}, 'Int' do |str|
-        str.length
-      end
+      function(
+        :length,
+        { str: 'String' },
+        'Int'
+      ) { it.length }
 
-      function :reverse, { str: 'String'}, 'String' do |str|
-        str.reverse
-      end
+      function(
+        :reverse,
+        { str: 'String'},
+        'String',
+      ) { it.reverse }
 
-      function :reverse, { str: 'String'}, 'String' do |str|
-        str.reverse
-      end
+      function(
+        :repeat,
+        { str: 'String', times: 'Int' },
+        'String'
+      ) { |str, times| str * times }
 
-      function :repeat, { str: 'String', times: 'Int' }, 'String' do |str, times|
-        str * times
-      end
-
-      function :to_int, { str: 'String' }, 'Maybe(Int)' do |str|
+      function(
+        :to_int,
+        { str: 'String' },
+        'Maybe(Int)'
+      ) do |str|
         begin
           Integer(str)
             .then { ::Maybe::Just[it] }
@@ -39,7 +48,19 @@ module Jade
         end
       end
 
-      exposing :*
+      function(
+        :split,
+        { str: 'String', by: 'String' },
+        'List(String)',
+      ) { |str, by| str.split(by) }
+
+      function(
+        :concat,
+        { list: 'List(String)' },
+        'String'
+      ) { it.join }
+
+      default_importing('String')
     end
   end
 end

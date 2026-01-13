@@ -591,5 +591,37 @@ module Jade
 
       it { is_expected.to be_a(AST::FunctionCall) }
     end
+
+    describe 'list' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          [12, 42]
+        JADE
+      end
+
+      it { is_expected.to be_a AST::List }
+      its(:items) { is_expected.to all(be_a(AST::Literal)) }
+
+      context 'when types of items mismatch' do
+        let(:text) do
+          <<~JADE
+            [12, "String"]
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::ListItemTypeMismatchError) }
+
+        describe 'its message' do
+          subject { super().first.message }
+
+          it { is_expected.to eql "The item at 2 does not match the previous items in the list, expected Int but found String" }
+        end
+      end
+    end
   end
 end

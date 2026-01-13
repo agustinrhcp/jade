@@ -105,6 +105,9 @@ module Jade
 
       in AST::Grouping(expression:)
         "(#{generate(expression, registry)})"
+
+      in AST::List(items:)
+        "[#{items.map { generate(it, registry)}.join(', ')}]"
       end
     end
 

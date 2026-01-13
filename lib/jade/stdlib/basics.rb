@@ -9,27 +9,37 @@ module Jade
       union :Float
       union :Bool
 
-      function('(+)', { a: 'Int', b: 'Int' }, 'Int') do |a, b|
-        a + b
-      end
+      function(
+        '(+)',
+        { a: 'Int', b: 'Int' },
+        'Int',
+      ) { |a, b| a + b }
 
-      function('(-)', { a: 'Int', b: 'Int' }, 'Int') do |a, b|
-        a - b
-      end
+      function(
+        '(-)',
+        { a: 'Int', b: 'Int' },
+        'Int',
+      ) { |a, b| a - b }
 
-      function('(*)', { a: 'Int', b: 'Int' }, 'Int') do |a, b|
-        a * b
-      end
+      function(
+        '(*)',
+        { a: 'Int', b: 'Int' },
+        'Int',
+      ) { |a, b| a * b }
 
-      function('(/)', { a: 'Int', b: 'Int' }, 'Int') do |a, b|
-        a / b
-      end
+      function(
+        '(/)',
+        { a: 'Int', b: 'Int' },
+        'Int',
+      ) { |a, b| a / b }
 
-      function('identity', { a: 'a' }, 'a') do |a|
-        a
-      end
+      function(
+        'identity',
+        { a: 'a' },
+        'a',
+      ) { it }
 
-      exposing :*
+      default_importing :*
     end
   end
 end

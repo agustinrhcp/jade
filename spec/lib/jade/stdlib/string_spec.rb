@@ -37,12 +37,6 @@ module Jade
           end
         end
       end
-
-      describe 'it exposed functions and types' do
-        subject { described_class.exposed }
-
-        it { is_expected.to include('String' => Symbol.type_ref('String', 'String')) }
-      end
     end
   end
 end

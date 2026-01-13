@@ -89,6 +89,9 @@ module Jade
         in AST::FunctionCall
           Inference::FunctionCall.infer(node, registry, env, var_gen)
 
+        in AST::List
+          Inference::List.infer(node, registry, env, var_gen)
+
         in AST::ConstructorReference
           Inference::ConstructorReference.infer(node, registry, env, var_gen)
 
@@ -274,6 +277,20 @@ module Jade
         def message
           "First branch of this case statement is #{@first_branch_type} " +
             "but branch #{@actual_index} is #{@actual}"
+        end
+      end
+
+      class ListItemTypeMismatchError
+        def initialize(node, first_branch_type, actual, actual_index)
+          @node = node
+          @first_branch_type = first_branch_type
+          @actual = actual
+          @actual_index = actual_index
+        end
+
+        def message
+          "The item at #{@actual_index} does not match the previous items in the list, " +
+            "expected #{@first_branch_type} but found #{@actual}"
         end
       end
     end

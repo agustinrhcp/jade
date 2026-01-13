@@ -74,7 +74,8 @@ module Jade
             .then { node.with(expressions: it) } 
 
         in AST::FunctionCall(callee:, args:)
-          args.map { fix(it) }
+          args
+            .map { fix(it) }
             .then { node.with(args: it, callee: fix(callee)) }
 
         in AST::MemberAccess(target:)
@@ -100,6 +101,11 @@ module Jade
 
         in AST::Grouping(expression:)
           node.with(expression: fix(expression))
+
+        in AST::List(items:)
+          items
+            .map { fix(it) }
+            .then { node.with(items: it) }
 
         in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
           AST::ImportDeclaration | AST::Literal

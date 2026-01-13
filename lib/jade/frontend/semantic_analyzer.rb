@@ -95,7 +95,7 @@ module Jade
         in AST::FunctionCall(callee:, args:)
           analyze_many(args, registry, scope) => { errors: args_errors, scope: args_scope }
 
-          analyze_r(callee, registry, args_scope)
+          analyze_r(callee, registry, scope)
             .add_errors(args_errors)
 
         in AST::TypeDeclaration(name:, symbol:, variants:)
@@ -163,7 +163,11 @@ module Jade
 
         in AST::Grouping(expression:)
           analyze_r(expression, registry, scope)
-      
+
+        in AST::List(items:)
+          analyze_many(items, registry, scope)
+            .with(scope:)
+     
         end
       end
 

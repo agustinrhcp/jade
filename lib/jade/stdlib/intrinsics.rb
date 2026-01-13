@@ -8,9 +8,9 @@ module Jade
         entry
       end
 
-      def union(name)
+      def union(name, *type_params)
         Symbol
-          .union(name.to_s, [], [])
+          .union(name.to_s, type_params.map { Symbol.var(it) }, [])
           .with(module_name:)
           .then { store(it) }
       end
@@ -39,7 +39,7 @@ module Jade
           .reduce(Registry.entry(module_name)) do |acc, sym|
             acc.add_symbol(sym)
           end
-          .with(exposes: exposed)
+          .with(exposes:)
           .then { resolve_imports(it) }
       end
 
@@ -51,30 +51,37 @@ module Jade
         @imports || []
       end
 
-      def exposing(val)
-        @exposes = val
+      def default_importing(imports)
+        @default_imports = if imports == :*
+          exposes
+        else
+          exposes.select { imports.include? it }
+        end
       end
 
-      def exposed
-        case @exposes
-        in :*
-          @symbols.map { [it.name, it.to_ref] }.to_h
-        end
+      def default_imports
+        @default_imports || {}
       end
 
       private
 
+      def exposes
+        @symbols.map { [it.name, it.to_ref] }.to_h
+      end
+
       def resolve_imports(entry)
+        # TODO: This is the same code from stdlib that auto imports stuff.
         imports
-          .map(&:entry)
           .reduce(entry) do |acc, stdlib|
             stdlib
+              .entry
               .exposes
               .values
+              .select { stdlib.default_imports.include? it.name }
               .reduce(acc) do |acc2, sym|
                 acc2.add_imported_symbol(sym)
               end
-              .add_import(stdlib)
+              .add_import(stdlib.entry)
           end
       end
 
@@ -95,6 +102,11 @@ module Jade
         in 'b' then Symbol.var('b')
         in 'a -> b' then Symbol.function_type([Symbol.var('a')], Symbol.var('b'))
         in 'Maybe(Int)' then Symbol.type_ref('Maybe', 'Maybe')
+        in 'List(a)' then Symbol.type_ref('List', 'List') 
+        in 'List(b)' then Symbol.type_ref('List', 'List') 
+        in 'List(String)' then Symbol.type_ref('List', 'List') 
+        in 'Int, a -> b' then Symbol.function_type([string_to_ref('Int'), string_to_ref('a')], string_to_ref('b'))
+        in 'b, a -> b' then Symbol.function_type([string_to_ref('b'), string_to_ref('a')], string_to_ref('b'))
         end
       end
 
