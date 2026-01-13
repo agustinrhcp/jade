@@ -77,6 +77,9 @@ module Jade
           type = SYMBOLS.fetch(scanner.matched)
           tokens << tok(type, scanner)
 
+        when scanner.scan(/\A#[^\n]*/)
+          tokens << tok(:comment, scanner)
+
         when scanner.scan(/\A[a-z_][a-z0-9_]*/)
           type = KEYWORDS.include?(scanner.matched) ? scanner.matched.to_sym : :identifier
           tokens << tok(type, scanner)
