@@ -18,7 +18,7 @@ module Jade
 
     def parse(tokens, parser = program)
       parser
-        .call(State.new(tokens))
+        .call(State.new(tokens.reject { it.type == :comment }))
         .map(&:first)
         .map_error(&:first)
     end

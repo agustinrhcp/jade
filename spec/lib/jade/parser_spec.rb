@@ -607,6 +607,17 @@ module Jade
           end
         end
       end
+
+      context 'comment' do
+        let(:text) do
+          <<~JADE
+            # This is a comment
+            type Pepe = Lala
+          JADE
+        end
+
+        it { is_expected.to be_a AST::TypeDeclaration }
+      end
     end
   end
 end
