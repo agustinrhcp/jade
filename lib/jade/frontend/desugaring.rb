@@ -77,6 +77,10 @@ module Jade
         in AST::Lambda(body:)
           node.with(body: desugar(body))
 
+        in AST::List(items:)
+          node
+            .with(items: items.map { desugar(it) })
+
         in AST::Literal | AST::VariableReference | AST::ConstructorReference |
           AST::TypeDeclaration | AST::ImportDeclaration | AST::Pattern::Constructor |
           AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard

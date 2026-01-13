@@ -1,0 +1,36 @@
+require 'spec_helper'
+
+require 'jade'
+require 'jade/module_loader'
+
+module Jade
+  describe 'Basics' do
+    include_context 'with test compiler'
+
+    describe 'Math' do
+      before do
+        test_compiler.require('math', math_source)
+      end
+
+      let(:math_source) do
+        <<~JADE
+          module Math exposing (example1, example2)
+
+          def example1() -> Int
+            pepe = Just(1)
+            1 + 2 * 3
+          end
+
+          def example2() -> Int
+            (1 + 2) * 3
+          end
+        JADE
+      end
+
+      it 'respect operator precedence and grouping' do
+        expect(Math.example1.call).to eql 7
+        expect(Math.example2.call).to eql 9
+      end
+    end
+  end
+end

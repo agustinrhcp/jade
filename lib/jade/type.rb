@@ -30,6 +30,10 @@ module Jade
       constructor('Basics.Bool')
     end
 
+    def list
+      constructor('List.List')
+    end
+
     def constructor(name)
       Constructor[name]
     end

@@ -7,6 +7,7 @@ module Jade
     extend Nodes
 
     define(:Literal, :value)
+    define(:List, :items)
 
     define(:VariableBinding, :name, :expression)
     define(:VariableReference, :name)
@@ -350,6 +351,12 @@ module Jade
     def expose_list
       ->((items)) do
         ExposeList[items, items.first.range.begin..items.last.range.end]
+      end
+    end
+
+    def list
+      ->((lbrack, items, rbrack)) do
+        List[items, lbrack.range.begin..rbrack.range.end]
       end
     end
   end

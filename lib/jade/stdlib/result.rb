@@ -14,6 +14,10 @@ module Jade
         [Basics, Maybe]
       end
 
+      def default_imports
+        ['Result', 'Ok', 'Err']
+      end
+
       def code
         <<~JADE
           module Result exposing(Result, map, and_then, with_default, to_maybe, from_maybe, map_error)

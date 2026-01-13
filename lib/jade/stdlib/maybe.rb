@@ -14,6 +14,10 @@ module Jade
         [Basics]
       end
 
+      def default_imports
+        ['Maybe', 'Just', 'Nothing']
+      end
+
       def code
         <<~JADE
           module Maybe exposing(Maybe, with_default, map, and_then)

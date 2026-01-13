@@ -608,6 +608,17 @@ module Jade
         end
       end
 
+      context 'list' do
+        let(:text) do
+          <<~JADE
+            [12, 42]
+          JADE
+        end
+
+        it { is_expected.to be_a AST::List }
+        its(:items) { is_expected.to all(be_a(AST::Literal)) }
+      end
+
       context 'comment' do
         let(:text) do
           <<~JADE

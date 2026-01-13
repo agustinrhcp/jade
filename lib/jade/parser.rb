@@ -281,7 +281,14 @@ module Jade
     end
 
     def literal
-      string | int | bool
+      string | int | bool | list
+    end
+
+    def list
+      (type(:lbrack) >>
+        (sequence(lazy { expression }, separated_by: type(:comma).skip)).map { [it] } >>
+        type(:rbrack)
+      ).map(&AST.list)
     end
 
     # Should refactor to just an Identifier node

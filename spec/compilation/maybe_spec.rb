@@ -4,76 +4,46 @@ require 'jade'
 require 'jade/module_loader'
 
 module Jade
-  describe 'math' do
+  describe 'examples' do
     include_context 'with test compiler'
 
-    before do
-      test_compiler.require('math', math_source)
-    end
-
-    let(:math_source) do
+    let(:pepe_source) do
       <<~JADE
-        module Math exposing (example1, example2)
+        module Pepe exposing (hello, sum_maybe, and_then_test)
 
-        def example1() -> Int
-          pepe = Just(1)
-          1 + 2 * 3
+        def hello(maybe: Maybe(String)) -> String
+          Maybe.with_default(maybe, "Hello pepe")
         end
 
-        def example2() -> Int
-          (1 + 2) * 3
+        def sum_maybe(maybe: Maybe(Int), n: Int) -> Int
+          Maybe.with_default(Maybe.map(maybe, (m) -> { m + n }), 0)
+        end
+
+        def and_then_test(n: Maybe(Int)) -> Maybe(String)
+          Maybe.and_then(n, (int) -> {
+            case int
+            of 1 then Just("ONE")
+            of _ then Nothing()
+            end
+          })
         end
       JADE
     end
 
-    it 'respect operator precedence and grouping' do
-      expect(Math.example1.call).to eql 7
-      expect(Math.example2.call).to eql 9
+    before do
+      test_compiler.require('pepe', pepe_source)
     end
-  end
 
-  describe 'examples' do
-    context 'test import' do
-      include_context 'with test compiler'
+    it 'works' do
+      expect(Pepe.hello.call(Maybe::Just["Hello lala"])).to eql "Hello lala"
+      expect(Pepe.hello.call(Maybe::Nothing[])).to eql "Hello pepe"
 
-      let(:pepe_source) do
-        <<~JADE
-          module Pepe exposing (hello, sum_maybe, and_then_test)
+      expect(Pepe.sum_maybe.call(Maybe::Nothing[], 1)).to eql 0
+      expect(Pepe.sum_maybe.call(Maybe::Just[10], 1)).to eql 11
 
-          def hello(maybe: Maybe(String)) -> String
-            Maybe.with_default(maybe, "Hello pepe")
-          end
-
-          def sum_maybe(maybe: Maybe(Int), n: Int) -> Int
-            Maybe.with_default(Maybe.map(maybe, (m) -> { m + n }), 0)
-          end
-
-          def and_then_test(n: Maybe(Int)) -> Maybe(String)
-            Maybe.and_then(n, (int) -> {
-              case int
-              of 1 then Just("ONE")
-              of _ then Nothing()
-              end
-            })
-          end
-        JADE
-      end
-
-      before do
-        test_compiler.require('pepe', pepe_source)
-      end
-
-      it 'works' do
-        expect(Pepe.hello.call(Maybe::Just["Hello lala"])).to eql "Hello lala"
-        expect(Pepe.hello.call(Maybe::Nothing[])).to eql "Hello pepe"
-
-        expect(Pepe.sum_maybe.call(Maybe::Nothing[], 1)).to eql 0
-        expect(Pepe.sum_maybe.call(Maybe::Just[10], 1)).to eql 11
-
-        expect(Pepe.and_then_test.call(Maybe::Nothing[])).to eql Maybe::Nothing[]
-        expect(Pepe.and_then_test.call(Maybe::Just[2])).to eql Maybe::Nothing[]
-        expect(Pepe.and_then_test.call(Maybe::Just[1])).to eql Maybe::Just['ONE']
-      end
+      expect(Pepe.and_then_test.call(Maybe::Nothing[])).to eql Maybe::Nothing[]
+      expect(Pepe.and_then_test.call(Maybe::Just[2])).to eql Maybe::Nothing[]
+      expect(Pepe.and_then_test.call(Maybe::Just[1])).to eql Maybe::Just['ONE']
     end
   end
 end

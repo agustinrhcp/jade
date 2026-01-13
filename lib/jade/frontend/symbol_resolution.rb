@@ -12,6 +12,7 @@ require 'jade/frontend/symbol_resolution/if_then_else'
 require 'jade/frontend/symbol_resolution/import_declaration'
 require 'jade/frontend/symbol_resolution/infix_application'
 require 'jade/frontend/symbol_resolution/lambda'
+require 'jade/frontend/symbol_resolution/list'
 require 'jade/frontend/symbol_resolution/literal'
 require 'jade/frontend/symbol_resolution/member_access'
 require 'jade/frontend/symbol_resolution/module'
@@ -132,6 +133,9 @@ module Jade
 
         in AST::Lambda
           Lambda.resolve(node, registry, current_entry)
+
+        in AST::List
+          List.resolve(node, registry, current_entry)
 
         in AST::Grouping
           Grouping.resolve(node, registry, current_entry)
