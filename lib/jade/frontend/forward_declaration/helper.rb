@@ -21,6 +21,10 @@ module Jade
           in AST::TypeApplication(constructor:)
             entry.lookup_type(constructor.type)
 
+          in AST::QualifiedTypeName(path:)
+            *module_parts, type_name = path
+            entry.lookup_qualified_type(module_parts.join('.'), type_name)
+
           in AST::TypeFunction(params:, return_type:)
             params
               .map { figure_out_type(entry, it) }

@@ -21,6 +21,7 @@ module Jade
       'else',
       'case',
       'of',
+      'as',
     ].freeze
 
     SYMBOLS = {

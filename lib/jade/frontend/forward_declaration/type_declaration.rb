@@ -13,12 +13,13 @@ module Jade
 
           type_params.map(&:name).map { Symbol.var(it) }
             .then { Symbol.union(name, it, predeclared_variants) }
-            .then { entry.add_symbol(it) }
+            .then { entry.define(it) }
             .then { Result[it, []] }
         end
 
         def deep(node, entry)
           node => AST::TypeDeclaration(name:, variants:)
+
           symbol = entry.lookup_type(name)
 
           variant_symbols = variants
@@ -30,8 +31,8 @@ module Jade
             end
 
           variant_symbols
-            .reduce(entry) { |acc_entry, sym| acc_entry.add_symbol(sym) }
-            .then { it.add_symbol(symbol.with(variants: variant_symbols.map(&:to_ref))) }
+            .reduce(entry) { |acc_entry, sym| acc_entry.define(sym) }
+            .then { it.define(symbol.with(variants: variant_symbols.map(&:to_ref))) }
             .then { Result[it, []] }
         end
       end

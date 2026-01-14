@@ -37,7 +37,7 @@ module Jade
       def entry
         symbols
           .reduce(Registry.entry(module_name)) do |acc, sym|
-            acc.add_symbol(sym)
+            acc.define(sym)
           end
           .with(exposes:)
           .then { resolve_imports(it) }
@@ -55,7 +55,7 @@ module Jade
         @default_imports = if imports == :*
           exposes
         else
-          exposes.select { imports.include? it }
+          exposes.select { imports.include? it.name }
         end
       end
 
@@ -66,22 +66,15 @@ module Jade
       private
 
       def exposes
-        @symbols.map { [it.name, it.to_ref] }.to_h
+        @symbols.map { it.to_ref }
       end
 
       def resolve_imports(entry)
         # TODO: This is the same code from stdlib that auto imports stuff.
         imports
           .reduce(entry) do |acc, stdlib|
-            stdlib
-              .entry
-              .exposes
-              .values
-              .select { stdlib.default_imports.include? it.name }
-              .reduce(acc) do |acc2, sym|
-                acc2.add_imported_symbol(sym)
-              end
-              .add_import(stdlib.entry)
+            ImportEntry[stdlib.entry.name, stdlib.entry.name, stdlib.default_imports, stdlib.entry.exposes]
+              .then { acc.import(it) }
           end
       end
 

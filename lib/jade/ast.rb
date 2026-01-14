@@ -21,10 +21,15 @@ module Jade
     define(:TypeDeclaration, :name, :type_params, :variants)
     define(:VariantDeclaration, :name, :args)
     define(:TypeParam, :name)
-    define(:ImportDeclaration, :module_name, :exposing)
+    define(:ImportDeclaration, :module_name, :as, :exposing)
+
     define(:ExposeAll)
     define(:ExposeNone)
     define(:ExposeList, :items)
+    define(:ExposeValue, :name)
+    define(:ExposeAs, :as)
+    define(:ExposeType, :name)
+    define(:ExposeTypeExpand, :name)
 
     define(:Lambda, :params, :body)
     define(:LambdaParam, :name)
@@ -37,6 +42,7 @@ module Jade
     define(:MemberAccess, :target, :name)
 
     define(:TypeName, :type)
+    define(:QualifiedTypeName, :path)
     define(:TypeVar, :type)
     define(:TypeApplication, :constructor, :args)
     define(:TypeFunction, :params, :return_type)
@@ -155,6 +161,13 @@ module Jade
       end
     end
 
+    def qualified_type_name
+      ->((first, *rest)) do
+        constants = [first] + rest
+        QualifiedTypeName[constants.map(&:value), constants.first.range.begin..constants.last.range.end]
+      end
+    end
+
     def type_var
       ->(token) do
         TypeVar[token.value, token.range]
@@ -232,9 +245,10 @@ module Jade
     end
 
     def import_declaration
-      ->((import, module_parts, exposing)) do
+      ->((import, module_parts, as, exposing)) do
         ImportDeclaration[
           module_parts.map(&:value).join('.'),
+          as,
           exposing,
           import.range.begin..(module_parts.last.range.end),
         ]
@@ -304,7 +318,7 @@ module Jade
     def constructor_pattern
       ->((constructor, patterns)) do
         Pattern::Constructor[
-          constructor.value,
+          constructor,
           patterns,
           constructor.range.begin..(patterns.first&.range&.end || constructor.range.end)
         ]
@@ -351,6 +365,30 @@ module Jade
     def expose_list
       ->((items)) do
         ExposeList[items, items.first.range.begin..items.last.range.end]
+      end
+    end
+
+    def expose_value
+      ->((identifier)) do
+        ExposeValue[identifier.value, identifier.range]
+      end
+    end
+
+    def expose_type
+      ->((constant)) do
+        ExposeType[constant.value, constant.range]
+      end
+    end
+
+    def expose_type_expand
+      ->((constant)) do
+        ExposeTypeExpand[constant.value, constant.range]
+      end
+    end
+
+    def expose_as
+      ->((constant)) do
+        ExposeAs[constant.value, constant.range]
       end
     end
 

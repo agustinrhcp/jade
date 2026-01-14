@@ -429,7 +429,7 @@ module Jade
           subject { super().modules['Test'] }
 
           it 'has the right exposed symbols' do
-            expect(subject.exposes).to include('hello' => Symbol::ValueRef['Test', 'hello'])
+            expect(subject.exposes).to include(Symbol::ValueRef['Test', 'hello'])
           end
         end
       end
@@ -590,6 +590,56 @@ module Jade
       subject { super().expressions.last }
 
       it { is_expected.to be_a(AST::FunctionCall) }
+    end
+
+    describe 'import declaration' do
+      let(:text) do
+        <<~JADE
+          module Imported exposing(MyType, my_function)
+
+          type MyType = MyType | SomeOtherType(String)
+
+          def my_function(thing: MyType) -> String
+            case thing
+            of MyType then "My type"
+            of SomeOtherType(some_other) then some_other
+            end
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a AST::Module }
+
+      describe 'its exposed' do
+        subject { frontend => Ok([_, registry]); registry.modules['Imported'].exposes }
+
+        it { is_expected.to include Symbol.type_ref('Imported', 'MyType') }
+        it { is_expected.to_not include Symbol.value_ref('Imported', 'MyType') }
+      end
+
+      context 'when exposing constructors' do
+        let(:text) do
+          <<~JADE
+            module Imported exposing(MyType(..), my_function)
+
+            type MyType = MyType | SomeOtherType(String)
+
+            def my_function(thing: MyType) -> String
+              case thing
+              of MyType then "My type"
+              of SomeOtherType(some_other) then some_other
+              end
+            end
+          JADE
+        end
+
+        describe 'is exposed' do
+          subject { frontend => Ok([_, registry]); registry.modules['Imported'].exposes }
+
+          it { is_expected.to include Symbol.type_ref('Imported', 'MyType') }
+          it { is_expected.to include Symbol.value_ref('Imported', 'MyType') }
+        end
+      end
     end
 
     describe 'list' do

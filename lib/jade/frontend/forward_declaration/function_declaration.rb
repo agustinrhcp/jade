@@ -10,7 +10,7 @@ module Jade
 
           Symbol
             .predeclared_function(name)
-            .then { entry.add_symbol(it) }
+            .then { entry.define(it) }
             .then { Result[it, []] }
         end
 
@@ -29,7 +29,7 @@ module Jade
 
           Symbol
             .function(name, params_types, return_type_type)
-            .then { entry.add_symbol(it) }
+            .then { entry.define(it) }
             .then { Result[it, []] }
         end
       end

@@ -125,7 +125,7 @@ module Jade
     end
 
     def constructor_pattern
-      (constant >>
+      (constructor_reference >>
         ((type(:lparen).skip >>
         (sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } |
           none.map { [[]] }) >>
@@ -181,6 +181,7 @@ module Jade
       (
         type(:import) >>
         module_name >>
+        ((type(:as).skip >> constant).map(&AST.expose_as) | none.map { [nil] }) >>
         (exposing | none.map { [[]] })
       ).map(&AST.import_declaration)
     end
@@ -188,11 +189,39 @@ module Jade
     def exposing
       (type(:exposing).skip >>
           type(:lparen).skip >>
-          (sequence(variable_reference | type_name, separated_by: type(:comma).skip).map { [it] }.map(&AST.expose_list) |
-            type(:dotdot).map(&AST.expose_all)
-          ) >>
+          (expose_list | expose_all) >>
           type(:rparen).skip
-      ) | none.map(&AST.expose_none)
+      ) | expose_none
+    end
+
+    def expose_none
+      none.map(&AST.expose_none)
+    end
+
+    def expose_all
+      type(:dotdot).map(&AST.expose_all)
+    end
+
+    def expose_list
+      (sequence(expose_item, separated_by: type(:comma).skip))
+        .map { [it] }.map(&AST.expose_list)
+    end
+
+    def expose_item
+      expose_value | expose_type_expand | expose_type
+    end
+
+    def expose_value
+      identifier.map(&AST.expose_value)
+    end
+
+    def expose_type_expand
+      (constant >> type(:lparen) >> type(:dotdot) >> type(:rparen))
+        .map(&AST.expose_type_expand)
+    end
+
+    def expose_type
+      constant.map(&AST.expose_type)
     end
 
     def function_declaration
@@ -257,7 +286,13 @@ module Jade
     end
 
     def type_name
-      constant.map(&AST.type_name)
+       qualified_type_name | constant.map(&AST.type_name)
+    end
+
+    def qualified_type_name
+      (constant >> type(:dot).skip >> 
+        sequence(constant, separated_by: type(:dot).skip)
+      ).map(&AST.qualified_type_name)
     end
 
     def type_var

@@ -54,7 +54,7 @@ module Jade
         "#{generate(callee, registry)}.call(#{args_code})"
 
       in AST::ConstructorReference(name:, symbol:)
-        "->(*args) { #{symbol.qualified_name.gsub('.', '::')}[*args] }"
+        "#{symbol.qualified_name.gsub('.', '::')}.method(:[])"
 
       in AST::TypeDeclaration(variants:)
         variants.map { generate(it, registry) }.join('; ')
@@ -71,6 +71,9 @@ module Jade
 
         in Symbol::Function(module_name:, name:)
           "#{module_name.gsub('.', '::')}.#{name}"
+
+        in Symbol::Variant(module_name:, name:)
+          "#{module_name.gsub('.', '::')}::#{name}.method(:[])"
         end
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)
@@ -108,6 +111,7 @@ module Jade
 
       in AST::List(items:)
         "[#{items.map { generate(it, registry)}.join(', ')}]"
+
       end
     end
 

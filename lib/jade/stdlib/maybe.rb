@@ -15,12 +15,16 @@ module Jade
       end
 
       def default_imports
-        ['Maybe', 'Just', 'Nothing']
+        [
+          Symbol.type_ref('Maybe', 'Maybe'),
+          Symbol.value_ref('Maybe', 'Just'),
+          Symbol.value_ref('Maybe', 'Nothing'),
+        ]
       end
 
       def code
         <<~JADE
-          module Maybe exposing(Maybe, with_default, map, and_then)
+          module Maybe exposing(Maybe(..), with_default, map, and_then)
 
           type Maybe(a) = Just(a) | Nothing
 
