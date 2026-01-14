@@ -18,13 +18,18 @@ module Jade
       end
     end
 
-    def require(module_name, source)
+    def write(module_name, source)
       File.write(
         File.join(@source_root, "#{module_name}.jd"),
         source
       )
+    end
 
-      compiler.require(module_name)
+    def require(module_name, source)
+      write(module_name, source)
+
+      
+      silence_warnings { compiler.require(module_name) }
 
       rb_file = File.join(@build_root, "#{module_name}.rb")
       raise "Expected #{rb_file} to exist" unless File.exist?(rb_file)
@@ -32,6 +37,16 @@ module Jade
 
     def cleanup
       FileUtils.rm_rf(@project_root)
+    end
+
+    private
+
+    def silence_warnings
+      old_verbose = $VERBOSE
+      $VERBOSE = nil
+      yield
+    ensure
+      $VERBOSE = old_verbose
     end
   end
 end

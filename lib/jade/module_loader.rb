@@ -49,12 +49,13 @@ module Jade
         .reduce(registry) do |acc, entry|
           Frontend
             .run_entry(entry, acc)
-            .map { Codegen.generate_entry(it, acc.add_module(it)) }
+            .map { Codegen.generate_entry(it, acc.update_module(it)) }
             .map { acc.update_module(it) }
             .on_err do
-              puts Array(it).map(&:message)
-              fail("Compilation error")
+              errors = Array(it).map(&:message).join(', ')
+              fail("Compilation error: #{errors}")
             end => Ok(new)
+
           new
         end
     end

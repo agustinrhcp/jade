@@ -109,7 +109,7 @@ module Jade
         subject { super().split('; ') }
         its([0]) { is_expected.to eql "Just = Data.define(:_1)" }
         its([1]) { is_expected.to eql "Nothing = Data.define" }
-        its([2]) { is_expected.to eql "->(*args) { __Test__::Just[*args] }.call(12)" }
+        its([2]) { is_expected.to eql "__Test__::Just.method(:[]).call(12)" }
       end
     end
 

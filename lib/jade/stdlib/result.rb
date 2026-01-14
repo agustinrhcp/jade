@@ -15,12 +15,16 @@ module Jade
       end
 
       def default_imports
-        ['Result', 'Ok', 'Err']
+        [
+          Symbol.type_ref('Result', 'Result'),
+          Symbol.value_ref('Result', 'Ok'),
+          Symbol.value_ref('Result', 'Err'),
+        ]
       end
 
       def code
         <<~JADE
-          module Result exposing(Result, map, and_then, with_default, to_maybe, from_maybe, map_error)
+          module Result exposing(Result(..), map, and_then, with_default, to_maybe, from_maybe, map_error)
 
           type Result(value, error) = Ok(value) | Err(error)
 

@@ -19,11 +19,14 @@ module Jade
             items
               .reduce(Result[entry, []]) do |acc, exposed|
                 case exposed
-                in AST::VariableReference(name:, range:)
+                in AST::ExposeValue(name:, range:)
                   lookup_and_expose_value(acc.entry, name, range)
 
-                in AST::TypeName(type:, range:)
-                  lookup_and_expose_type(acc.entry, type, range)
+                in AST::ExposeType(name:, range:)
+                  lookup_and_expose_type(acc.entry, name, range)
+
+                in AST::ExposeTypeExpand(name:, range:)
+                  lookup_and_expose_type_with_variants(acc.entry, name, range)
                 end
                   .add_errors(acc.errors)
               end
@@ -32,9 +35,7 @@ module Jade
             entry
               .values
               .merge(entry.types)
-              .reduce(entry) do |acc, (name, sym)|
-                acc.add_expose(name, sym)
-              end
+              .reduce(entry) { |acc, (name, sym)| acc.expose(sym) }
               .then { Result[it, []] }
 
           in AST::ExposeNone
@@ -49,12 +50,25 @@ module Jade
           symbol = entry.lookup_type(name)
 
           if symbol
+            return entry
+              .expose(symbol.to_ref)
+              .then { Result[it, []] }
+          end
+
+          Result[
+            entry,
+            [Error::ExposedTypeNotFound.new(entry, span, name:)],
+          ]
+        end
+
+        def lookup_and_expose_type_with_variants(entry, name, span)
+          symbol = entry.lookup_type(name)
+
+          if symbol
             return symbol
               .variants
-              .reduce(entry) do |acc, variant|
-                acc.add_expose(variant.name, variant.to_ref)
-              end
-              .add_expose(name, symbol.to_ref)
+              .reduce(entry) { |acc, variant| acc.expose(variant.to_ref) }
+              .expose(symbol.to_ref)
               .then { Result[it, []] }
           end
 
@@ -69,7 +83,7 @@ module Jade
 
           if symbol
             return entry
-              .add_expose(name, symbol.to_ref)
+              .expose(symbol.to_ref)
               .then { Result[it, []] }
           end
 

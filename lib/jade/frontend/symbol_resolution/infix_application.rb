@@ -8,6 +8,7 @@ module Jade
         def resolve(node, registry, current_entry)
           node => AST::InfixApplication(left:, operator:, right:)
 
+          #  TODO: Fail if operator isn't present
           symbol = current_entry
             .lookup_value("(#{operator.value})")
             .to_ref

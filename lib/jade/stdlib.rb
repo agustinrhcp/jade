@@ -47,19 +47,10 @@ module Jade
     private
 
     def add_imports(entry)
-      # TODO: [ModuleLoaderRefactor] This should live in registry probably
-      # TODO: This is copy pasted from somewhere else
       STDLIBS
         .reduce(entry) do |acc, stdlib|
-          stdlib
-            .entry
-            .exposes
-            .values
-            .select { stdlib.default_imports.include? it.name }
-            .reduce(acc) do |acc2, sym|
-              acc2.add_imported_symbol(sym)
-            end
-            .add_import(stdlib.entry)
+          ImportEntry[stdlib.entry.name, stdlib.entry.name, stdlib.default_imports, stdlib.entry.exposes]
+            .then { acc.import(it) }
         end
     end
 

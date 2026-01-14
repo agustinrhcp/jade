@@ -1,4 +1,5 @@
 require 'jade/module_loader'
+require 'jade/entry'
 
 module Jade
   class Registry
@@ -17,12 +18,12 @@ module Jade
     end
 
     def self.entry(name)
-      ModuleEntry.new(
+      Entry.new(
         name:,
-        values: {},
-        types: {},
+        defined_values: {},
+        defined_types: {},
         imports: Set[],
-        exposes: {},
+        exposes: Set[],
         ast: nil,
         source: nil,
         generated: nil,
@@ -44,7 +45,7 @@ module Jade
     def update_module(entry)
       fail 'cannot update entry that does not exist' unless @modules[entry.name]
 
-      entry => ModuleEntry(name:)
+      entry => Entry(name:)
 
       @modules = @modules.merge(name => entry)
 
@@ -52,7 +53,7 @@ module Jade
     end
 
     def add_module(entry)
-      entry => ModuleEntry(name:)
+      entry => Entry(name:)
 
       @modules = @modules.merge(name => entry)
 
@@ -65,7 +66,7 @@ module Jade
     end
 
     def add_dependencies(entry, imports)
-      entry => ModuleEntry(name:)
+      entry => Entry(name:)
 
       @dependency_graph = dependency_graph.add(name, imports)
 
@@ -87,74 +88,6 @@ module Jade
     end
   end
 
-  ImportEntry = Data.define(:module_name, :alias, :symbols)
+  ImportEntry = Data.define(:module_name, :alias, :unqualified_symbols, :qualified_symbols)
 
-  ModuleEntry = Data.define(:name, :values, :types, :imports, :exposes, :ast, :source, :generated, :entry) do
-    def add_expose(qualified_name, symbol)
-      with(exposes: exposes.merge(qualified_name => symbol))
-    end
-
-    def add_symbol(symbol)
-      case symbol
-      in Symbol::Union
-        add_local_type_symbol(symbol)
-
-      in Symbol::Function | Symbol::StdlibFunction | Symbol::Variant
-        add_local_value_symbol(symbol)
-      end
-    end
-
-    def add_imported_symbol(symbol)
-      case symbol
-      in Symbol::TypeRef
-        with(types: types.merge(Symbol.unqualified_name(symbol.qualified_name) => symbol))
-
-      in Symbol::ValueRef
-        with(values: values.merge(Symbol.unqualified_name(symbol.qualified_name) => symbol))
-      end
-    end
-
-    def add_import(entry, as: entry.name)
-      ImportEntry[entry.name, as, []]
-        .then { with(imports: imports + [it]) }
-    end
-
-    def lookup_value(name)
-      values[name] || find_import(name)
-    end
-
-    def lookup_type(name)
-      types[name]
-    end
-
-    def path
-      source.uri.gsub('.jd', '.rb')
-    end
-
-    private
-
-    def find_import(name)
-      *module_name_parts, unqualified_name = name.split('.')
-      module_name = module_name_parts.join('.')
-
-      imports
-        .find { |import| import.alias == module_name }
-        &.[](unqualified_name)
-    end
-
-    def add_local_value_symbol(symbol)
-      symbol
-        .with(module_name: name)
-        .then { with(values: values.merge(it.name => it)) }
-    end
-
-    def add_local_type_symbol(symbol)
-      symbol
-        .with(
-          module_name: name,
-          variants: symbol.variants.map { it.with(module_name: name) },
-        )
-        .then { with(types: types.merge(it.name => it)) }
-    end
-  end
 end

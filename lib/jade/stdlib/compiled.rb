@@ -28,15 +28,9 @@ module Jade
 
       def resolve_imports(entry)
         imports
-          .map(&:entry)
           .reduce(entry) do |acc, stdlib|
-            stdlib
-              .exposes
-              .values
-              .reduce(acc) do |acc2, sym|
-                acc2.add_imported_symbol(sym)
-              end
-              .add_import(stdlib)
+            ImportEntry[stdlib.entry.name, stdlib.entry.name, stdlib.default_imports, stdlib.entry.exposes]
+              .then { acc.import(it) }
           end
       end
     end

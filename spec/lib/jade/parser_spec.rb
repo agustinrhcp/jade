@@ -130,6 +130,23 @@ module Jade
       end
     end
 
+    context 'a function declaration with qualified types' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          def add(a: Int, b: Int) -> Pepe.Lala
+            a + b
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Node).and be_a(AST::FunctionDeclaration) }
+      its(:name) { is_expected.to eql 'add' }
+      its(:params) { is_expected.to have(2).items.and all(be_a(AST::FunctionDeclarationParam)) }
+      its(:return_type) { is_expected.to be_a(AST::QualifiedTypeName) }
+    end
+
     context 'function declaration with type application' do
       include_context "single expression body"
 
@@ -361,7 +378,7 @@ module Jade
           its(:items) { is_expected.to have(1).item }
 
           it 'includes Maybe' do
-            expect(subject.items.first).to be_a(AST::TypeName).and have_attributes(type: 'Maybe')
+            expect(subject.items.first).to be_a(AST::ExposeType).and have_attributes(name: 'Maybe')
           end
         end
       end
@@ -452,7 +469,7 @@ module Jade
         its(:items) { is_expected.to have(1).item }
 
         it 'includes hello' do
-          expect(subject.items.first).to be_a(AST::VariableReference)
+          expect(subject.items.first).to be_a(AST::ExposeValue)
           expect(subject.items.first.name).to eql 'hello'
         end
       end
@@ -602,7 +619,7 @@ module Jade
           context 'its patterns' do
             subject { super().pattern }
 
-            its(:constructor) { is_expected.to eql 'Just' }
+            its(:constructor) { is_expected.to be_a(AST::ConstructorReference).and have_attributes(name: 'Just') }
             its(:patterns) { is_expected.to have(1).item.and all(be_a(AST::Pattern::Binding)) }
           end
         end
