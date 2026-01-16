@@ -228,5 +228,25 @@ module Jade
         it { is_expected.to eql "('Basics.(*)').call(('Basics.(*)').call(1, (('Basics.(+)').call(2, 3))), 4)" }
       end
     end
+
+    describe 'record literal' do
+      let(:text) do
+        <<~JADE
+          { a: "hello", b: 42 }
+        JADE
+      end
+
+      it { is_expected.to eql "Data.define(:a, :b)[\"hello\", 42]" }
+    end
+
+    describe 'record access' do
+      let(:text) do
+        <<~JADE
+          { a: "hello", b: 42 }.a
+        JADE
+      end
+
+      it { is_expected.to eql "Data.define(:a, :b)[\"hello\", 42].a" }
+    end
   end
 end

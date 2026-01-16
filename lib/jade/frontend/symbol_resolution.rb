@@ -20,6 +20,9 @@ require 'jade/frontend/symbol_resolution/pattern/binding'
 require 'jade/frontend/symbol_resolution/pattern/constructor'
 require 'jade/frontend/symbol_resolution/pattern/literal'
 require 'jade/frontend/symbol_resolution/pattern/wildcard'
+require 'jade/frontend/symbol_resolution/record_field'
+require 'jade/frontend/symbol_resolution/record_literal'
+require 'jade/frontend/symbol_resolution/record_update'
 require 'jade/frontend/symbol_resolution/type_declaration'
 require 'jade/frontend/symbol_resolution/variable_binding'
 require 'jade/frontend/symbol_resolution/variable_reference'
@@ -71,75 +74,34 @@ module Jade
 
       def resolve_node(node, registry, current_entry)
         case node
-        in AST::Module
-          Module.resolve(node, registry, current_entry)
-
-        in AST::ImportDeclaration
-          ImportDeclaration.resolve(node, registry, current_entry)
-
-        in AST::Literal
-          Literal.resolve(node, registry, current_entry) 
-
-        in AST::VariableBinding
-          VariableBinding.resolve(node, registry, current_entry)
-
-        in AST::Body
-          Body.resolve(node, registry, current_entry)
-
-        in AST::VariableReference
-          VariableReference.resolve(node, registry, current_entry)
-
-        in AST::ConstructorReference
-          ConstructorReference.resolve(node, registry, current_entry)
-
-        in AST::FunctionDeclaration
-          FunctionDeclaration.resolve(node, registry, current_entry)
-
-        in AST::InfixApplication
-          InfixApplication.resolve(node, registry, current_entry)
-
-        in AST::FunctionCall
-          FunctionCall.resolve(node, registry, current_entry)
-
-        in AST::TypeDeclaration
-          TypeDeclaration.resolve(node, registry, current_entry)
-
-        in AST::VariantDeclaration
-          VariantDeclaration.resolve(node, registry, current_entry)
-
-        in AST::IfThenElse
-          IfThenElse.resolve(node, registry, current_entry)
-
-        in AST::CaseOf
-          CaseOf.resolve(node, registry, current_entry)
-
-        in AST::CaseOfBranch
-          CaseOfBranch.resolve(node, registry, current_entry)
-
-        in AST::Pattern::Literal
-          Pattern::Literal.resolve(node, registry, current_entry)
-
-        in AST::Pattern::Binding
-          Pattern::Binding.resolve(node, registry, current_entry)
-
-        in AST::Pattern::Wildcard
-          Pattern::Wildcard.resolve(node, registry, current_entry)
-
-        in AST::Pattern::Constructor
-          Pattern::Constructor.resolve(node, registry, current_entry)
-
-        in AST::MemberAccess
-          MemberAccess.resolve(node, registry, current_entry)
-
-        in AST::Lambda
-          Lambda.resolve(node, registry, current_entry)
-
-        in AST::List
-          List.resolve(node, registry, current_entry)
-
-        in AST::Grouping
-          Grouping.resolve(node, registry, current_entry)
+        in AST::Module then Module
+        in AST::ImportDeclaration then ImportDeclaration
+        in AST::Literal then Literal
+        in AST::VariableBinding then VariableBinding
+        in AST::Body then Body
+        in AST::VariableReference then VariableReference
+        in AST::ConstructorReference then ConstructorReference
+        in AST::FunctionDeclaration then FunctionDeclaration
+        in AST::InfixApplication then InfixApplication
+        in AST::FunctionCall then FunctionCall
+        in AST::TypeDeclaration then TypeDeclaration
+        in AST::VariantDeclaration then VariantDeclaration
+        in AST::IfThenElse then IfThenElse
+        in AST::CaseOf then CaseOf
+        in AST::CaseOfBranch then CaseOfBranch
+        in AST::Pattern::Literal then Pattern::Literal
+        in AST::Pattern::Binding then Pattern::Binding
+        in AST::Pattern::Wildcard then Pattern::Wildcard
+        in AST::Pattern::Constructor then Pattern::Constructor
+        in AST::MemberAccess then MemberAccess
+        in AST::Lambda then Lambda
+        in AST::List then List
+        in AST::Grouping then Grouping
+        in AST::RecordLiteral then RecordLiteral
+        in AST::RecordField then RecordField
+        in AST::RecordUpdate then RecordUpdate
         end
+          .resolve(node, registry, current_entry)
       end
     end
   end

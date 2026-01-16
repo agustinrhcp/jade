@@ -647,5 +647,128 @@ module Jade
         it { is_expected.to be_a AST::TypeDeclaration }
       end
     end
+
+    describe 'record literal' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          { a: "Hello", b: 2 }
+        JADE
+      end
+
+      it { is_expected.to be_a AST::RecordLiteral }
+      its(:fields) { is_expected.to have(2).items.and all(be_a(AST::RecordField)) }
+    end
+
+    describe 'record update' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          { a | b: 2 }
+        JADE
+      end
+
+      it { is_expected.to be_a AST::RecordUpdate }
+      its(:base) { is_expected.to be_a(AST::VariableReference).and have_attributes(name: 'a') }
+      its(:fields) { is_expected.to have(1).items.and all(be_a(AST::RecordField)) }
+
+      context 'with operation' do
+        let(:text) do
+          <<~JADE
+            def pauls_birthday() -> Person
+              paul_before_today = paul()
+              { paul_before_today | age: paul_before_today.age + 1 }
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a AST::FunctionDeclaration }
+
+        describe 'the record update' do
+          subject { super().body.expressions.last }
+
+          it { is_expected.to be_a AST::RecordUpdate }
+          its(:base) { is_expected.to be_a(AST::VariableReference).and have_attributes(name: 'paul_before_today') }
+        end
+      end
+    end
+
+    describe 'record update sugar' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          .b=
+        JADE
+      end
+
+      it { is_expected.to be_a AST::RecordUpdateSugar }
+      its(:field_key) { is_expected.to eql 'b' }
+    end
+
+    describe 'record access sugar' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          .b
+        JADE
+      end
+
+      it { is_expected.to be_a AST::RecordAccessSugar }
+      its(:field_key) { is_expected.to eql 'b' }
+    end
+
+    context 'a record type expression' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          def add() -> { name : String, age : Int }
+            { name: "Paul", age: 55 }
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a AST::FunctionDeclaration }
+      its(:return_type) { is_expected.to be_a(AST::TypeRecord) }
+
+      describe 'the type record' do
+        subject { super().return_type }
+
+        its(:fields) { is_expected.to have(2).items }
+        its(:fields) { is_expected.to include("name" => AST::TypeName["String", 22...28]) }
+        its(:fields) { is_expected.to include("age" => AST::TypeName["Int", 36...39]) }
+      end
+
+      context 'an open record type' do
+        let(:text) do
+          <<~JADE
+            def name(thing: { a | name : String }) -> String
+              thing.name
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a AST::FunctionDeclaration }
+        its(:params) { is_expected.to have(1).item }
+
+        describe 'the first param' do
+          subject { super().params.first }
+
+          its(:name) { is_expected.to eql 'thing' }
+          its(:type) { is_expected.to be_a(AST::TypeRecord) }
+
+          describe 'the record type' do
+            subject { super().type }
+
+            its(:fields) { is_expected.to have(1).item }
+            its(:row_var) { is_expected.to be_a(AST::TypeParam).and have_attributes(name: 'a') }
+          end
+        end
+      end
+    end
   end
 end

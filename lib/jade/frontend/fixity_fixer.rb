@@ -107,8 +107,17 @@ module Jade
             .map { fix(it) }
             .then { node.with(items: it) }
 
+        in AST::RecordLiteral(fields:)
+          fields.map { fix(it) }.then { node.with(fields: it) }
+
+        in AST::RecordField(value:)
+          fix(value).then { node.with(value: it) }
+
+        in AST::RecordUpdate(fields:)
+          fields.map { fix(it) }.then { node.with(fields: it) }
+
         in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
-          AST::ImportDeclaration | AST::Literal
+          AST::ImportDeclaration | AST::Literal | AST::RecordAccessSugar
 
           node
         end

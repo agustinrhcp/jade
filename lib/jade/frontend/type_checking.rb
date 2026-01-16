@@ -116,11 +116,23 @@ module Jade
         in AST::Grouping
           Inference::Grouping.infer(node, registry, env, var_gen)
 
-        in AST::MemberAccess
-          node => AST::MemberAccess(symbol:)
+        in AST::QualifiedAccess
+          node => AST::QualifiedAccess(symbol:)
 
           type_from_symbol(symbol, registry)
             .then { Result[it, Substitution.new, env, []] }
+
+        in AST::RecordAccess
+          Inference::RecordAccess.infer(node, registry, env, var_gen)
+
+        in AST::RecordLiteral
+          Inference::RecordLiteral.infer(node, registry, env, var_gen)
+
+        in AST::RecordUpdate
+          Inference::RecordUpdate.infer(node, registry, env, var_gen)
+
+        in AST::RecordField(value:)
+          check_node(value, registry, env, var_gen)
         end
       end
 
@@ -291,6 +303,19 @@ module Jade
         def message
           "The item at #{@actual_index} does not match the previous items in the list, " +
             "expected #{@first_branch_type} but found #{@actual}"
+        end
+      end
+
+      class RecordAccessTypeMismatchError
+        def initialize(node, actual, expected)
+          @node = node
+          @actual = actual
+          @expected = expected
+        end
+
+        def message
+          "Something is off with this record access, it expects #{@expected} " +
+            "but found #{@actual}"
         end
       end
     end

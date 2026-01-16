@@ -8,6 +8,12 @@ module Jade
 
     define(:Literal, :value)
     define(:List, :items)
+    define(:RecordLiteral, :fields)
+    define(:RecordField, :key, :value)
+
+    define(:RecordUpdate, :base, :fields)
+    define(:RecordUpdateSugar, :field_key)
+    define(:RecordAccessSugar, :field_key)
 
     define(:VariableBinding, :name, :expression)
     define(:VariableReference, :name)
@@ -40,12 +46,15 @@ module Jade
 
     define(:FunctionCall, :callee, :args)
     define(:MemberAccess, :target, :name)
+    define(:QualifiedAccess, :target, :name)
+    define(:RecordAccess, :target, :name)
 
     define(:TypeName, :type)
     define(:QualifiedTypeName, :path)
     define(:TypeVar, :type)
     define(:TypeApplication, :constructor, :args)
     define(:TypeFunction, :params, :return_type)
+    define(:TypeRecord, :fields, :row_var)
 
     define(:IfThenElse, :condition, :if_branch, :else_branch)
     define(:CaseOf, :expression, :branches)
@@ -158,6 +167,16 @@ module Jade
     def type_name
       ->(token) do
         TypeName[token.value, token.range]
+      end
+    end
+
+    def type_record
+      ->((lbrace, row_var, fields, rbrace)) do
+        TypeRecord[
+          fields.map { |(identifier, type)| [identifier.value, type] }.to_h,
+          row_var,
+          lbrace.range.begin..rbrace.range.end
+        ]
       end
     end
 
@@ -395,6 +414,36 @@ module Jade
     def list
       ->((lbrack, items, rbrack)) do
         List[items, lbrack.range.begin..rbrack.range.end]
+      end
+    end
+
+    def record_literal
+      ->((lbrace, fields, rbrace)) do
+        RecordLiteral[fields, lbrace.range.begin..rbrace.range.begin]
+      end
+    end
+
+    def record_field
+      ->((key, value)) do
+        RecordField[key.value, value, key.range.begin..value.range.end]
+      end
+    end
+
+    def record_update
+      ->((lbrace, variable_reference, _pipe, fields, rbrace)) do
+        RecordUpdate[variable_reference, fields, lbrace.range.begin..rbrace.range.begin]
+      end
+    end
+
+    def record_update_sugar
+      ->((dot, key, assign)) do
+        RecordUpdateSugar[key.value, dot.range.begin..assign.range.begin]
+      end
+    end
+
+    def record_access_sugar
+      ->((dot, key)) do
+        RecordAccessSugar[key.value, dot.range.begin..key.range.begin]
       end
     end
   end

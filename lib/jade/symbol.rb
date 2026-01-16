@@ -9,6 +9,18 @@ module Jade
       qualified_name.split('.').last
     end
 
+    def self.anonymous_record(fields)
+      fail('fields is expected to be an array') unless fields.is_a?(Array)
+
+      AnonymousRecord[fields, nil]
+    end
+
+    def self.record_type(fields, row_var)
+      fail('fields is expected to be a hash') unless fields.is_a?(Hash)
+
+      RecordType[fields, row_var]
+    end
+
     def self.union(name, type_params, variants)
       Union[nil, name, type_params, variants.map(&:to_ref)]
     end
@@ -134,6 +146,14 @@ module Jade
     end
 
     Param = Data.define(:name) do
+      include Symbol
+    end
+
+    AnonymousRecord = Data.define(:fields, :row_var) do
+      include Symbol
+    end
+
+    RecordType = Data.define(:fields, :row_var) do
       include Symbol
     end
   end

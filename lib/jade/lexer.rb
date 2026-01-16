@@ -91,6 +91,7 @@ module Jade
         when scanner.scan(/\A[A-Z][A-Za-z0-9_]*/)
           tokens << tok(:constant, scanner)
 
+        # TODO: Support floats!
         when scanner.scan(/\d+/)
           tokens << tok(:int, scanner)
 

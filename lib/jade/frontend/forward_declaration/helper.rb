@@ -29,6 +29,14 @@ module Jade
             params
               .map { figure_out_type(entry, it) }
               .then { Symbol.function_type(it, figure_out_type(entry, return_type)) }
+
+          in AST::TypeRecord(fields:, row_var:)
+            row = row_var&.then { |row| Symbol.var(row.name) }
+
+            fields
+              .transform_values { figure_out_type(entry, it) }
+              .then { Symbol.record_type(it, row) }
+
           end
         end
       end

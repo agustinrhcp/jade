@@ -278,7 +278,7 @@ module Jade
       end
     end
 
-    context 'member access' do
+    context 'qualified access' do
       include_context "single expression body"
 
       let(:text) do
@@ -287,7 +287,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to be_a(AST::MemberAccess) }
+      it { is_expected.to be_a(AST::QualifiedAccess) }
       its(:symbol) { is_expected.to eql Symbol::ValueRef['String', 'is_empty']}
 
       context 'when calling a not exposed function' do
@@ -670,6 +670,77 @@ module Jade
           subject { super().first.message }
 
           it { is_expected.to eql "The item at 2 does not match the previous items in the list, expected Int but found String" }
+        end
+      end
+    end
+
+    describe 'record literal' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          { a: "hello", b: 42 }
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::RecordLiteral) }
+
+      context 'with duplicate keys' do
+        let(:text) do
+          <<~JADE
+            { a: "hello", a: 42 }
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::DuplicateRecordField) }
+      end
+    end
+
+    describe 'a function with open record' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          def name(thing: { a | name : String }) -> String
+            thing.name
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+    end
+
+    describe 'record update' do
+      subject { super().expressions.last }
+
+      let(:text) do
+        <<~JADE
+          a = { a: 0, b: 0 }
+          { a | b: 42 }
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::RecordUpdate) }
+
+      context 'with sugar on top' do
+        let(:text) do
+          <<~JADE
+            def pauls_birthday() -> { name : String, age : Int }
+              paul_before_today = { name: "Paul", age: 55 }
+
+              paul_before_today |> .age=(paul_before_today.age + 1)
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+        it 'has a body with two expressions' do
+          expect(subject.body.expressions).to have(2).items
+          expect(subject.body.expressions.last).to be_a(AST::FunctionCall)
         end
       end
     end

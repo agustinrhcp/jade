@@ -81,6 +81,35 @@ module Jade
           node
             .with(items: items.map { desugar(it) })
 
+        in AST::RecordLiteral(fields:)
+          fields.map { desugar(it) }.then { node.with(fields: it) }
+
+        in AST::RecordUpdate(fields:)
+          fields.map { desugar(it) }.then { node.with(fields: it) }
+
+        in AST::RecordField(value:)
+          desugar(value).then { node.with(value: it) }
+
+        in AST::RecordAccessSugar(field_key:, range:)
+          AST::VariableReference['x', nil]
+            .then { AST::MemberAccess[it, AST::VariableReference[field_key, nil], range] }
+            .then { AST::Body[[it], nil] }
+            .then { AST::Lambda[[AST::LambdaParam['x', nil]], it, range] }
+
+        in AST::RecordUpdateSugar(field_key:, range:)
+          value_reference = AST::VariableReference['value', nil]
+
+          AST::VariableReference['x', nil]
+            .then { AST::RecordUpdate[it, [AST::RecordField[field_key, value_reference, nil]], range] }
+            .then { AST::Body[[it], nil] }
+            .then do |body|
+              AST::Lambda[
+                [AST::LambdaParam['x', nil], AST::LambdaParam[value_reference.name, nil]],
+                body,
+                range,
+              ]
+            end
+
         in AST::Literal | AST::VariableReference | AST::ConstructorReference |
           AST::TypeDeclaration | AST::ImportDeclaration | AST::Pattern::Constructor |
           AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard
