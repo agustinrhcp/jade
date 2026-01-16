@@ -42,6 +42,10 @@ module Jade
       Function[args, return_type]
     end
 
+    def anonymous_record(fields, row_var)
+      AnonymousRecord[fields, row_var]
+    end
+
     Var = Data.define(:name) do
       def to_s
         name
@@ -103,6 +107,33 @@ module Jade
 
       def free_vars
         []
+      end
+    end
+
+    AnonymousRecord = Data.define(:fields, :row_var) do
+      def to_s
+        row = row_var ? "#{row_var} | " : ""
+
+        fields
+          .map { |name, type| "#{name} : #{type}" }
+          .join(", ")
+          .then { "{ #{row}#{it} }" }
+      end
+
+      def free_vars
+        [] + (row_var&.free_vars || [])
+      end
+
+      def open?
+        !closed?
+      end
+
+      def closed?
+        row_var.nil?
+      end
+
+      def field_names
+        fields.keys
       end
     end
   end

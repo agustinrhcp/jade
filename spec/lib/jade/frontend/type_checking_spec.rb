@@ -375,6 +375,16 @@ module Jade
           its(:errors) { is_expected.to be_empty }
         end
       end
+
+      describe 'record literal' do
+        let(:text) do
+          <<~JADE
+            { a: "hello", b: 42 }
+          JADE
+        end
+
+        its(:type) { is_expected.to eql Type.anonymous_record({ 'a' => Type.string, 'b' => Type.int }, nil) }
+      end
     end
   end
 end

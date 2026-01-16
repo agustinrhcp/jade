@@ -77,9 +77,31 @@ return type_from_symbol(symbol.union, registry) if symbol.args.empty?
 
 ### Typing errors
 
-* Over generalized stuff
+* Needs rigid type vars
 ```jade
   def nope(result: a) -> Result(Int, String)
     Ok(result)
   end
 ```
+
+### Missing Type Name Should fail
+
+```jade
+  module Pepe exposing(paul, pauls_birthday)
+
+  def paul() -> { name : String, age : Int }
+    { name: "Paul", age: 55 }
+  end
+
+  def pauls_birthday() -> Person
+    paul_before_today = paul()
+    { paul_before_today | age: paul_before_today.age + 1 }
+  end
+```
+
+### Store types in env
+
+At the moment we are just storing values, that makes type_from_symbol need
+to calculate on every use, and some cases with free vars we should be
+instantiating and we are not. We should store types as schemes in the env instead
+and mimic the current lookup (to be lookup_value) when dealing with types too.

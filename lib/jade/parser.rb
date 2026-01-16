@@ -152,7 +152,8 @@ module Jade
     end
 
     def atom
-      variable_reference | literal | constructor_reference | grouping
+      variable_reference | literal | constructor_reference | grouping | record_literal |
+       record_update_sugar | record_access_sugar | record_update
     end
 
     def postfix
@@ -250,10 +251,6 @@ module Jade
       ).map(&AST.type_declaration)
     end
 
-    def type_param
-      identifier
-    end
-
     def variant_declaration
       (
         constant >>
@@ -282,7 +279,25 @@ module Jade
     end
 
     def type_expression
-      type_function | type_atom
+      type_function | type_atom | type_record
+    end
+
+    def type_record
+      (type(:lbrace) >> type_record_row >> type_record_fields >> type(:rbrace)).map(&AST.type_record)
+    end
+
+    def type_record_row
+      (type_param >> type(:pipe).skip) | none.map { nil }
+    end
+
+    def type_record_fields
+      sequence(
+        (identifier >>
+          type(:colon).skip >>
+          lazy { type_expression }
+        ).map { [it] },
+        separated_by: type(:comma).skip,
+      ).map { [it] }
     end
 
     def type_name
@@ -370,6 +385,32 @@ module Jade
 
         Ok[[oks, current]]
       end
+    end
+
+    # Records
+    def record_literal
+      (type(:lbrace) >> record_fields >> type(:rbrace)).map(&AST.record_literal)
+    end
+
+    def record_fields
+      sequence(record_field, separated_by: type(:comma).skip)
+        .map { [it] }
+    end
+
+    def record_field
+      (identifier >> type(:colon).skip >> lazy { expression }).map(&AST.record_field)
+    end
+
+    def record_access_sugar
+      (type(:dot) >> type(:identifier)).map(&AST.record_access_sugar)
+    end
+
+    def record_update
+      (type(:lbrace) >> variable_reference >> type(:pipe) >> record_fields >> type(:rbrace)).map(&AST.record_update)
+    end
+
+    def record_update_sugar
+      (type(:dot) >> type(:identifier) >> type(:assign)).map(&AST.record_update_sugar)
     end
 
     private

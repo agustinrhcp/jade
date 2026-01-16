@@ -100,11 +100,6 @@ module Jade
 
         in AST::TypeDeclaration(name:, symbol:, variants:)
           Result[scope, []]
-          # variants
-          #   .reduce(bind(scope, name, symbol)) do |acc, variant|
-          #     bind(acc.scope, variant.name, symbol)
-          #       .add_errors(acc.errors)
-          #   end
 
         in AST::IfThenElse(condition:, if_branch:, else_branch:)
           analyze_r(condition, registry, scope) => { errors: condition_errors }
@@ -113,7 +108,10 @@ module Jade
 
           Result[scope, condition_errors + if_errors + else_errors]
 
-        in AST::MemberAccess
+        in AST::QualifiedAccess
+          Result[scope, []]
+
+        in AST::RecordAccess
           Result[scope, []]
 
         in AST::CaseOf(expression:, branches:)
@@ -168,6 +166,20 @@ module Jade
           analyze_many(items, registry, scope)
             .with(scope:)
      
+        in AST::RecordLiteral(fields:)
+          analyze_many(fields, registry, scope)
+            .add_errors(analyze_duplicate_fields(fields))
+
+        in AST::RecordUpdate(base:, fields:)
+          analyze_r(base, registry, scope) => { errors: base_errors }
+
+          analyze_many(fields, registry, scope)
+            .add_errors(analyze_duplicate_fields(fields))
+            .add_errors(base_errors)
+
+        in AST::RecordField(value:)
+          analyze_r(value, registry, scope)
+
         end
       end
 
@@ -257,6 +269,18 @@ module Jade
         def message
           "Arity mismatch, #{constructor} expects #{expected_arity} patterns but found #{actual_arity}"
         end
+      end
+
+      def analyze_duplicate_fields(fields)
+        fields
+          .group_by(&:key)
+          .select { |_, v| v.size > 1 }
+          .map do |k, v|
+            first, *rest = v
+          # TODO: Need to add the entry
+            SemanticAnalysis::Error::DuplicateRecordField
+              .new(nil, first.range, field_name: k, duplicate_spans: rest.map(&:range))
+          end
       end
     end
   end

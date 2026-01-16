@@ -52,6 +52,19 @@ module Jade
                   symbol.args.map { type_from_symbol(it, registry) },
                   type_from_symbol(symbol.union, registry)
                 )
+
+            in Symbol::AnonymousRecord(fields:)
+              fields
+                .map { |k, _| [k, Type.var(k)] }.to_h
+                .then { Type.anonymous_record(it, nil) }
+
+            in Symbol::RecordType(fields:, row_var:)
+              row = row_var&.then { type_from_symbol(row_var, registry) }
+
+              fields
+                .transform_values { type_from_symbol(it, registry) }
+                .then { Type.anonymous_record(it, row) }
+
             end
           end
 

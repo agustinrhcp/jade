@@ -64,7 +64,7 @@ module Jade
           .then { it.empty? ? "" : "(#{it.join(", ")})"}
           .then { "#{name} = Data.define#{it}" }
 
-      in AST::MemberAccess(symbol:)
+      in AST::QualifiedAccess(symbol:)
         case registry.lookup(symbol)
         in Symbol::StdlibFunction(codegen:)
           codegen
@@ -112,6 +112,20 @@ module Jade
       in AST::List(items:)
         "[#{items.map { generate(it, registry)}.join(', ')}]"
 
+      in AST::RecordLiteral(fields:)
+        fields_sorted = fields.sort_by { it.key }
+
+        "Data.define(#{fields_sorted.map { ":#{it.key}" }.join(', ')})" +
+          "[#{fields_sorted.map { generate(it.value, registry) }.join(', ')}]"
+
+      in AST::RecordAccess(target:, name:)
+        "#{generate(target, registry)}.#{name.name}"
+
+      in AST::RecordUpdate(base:, fields:)
+        fields
+          .map { "#{it.key}: #{generate(it.value, registry)}" }
+          .join(', ')
+          .then { "#{generate(base, registry)}.with(#{it})" }
       end
     end
 

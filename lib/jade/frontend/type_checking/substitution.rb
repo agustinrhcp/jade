@@ -22,6 +22,11 @@ module Jade
           in Type::Application(args:)
             type
               .with(args: args.map { apply(it) })
+
+          in Type::AnonymousRecord(fields:)
+            fields
+              .transform_values { apply(it) }
+              .then { type.with(fields:) }
           end
         end
 

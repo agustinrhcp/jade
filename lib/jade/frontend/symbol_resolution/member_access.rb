@@ -15,7 +15,8 @@ module Jade
 
             case resolve_qualified_access(path, node, registry, current_entry)
             in Ok(symbol)
-              node.with(symbol:)
+              AST::QualifiedAccess[*node.deconstruct]
+                .with(symbol:)
                 .then { Result[it, []] }
 
             in Err(error)
@@ -23,8 +24,9 @@ module Jade
             end
 
           else
-            resolve_node(target)
+            resolve_node(target, registry, current_entry)
               .map { node.with(target: it) }
+              .map { AST::RecordAccess[*it.deconstruct] }
           end
         end
 
@@ -32,10 +34,13 @@ module Jade
 
         def collect_qualified_names(node)
           case node
-          when AST::ConstructorReference
+          in AST::ConstructorReference
             [node.name]
-          when AST::MemberAccess
-            collect_qualified_names(node.target) + [node.name.name]
+
+          in AST::MemberAccess
+            names = collect_qualified_names(node.target)
+            names ? names + [node.name.name] : nil
+
           else
             nil
           end
