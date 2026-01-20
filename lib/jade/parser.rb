@@ -331,7 +331,7 @@ module Jade
     end
 
     def literal
-      string | int | bool | list
+      string | int | bool | float | list
     end
 
     def list
@@ -430,6 +430,10 @@ module Jade
 
     def int
       type(:int).map(&AST.literal)
+    end
+
+    def float
+      type(:float).map(&AST.literal)
     end
 
     def bool

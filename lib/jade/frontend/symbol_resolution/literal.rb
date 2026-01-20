@@ -24,6 +24,9 @@ module Jade
 
           in String
             Symbol::TypeRef['String', 'String']
+
+          in Float
+            Symbol::TypeRef['Basics', 'Float']
           end
         end
       end

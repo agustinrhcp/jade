@@ -85,6 +85,9 @@ module Jade
           in :int
             token.value.to_i
 
+          in :float
+            token.value.to_f
+
           in :bool
             token.value == 'True' ? true : false
           end

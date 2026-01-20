@@ -31,6 +31,22 @@ module Jade
         expect(Math.example1.call).to eql 7
         expect(Math.example2.call).to eql 9
       end
+
+      context 'float' do
+        let(:math_source) do
+          <<~JADE
+            module Math exposing (floats)
+
+            def floats() -> Float
+              42.42
+            end
+          JADE
+        end
+
+        it 'returns a float' do
+          expect(Math.floats.call).to eql 42.42
+        end
+      end
     end
   end
 end

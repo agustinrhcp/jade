@@ -29,7 +29,7 @@ module Jade
 
       in AST::Literal(value:)
         case value
-        in Integer | TrueClass | FalseClass
+        in Integer | TrueClass | FalseClass | Float
           value.to_s
 
         in String

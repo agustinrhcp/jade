@@ -20,6 +20,17 @@ module Jade
       it { is_expected.to have(1).item.and all(be_a(Token)) }
       its([0]) { is_expected.to be_token.of_type(:int).with('42').at(0...2) }
 
+      context 'tokenizing a float' do
+        let(:text) do
+          <<~JADE
+            42.42
+          JADE
+        end
+
+        it { is_expected.to have(1).item.and all(be_a(Token)) }
+        its([0]) { is_expected.to be_token.of_type(:float).with('42.42').at(0...5) }
+      end
+
       describe 'tokenizing a string' do
         let(:text) do
           <<~JADE
