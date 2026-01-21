@@ -57,7 +57,7 @@ module Jade
 
           Result[
             entry,
-            [Error::ExposedTypeNotFound.new(entry, span, name:)],
+            [Error::ExposedTypeNotFound.new(entry.name, span, name:)],
           ]
         end
 
@@ -74,7 +74,7 @@ module Jade
 
           Result[
             entry,
-            [Error::ExposedTypeNotFound.new(entry, span, name:)],
+            [Error::ExposedTypeNotFound.new(entry.name, span, name:)],
           ]
         end
 
@@ -89,7 +89,7 @@ module Jade
 
           Result[
             entry,
-            [Error::ExposedValueNotFound.new(entry, span, name:)],
+            [Error::ExposedValueNotFound.new(entry.name, span, name:)],
           ]
         end
       end

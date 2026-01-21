@@ -7,7 +7,7 @@ module Jade
         def instantiate(scheme, var_gen)
           scheme
             .quantified.reduce(Substitution.new) do |subs, var|
-              subs.bind(var, Type.var(var_gen.fresh))
+              subs.bind(var.id, Type.var(var_gen.fresh, var.name))
             end
             .then { it.apply(scheme.type) }
         end

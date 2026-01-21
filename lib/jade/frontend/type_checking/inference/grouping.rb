@@ -6,10 +6,10 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen)
+          def infer(node, registry, env, var_gen, expected_type)
             node => AST::Grouping(expression:)
 
-            check(expression, registry, env, var_gen)
+            check(expression, registry, env, var_gen, expected_type)
           end
         end
       end

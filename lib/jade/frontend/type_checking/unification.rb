@@ -21,10 +21,15 @@ module Jade
               end
 
           in [Type::Var, _]
-            Ok[Substitution.new.bind(type1.name, type2)]
+            if (type1.rigid? || type2.rigid?) && type1 != type2
+              return Err[UnificationError.new(type1, type2)]
+            end
+
+            Ok[Substitution.new.bind(type1.id, type2)]
 
           in [_, Type::Var]
             unify(type2, type1)
+              .map_error(&:flip)
 
           in [Type::Function, Type::Function]
             unless type1.args.size == type2.args.size
@@ -126,6 +131,13 @@ module Jade
           def initialize(actual, expected)
             @actual = actual
             @expected = expected
+          end
+
+          def flip
+            old_expected = @expected
+            @expected = @actual
+            @actual = old_expected
+            self
           end
 
           def message

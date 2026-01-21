@@ -1,18 +1,34 @@
+require 'jade/frontend/type_checking/env'
 require 'jade/frontend/type_checking/substitution'
 require 'jade/frontend/type_checking/unification'
 require 'jade/frontend/type_checking/generalization'
 require 'jade/frontend/type_checking/instantiation'
 require 'jade/frontend/type_checking/inference'
+require 'jade/frontend/type_checking/error'
 
-require 'jade/frontend/type_checking/inference/module'
 module Jade
   module Frontend
     module TypeChecking
       extend Inference::Helpers
       extend self
 
+      Expected = Data.define(:type, :authoritative) do
+        def auth?
+          authoritative == true
+        end
+
+        def self.auth(type)
+          self[type, true]
+        end
+
+        def self.non_auth(var_gen)
+          self[var_gen.fresh, false]
+        end
+      end
+
       Result = Data.define(:type, :substitution, :env, :errors) do
         def and_unify(actual, &block)
+          fail if actual.is_a?(Expected)
           case Unification.unify(type, actual)
           in Ok(sub)
             compose_substitution(sub)
@@ -46,276 +62,70 @@ module Jade
         end
       end
 
-      def initiate_env(entry, registry)
-        entry
-          .values
-          .reduce(Env.new) do |env, (unq, sym)|
-            env.bind(unq, generalize(type_from_symbol(sym, registry)))
-          end
-      end
-
       def check(entry, registry)
-        initiate_env(entry, registry)
-          .then { check_node(entry.ast, registry, it, VarGen.new) }
+        var_gen = VarGen.new
+
+        Env
+          .load(entry, registry, var_gen)
+          .then { check_node(entry.ast, registry, it, var_gen, Expected.non_auth(var_gen)) }
           .to_result
           .map { entry }
       end
 
       def check_repl(node, registry, env = Env.new, var_gen = VarGen.new)
-        check_node(node, registry, env, var_gen)
+        check_node(node, registry, env, var_gen, Expected.non_auth(var_gen.fresh))
           .to_result
       end
 
-      def check_node(node, registry, env, var_gen)
+      def check_node(node, registry, env, var_gen, expected_type)
         case node
-        in AST::Module
-          Inference::Module.infer(node, registry, env, var_gen)
-
-        in AST::ImportDeclaration
-          Inference::ImportDeclaration.infer(node, registry, env, var_gen)
-
-        in AST::Literal
-          infer_literal(node, registry, env, var_gen)
-
-        in AST::FunctionDeclaration
-          Inference::FunctionDeclaration.infer(node, registry, env, var_gen)
-
-        in AST::TypeDeclaration
-          Inference::TypeDeclaration.infer(node, registry, env, var_gen)
-
-        in AST::InfixApplication
-          Inference::InfixApplication.infer(node, registry, env, var_gen)
-
-        in AST::FunctionCall
-          Inference::FunctionCall.infer(node, registry, env, var_gen)
-
-        in AST::List
-          Inference::List.infer(node, registry, env, var_gen)
-
-        in AST::ConstructorReference
-          Inference::ConstructorReference.infer(node, registry, env, var_gen)
-
-        in AST::VariableReference
-          infer_variable_reference(node, registry, env, var_gen)
-
-        in AST::VariableBinding
-          infer_variable_binding(node, registry, env, var_gen)
-
-        in AST::Body
-          infer_body(node, registry, env, var_gen)
-
-        in AST::IfThenElse
-          Inference::IfThenElse.infer(node, registry, env, var_gen)
-
-        in AST::CaseOf
-          Inference::CaseOf.infer(node, registry, env, var_gen)
-
-        in AST::Lambda
-          Inference::Lambda.infer(node, registry, env, var_gen)
-
-        in AST::Grouping
-          Inference::Grouping.infer(node, registry, env, var_gen)
-
-        in AST::QualifiedAccess
-          node => AST::QualifiedAccess(symbol:)
-
-          type_from_symbol(symbol, registry)
-            .then { Result[it, Substitution.new, env, []] }
-
-        in AST::RecordAccess
-          Inference::RecordAccess.infer(node, registry, env, var_gen)
-
-        in AST::RecordLiteral
-          Inference::RecordLiteral.infer(node, registry, env, var_gen)
-
-        in AST::RecordUpdate
-          Inference::RecordUpdate.infer(node, registry, env, var_gen)
-
-        in AST::RecordField(value:)
-          check_node(value, registry, env, var_gen)
+        in AST::Module then Inference::Module
+        in AST::ImportDeclaration then Inference::ImportDeclaration
+        in AST::Literal then Inference::Literal
+        in AST::FunctionDeclaration then Inference::FunctionDeclaration
+        in AST::TypeDeclaration then Inference::TypeDeclaration
+        in AST::InfixApplication then Inference::InfixApplication
+        in AST::FunctionCall then Inference::FunctionCall
+        in AST::List then Inference::List
+        in AST::ConstructorReference then Inference::ConstructorReference
+        in AST::VariableReference then Inference::VariableReference
+        in AST::VariableBinding then Inference::VariableBinding
+        in AST::Body then Inference::Body
+        in AST::IfThenElse then Inference::IfThenElse
+        in AST::CaseOf then Inference::CaseOf
+        in AST::Lambda then Inference::Lambda
+        in AST::Grouping then Inference::Grouping
+        in AST::QualifiedAccess then Inference::QualifiedAccess
+        in AST::RecordAccess then Inference::RecordAccess
+        in AST::RecordLiteral then Inference::RecordLiteral
+        in AST::RecordUpdate then Inference::RecordUpdate
+        in AST::RecordField then Inference::RecordField
         end
+          .infer(node, registry, env, var_gen, expected_type)
       end
 
       private
 
-      def infer_variable_reference(node, registry, env, var_gen)
-        node => AST::VariableReference(name:)
-        
-        env
-          .bindings[name]
-          .then { instantiate(it, var_gen) }
-          .then { Result[it, Substitution.new, env, []] }
-      end
-
-      def infer_literal(node, registry, env, var_gen)
-        node => AST::Literal(symbol:)
-
-        type_from_symbol(symbol, registry)
-          .then { Result[it, Substitution.new, env, []] }
-      end
-
-      def infer_variable_binding(node, registry, env, var_gen)
-        node => AST::VariableBinding(name:, expression:)
-
-        check_node(expression, registry, env, var_gen)
-          .then { it.with(env: it.env.bind(name, generalize(it.type))) }
-      end
-
-      def infer_body(node, registry, env, var_gen)
-        node => AST::Body(expressions:)
-
-        expressions
-          .reduce(Result[Type.unit, Substitution.new, env, []]) do |acc, expr|
-            check_node(expr, registry, acc.env, var_gen)
-              .add_errors(acc.errors)
-              .compose_substitution(acc.substitution)
-          end
-      end
-
-      def generalize(type)
-        Generalization.generalize(type)
-      end
-
-      def unify(type1, type2)
-        Unification.unify(type1, type2)
-      end
-
-      Env = Data.define(:bindings) do
-        def initialize(bindings: {})
-          super
-        end
-
-        def bind(key, value)
-          bindings
-            .merge(key => value)
-            .then { with(bindings: it) }
-        end
-      end
 
       class VarGen
         def initialize
           @next_id = 1
         end
 
-        def fresh
+        def fresh_id
           "t#{@next_id}"
             .tap { @next_id += 1 }
         end
-      end
 
-      class FunctionBodyTypeMismatchError
-        def initialize(node, expected, actual)
-          @node = node
-          @expected = expected
-          @actual = actual
+        def fresh(name = nil)
+          fresh_id
+            .then { Type.var(it, name) }
         end
 
-        def message
-          "There's a problem with the body of `#{@node.name}` definition: " ++
-            "it returns #{@actual} but its signature says it should be #{@expected}"
-        end
-      end
-
-      class InfixApplicationTypeMismatchError
-        def initialize(node, expected, actual, side)
-          @node = node
-          @expected = expected
-          @actual = actual
-          @side = side == :left ? 'Left' : 'Right'
-        end
-
-        def message
-          "#{@side} side of (#{@node.operator.value}) expects #{@expected} but found #{@actual}"
-        end
-      end
-
-      class FunctionCallTypeMismatchError
-        def initialize(node, expected, actual)
-          @node = node
-          @expected = expected
-          @actual = actual
-        end
-
-        def message
-          "Function call mismatch, expected #{@expected} but found #{@actual}"
-        end
-      end
-
-      class IfConditionTypeMismatchError
-        def initialize(node, expected, actual)
-          @node = node
-          @expected = expected
-          @actual = actual
-        end
-
-        def message
-          "If condition expects Bool but found #{@actual}"
-        end
-      end
-
-      class IfBranchesTypeMismatchError
-        def initialize(node, expected, actual)
-          @node = node
-          @expected = expected
-          @actual = actual
-        end
-
-        def message
-          "If branches must preturn the same type. The if branch produces " +
-            "#{@actual} but the else branch produces #{@expected}"
-        end
-      end
-
-      class PatternTypeMismatchError
-        def initialize(node, expected, actual)
-          @node = node
-          @expected = expected
-          @actual = actual
-        end
-
-        def message
-          "Pattern is trying to match #{@expected} with #{@actual}"
-        end
-      end
-
-      class CaseOfBranchesTypeMismatchError
-        def initialize(node, first_branch_type, actual, actual_index)
-          @node = node
-          @first_branch_type = first_branch_type
-          @actual = actual
-          @actual_index = actual_index
-        end
-
-        def message
-          "First branch of this case statement is #{@first_branch_type} " +
-            "but branch #{@actual_index} is #{@actual}"
-        end
-      end
-
-      class ListItemTypeMismatchError
-        def initialize(node, first_branch_type, actual, actual_index)
-          @node = node
-          @first_branch_type = first_branch_type
-          @actual = actual
-          @actual_index = actual_index
-        end
-
-        def message
-          "The item at #{@actual_index} does not match the previous items in the list, " +
-            "expected #{@first_branch_type} but found #{@actual}"
-        end
-      end
-
-      class RecordAccessTypeMismatchError
-        def initialize(node, actual, expected)
-          @node = node
-          @actual = actual
-          @expected = expected
-        end
-
-        def message
-          "Something is off with this record access, it expects #{@expected} " +
-            "but found #{@actual}"
+        def next(name)
+          "#{name}#{@next_id}"
+            .tap { @next_id += 1 }
+            .then { Type.var(it, name) }
         end
       end
     end

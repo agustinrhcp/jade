@@ -15,12 +15,21 @@ module Jade
       end
 
       let(:type_check) do
+        var_gen = TypeChecking::VarGen.new
         Lexer
           .tokenize(source)
           .then { Parser.parse(it) }
           .and_then { Frontend.run_up_to_semantic_analysis(it) }
           # TODO: Make this prettier
-          .and_then { |entry, registry| TypeChecking.check_node(entry.ast, registry, TypeChecking.initiate_env(entry, registry), TypeChecking::VarGen.new) }
+          .and_then do |entry, registry|
+            TypeChecking.check_node(
+              entry.ast,
+              registry,
+              TypeChecking::Env.load(entry, registry, var_gen),
+              var_gen,
+              TypeChecking::Expected.non_auth(var_gen),
+            )
+          end
       end
 
       subject { type_check }
@@ -51,9 +60,9 @@ module Jade
           subject { super().env }
 
           its(:bindings) do
-            is_expected.to have_key('add')
+            is_expected.to have_key('__Test__.add')
             is_expected.to include(
-              'add' => TypeChecking::Scheme[
+              '__Test__.add' => TypeChecking::Scheme[
                 [],
                 Type.function([Type.int, Type.int], Type.int),
               ]
@@ -61,7 +70,7 @@ module Jade
           end
         end
 
-        context 'with a longer body (so a Body node)' do
+        context 'with a longer body' do
           let(:text) do
             <<~JADE
               def add(a: Int, b: Int) -> Int
@@ -89,9 +98,36 @@ module Jade
 
           describe 'the error' do
             subject { super().errors.first }
-            it { is_expected.to be_a(TypeChecking::FunctionBodyTypeMismatchError) }
+            it { is_expected.to be_a(TypeChecking::Error::FunctionBodyTypeMismatch) }
             its(:message) { is_expected.to include('it returns String but its signature says it should be Int') }
+            its(:entry) { is_expected.to eql '__Test__' }
           end
+        end
+
+        context 'with rigid type param' do
+          let(:text) do
+            <<~JADE
+              def nope(result: a) -> Result(a, String)
+                Ok(result)
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.unit }
+          its(:errors) { is_expected.to be_empty }
+        end
+
+        context 'with rigid type param  that matches' do
+          let(:text) do
+            <<~JADE
+              def nope(result: a) -> Result(a, error)
+                Ok(result)
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.unit }
+          its(:errors) { is_expected.to be_empty }
         end
       end
 
@@ -137,8 +173,8 @@ module Jade
 
           describe 'the error' do
             subject { super().errors.first }
-            it { is_expected.to be_a(TypeChecking::InfixApplicationTypeMismatchError) }
-            its(:message) { is_expected.to include('Left side of (*) expects Int but found String') }
+            it { is_expected.to be_a(TypeChecking::Error::InfixApplicationTypeMismatch) }
+            its(:message) { is_expected.to include('Right side of (*) expects Int but found String') }
           end
         end
       end
@@ -171,7 +207,7 @@ module Jade
 
           describe 'the error' do
             subject { super().errors.first }
-            it { is_expected.to be_a(TypeChecking::FunctionCallTypeMismatchError) }
+            it { is_expected.to be_a(TypeChecking::Error::FunctionCallTypeMismatch) }
             its(:message) { is_expected.to include('Function call mismatch, expected (Int, Int) -> Int but found (Int, String) -> Int') }
           end
         end
@@ -185,8 +221,14 @@ module Jade
           JADE
         end
 
-        its(:type) { is_expected.to eql Type.function([Type.var('t1')], Type.constructor('__Test__.Maybe').apply([Type.var('t1')])) }
+        its(:type) { is_expected.to be_a(Type::Function) }
         its(:errors) { is_expected.to be_empty }
+
+        describe 'the type' do
+          subject { super().type }
+          its(:args) { is_expected.to have(1).items }
+          its(:return_type) { is_expected.to be_a(Type::Application).and have_attributes(constructor: Type.constructor('__Test__.Maybe')) }
+        end
 
         describe 'and call' do
           let(:text) do
@@ -262,7 +304,7 @@ module Jade
           describe 'the error' do
             subject { super().errors.first }
 
-            it { is_expected.to be_a(TypeChecking::IfConditionTypeMismatchError) }
+            it { is_expected.to be_a(TypeChecking::Error::IfConditionTypeMismatch) }
             its(:message) { is_expected.to include('If condition expects Bool but found String') }
           end
         end
@@ -278,14 +320,14 @@ module Jade
             JADE
           end
 
-          its(:type) { is_expected.to eql Type.int }
+          its(:type) { is_expected.to eql Type.string }
           its(:errors) { is_expected.to_not be_empty }
 
           describe 'the error' do
             subject { super().errors.first }
 
-            it { is_expected.to be_a(TypeChecking::IfBranchesTypeMismatchError) }
-            its(:message) { is_expected.to include('If branches must preturn the same type. The if branch produces Int but the else branch produces String') }
+            it { is_expected.to be_a(TypeChecking::Error::IfBranchesTypeMismatch) }
+            its(:message) { is_expected.to include('If branches must return the same type. The then branch produces Int but the else branch produces String') }
           end
         end
       end
@@ -318,7 +360,7 @@ module Jade
 
           describe 'the error' do
             subject { super().errors.first }
-            it { is_expected.to be_a TypeChecking::PatternTypeMismatchError }
+            it { is_expected.to be_a TypeChecking::Error::PatternTypeMismatch }
 
             its(:message) { is_expected.to include 'Pattern is trying to match Int with String' }
           end
@@ -339,9 +381,9 @@ module Jade
 
           describe 'the error' do
             subject { super().errors.first }
-            it { is_expected.to be_a TypeChecking::CaseOfBranchesTypeMismatchError }
+            it { is_expected.to be_a TypeChecking::Error::CaseOfBranchesTypeMismatch }
 
-            its(:message) { is_expected.to include 'First branch of this case statement is Int but branch 2 is String' }
+            its(:message) { is_expected.to include 'First branch of this case statement is Int but 2nd branch is String' }
           end
         end
 
@@ -384,6 +426,60 @@ module Jade
         end
 
         its(:type) { is_expected.to eql Type.anonymous_record({ 'a' => Type.string, 'b' => Type.int }, nil) }
+      end
+
+      describe 'unification edge cases' do
+        describe 'anotation rigidity' do
+          let(:text) do
+            <<~JADE
+              def f() -> a
+                1
+              end
+            JADE
+          end
+
+          its(:errors) { is_expected.to have(1).item }
+
+          describe 'the error' do
+            subject { super().errors.first }
+
+            its(:message) { is_expected.to include 'it returns Int but its signature says it should be a' }
+          end
+
+          context 'with an if' do
+            let(:text) do
+              <<~JADE
+                def f(x : a) -> a
+                  if True then
+                    x
+                  else
+                    1
+                  end
+                end
+              JADE
+            end
+
+            its(:errors) { is_expected.to have(1).item }
+
+            describe 'the error' do
+              subject { super().errors.map(&:message).join(' ') }
+
+              it { is_expected.to include 'it returns Int but its signature says it should be a' }
+            end
+          end
+        end
+
+        describe 'identity function' do
+          let(:text) do
+            <<~JADE
+              def f(x: a) -> a
+                x
+              end
+            JADE
+          end
+
+          its(:errors) { is_expected.to be_empty  }
+        end
       end
     end
   end

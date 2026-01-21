@@ -13,63 +13,16 @@ module Jade
             Instantiation.instantiate(scheme, var_gen)
           end
 
-          def generalize(type)
-            Generalization.generalize(type)
+          def generalize(env, type)
+            Generalization.generalize(env, type)
           end
 
-          def type_from_symbol(symbol, registry)
-            case symbol
-            in Symbol::Variable(name:)
-              Type.var(name)
-
-            in Symbol::TypeRef | Symbol::ValueRef
-              registry
-                .lookup(symbol)
-                .then { type_from_symbol(it, registry) }
-
-            in Symbol::Union
-              Type
-                .constructor(symbol.qualified_name)
-                .apply(symbol.type_params.map { type_from_symbol(it, registry) })
-
-            in Symbol::Function | Symbol::StdlibFunction
-              Type
-                .function(
-                  symbol.params.values.map { type_from_symbol(it, registry) },
-                  type_from_symbol(symbol.return_type, registry)
-                )
-
-            in Symbol::FunctionType
-              Type
-                .function(
-                  symbol.params.map { type_from_symbol(it, registry) },
-                  type_from_symbol(symbol.return_type, registry)
-                )
-
-            in Symbol::Variant
-              Type
-                .function(
-                  symbol.args.map { type_from_symbol(it, registry) },
-                  type_from_symbol(symbol.union, registry)
-                )
-
-            in Symbol::AnonymousRecord(fields:)
-              fields
-                .map { |k, _| [k, Type.var(k)] }.to_h
-                .then { Type.anonymous_record(it, nil) }
-
-            in Symbol::RecordType(fields:, row_var:)
-              row = row_var&.then { type_from_symbol(row_var, registry) }
-
-              fields
-                .transform_values { type_from_symbol(it, registry) }
-                .then { Type.anonymous_record(it, row) }
-
-            end
+          def check(node, registry, env, var_gen, expected_type)
+            TypeChecking.check_node(node, registry, env, var_gen, expected_type)
           end
 
-          def check(node, registry, env, var_gen)
-            TypeChecking.check_node(node, registry, env, var_gen)
+          def type_from_symbol(symbol, registry, var_gen)
+            Type.from_symbol(symbol, registry, var_gen)
           end
         end
       end
