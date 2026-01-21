@@ -6,21 +6,10 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen)
+          def infer(node, registry, env, var_gen, _)
             node => AST::TypeDeclaration(symbol:, variants:)
 
-            union_type = type_from_symbol(symbol, registry)
-
-            type_from_symbol(symbol, registry)
-              .then { env.bind(node.name, generalize(it)) }
-              .then do
-                variants.reduce(it) do |acc, variant|
-                  acc.bind(variant.name, generalize(type_from_symbol(variant.symbol, registry)))
-                end
-              end
-              .then do
-                Result[Type.unit, Substitution.new, it, []]
-              end
+            Result[Type.unit, Substitution.new, env, []]
           end
         end
       end

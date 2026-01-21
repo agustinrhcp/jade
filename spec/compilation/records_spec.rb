@@ -101,7 +101,7 @@ module Jade
 
           it 'fails with type mismatch' do
             expect { test_compiler.require('pepe', pepe_source) }
-              .to raise_error(RuntimeError, /it expects { t2 | ate : t1 } but found { name : String, age : Int }>/)
+              .to raise_error(RuntimeError, /it expects { a | ate : Int } but found { name : String, age : Int }>/)
           end
         end
       end

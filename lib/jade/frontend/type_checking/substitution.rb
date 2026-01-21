@@ -16,8 +16,8 @@ module Jade
           in Type::Constructor
             type
 
-          in Type::Var(name:)
-            mappings[name] || type
+          in Type::Var(id:)
+            mappings[id] || type
 
           in Type::Application(args:)
             type

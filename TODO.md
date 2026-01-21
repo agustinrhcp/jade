@@ -27,13 +27,6 @@ is a mistake. We don't know what they actually are until we start semantic
 analysis. We should record what the user wrote, not what it means at parse
 time.
 
-### Expected type
-
-Some nodes, like if or case statements could benefit from getting an expected
-type. We can assume the expected type of an if or a case is the first branch
-but that'd be wrong if the is a type already expected from above. This is a
-problem of having all the typechecking happening bottom up, so maybe adding
-some top down expected type could help.
 
 ### Holes for currying
 
@@ -49,20 +42,12 @@ Semantic analysis of exposed symbols
 ### Tweaks
 
 Dry entry versions of compilation step.
-Split entry into it's own file and.
-
-
-### Bugs
-
-Scope should collect types and values independently, so
-type and variant constructor can both be added.
 
 
 ### Reference Index Phase
 
 New pass to track usages of symbols. This is helpful for duplicate error
 (now being raised by semantic analysis), unused imports and dead code detection.
-
 
 
 ### No args constructor into constants
@@ -74,15 +59,6 @@ Just be a function but Nothing be a constant would make tons of sense.
 return type_from_symbol(symbol.union, registry) if symbol.args.empty?
 ```
 
-
-### Typing errors
-
-* Needs rigid type vars
-```jade
-  def nope(result: a) -> Result(Int, String)
-    Ok(result)
-  end
-```
 
 ### Missing Type Name Should fail
 
@@ -99,9 +75,13 @@ return type_from_symbol(symbol.union, registry) if symbol.args.empty?
   end
 ```
 
-### Store types in env
+### REVISE Store types in env
 
 At the moment we are just storing values, that makes type_from_symbol need
 to calculate on every use, and some cases with free vars we should be
 instantiating and we are not. We should store types as schemes in the env instead
 and mimic the current lookup (to be lookup_value) when dealing with types too.
+
+### Test Int(a)
+
+This should fail, Int has no vars

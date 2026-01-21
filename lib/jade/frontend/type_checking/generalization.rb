@@ -1,14 +1,22 @@
 module Jade
   module Frontend
     module TypeChecking
+      Scheme = Data.define(:quantified, :type) do
+        def unbound_vars
+          type.unbound_vars
+        end
 
-      Scheme = Data.define(:quantified, :type)
+        def free_vars
+          type.unbound_vars - quantified
+        end
+      end
 
       module Generalization
         extend self
 
-        def generalize(type)
-          Scheme[type.free_vars, type]
+        def generalize(env, type)
+          (type.unbound_vars - env.free_vars)
+            .then { Scheme[it, type] }
         end
       end
     end

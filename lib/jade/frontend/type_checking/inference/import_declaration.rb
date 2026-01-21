@@ -6,7 +6,7 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen)
+          def infer(_, _, env, _, _)
             Result[Type.unit, Substitution.new, env, []]
           end
         end

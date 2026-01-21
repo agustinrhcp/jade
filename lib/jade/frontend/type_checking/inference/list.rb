@@ -6,12 +6,12 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen)
+          def infer(node, registry, env, var_gen, expected)
             node => AST::List(items:)
 
             if items.empty?
               return Result.new[
-                Type.list.apply([Type.var(var_gen.fresh)]),
+                Type.list.apply([expected.type]),
                 Substitution.new,
                 env,
                 []
@@ -19,20 +19,26 @@ module Jade
             end
 
             head, *rest = items
-              .map do |item|
-                check(item, registry, env, var_gen)
-              end
+            head_result = check(head, registry, env, var_gen, Expected.non_auth(var_gen))
 
             rest
-              .each_with_index.reduce(head) do |acc, (item, i)|
-                acc
-                  .compose_substitution(item.substitution)
-                  .add_errors(item.errors)
-                  .and_unify(item.type) do
-                    ListItemTypeMismatchError.new(node, it.actual, it.expected, i + 2)
+              .each_with_index
+              .reduce(head_result) do |acc, (item, i)|
+                check(item, registry, acc.env, var_gen, Expected.non_auth(var_gen))
+                  .compose_substitution(acc.substitution)
+                  .add_errors(acc.errors)
+                  .and_unify(acc.type) do
+                    Error::ListItemTypeMismatch.new(
+                      env.entry_name,
+                      item.range,
+                      expected: it.expected,
+                      actual: it.actual,
+                      actual_index: i + 2,
+                    )
                   end
               end
               .then { it.with(type: Type.list.apply([it.type])) }
+              .and_unify(expected.type)
           end
         end
       end

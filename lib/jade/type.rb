@@ -1,9 +1,23 @@
+require 'jade/type/base'
+
+require 'jade/type/var'
+require 'jade/type/constructor'
+require 'jade/type/function'
+require 'jade/type/application'
+require 'jade/type/unit'
+require 'jade/type/anonymous_record'
+
 module Jade
   module Type
     extend self
 
-    def var(name)
-      Var[name]
+    def from_symbol(symbol, registry, var_gen)
+      from_symbol_r(symbol, registry, var_gen, {})
+        .first
+    end
+
+    def var(id, name = nil)
+      Var[id, name, false]
     end
 
     def unit
@@ -46,94 +60,112 @@ module Jade
       AnonymousRecord[fields, row_var]
     end
 
-    Var = Data.define(:name) do
-      def to_s
-        name
-      end
+    private
 
-      def free_vars
-        [name]
-      end
-    end
+    def from_symbol_r(symbol, registry, var_gen, var_map)
+      case symbol
+      in Symbol::Variable(name:)
+        if var_map[name]
+          [var_map[name], var_map]
+        else
+          var_gen
+            .next(name)
+            .then { [it, var_map.merge(name => it)] }
+        end
 
-    Constructor = Data.define(:name) do
-      def to_s
-        name.split('.').last
-      end
+      in Symbol::TypeRef | Symbol::ValueRef
+        registry
+          .lookup(symbol)
+          .then { from_symbol_r(it, registry, var_gen, var_map) }
 
-      def free_vars
-        []
-      end
+      in Symbol::Union(type_params: [])
+        Type
+          .constructor(symbol.qualified_name)
+          .then { [it, var_map] }
 
-      def apply(types)
-        return self if types.empty?
+      in Symbol::Union
+        union_vars, union_map = symbol
+          .type_params
+          .reduce([[], var_map]) do |(types, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, new_map)| [types + [t], new_map] }
+          end
 
-        Application[self, types]
-      end
-    end
+        Type
+          .constructor(symbol.qualified_name)
+          .then { [it.apply(union_vars), union_map] }
 
-    Function = Data.define(:args, :return_type) do
-      def to_s
-        args
-          .map(&:to_s).join(', ')
-          .then { "(#{it})"} + " -> " + return_type.to_s
-      end
+      in Symbol::Function | Symbol::StdlibFunction
+        args, local_map = symbol
+          .params
+          .values
+          .reduce([[], {}]) do |(types, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, new_map)| [types + [t], new_map] }
+          end
 
-      def free_vars
-        (args.flat_map(&:free_vars) + return_type.free_vars)
-          .then(&:to_set)
-          .then(&:to_a)
-      end
-    end
+        from_symbol_r(symbol.return_type, registry, var_gen, local_map)
+          .then { |(t, _)| Type.function(args, t) }
+          .then { [it, var_map] }
 
-    Application = Data.define(:constructor, :args) do
-      def to_s
-        "#{constructor.to_s}(#{args.join(", ")})"
-      end
+      in Symbol::FunctionType
+        # Same as function and stdlib but without keyed params instead.
+        args, local_map = symbol
+          .params
+          .reduce([[], {}]) do |(types, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, new_map)| [types + [t], new_map] }
+          end
 
-      def free_vars
-        args
-          .flat_map(&:free_vars)
-          .then(&:to_set)
-          .then(&:to_a)
-      end
-    end
+        from_symbol_r(symbol.return_type, registry, var_gen, local_map)
+          .then { |(t, _)| Type.function(args, t) }
+          .then { [it, var_map] }
 
-    Unit = Data.define() do
-      def inspect
-        '()'
-      end
-      alias_method :to_s, :inspect
+      in Symbol::Variant
+        union_type, union_vars =
+          from_symbol_r(symbol.union, registry, var_gen, var_map)
 
-      def free_vars
-        []
-      end
-    end
+        args, args_map = symbol
+          .args
+          .reduce([[], union_vars]) do |(types, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, new_map)| [types + [t], new_map] }
+          end
 
-    AnonymousRecord = Data.define(:fields, :row_var) do
-      def to_s
-        row = row_var ? "#{row_var} | " : ""
+        Type
+          .function(
+            args,
+            union_type,
+          )
+          .then { [it, args_map]}
+
+      in Symbol::AnonymousRecord(fields:)
+        fields
+          .map { |k, _| [k, var_gen.next(k)] }.to_h
+          .then { Type.anonymous_record(it, nil) }
+          .then { [it, var_map] }
+
+      in Symbol::RecordType(fields:, row_var:)
+        row = row_var&.then { from_symbol_r(row_var, registry, var_gen, var_map).first }
 
         fields
-          .map { |name, type| "#{name} : #{type}" }
-          .join(", ")
-          .then { "{ #{row}#{it} }" }
-      end
+          .transform_values { from_symbol_r(it, registry, var_gen, var_map).first }
+          .then { Type.anonymous_record(it, row) }
 
-      def free_vars
-        [] + (row_var&.free_vars || [])
-      end
+      in Symbol::TypeApplication(constructor:, args:)
+        union_type, union_vars =
+          from_symbol_r(constructor, registry, var_gen, var_map)
 
-      def open?
-        !closed?
-      end
+        args, args_map = symbol
+          .args
+          .reduce([[], union_vars]) do |(types, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, new_map)| [types + [t], new_map] }
+          end
 
-      def closed?
-        row_var.nil?
-      end
-
-      def field_names
-        fields.keys
+        Type
+          .constructor(symbol.constructor.qualified_name)
+          .then { [it.apply(args), args_map] }
       end
     end
   end

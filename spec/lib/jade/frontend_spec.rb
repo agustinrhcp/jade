@@ -562,11 +562,11 @@ module Jade
     describe 'function declaration with lambda' do
       let(:text) do
         <<~JADE
-          type Maybe = Just(a) | Nothing
+          type Maybe(a) = Just(a) | Nothing
 
           def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
             case maybe
-            of Just(something) then fn(something)
+            of Just(something) then Just(fn(something))
             of Nothing then maybe
             end
           end
@@ -664,7 +664,7 @@ module Jade
         subject { frontend => Err(errors); errors }
 
         it { is_expected.to have(1).item }
-        its([0]) { is_expected.to be_a(Frontend::TypeChecking::ListItemTypeMismatchError) }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::ListItemTypeMismatch) }
 
         describe 'its message' do
           subject { super().first.message }

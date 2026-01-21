@@ -40,7 +40,7 @@ module Jade
         end
 
         def bad_import(current_entry, span, module_name, name)
-          Err[Error::BadImport.new(current_entry, span, module_name:, name:)]
+          Err[Error::BadImport.new(current_entry.name, span, module_name:, name:)]
         end
 
         def handle_exposing_list(items, current_entry, importing_module)
@@ -89,7 +89,9 @@ module Jade
               if variants
                 Ok[variants + [type]]
               else
-                Err[Error::PrivateTypeExpansion.new(current_entry, span, name:, module_name: importing_module.name)]
+                Error::PrivateTypeExpansion
+                  .new(current_entry.name, span, name:, module_name: importing_module.name)
+                  .then { Err[it] }
               end
             end
         end

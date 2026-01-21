@@ -5,6 +5,10 @@ module Jade
       module_parts.join('.')
     end
 
+    def qualified_name
+      [module_name, name].join('.')
+    end
+
     def self.unqualified_name(qualified_name)
       qualified_name.split('.').last
     end
@@ -67,6 +71,10 @@ module Jade
 
     def self.stdlib_function(name, params, return_type, codegen)
       StdlibFunction[nil, name, params, return_type, codegen]
+    end
+
+    def self.type_application(constructor, args)
+      TypeApplication[constructor, args]
     end
 
     Union = Data.define(:module_name, :name, :type_params, :variants) do
@@ -154,6 +162,10 @@ module Jade
     end
 
     RecordType = Data.define(:fields, :row_var) do
+      include Symbol
+    end
+
+    TypeApplication = Data.define(:constructor, :args) do
       include Symbol
     end
   end

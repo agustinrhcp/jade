@@ -18,8 +18,11 @@ module Jade
           in AST::TypeName(type:)
             entry.lookup_type(type)
 
-          in AST::TypeApplication(constructor:)
-            entry.lookup_type(constructor.type)
+          in AST::TypeApplication(constructor:, args:)
+            constructor_sym = entry.lookup_type(constructor.type)
+            args
+              .map { figure_out_type(entry, it) }
+              .then { Symbol.type_application(constructor_sym.to_ref, it) }
 
           in AST::QualifiedTypeName(path:)
             *module_parts, type_name = path

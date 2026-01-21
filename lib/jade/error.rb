@@ -1,5 +1,7 @@
 module Jade
   class Error
+    attr_reader :entry, :span
+
     def initialize(entry:, span:, **rest)
       @entry = entry
       @span = span

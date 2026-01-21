@@ -1,0 +1,234 @@
+require 'spec_helper'
+
+require 'jade'
+
+module Jade
+  describe Type do
+    describe '.from_symbol' do
+      subject { described_class.from_symbol(symbol, registry, Frontend::TypeChecking::VarGen.new) }
+
+      let(:registry) do
+        Stdlib
+          .load(Registry.new)
+          .add_module(entry)
+      end
+
+      describe 'the id function: x -> x' do
+        let(:symbol) do
+          Symbol::Function.new(
+            module_name: "__Test__",
+            name: "id",
+            params: { "x" => Symbol.var("a") },
+            return_type: Symbol.var("a")
+          )
+        end
+
+        let(:entry) { Registry.entry('__Test__').define(symbol) }
+
+        it { is_expected.to be_a(Type::Function) }
+
+        it 'has the same type as argument and as return type' do
+          expect(subject.args.first).to eql subject.return_type
+        end
+      end
+
+      describe 'the function with constructor: Int, Int -> Int' do
+        let(:symbol) do
+          Symbol::Function.new(
+            module_name: "__Test__",
+            name: "add",
+            params: {
+              "a" => Symbol::TypeRef['Basics', 'Int'],
+              "b" => Symbol::TypeRef['Basics', 'Int'],
+            },
+            return_type: Symbol::TypeRef['Basics', 'Int'],
+          )
+        end
+
+        let(:entry) { Registry.entry('__Test__').define(symbol) }
+
+        it { is_expected.to be_a(Type::Function) }
+        its(:args) { is_expected.to have(2).items.and all(be_a(Type::Constructor))}
+      end
+
+      describe 'type application: Maybe(a)' do
+        let(:symbol) do
+          Symbol::TypeApplication.new(
+            constructor: Symbol::TypeRef['Maybe', 'Maybe'],
+            args: [Symbol.var("a")]
+          )
+        end
+
+        let(:entry) { Registry.entry('__Test__') }
+
+        it { is_expected.to be_a(Type::Application) }
+        its(:constructor) { is_expected.to eql Type.constructor('Maybe.Maybe') }
+        its(:args) { is_expected.to have(1).item }
+
+        describe 'the arg' do
+          subject { super().args.first }
+          it { is_expected.to be_a(Type::Var).and have_attributes(name: 'a', id: 'a1') }
+        end
+      end
+
+      describe 'the function with type application: a -> Maybe(a)' do
+        let(:symbol) do
+          Symbol::Function.new(
+            module_name: "__Test__",
+            name: "to_maybe",
+            params: {
+              "maybe" => Symbol.var('a')
+            },
+            return_type: Symbol.type_application(Symbol::TypeRef['Maybe', 'Maybe'], [Symbol.var('a')])
+          )
+        end
+
+        let(:entry) { Registry.entry('__Test__').define(symbol) }
+
+        it { is_expected.to be_a(Type::Function) }
+        it 'function arg and application arg are the same' do
+          expect(subject.args.first).to eql subject.return_type.args.first
+        end
+      end
+
+      describe 'variant symbol: Nothing' do
+        let(:symbol) { Symbol::ValueRef['Maybe', 'Nothing'] }
+
+        let(:entry) { Registry.entry('__Test__') }
+
+        it { is_expected.to be_a(Type::Function) }
+        its(:return_type) { is_expected.to be_a(Type::Application) }
+
+        its(:args) { is_expected.to be_empty }
+
+        describe 'the return type' do
+          subject { super().return_type }
+          it { is_expected.to be_a(Type::Application) }
+
+          its(:constructor) { is_expected.to be_a(Type::Constructor).and have_attributes(name: 'Maybe.Maybe') }
+          its(:args) { is_expected.to eql [Type.var('a1', 'a')] }
+        end
+      end
+
+      describe 'variant symbol: Just' do
+        let(:symbol) { Symbol::ValueRef['Maybe', 'Just'] }
+
+        let(:entry) { Registry.entry('__Test__') }
+
+        it { is_expected.to be_a(Type::Function) }
+        its(:return_type) { is_expected.to be_a(Type::Application) }
+
+        its(:args) { is_expected.to have(1).item }
+
+        it 'function arg and application arg are the same' do
+          expect(subject.args.first).to eql subject.return_type.args.first
+        end
+
+        describe 'the return type' do
+          subject { super().return_type }
+          it { is_expected.to be_a(Type::Application) }
+
+          its(:constructor) { is_expected.to be_a(Type::Constructor).and have_attributes(name: 'Maybe.Maybe') }
+          its(:args) { is_expected.to eql [Type.var('a1', 'a')] }
+        end
+      end
+
+      describe 'variant symbol: Ok' do
+        let(:symbol) { Symbol::ValueRef['Result', 'Ok'] }
+
+        let(:entry) { Registry.entry('__Test__') }
+
+        it { is_expected.to be_a(Type::Function) }
+        it 'function arg and first application arg are the same' do
+          expect(subject.args.first).to eql subject.return_type.args.first
+        end
+
+        describe 'the return type' do
+          subject { super().return_type }
+          its(:args) { is_expected.to have(2).items }
+        end
+      end
+
+      describe 'variant symbol: Err' do
+        let(:symbol) { Symbol::ValueRef['Result', 'Err'] }
+
+        let(:entry) { Registry.entry('__Test__') }
+
+        it { is_expected.to be_a(Type::Function) }
+        it 'function arg and second application arg are the same' do
+          expect(subject.args.first).to eql subject.return_type.args.last
+        end
+
+        describe 'the return type' do
+          subject { super().return_type }
+          its(:args) { is_expected.to have(2).items }
+        end
+      end
+
+      describe 'type application: Maybe(Maybe(a))' do
+        let(:symbol) do
+          Symbol::TypeApplication.new(
+            constructor: Symbol::TypeRef['Maybe', 'Maybe'],
+            args: [
+              Symbol::TypeApplication.new(
+                constructor: Symbol::TypeRef['Maybe', 'Maybe'],
+                args: [Symbol.var("a")],
+              ),
+            ],
+          )
+        end
+
+        let(:entry) { Registry.entry('__Test__') }
+
+        it { is_expected.to be_a(Type::Application) }
+        its(:constructor) { is_expected.to eql Type.constructor('Maybe.Maybe') }
+        its(:args) { is_expected.to have(1).item }
+
+        describe 'the arg' do
+          subject { super().args.first }
+
+          it do
+            is_expected
+              .to be_a(Type::Application)
+              .and have_attributes(constructor: Type.constructor('Maybe.Maybe'))
+          end
+        end
+      end
+
+      describe 'type application with repeated vars: Result(a, a)' do
+        let(:symbol) do
+          Symbol::TypeApplication.new(
+            constructor: Symbol::TypeRef['Result', 'Result'],
+            args: [Symbol.var("a"), Symbol.var("a")]
+          )
+        end
+
+        let(:entry) { Registry.entry('__Test__') }
+
+        it { is_expected.to be_a(Type::Application) }
+        its(:constructor) { is_expected.to eql Type.constructor('Result.Result') }
+        its(:args) { is_expected.to have(2).item }
+
+        it 'reuses the same type var for both arguments' do
+          left, right = subject.args
+          expect(left).to eql(right)
+        end
+      end
+    end
+
+    describe '.var' do
+      subject { Type.var('a') }
+
+      its(:unbound_vars) { is_expected.to eql [subject] }
+      its(:to_s) { 'a' }
+    end
+
+    describe '.function' do
+      let(:a) { Type.var('a') }
+      subject { Type.function([a], a) }
+
+      its(:unbound_vars) { is_expected.to eql [a] }
+      its(:to_s) { is_expected.to eql '(a) -> a' }
+    end
+  end
+end

@@ -213,6 +213,12 @@ module Jade
           describe 'the type function' do
             its(:params) { is_expected.to have(1).items.and all(be_a(AST::TypeVar)) }
             its(:return_type) { is_expected.to be_a(AST::TypeApplication) }
+
+            context 'the type application node' do
+              subject { super().return_type }
+
+              its(:args) { is_expected.to have(1).items }
+            end
           end
         end
       end
