@@ -44,6 +44,9 @@ module Jade
         in AST::ImportDeclaration
           Result[scope, []]
 
+        in AST::InteropImportDeclaration
+          Result[scope, []]
+
         in AST::Literal
           Result[scope, []]
 

@@ -17,12 +17,23 @@ module Jade
         registry.get(module_name).path
           .then { "require_relative '#{it}'" }
 
+      in AST::InteropImportDeclaration
+        ""
+
       in AST::Body(expressions:)
         expressions
           .map { generate(it, registry) }.join("; ")
 
-      in AST::VariableReference(name:)
-        name
+      in AST::VariableReference(symbol:, name:)
+        case symbol
+        in Symbol::InteropFunction
+          lower_to_ruby(symbol.expected_type)
+            .then { "#{symbol.interop_module_name}, :#{symbol.name}, #{it}" }
+            .then { "Jade::Runtime.guard(#{it})" }
+
+        else
+          name
+        end
 
       in AST::VariableBinding(name:, expression:)
         "#{name} = #{generate(expression, registry)}"
@@ -133,6 +144,24 @@ module Jade
 
     def load_path
       return '$LOAD_PATH.unshift(File.expand_path("lib"));'
+    end
+
+    def lower_to_ruby(value)
+      case value
+      in String
+        value.dump
+
+      in Array
+        value
+          .map { |v| lower_to_ruby(v) }.join(", ")
+          .then { "[#{it}]" }
+
+      in Hash
+        value
+          .map { |k, v| "#{lower_to_ruby(k)} => #{lower_to_ruby(v)}" }
+          .join(", ")
+          .then { "{ #{it}}" }
+      end
     end
   end
 end

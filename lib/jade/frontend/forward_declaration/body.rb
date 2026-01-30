@@ -9,8 +9,8 @@ module Jade
           walk(node, entry) { |acc, expr| shallow_declare_node(expr, registry, acc) }
         end
 
-        def deep(node, entry)
-          walk(node, entry) { |acc, expr| deep_declare_node(expr, acc) }
+        def deep(node, entry, registry)
+          walk(node, entry) { |acc, expr| deep_declare_node(expr, acc, registry) }
         end
 
         private

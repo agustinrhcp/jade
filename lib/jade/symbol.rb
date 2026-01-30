@@ -73,6 +73,14 @@ module Jade
       StdlibFunction[nil, name, params, return_type, codegen]
     end
 
+    def self.predeclared_interop_function(name)
+      InteropFunction[nil, name, [], nil, nil, nil]
+    end
+
+    def self.interop_function(name, params, return_type, interop_module_name, expected_type)
+      InteropFunction[nil, name, params, return_type, interop_module_name, expected_type]
+    end
+
     def self.type_application(constructor, args)
       TypeApplication[constructor, args]
     end
@@ -130,6 +138,21 @@ module Jade
     end
 
     StdlibFunction = Data.define(:module_name, :name, :params, :return_type, :codegen) do
+      include Symbol
+
+      def to_ref
+        ValueRef[module_name, name]
+      end
+    end
+
+    InteropFunction = Data.define(
+      :module_name,
+      :name,
+      :params,
+      :return_type,
+      :interop_module_name,
+      :expected_type
+    ) do
       include Symbol
 
       def to_ref

@@ -248,5 +248,19 @@ module Jade
 
       it { is_expected.to eql "Data.define(:a, :b)[\"hello\", 42].a" }
     end
+
+    describe 'using an interop import' do
+      let(:text) do
+        <<~JADE
+          uses Jade::Date with today: Int
+
+          def real_today() -> Int
+            today()
+          end
+        JADE
+      end
+
+      it { is_expected.to include "Jade::Runtime.guard(Jade::Date, :today, \"int\").call()" }
+    end
   end
 end

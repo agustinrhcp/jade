@@ -47,7 +47,7 @@ module Jade
     end
 
     def declaration
-      function_declaration | type_declaration | import_declaration
+      function_declaration | type_declaration | import_declaration | interop_import_declaration
     end
 
     def expression
@@ -417,7 +417,35 @@ module Jade
       (type(:dot) >> type(:identifier) >> type(:assign)).map(&AST.record_update_sugar)
     end
 
+    def interop_import_declaration
+      (type(:uses) >> interop_module_name >> type(:with) >> interop_functions)
+        .map(&AST.interop_import_declaration)
+    end
+
+    def interop_namespace_sep
+      type(:coloncolon)
+    end
+
+    def interop_module_name
+      at_least_one(constant, separated_by: interop_namespace_sep.skip)
+        .map(&AST.interop_module)
+    end
+
+    def interop_functions
+      at_least_one(interop_function, separated_by: type(:comma).skip)
+        .map { [it] }
+    end
+
+    def interop_function
+      (identifier >> type(:colon).skip >> type_expression )
+        .map(&AST.interop_function)
+    end
+
     private
+
+    def at_least_one(parser, separated_by: none.skip)
+      parser >> ((separated_by >> sequence(parser, separated_by:)) | none.map { [] })
+    end
 
     def sequence(parser, separated_by: none.skip)
       (parser.map { [it] } >> many(separated_by >> parser))

@@ -1,0 +1,1 @@
+require 'jade/interop/lowering'

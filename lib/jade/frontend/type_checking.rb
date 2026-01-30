@@ -79,27 +79,28 @@ module Jade
 
       def check_node(node, registry, env, var_gen, expected_type)
         case node
-        in AST::Module then Inference::Module
-        in AST::ImportDeclaration then Inference::ImportDeclaration
-        in AST::Literal then Inference::Literal
-        in AST::FunctionDeclaration then Inference::FunctionDeclaration
-        in AST::TypeDeclaration then Inference::TypeDeclaration
-        in AST::InfixApplication then Inference::InfixApplication
-        in AST::FunctionCall then Inference::FunctionCall
-        in AST::List then Inference::List
-        in AST::ConstructorReference then Inference::ConstructorReference
-        in AST::VariableReference then Inference::VariableReference
-        in AST::VariableBinding then Inference::VariableBinding
         in AST::Body then Inference::Body
-        in AST::IfThenElse then Inference::IfThenElse
         in AST::CaseOf then Inference::CaseOf
-        in AST::Lambda then Inference::Lambda
+        in AST::ConstructorReference then Inference::ConstructorReference
+        in AST::FunctionCall then Inference::FunctionCall
+        in AST::FunctionDeclaration then Inference::FunctionDeclaration
         in AST::Grouping then Inference::Grouping
+        in AST::IfThenElse then Inference::IfThenElse
+        in AST::ImportDeclaration then Inference::ImportDeclaration
+        in AST::InfixApplication then Inference::InfixApplication
+        in AST::InteropImportDeclaration then Inference::InteropImportDeclaration
+        in AST::Lambda then Inference::Lambda
+        in AST::List then Inference::List
+        in AST::Literal then Inference::Literal
+        in AST::Module then Inference::Module
         in AST::QualifiedAccess then Inference::QualifiedAccess
         in AST::RecordAccess then Inference::RecordAccess
+        in AST::RecordField then Inference::RecordField
         in AST::RecordLiteral then Inference::RecordLiteral
         in AST::RecordUpdate then Inference::RecordUpdate
-        in AST::RecordField then Inference::RecordField
+        in AST::TypeDeclaration then Inference::TypeDeclaration
+        in AST::VariableBinding then Inference::VariableBinding
+        in AST::VariableReference then Inference::VariableReference
         end
           .infer(node, registry, env, var_gen, expected_type)
       end

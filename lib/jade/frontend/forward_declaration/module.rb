@@ -11,7 +11,7 @@ module Jade
           shallow_declare_node(body, registry, entry)
         end
 
-        def deep(node, entry)
+        def deep(node, entry, registry)
           node => AST::Module(exposing:, body:)
 
           case exposing
@@ -41,7 +41,7 @@ module Jade
           in AST::ExposeNone
             Result[entry, []]
           end
-            .then { deep_declare_node(body, it.entry).add_errors(it.errors) }
+            .then { deep_declare_node(body, it.entry, registry).add_errors(it.errors) }
         end
 
         private

@@ -1,6 +1,9 @@
+require 'jade/interop/runtime'
+
 module Jade
   module Runtime
     extend self
+    extend Interop::Runtime
 
     INTRINSICS = {}
     @booted = false

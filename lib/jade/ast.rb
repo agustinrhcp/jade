@@ -60,6 +60,10 @@ module Jade
     define(:CaseOf, :expression, :branches)
     define(:CaseOfBranch, :pattern, :body)
 
+    define(:InteropImportDeclaration, :module, :functions)
+    define(:InteropModule, :name)
+    define(:InteropFunction, :name, :type)
+
     module Pattern
       extend self
       extend Nodes
@@ -447,6 +451,35 @@ module Jade
     def record_access_sugar
       ->((dot, key)) do
         RecordAccessSugar[key.value, dot.range.begin..key.range.begin]
+      end
+    end
+
+    def interop_import_declaration
+      ->((uses_token, interop_module, _with_token, interop_functions)) do
+        InteropImportDeclaration[
+          interop_module,
+          interop_functions,
+          uses_token.range.begin..interop_functions.last.range.end,
+        ]
+      end
+    end
+
+    def interop_module
+      ->(parts) do
+        InteropModule[
+          parts.map(&:value).join('::'),
+          parts.first.range.begin...parts.last.range.end,
+        ]
+      end
+    end
+
+    def interop_function
+      ->((name, type_expression)) do
+        InteropFunction[
+          name.value,
+          type_expression,
+          name.range.begin..type_expression.range.end,
+        ]
       end
     end
   end
