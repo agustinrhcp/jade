@@ -14,7 +14,7 @@ module Jade
             .then { Result[it, []] }
         end
 
-        def deep(node, entry)
+        def deep(node, entry, _)
           node => AST::FunctionDeclaration(name:, params:, return_type:)
 
           params_types = params

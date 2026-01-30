@@ -744,5 +744,46 @@ module Jade
         end
       end
     end
+
+    describe 'interop import' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          uses Jade::Date with today: Int
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::InteropImportDeclaration) }
+
+      context 'with multiple imports' do
+        let(:text) do
+          <<~JADE
+            uses Jade::Date with
+              today: Int,
+              today_plus_n_days: Int -> Int
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::InteropImportDeclaration) }
+        its(:functions) { is_expected.to have(2).items }
+      end
+    end
+
+    describe 'using an interop import' do
+      subject { super().expressions.last }
+
+      let(:text) do
+        <<~JADE
+          uses Jade::Date with today: Int
+
+          def real_today() -> Int
+            today()
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+    end
   end
 end

@@ -17,7 +17,7 @@ module Jade
             .then { Result[it, []] }
         end
 
-        def deep(node, entry)
+        def deep(node, entry, _)
           node => AST::TypeDeclaration(name:, variants:)
 
           symbol = entry.lookup_type(name)

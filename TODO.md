@@ -85,3 +85,18 @@ and mimic the current lookup (to be lookup_value) when dealing with types too.
 ### Test Int(a)
 
 This should fail, Int has no vars
+
+
+### No arg functions into constants
+
+Similar to above, but
+
+def pepe() -> Int
+
+should be callable as pepe (without parens)
+or should it not? I think it should.
+
+
+### Interop part II - Tasks
+
+Interop must return a Task

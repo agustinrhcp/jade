@@ -342,6 +342,18 @@ module Jade
         its(:name) { is_expected.to eql 'Int' }
         its(:variants) { is_expected.to have(1).items }
       end
+
+      context 'with a record' do
+        let(:text) do
+          <<~JADE
+            type Date = Date({ year: Int })
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::TypeDeclaration) }
+        its(:name) { is_expected.to eql 'Date' }
+        its(:variants) { is_expected.to have(1).items }
+      end
     end
 
     context 'a constructor reference' do
@@ -774,6 +786,39 @@ module Jade
             its(:row_var) { is_expected.to be_a(AST::TypeParam).and have_attributes(name: 'a') }
           end
         end
+      end
+    end
+
+    describe 'interop import' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          uses Jade::Date with today: Int
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::InteropImportDeclaration) }
+      its(:module) { is_expected.to be_a(AST::InteropModule).and have_attributes(name: 'Jade::Date') }
+      its(:functions) { is_expected.to have(1).item.and all(be_a(AST::InteropFunction)) }
+
+      describe 'the function' do
+        subject { super().functions.first }
+        its(:name) { is_expected.to eql 'today' }
+        its(:type) { is_expected.to be_a(AST::TypeName).and have_attributes(type: 'Int') }
+      end
+
+      context 'with multiple functions' do
+        let(:text) do
+          <<~JADE
+            uses Jade::Date with
+              today: Int,
+              today_plus_days: Int -> Int
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::InteropImportDeclaration) }
+        its(:functions) { is_expected.to have(2).items }
       end
     end
   end

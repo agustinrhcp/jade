@@ -4,6 +4,7 @@ require 'jade/frontend/forward_declaration/error'
 require 'jade/frontend/forward_declaration/body'
 require 'jade/frontend/forward_declaration/function_declaration'
 require 'jade/frontend/forward_declaration/import_declaration'
+require 'jade/frontend/forward_declaration/interop_import_declaration'
 require 'jade/frontend/forward_declaration/module'
 require 'jade/frontend/forward_declaration/type_declaration'
 
@@ -24,7 +25,7 @@ module Jade
 
       def declare(node, registry, entry)
         shallow_declare_node(node, registry, entry)
-          .then { deep_declare_node(node, it.entry).add_errors(it.errors) }
+          .then { deep_declare_node(node, it.entry, registry).add_errors(it.errors) }
           .to_result
       end
 
@@ -33,28 +34,28 @@ module Jade
       end
 
       def shallow_declare_node(node, registry, entry)
-        case node
-        in AST::Module then Module
-        in AST::ImportDeclaration then ImportDeclaration
-        in AST::FunctionDeclaration then FunctionDeclaration
-        in AST::Body then Body
-        in AST::TypeDeclaration then TypeDeclaration
-        else
-          return Result[entry, []]
-        end.shallow(node, registry, entry)
+        resolver(node, entry)
+          &.shallow(node, registry, entry) || return Result[entry, []]
       end
 
-      # TODO: [ForwardDeclaration:HandleErrors]
-      def deep_declare_node(node, entry)
+      def deep_declare_node(node, entry, registry)
+        resolver(node, entry)
+          &.deep(node, entry, registry) || return Result[entry, []]
+      end
+
+      private
+
+      def resolver(node, entry)
         case node
         in AST::Module then Module
         in AST::ImportDeclaration then ImportDeclaration
+        in AST::InteropImportDeclaration then InteropImportDeclaration
         in AST::FunctionDeclaration then FunctionDeclaration
         in AST::TypeDeclaration then TypeDeclaration
         in AST::Body then Body
         else
-          return Result[entry, []]
-        end.deep(node, entry)
+          nil
+        end
       end
     end
   end

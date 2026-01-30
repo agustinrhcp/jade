@@ -7,6 +7,7 @@ require 'jade/lexer'
 require 'jade/ast'
 require 'jade/codegen'
 require 'jade/compiler'
+require 'jade/interop'
 
 module Jade
   extend self

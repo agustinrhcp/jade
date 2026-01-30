@@ -25,7 +25,7 @@ module Jade
           Result[entry.import(import_entry), []]
         end
 
-        def deep(_, entry)
+        def deep(_, entry, _)
           Result[entry, []]
         end
 

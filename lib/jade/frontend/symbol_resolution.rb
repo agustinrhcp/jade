@@ -11,6 +11,7 @@ require 'jade/frontend/symbol_resolution/grouping'
 require 'jade/frontend/symbol_resolution/if_then_else'
 require 'jade/frontend/symbol_resolution/import_declaration'
 require 'jade/frontend/symbol_resolution/infix_application'
+require 'jade/frontend/symbol_resolution/interop_import_declaration'
 require 'jade/frontend/symbol_resolution/lambda'
 require 'jade/frontend/symbol_resolution/list'
 require 'jade/frontend/symbol_resolution/literal'
@@ -76,6 +77,7 @@ module Jade
         case node
         in AST::Module then Module
         in AST::ImportDeclaration then ImportDeclaration
+        in AST::InteropImportDeclaration then InteropImportDeclaration
         in AST::Literal then Literal
         in AST::VariableBinding then VariableBinding
         in AST::Body then Body

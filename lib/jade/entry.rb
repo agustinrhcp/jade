@@ -57,7 +57,7 @@ module Jade
       in Symbol::Union
         add_defined_type(symbol)
 
-      in Symbol::Function | Symbol::StdlibFunction | Symbol::Variant
+      in Symbol::Function | Symbol::StdlibFunction | Symbol::Variant | Symbol::InteropFunction
         add_defined_value(symbol)
       end
     end

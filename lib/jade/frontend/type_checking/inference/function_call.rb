@@ -31,7 +31,7 @@ module Jade
                 )
               end
               .then { it.with(type: it.type.return_type) }
-              .and_unify(expected.type)
+              .and_unify(expected.type) { byebug }
           end
         end
       end

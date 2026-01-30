@@ -6,8 +6,8 @@ module Jade
             ForwardDeclaration.shallow_declare_node(ast, registry, entry)
           end
 
-          def deep_declare_node(ast, entry)
-            ForwardDeclaration.deep_declare_node(ast, entry)
+          def deep_declare_node(ast, entry, registry)
+            ForwardDeclaration.deep_declare_node(ast, entry, registry)
           end
 
         def figure_out_type(entry, type)

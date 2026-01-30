@@ -212,5 +212,19 @@ module Jade
       it { is_expected.to have(1).item.and all(be_a(Token)) }
       its([0])  { is_expected.to be_token.of_type(:comment).at(0...19) }
     end
+
+    context 'interop interface' do
+      let(:text) do
+        <<~JADE
+          uses Ruby::Mod with
+            date : () -> Int
+        JADE
+      end
+
+      it { is_expected.to have(11).item.and all(be_a(Token)) }
+      its([0])  { is_expected.to be_token.of_type(:uses).at(0...4) }
+      its([2])  { is_expected.to be_token.of_type(:coloncolon).at(9...11) }
+      its([4])  { is_expected.to be_token.of_type(:with).at(15...19) }
+    end
   end
 end
