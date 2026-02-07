@@ -28,6 +28,7 @@ module Jade
     define(:VariantDeclaration, :name, :args)
     define(:TypeParam, :name)
     define(:ImportDeclaration, :module_name, :as, :exposing)
+    define(:RecordDeclaration, :name, :type_params, :record_type)
 
     define(:ExposeAll)
     define(:ExposeNone)

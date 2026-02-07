@@ -2,13 +2,13 @@ module Jade
   module Frontend
     module ForwardDeclaration
       module Helper
-          def shallow_declare_node(ast, registry, entry)
-            ForwardDeclaration.shallow_declare_node(ast, registry, entry)
-          end
+        def shallow_declare_node(ast, registry, entry)
+          ForwardDeclaration.shallow_declare_node(ast, registry, entry)
+        end
 
-          def deep_declare_node(ast, entry, registry)
-            ForwardDeclaration.deep_declare_node(ast, entry, registry)
-          end
+        def deep_declare_node(ast, entry, registry)
+          ForwardDeclaration.deep_declare_node(ast, entry, registry)
+        end
 
         def figure_out_type(entry, type)
           case type

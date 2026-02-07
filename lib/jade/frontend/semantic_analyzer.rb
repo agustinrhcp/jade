@@ -1,5 +1,8 @@
 require 'jade/frontend/semantic_analysis/error'
 
+require 'jade/frontend/semantic_analysis/helper'
+require 'jade/frontend/semantic_analysis/function_declaration'
+
 module Jade
   module Frontend
     module SemanticAnalyzer
@@ -66,28 +69,7 @@ module Jade
           analyze_many(expressions, registry, scope)
 
         in AST::FunctionDeclaration(name:, params:, body:, symbol:)
-          # TODO: Needs to be done in forward resolution
-          # if scope.lookup(name)
-          #   return Result[
-          #     scope,
-          #     [
-          #       SemanticAnalysis::Error::DuplicateFunctionDeclaration
-          #         # TODO: current entry should always be available
-          #         .new(nil, ast.range, name:),
-          #     ],
-          #   ]
-          # end
-
-          params
-            .reduce(Result[scope, []]) do |acc, param|
-              bind(acc.scope, param.name, Symbol.param(param.name))
-                .add_errors(acc.errors)
-            end
-            .then do
-              analyze_r(body, registry, it.scope)
-                .add_errors(it.errors)
-            end
-              .with(scope:)
+          SemanticAnalysis::FunctionDeclaration.analyze(ast, registry, scope)
 
         in AST::InfixApplication(left:, right:)
           analyze_r(left, registry, scope) => { errors: l_errors }

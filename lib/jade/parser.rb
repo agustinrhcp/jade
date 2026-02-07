@@ -251,6 +251,16 @@ module Jade
       ).map(&AST.type_declaration)
     end
 
+    def record_declaration
+      (
+        type(:data) >>
+          constant >>
+          (type_params | none.map { [[]] }) >>
+          type(:assign).skip >>
+          type_record
+      ).map(&AST.record_declaration)
+    end
+
     def variant_declaration
       (
         constant >>
