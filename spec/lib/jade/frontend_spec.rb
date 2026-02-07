@@ -205,9 +205,9 @@ module Jade
 
           expect(symbol).to be_a(Symbol::Function)
           expect(symbol.module_name).to eql '__Test__'
-          expect(symbol.params).to include('a' => Symbol::TypeRef['Basics', 'Int'])
-          expect(symbol.params).to include('b' => Symbol::TypeRef['Basics', 'Int'])
-          expect(symbol.return_type).to eql(Symbol::TypeRef['Basics', 'Int'])
+          expect(symbol.params['a']).to be_an_int_symbol
+          expect(symbol.params['b']).to be_an_int_symbol
+          expect(symbol.return_type).to be_an_int_symbol
           expect(symbol.name).to eql 'add'
         end
       end
@@ -361,7 +361,26 @@ module Jade
           maybe_symbol = subject.lookup(Symbol::TypeRef['__Test__', 'Maybe'])
 
           expect(maybe_symbol).to be_a(Symbol::Union)
-          expect(maybe_symbol.type_params).to eql([Symbol.var('a')])
+          expect(maybe_symbol.type_params.first).to be_a(Symbol::Variable).and have_attributes(name: 'a')
+        end
+      end
+
+      context 'with unbound vars' do
+        let(:text) do
+          <<~JADE
+            type Unbound(b) = Bound(a)
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+
+        describe 'the error' do
+          subject { super().first }
+
+          it { is_expected.to be_a Frontend::SemanticAnalysis::Error::UnboundTypeVariable}
+          its(:message) { is_expected.to include 'Type `Unbound` has unbound variables `a`' }
         end
       end
     end
@@ -784,6 +803,135 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::FunctionDeclaration) }
+    end
+
+    describe 'type args mismatch' do
+      context 'extra args in a function' do
+        let(:text) do
+          <<~JADE
+            def ten() -> Int(a)
+              10
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to eql '`Int` type needs 0 argument but got 1' }
+        end
+      end
+
+      context 'extra args in a type declaration' do
+        let(:text) do
+          <<~JADE
+            type Stuff(a, b) = Stuff(Maybe(a, b))
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to eql '`Maybe` type needs 1 argument but got 2' }
+        end
+      end
+
+      context 'missing args in an interop import declaration' do
+        let(:text) do
+          <<~JADE
+            uses Jade::Date with
+              today: Maybe
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to eql '`Maybe` type needs 1 argument but got 0' }
+        end
+      end
+
+      context 'missing args in a function' do
+        let(:text) do
+          <<~JADE
+            def maybe_ten() -> Maybe
+              Just(10)
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to eql '`Maybe` type needs 1 argument but got 0' }
+        end
+
+        context 'missing args in record in a function' do
+          let(:text) do
+            <<~JADE
+              def maybe_ten() -> { ten: Maybe }
+                { ten: Just(10) }
+              end
+            JADE
+          end
+
+          subject { frontend => Err(errors); errors }
+
+          it { is_expected.to have(1).item }
+          its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+          describe 'the error message' do
+            subject { super()[0].message }
+
+            it { is_expected.to eql '`Maybe` type needs 1 argument but got 0' }
+          end
+        end
+      end
+    end
+
+    context 'a struct declaration' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          struct Person = { name: String, age: Int }
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::StructDeclaration) }
+    end
+
+    context 'constructing a struct' do
+      let(:text) do
+        <<~JADE
+          struct Person = { name: String, age: Int }
+          Person("Guybrush", 28)
+        JADE
+      end
+
+      subject { super().expressions.last }
+
+      it { is_expected.to be_a(AST::FunctionCall) }
     end
   end
 end

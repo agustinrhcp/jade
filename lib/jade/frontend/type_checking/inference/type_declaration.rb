@@ -6,8 +6,8 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen, _)
-            node => AST::TypeDeclaration(symbol:, variants:)
+          def infer(node, _, env, _)
+            node => AST::TypeDeclaration
 
             Result[Type.unit, Substitution.new, env, []]
           end

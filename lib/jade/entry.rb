@@ -54,7 +54,7 @@ module Jade
 
     def define(symbol)
       case symbol
-      in Symbol::Union
+      in Symbol::Union | Symbol::Struct
         add_defined_type(symbol)
 
       in Symbol::Function | Symbol::StdlibFunction | Symbol::Variant | Symbol::InteropFunction
@@ -89,11 +89,16 @@ module Jade
     end
 
     def add_defined_type(symbol)
-      symbol
-        .with(
-          module_name: name,
-          variants: symbol.variants.map { it.with(module_name: name) },
-        )
+      case symbol
+      in Symbol::Union
+        symbol
+          .with(
+            module_name: name,
+            variants: symbol.variants.map { it.with(module_name: name) },
+          )
+      else
+        symbol.with(module_name: name)
+      end
         .then { with(defined_types: defined_types.merge(it.name => it)) }
     end
   end

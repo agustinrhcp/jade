@@ -113,7 +113,7 @@ module Jade
         in AST::Literal | AST::VariableReference | AST::ConstructorReference |
           AST::TypeDeclaration | AST::ImportDeclaration | AST::Pattern::Constructor |
           AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard |
-          AST::InteropImportDeclaration
+          AST::InteropImportDeclaration | AST::StructDeclaration
 
           node
         end

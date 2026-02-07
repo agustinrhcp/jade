@@ -6,10 +6,10 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen, expected)
+          def infer(node, registry, env, expected)
             node => AST::IfThenElse(condition:, if_branch:, else_branch:)
 
-            condition_result = check(condition, registry, env, var_gen, Expected.auth(Type.bool))
+            condition_result = check(condition, registry, env, Expected.auth(Type.bool))
               .and_unify(Type.bool) do
                 Error::IfConditionTypeMismatch.new(
                   env.entry_name,
@@ -18,10 +18,10 @@ module Jade
                 )
               end
 
-            if_result = check(if_branch, registry, condition_result.env, var_gen, expected)
+            if_result = check(if_branch, registry, condition_result.env, expected)
               .compose_substitution(condition_result.substitution)
 
-            else_result = check(else_branch, registry, condition_result.env, var_gen, expected)
+            else_result = check(else_branch, registry, condition_result.env, expected)
               .compose_substitution(condition_result.substitution)
 
             if expected.auth?

@@ -1,5 +1,11 @@
 require 'jade/frontend/semantic_analysis/error'
 
+require 'jade/frontend/semantic_analysis/helper'
+require 'jade/frontend/semantic_analysis/function_declaration'
+require 'jade/frontend/semantic_analysis/type_declaration'
+require 'jade/frontend/semantic_analysis/interop_import_declaration'
+require 'jade/frontend/semantic_analysis/struct_declaration'
+
 module Jade
   module Frontend
     module SemanticAnalyzer
@@ -45,7 +51,7 @@ module Jade
           Result[scope, []]
 
         in AST::InteropImportDeclaration
-          Result[scope, []]
+          SemanticAnalysis::InteropImportDeclaration.analyze(ast, registry, scope)
 
         in AST::Literal
           Result[scope, []]
@@ -53,7 +59,7 @@ module Jade
         in AST::VariableBinding(name:, expression:)
           analyze_r(expression, registry, scope) => { errors: expr_errors }
 
-          bind(scope, name, Symbol.var(name))
+          bind(scope, name, Symbol.var(name, ast.range))
             .add_errors(expr_errors)
 
         in AST::VariableReference(name:)
@@ -66,28 +72,7 @@ module Jade
           analyze_many(expressions, registry, scope)
 
         in AST::FunctionDeclaration(name:, params:, body:, symbol:)
-          # TODO: Needs to be done in forward resolution
-          # if scope.lookup(name)
-          #   return Result[
-          #     scope,
-          #     [
-          #       SemanticAnalysis::Error::DuplicateFunctionDeclaration
-          #         # TODO: current entry should always be available
-          #         .new(nil, ast.range, name:),
-          #     ],
-          #   ]
-          # end
-
-          params
-            .reduce(Result[scope, []]) do |acc, param|
-              bind(acc.scope, param.name, Symbol.param(param.name))
-                .add_errors(acc.errors)
-            end
-            .then do
-              analyze_r(body, registry, it.scope)
-                .add_errors(it.errors)
-            end
-              .with(scope:)
+          SemanticAnalysis::FunctionDeclaration.analyze(ast, registry, scope)
 
         in AST::InfixApplication(left:, right:)
           analyze_r(left, registry, scope) => { errors: l_errors }
@@ -101,8 +86,11 @@ module Jade
           analyze_r(callee, registry, scope)
             .add_errors(args_errors)
 
-        in AST::TypeDeclaration(name:, symbol:, variants:)
-          Result[scope, []]
+        in AST::TypeDeclaration
+          SemanticAnalysis::TypeDeclaration.analyze(ast, registry, scope)
+
+        in AST::StructDeclaration
+          SemanticAnalysis::StructDeclaration.analyze(ast, registry, scope)
 
         in AST::IfThenElse(condition:, if_branch:, else_branch:)
           analyze_r(condition, registry, scope) => { errors: condition_errors }
@@ -137,7 +125,7 @@ module Jade
           Result[scope, []]
 
         in AST::Pattern::Binding(name:)
-          bind(scope, name, Symbol.var(name))
+          bind(scope, name, Symbol.var(name, ast.range))
 
         in AST::Pattern::Constructor(constructor:, patterns:, symbol: sym_ref)
           symbol = registry.lookup(sym_ref)

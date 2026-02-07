@@ -6,16 +6,16 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen, expected_)
+          def infer(node, registry, env, expected_)
             node => AST::RecordAccess(target:, name:)
 
             expected = Type
               .anonymous_record(
                 { name.name => expected_.type },
-                var_gen.fresh.with(name: 'a'),
+                env.fresh.with(name: 'a'),
               )
 
-            check(target, registry, env, var_gen, Expected.non_auth(var_gen))
+            check(target, registry, env, Expected.non_auth(env.fresh))
               .and_unify(expected) do
                 Error::RecordAccessTypeMismatch.new(
                   env.entry_name,

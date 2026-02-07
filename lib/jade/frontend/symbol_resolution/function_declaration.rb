@@ -8,12 +8,15 @@ module Jade
         def resolve(node, registry, current_entry)
           node => AST::FunctionDeclaration(name:, body:)
 
-          symbol = current_entry
-            .lookup_value(name)
-            .to_ref
+          fn_symbol = current_entry.lookup_value(name)
 
           resolve_node(body, registry, current_entry)
-            .map { node.with(body: it, symbol:) }
+            .map do
+              node.with(
+                body: it,
+                symbol: fn_symbol.to_ref,
+              )
+            end
         end
       end
     end

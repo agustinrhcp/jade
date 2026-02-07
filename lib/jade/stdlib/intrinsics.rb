@@ -10,7 +10,7 @@ module Jade
 
       def union(name, *type_params)
         Symbol
-          .union(name.to_s, type_params.map { Symbol.var(it) }, [])
+          .union(name.to_s, type_params.map { Symbol.var(it, nil) }, [], nil)
           .with(module_name:)
           .then { store(it) }
       end
@@ -91,9 +91,9 @@ module Jade
         in 'String' then Symbol::TypeRef['String', 'String']
 
       # TODO: don't hardcode thaaat much
-        in 'a' then Symbol.var('a')
-        in 'b' then Symbol.var('b')
-        in 'a -> b' then Symbol.function_type([Symbol.var('a')], Symbol.var('b'))
+        in 'a' then Symbol.var('a', nil)
+        in 'b' then Symbol.var('b', nil)
+        in 'a -> b' then Symbol.function_type([Symbol.var('a', nil)], Symbol.var('b', nil))
         in 'Maybe(Int)' then Symbol.type_ref('Maybe', 'Maybe')
         in 'List(a)' then Symbol.type_ref('List', 'List') 
         in 'List(b)' then Symbol.type_ref('List', 'List') 

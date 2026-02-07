@@ -115,7 +115,7 @@ module Jade
       it { is_expected.to be_a(AST::Node).and be_a(AST::FunctionDeclaration) }
       its(:name) { is_expected.to eql 'add' }
       its(:params) { is_expected.to have(2).items.and all(be_a(AST::FunctionDeclarationParam)) }
-      its(:return_type) { is_expected.to be_a(AST::TypeName) }
+      its(:return_type) { is_expected.to be_a(AST::TypeApplication) }
 
       context 'without arguments' do
         let(:text) do
@@ -144,7 +144,13 @@ module Jade
       it { is_expected.to be_a(AST::Node).and be_a(AST::FunctionDeclaration) }
       its(:name) { is_expected.to eql 'add' }
       its(:params) { is_expected.to have(2).items.and all(be_a(AST::FunctionDeclarationParam)) }
-      its(:return_type) { is_expected.to be_a(AST::QualifiedTypeName) }
+      its(:return_type) { is_expected.to be_a(AST::TypeApplication) }
+
+      describe 'return type' do
+        subject { super().return_type }
+
+        its(:constructor) { is_expected.to be_a(AST::QualifiedTypeName) }
+      end
     end
 
     context 'function declaration with type application' do
@@ -756,9 +762,25 @@ module Jade
       describe 'the type record' do
         subject { super().return_type }
 
-        its(:fields) { is_expected.to have(2).items }
-        its(:fields) { is_expected.to include("name" => AST::TypeName["String", 22...28]) }
-        its(:fields) { is_expected.to include("age" => AST::TypeName["Int", 36...39]) }
+        its(:fields) do
+          is_expected.to have(2).items
+          is_expected.to have_key('name')
+          is_expected.to have_key('age')
+        end
+
+        describe "name field" do
+          subject { super().fields['name'] }
+
+          it { is_expected.to be_a(AST::TypeApplication) }
+          its(:constructor) { is_expected.to be_a(AST::TypeName).and have_attributes(type: 'String') }
+        end
+
+        describe "age field" do
+          subject { super().fields['age'] }
+
+          it { is_expected.to be_a(AST::TypeApplication) }
+          its(:constructor) { is_expected.to be_a(AST::TypeName).and have_attributes(type: 'Int') }
+        end
       end
 
       context 'an open record type' do
@@ -805,7 +827,8 @@ module Jade
       describe 'the function' do
         subject { super().functions.first }
         its(:name) { is_expected.to eql 'today' }
-        its(:type) { is_expected.to be_a(AST::TypeName).and have_attributes(type: 'Int') }
+        its(:type) { is_expected.to be_a(AST::TypeApplication) }
+        it { expect(subject.type.constructor.type).to eql 'Int' }
       end
 
       context 'with multiple functions' do
@@ -820,6 +843,18 @@ module Jade
         it { is_expected.to be_a(AST::InteropImportDeclaration) }
         its(:functions) { is_expected.to have(2).items }
       end
+    end
+
+    describe 'interop import' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          struct Person = { name: String }
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::StructDeclaration) }
     end
   end
 end

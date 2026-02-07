@@ -4,6 +4,8 @@ require 'jade'
 
 module Jade
   describe Type do
+    include SymbolFactory
+
     describe '.from_symbol' do
       subject { described_class.from_symbol(symbol, registry, Frontend::TypeChecking::VarGen.new) }
 
@@ -15,12 +17,9 @@ module Jade
 
       describe 'the id function: x -> x' do
         let(:symbol) do
-          Symbol::Function.new(
-            module_name: "__Test__",
-            name: "id",
-            params: { "x" => Symbol.var("a") },
-            return_type: Symbol.var("a")
-          )
+          fn_sym('__Test__', 'id')
+            .with(params: { x: var_sym('a') })
+            .with(return_type: var_sym('a'))
         end
 
         let(:entry) { Registry.entry('__Test__').define(symbol) }
@@ -34,29 +33,20 @@ module Jade
 
       describe 'the function with constructor: Int, Int -> Int' do
         let(:symbol) do
-          Symbol::Function.new(
-            module_name: "__Test__",
-            name: "add",
-            params: {
-              "a" => Symbol::TypeRef['Basics', 'Int'],
-              "b" => Symbol::TypeRef['Basics', 'Int'],
-            },
-            return_type: Symbol::TypeRef['Basics', 'Int'],
-          )
+          fn_sym('__Test__', 'add')
+            .with(params: { a: type_sym('Basics', 'Int'), b: type_sym('Basics', 'Int') })
+            .with(return_type: type_sym('Basics', 'Int'))
         end
 
         let(:entry) { Registry.entry('__Test__').define(symbol) }
 
         it { is_expected.to be_a(Type::Function) }
-        its(:args) { is_expected.to have(2).items.and all(be_a(Type::Constructor))}
+        its(:args) { is_expected.to have(2).items.and all(be_a(Type::Application))}
       end
 
       describe 'type application: Maybe(a)' do
         let(:symbol) do
-          Symbol::TypeApplication.new(
-            constructor: Symbol::TypeRef['Maybe', 'Maybe'],
-            args: [Symbol.var("a")]
-          )
+          type_sym('Maybe', 'Maybe').with(args: [var_sym('a')])
         end
 
         let(:entry) { Registry.entry('__Test__') }
@@ -73,14 +63,9 @@ module Jade
 
       describe 'the function with type application: a -> Maybe(a)' do
         let(:symbol) do
-          Symbol::Function.new(
-            module_name: "__Test__",
-            name: "to_maybe",
-            params: {
-              "maybe" => Symbol.var('a')
-            },
-            return_type: Symbol.type_application(Symbol::TypeRef['Maybe', 'Maybe'], [Symbol.var('a')])
-          )
+          fn_sym('__Test__', 'to_maybe')
+            .with(params: { maybe: var_sym('a') })
+            .with(return_type: type_sym('Maybe', 'Maybe').with(args: [var_sym('a')]))
         end
 
         let(:entry) { Registry.entry('__Test__').define(symbol) }
@@ -167,15 +152,13 @@ module Jade
 
       describe 'type application: Maybe(Maybe(a))' do
         let(:symbol) do
-          Symbol::TypeApplication.new(
-            constructor: Symbol::TypeRef['Maybe', 'Maybe'],
-            args: [
-              Symbol::TypeApplication.new(
-                constructor: Symbol::TypeRef['Maybe', 'Maybe'],
-                args: [Symbol.var("a")],
-              ),
-            ],
-          )
+          type_sym('Maybe', 'Maybe')
+            .with(
+              args: [
+                type_sym('Maybe', 'Maybe')
+                  .with(args: [var_sym('a')])
+              ]
+            )
         end
 
         let(:entry) { Registry.entry('__Test__') }
@@ -197,10 +180,8 @@ module Jade
 
       describe 'type application with repeated vars: Result(a, a)' do
         let(:symbol) do
-          Symbol::TypeApplication.new(
-            constructor: Symbol::TypeRef['Result', 'Result'],
-            args: [Symbol.var("a"), Symbol.var("a")]
-          )
+          type_sym('Result', 'Result')
+            .with(args: [var_sym('a'), var_sym('a')])
         end
 
         let(:entry) { Registry.entry('__Test__') }
@@ -213,6 +194,23 @@ module Jade
           left, right = subject.args
           expect(left).to eql(right)
         end
+      end
+
+      describe 'function from anonymous record with type param { id: id } -> id' do
+        let(:symbol) do
+          fn_sym('__Test__', "id")
+            .with(params: { "rec" => rec_type_sym.with(fields: { 'id' => var_sym('id') })})
+            .with(return_type: var_sym('id'))
+        end
+
+        let(:entry) { Registry.entry('__Test__') }
+
+        it { is_expected.to be_a(Type::Function) }
+
+        it 'reuses the field arg for the return type' do
+          expect(subject.args.first.fields['id']).to eql subject.return_type
+        end
+        its(:unbound_vars) { is_expected.to have(1).items }
       end
     end
 

@@ -25,23 +25,23 @@ module Jade
     end
 
     def int
-      constructor('Basics.Int')
+      constructor('Basics.Int').apply([])
     end
 
     def unit
-      constructor('Basics.Unit')
+      constructor('Basics.Unit').apply([])
     end
 
     def float
-      constructor('Basics.Float')
+      constructor('Basics.Float').apply([])
     end
 
     def string
-      constructor('String.String')
+      constructor('String.String').apply([])
     end
 
     def bool
-      constructor('Basics.Bool')
+      constructor('Basics.Bool').apply([])
     end
 
     def list
@@ -78,11 +78,6 @@ module Jade
           .lookup(symbol)
           .then { from_symbol_r(it, registry, var_gen, var_map) }
 
-      in Symbol::Union(type_params: [])
-        Type
-          .constructor(symbol.qualified_name)
-          .then { [it, var_map] }
-
       in Symbol::Union
         union_vars, union_map = symbol
           .type_params
@@ -109,7 +104,7 @@ module Jade
           .then { [it, var_map] }
 
       in Symbol::FunctionType | Symbol::InteropFunction
-        # Same as function and stdlib but without keyed params instead.
+        # Same as function and stdlib but without keyed params.
         args, local_map = symbol
           .params
           .reduce([[], {}]) do |(types, local_map), sym|
@@ -145,12 +140,29 @@ module Jade
           .then { Type.anonymous_record(it, nil) }
           .then { [it, var_map] }
 
+      in Symbol::Struct(record_type:)
+        struct_vars, struct_map = symbol
+          .type_params
+          .reduce([[], var_map]) do |(types, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, new_map)| [types + [t], new_map] }
+          end
+
+        Type
+          .constructor(symbol.qualified_name)
+          .then { [it.apply(struct_vars), struct_map] }
+
       in Symbol::RecordType(fields:, row_var:)
-        row = row_var&.then { from_symbol_r(row_var, registry, var_gen, var_map).first }
+        row, row_map = row_var
+          &.then { from_symbol_r(row_var, registry, var_gen, var_map) } ||
+          [nil, var_map]
 
         fields
-          .transform_values { from_symbol_r(it, registry, var_gen, var_map).first }
-          .then { Type.anonymous_record(it, row) }
+          .reduce([{}, row_map]) do |(type, local_map), (k, v)|
+            from_symbol_r(v, registry, var_gen, local_map)
+              .then { |(t, new_map)| [type.merge(k => t), new_map] }
+          end
+          .then { |t, map| [Type.anonymous_record(t, row), map] }
 
       in Symbol::TypeApplication(constructor:, args:)
         union_type, union_vars =

@@ -19,7 +19,7 @@ module Jade
         subject { Generalization.generalize(env, type) }
 
         context 'when the env is empty' do
-          let(:env) { Env.empty }
+          let(:env) { Env.empty(VarGen.new) }
           let(:a) { Type.var(1, 'a') }
           let(:b) { Type.var(2, 'b') }
           let(:type) { Type.function([a], b) }

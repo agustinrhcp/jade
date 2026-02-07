@@ -24,6 +24,7 @@ module Jade
       'as',
       'uses',
       'with',
+      'struct',
     ].freeze
 
     SYMBOLS = {

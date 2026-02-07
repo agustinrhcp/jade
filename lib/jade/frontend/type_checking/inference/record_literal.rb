@@ -6,12 +6,12 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen, expected)
+          def infer(node, registry, env, expected)
             node => AST::RecordLiteral(fields:, symbol:)
 
             fields
               .reduce(Result[{}, Substitution.new, env, []]) do |acc, field|
-                check(field, registry, env, var_gen, Expected.non_auth(var_gen))
+                check(field, registry, env, Expected.non_auth(env.fresh))
                   .compose_substitution(acc.substitution)
                   .add_errors(acc.errors)
                   .then { it.with(type: acc.type.merge(field.key => it.type)) }

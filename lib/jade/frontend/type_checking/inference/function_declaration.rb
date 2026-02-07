@@ -6,11 +6,10 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen, _)
+          def infer(node, registry, env, _)
             node => AST::FunctionDeclaration(symbol:, body:, params:)
 
-            fn_type = env.lookup(symbol.qualified_name)
-              .then { instantiate(it, var_gen) }
+            fn_type = env.lookup(symbol.qualified_name).then { instantiate(it, env.var_gen) }
 
             fn_type
               .args
@@ -18,7 +17,7 @@ module Jade
               .reduce(env) do |body_env, (t, p)|
                 body_env.bind(p.name, Scheme[[], t])
               end
-              .then { check(body, registry, it, var_gen, Expected.auth(fn_type.return_type)) }
+              .then { check(body, registry, it, Expected.auth(fn_type.return_type)) }
               .and_unify(fn_type.return_type.make_rigid) do |error|
                 Error::FunctionBodyTypeMismatch.new(
                   env.entry_name,

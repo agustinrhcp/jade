@@ -29,25 +29,33 @@ module Jade
 
       def lower_symbol(symbol, registry)
         case symbol
-        in Symbol::TypeRef('Basics', 'Int')
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef('Basics', 'Int'))
           Result.good('int')
 
-        in Symbol::TypeRef('Basics', 'Float')
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef('Basics', 'Float'))
           Result.good('float')
 
-        in Symbol::TypeRef('Basics', 'Bool')
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef('Basics', 'Bool'))
           Result.good('bool')
 
-        in Symbol::TypeRef('String', 'String')
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef('String', 'String'))
           Result.good('string')
 
-        in Symbol::TypeApplication(Symbol::TypeRef['Maybe', 'Maybe'], [arg])
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef['Maybe', 'Maybe'], args: [arg])
           lower_symbol(arg, registry)
             .wrap('maybe')
 
-        in Symbol::TypeApplication(Symbol::TypeRef['List', 'List'], [arg])
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef['Maybe', 'Maybe'], args:)
+          # TODO: Is malformed, it will fail later
+          Result.good('maybe')
+
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef['List', 'List'], args: [arg])
           lower_symbol(arg, registry)
             .wrap('list')
+
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef['List', 'List'], args:)
+          # TODO: Is malformed, it will fail later
+          Result.good('list')
 
         in Symbol::RecordType(fields:)
           fields
@@ -68,8 +76,8 @@ module Jade
         in Symbol::Function(name:)
           Result.bad(FunctionError.new(name))
 
-        in Symbol::Union(name:)
-          Result.bad(UnionError.new(name))
+        in Symbol::TypeApplication(constructor:)
+          Result.bad(UnionError.new(constructor.name))
 
         end
       end

@@ -17,8 +17,8 @@ module Jade
             Generalization.generalize(env, type)
           end
 
-          def check(node, registry, env, var_gen, expected_type)
-            TypeChecking.check_node(node, registry, env, var_gen, expected_type)
+          def check(node, registry, env, expected_type)
+            TypeChecking.check_node(node, registry, env, expected_type)
           end
 
           def type_from_symbol(symbol, registry, var_gen)

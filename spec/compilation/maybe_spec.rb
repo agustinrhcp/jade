@@ -30,11 +30,9 @@ module Jade
       JADE
     end
 
-    before do
-      test_compiler.require('pepe', pepe_source)
-    end
-
     it 'works' do
+      test_compiler.require('pepe', pepe_source)
+
       expect(Pepe.hello.call(Maybe::Just["Hello lala"])).to eql "Hello lala"
       expect(Pepe.hello.call(Maybe::Nothing[])).to eql "Hello pepe"
 
@@ -44,6 +42,23 @@ module Jade
       expect(Pepe.and_then_test.call(Maybe::Nothing[])).to eql Maybe::Nothing[]
       expect(Pepe.and_then_test.call(Maybe::Just[2])).to eql Maybe::Nothing[]
       expect(Pepe.and_then_test.call(Maybe::Just[1])).to eql Maybe::Just['ONE']
+    end
+
+    context 'without type arguments' do
+      let(:pepe_source) do
+        <<~JADE
+          module Pepe exposing (nott)
+
+          def nott() -> Maybe
+            Nothing()
+          end
+        JADE
+      end
+
+      it 'fails' do
+        expect { test_compiler.require('pepe', pepe_source) }
+          .to raise_error(RuntimeError, /`Maybe` type needs 1 argument but got 0/)
+      end
     end
   end
 end

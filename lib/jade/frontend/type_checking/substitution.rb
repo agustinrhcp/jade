@@ -23,10 +23,11 @@ module Jade
             type
               .with(args: args.map { apply(it) })
 
-          in Type::AnonymousRecord(fields:)
+          in Type::AnonymousRecord(fields:, row_var:)
             fields
               .transform_values { apply(it) }
-              .then { type.with(fields:) }
+              .then { type.with(fields: it) }
+              .then { it.open? ? it.with(row_var: apply(it.row_var)) : it }
           end
         end
 

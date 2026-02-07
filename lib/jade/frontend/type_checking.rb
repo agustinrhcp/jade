@@ -21,15 +21,15 @@ module Jade
           self[type, true]
         end
 
-        def self.non_auth(var_gen)
-          self[var_gen.fresh, false]
+        def self.non_auth(type)
+          self[type, false]
         end
       end
 
       Result = Data.define(:type, :substitution, :env, :errors) do
         def and_unify(actual, &block)
           fail if actual.is_a?(Expected)
-          case Unification.unify(type, actual)
+          case Unification.unify(type, actual, env)
           in Ok(sub)
             compose_substitution(sub)
               .apply
@@ -63,21 +63,19 @@ module Jade
       end
 
       def check(entry, registry)
-        var_gen = VarGen.new
-
         Env
-          .load(entry, registry, var_gen)
-          .then { check_node(entry.ast, registry, it, var_gen, Expected.non_auth(var_gen)) }
+          .load(entry, registry)
+          .then { check_node(entry.ast, registry, it, Expected.non_auth(it.fresh)) }
           .to_result
           .map { entry }
       end
 
-      def check_repl(node, registry, env = Env.new, var_gen = VarGen.new)
-        check_node(node, registry, env, var_gen, Expected.non_auth(var_gen.fresh))
+      def check_repl(node, registry, env = Env.new)
+        check_node(node, registry, env, Expected.non_auth(env.fresh))
           .to_result
       end
 
-      def check_node(node, registry, env, var_gen, expected_type)
+      def check_node(node, registry, env, expected_type)
         case node
         in AST::Body then Inference::Body
         in AST::CaseOf then Inference::CaseOf
@@ -95,6 +93,7 @@ module Jade
         in AST::Module then Inference::Module
         in AST::QualifiedAccess then Inference::QualifiedAccess
         in AST::RecordAccess then Inference::RecordAccess
+        in AST::StructDeclaration then Inference::StructDeclaration
         in AST::RecordField then Inference::RecordField
         in AST::RecordLiteral then Inference::RecordLiteral
         in AST::RecordUpdate then Inference::RecordUpdate
@@ -102,11 +101,10 @@ module Jade
         in AST::VariableBinding then Inference::VariableBinding
         in AST::VariableReference then Inference::VariableReference
         end
-          .infer(node, registry, env, var_gen, expected_type)
+          .infer(node, registry, env, expected_type)
       end
 
       private
-
 
       class VarGen
         def initialize

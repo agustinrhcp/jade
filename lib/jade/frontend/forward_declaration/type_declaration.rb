@@ -9,10 +9,10 @@ module Jade
           node => AST::TypeDeclaration(name:, type_params:, variants:)
 
           predeclared_variants = variants
-            .map { |var| Symbol.predeclared_variant(var.name) }
+            .map { |var| Symbol.predeclared_variant(var.name, var.range) }
 
-          type_params.map(&:name).map { Symbol.var(it) }
-            .then { Symbol.union(name, it, predeclared_variants) }
+          type_params.map { Symbol.var(it.name, it.range) }
+            .then { Symbol.union(name, it, predeclared_variants, node.range) }
             .then { entry.define(it) }
             .then { Result[it, []] }
         end
@@ -27,7 +27,7 @@ module Jade
               var
                 .args
                 .map { |arg| figure_out_type(entry, arg) }
-                .then { Symbol.variant(var.name, it, symbol.to_ref) }
+                .then { Symbol.variant(var.name, it, symbol.to_ref, var.range) }
             end
 
           variant_symbols

@@ -2,14 +2,14 @@ module Jade
   module Frontend
     module TypeChecking
       module Inference
-        module Module
+        module StructDeclaration
           extend Helpers
           extend self
 
-          def infer(node, registry, env, expected_type)
-            node => AST::Module(body:)
+          def infer(node, _, env, _)
+            node => AST::StructDeclaration
 
-            check(body, registry, env, expected_type)
+            Result[Type.unit, Substitution.new, env, []]
           end
         end
       end

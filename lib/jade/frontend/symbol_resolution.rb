@@ -24,6 +24,7 @@ require 'jade/frontend/symbol_resolution/pattern/wildcard'
 require 'jade/frontend/symbol_resolution/record_field'
 require 'jade/frontend/symbol_resolution/record_literal'
 require 'jade/frontend/symbol_resolution/record_update'
+require 'jade/frontend/symbol_resolution/struct_declaration'
 require 'jade/frontend/symbol_resolution/type_declaration'
 require 'jade/frontend/symbol_resolution/variable_binding'
 require 'jade/frontend/symbol_resolution/variable_reference'
@@ -102,6 +103,7 @@ module Jade
         in AST::RecordLiteral then RecordLiteral
         in AST::RecordField then RecordField
         in AST::RecordUpdate then RecordUpdate
+        in AST::StructDeclaration then StructDeclaration
         end
           .resolve(node, registry, current_entry)
       end

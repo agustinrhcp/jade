@@ -6,15 +6,15 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen, expected)
+          def infer(node, registry, env, expected)
             node => AST::InfixApplication(operator:, left:, right:)
 
             fn_type = env.lookup(operator.symbol.qualified_name)
-              .then { instantiate(it, var_gen) }
+              .then { instantiate(it, env.var_gen) }
 
             left_expected_type, right_expected_type = fn_type.args
 
-            left_result = check(left, registry, env, var_gen, expected)
+            left_result = check(left, registry, env, expected)
               .and_unify(left_expected_type) do
                 Error::InfixApplicationTypeMismatch.new(
                   env.entry_name,
@@ -26,7 +26,7 @@ module Jade
                 )
               end
 
-            right_result = check(right, registry, left_result.env, var_gen, expected)
+            right_result = check(right, registry, left_result.env, expected)
               .and_unify(right_expected_type) do
                 Error::InfixApplicationTypeMismatch.new(
                   env.entry_name,

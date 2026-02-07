@@ -47,7 +47,8 @@ module Jade
     end
 
     def declaration
-      function_declaration | type_declaration | import_declaration | interop_import_declaration
+      function_declaration | type_declaration | import_declaration | interop_import_declaration |
+        struct_declaration
     end
 
     def expression
@@ -251,6 +252,16 @@ module Jade
       ).map(&AST.type_declaration)
     end
 
+    def record_declaration
+      (
+        type(:data) >>
+          constant >>
+          (type_params | none.map { [[]] }) >>
+          type(:assign).skip >>
+          type_record
+      ).map(&AST.record_declaration)
+    end
+
     def variant_declaration
       (
         constant >>
@@ -275,7 +286,7 @@ module Jade
     end
 
     def type_atom
-      type_var | type_application | type_name | grouped(lazy { type_function })
+      type_var | type_application |  grouped(lazy { type_function })
     end
 
     def type_expression
@@ -301,7 +312,7 @@ module Jade
     end
 
     def type_name
-       qualified_type_name | constant.map(&AST.type_name)
+      qualified_type_name | constant.map(&AST.type_name)
     end
 
     def qualified_type_name
@@ -326,12 +337,15 @@ module Jade
     end
 
     def type_application
-      (type_name >>
-        type(:lparen) >>
-        sequence(lazy { type_expression }, separated_by: type(:comma).skip).map { [it] } >>
-        type(:rparen)
-      )
-        .map(&AST.type_application)
+      (
+        type_name >> (
+          (
+            type(:lparen) >>
+            sequence(lazy { type_expression }, separated_by: type(:comma).skip).map { [it] } >>
+            type(:rparen)
+          ) | none.map { [nil, [], nil] }
+        )
+      ).map(&AST.type_application)
     end
 
     def literal
@@ -439,6 +453,16 @@ module Jade
     def interop_function
       (identifier >> type(:colon).skip >> type_expression )
         .map(&AST.interop_function)
+    end
+
+    def struct_declaration
+      (
+        type(:struct) >>
+          constant >>
+          (type_params | none.map { [[]] }) >>
+          type(:assign).skip >> type_record
+          
+      ).map(&AST.struct_declaration)
     end
 
     private
