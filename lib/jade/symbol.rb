@@ -25,16 +25,16 @@ module Jade
       RecordType[fields, row_var]
     end
 
-    def self.union(name, type_params, variants)
-      Union[nil, name, type_params, variants.map(&:to_ref)]
+    def self.union(name, type_params, variants, span)
+      Union[nil, name, type_params, variants.map(&:to_ref), span]
     end
 
-    def self.variant(name, args, union)
-      Variant[nil, name, args, union]
+    def self.variant(name, args, union, span)
+      Variant[nil, name, args, union, span]
     end
 
-    def self.predeclared_variant(name)
-      Variant[nil, name, [], nil]
+    def self.predeclared_variant(name, span)
+      Variant[nil, name, [], nil, span]
     end
 
     def self.lambda(arity)
@@ -49,8 +49,8 @@ module Jade
       ValueRef[module_name, name]
     end
 
-    def self.var(name)
-      Variable[name]
+    def self.var(name, span)
+      Variable[name, span]
     end
 
     def self.param(name)
@@ -85,7 +85,7 @@ module Jade
       TypeApplication[constructor, args]
     end
 
-    Union = Data.define(:module_name, :name, :type_params, :variants) do
+    Union = Data.define(:module_name, :name, :type_params, :variants, :decl_span) do
       include Symbol
 
       def to_ref
@@ -125,7 +125,7 @@ module Jade
       include Symbol
     end
 
-    Variant = Data.define(:module_name, :name, :args, :union) do
+    Variant = Data.define(:module_name, :name, :args, :union, :decl_span) do
       include Symbol
 
       def to_ref
@@ -172,7 +172,7 @@ module Jade
       end
     end
 
-    Variable = Data.define(:name) do
+    Variable = Data.define(:name, :decl_span) do
       include Symbol
     end
 

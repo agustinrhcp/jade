@@ -373,7 +373,7 @@ module Jade
           maybe_symbol = subject.lookup(Symbol::TypeRef['__Test__', 'Maybe'])
 
           expect(maybe_symbol).to be_a(Symbol::Union)
-          expect(maybe_symbol.type_params).to eql([Symbol.var('a')])
+          expect(maybe_symbol.type_params.first).to be_a(Symbol::Variable).and have_attributes(name: 'a')
         end
       end
     end

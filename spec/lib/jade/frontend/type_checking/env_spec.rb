@@ -6,6 +6,8 @@ module Jade
   module Frontend
     module TypeChecking
       describe Env do
+        include SymbolFactory
+
         describe '.empty' do
           subject { described_class.empty }
 
@@ -20,18 +22,12 @@ module Jade
 
           let(:entry) do
             [
-              Symbol::Function.new(
-                module_name: "__Test__",
-                name: "id",
-                params: { "x" => Symbol.var("a") },
-                return_type: Symbol.var("a")
-              ),
-              Symbol::Function.new(
-                module_name: "__Test__",
-                name: "f",
-                params: { "y" => Symbol.var("a") },
-                return_type: Symbol.var("a"),
-              )
+              fn_sym('__Test__', 'id')
+                .with(params: { x: var_sym('a') })
+                .with(return_type: var_sym('a')),
+              fn_sym('__Test__', 'f')
+                .with(params: { y: var_sym('a') })
+                .with(return_type: var_sym('a')),
             ].reduce(Registry.entry('__Test__')) { |acc, sym| acc.define(sym) }
           end
 

@@ -56,7 +56,7 @@ module Jade
         in AST::VariableBinding(name:, expression:)
           analyze_r(expression, registry, scope) => { errors: expr_errors }
 
-          bind(scope, name, Symbol.var(name))
+          bind(scope, name, Symbol.var(name, ast.range))
             .add_errors(expr_errors)
 
         in AST::VariableReference(name:)
@@ -119,7 +119,7 @@ module Jade
           Result[scope, []]
 
         in AST::Pattern::Binding(name:)
-          bind(scope, name, Symbol.var(name))
+          bind(scope, name, Symbol.var(name, ast.range))
 
         in AST::Pattern::Constructor(constructor:, patterns:, symbol: sym_ref)
           symbol = registry.lookup(sym_ref)

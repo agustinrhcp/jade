@@ -8,7 +8,7 @@ module Jade
           symbol = if current_entry.values[node.name]
             current_entry.values[node.name]
           else
-            Symbol.var(node.name)
+            Symbol.var(node.name, node.range)
           end
 
           Result[node.with(symbol:), []]

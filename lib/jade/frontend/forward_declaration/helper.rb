@@ -10,10 +10,10 @@ module Jade
           ForwardDeclaration.deep_declare_node(ast, entry, registry)
         end
 
-        def figure_out_type(entry, type)
-          case type
+        def figure_out_type(entry, node)
+          case node
           in AST::TypeVar(type:)
-            Symbol.var(type)
+            Symbol.var(type, node.range)
 
           in AST::TypeName(type:)
             entry
@@ -41,7 +41,7 @@ module Jade
               .then { Symbol.function_type(it, figure_out_type(entry, return_type)) }
 
           in AST::TypeRecord(fields:, row_var:)
-            row = row_var&.then { |row| Symbol.var(row.name) }
+            row = row_var&.then { |row| Symbol.var(row.name, row.range) }
 
             fields
               .transform_values { figure_out_type(entry, it) }
