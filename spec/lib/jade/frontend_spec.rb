@@ -197,6 +197,18 @@ module Jade
         its(:qualified_name) { is_expected.to eql "__Test__.add" }
       end
 
+      describe 'its params symbols' do
+        subject { super().params.first.type.symbol }
+
+        it { is_expected.to be_a(Symbol::TypeApplication).and have_attributes(constructor: Symbol::TypeRef['Basics', 'Int']) }
+      end
+
+      describe 'its return type symbol' do
+        subject { super().params.return_type.symbol }
+
+        it { is_expected.to be_a(Symbol::TypeApplication).and have_attributes(constructor: Symbol::TypeRef['Basics', 'Int']) }
+      end
+
       describe 'the registry' do
         subject { frontend => Ok([_, registry]); registry }
 

@@ -3,6 +3,7 @@ require 'jade/error'
 require 'jade/frontend/semantic_analysis/error/duplicate_function_declaration'
 require 'jade/frontend/semantic_analysis/error/missing_exposing_clause'
 require 'jade/frontend/semantic_analysis/error/duplicate_record_field'
+require 'jade/frontend/semantic_analysis/error/type_args_mismatch'
 
 module Jade
   module Frontend

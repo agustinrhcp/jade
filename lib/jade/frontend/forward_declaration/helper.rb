@@ -16,7 +16,9 @@ module Jade
             Symbol.var(type)
 
           in AST::TypeName(type:)
-            entry.lookup_type(type)
+            entry
+              .lookup_type(type)
+              .then { Symbol.type_application(it.to_ref, []) }
 
           in AST::TypeApplication(constructor:, args:)
             constructor_sym = entry.lookup_type(constructor.type)
