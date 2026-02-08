@@ -7,7 +7,8 @@ module Jade
     def type_sym(module_name, name)
       Symbol::TypeApplication.new(
         constructor: type_ref_sym(module_name, name),
-        args: []
+        args: [],
+        span: nil,
       )
     end
 

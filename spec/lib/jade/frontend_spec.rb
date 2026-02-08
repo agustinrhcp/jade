@@ -797,5 +797,49 @@ module Jade
 
       it { is_expected.to be_a(AST::FunctionDeclaration) }
     end
+
+    describe 'type args mismatch' do
+      context 'extra args in a function' do
+        let(:text) do
+          <<~JADE
+            def ten() -> Int(a)
+              10
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to eql '`Int` type needs 0 argument but got 1' }
+        end
+      end
+
+      context 'missing args in a function' do
+        let(:text) do
+          <<~JADE
+            def maybe_ten() -> Maybe
+              Just(10)
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to eql '`Maybe` type needs 1 argument but got 0' }
+        end
+      end
+    end
   end
 end

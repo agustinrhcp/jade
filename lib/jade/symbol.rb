@@ -81,8 +81,8 @@ module Jade
       InteropFunction[nil, name, params, return_type, interop_module_name, expected_type]
     end
 
-    def self.type_application(constructor, args)
-      TypeApplication[constructor, args]
+    def self.type_application(constructor, args, span)
+      TypeApplication[constructor, args, span]
     end
 
     Union = Data.define(:module_name, :name, :type_params, :variants, :decl_span) do
@@ -188,7 +188,7 @@ module Jade
       include Symbol
     end
 
-    TypeApplication = Data.define(:constructor, :args) do
+    TypeApplication = Data.define(:constructor, :args, :span) do
       include Symbol
     end
   end

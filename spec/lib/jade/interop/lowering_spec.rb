@@ -4,29 +4,7 @@ require 'jade'
 
 module Jade
   describe Interop::Lowering do
-    def int_sym
-      Symbol::TypeApplication[Symbol::TypeRef['Basics', 'Int'], []]
-    end
-
-    def float_sym
-      Symbol::TypeApplication[Symbol::TypeRef['Basics', 'Float'], []]
-    end
-
-    def bool_sym
-      Symbol::TypeApplication[Symbol::TypeRef['Basics', 'Bool'], []]
-    end
-
-    def str_sym
-      Symbol::TypeApplication[Symbol::TypeRef['String', 'String'], []]
-    end
-
-    def maybe_sym(param)
-      Symbol::TypeApplication[Symbol::TypeRef['Maybe', 'Maybe'], [param]]
-    end
-
-    def list_sym(param)
-      Symbol::TypeApplication[Symbol::TypeRef['List', 'List'], [param]]
-    end
+    include SymbolFactory
 
     let(:registry) do
       Stdlib.load(Registry.new)
@@ -35,32 +13,33 @@ module Jade
     subject { described_class.lower_symbol(symbol, registry).lowered_type }
 
     context 'an Int' do
-      let(:symbol) { int_sym }
+      let(:symbol) { type_sym('Basics', 'Int') }
 
       it { is_expected.to eql 'int' }
     end
 
     context 'a Bool' do
-      let(:symbol) { bool_sym }
+      let(:symbol) { type_sym('Basics', 'Bool') }
 
       it { is_expected.to eql 'bool' }
     end
 
     context 'a Float' do
-      let(:symbol) { float_sym }
+      let(:symbol) { type_sym('Basics', 'Float') }
 
       it { is_expected.to eql 'float' }
     end
 
     context 'a String' do
-      let(:symbol) { str_sym  }
+      let(:symbol) { type_sym('String', 'String') }
 
       it { is_expected.to eql 'string' }
     end
 
     context 'a Maybe(String)' do
       let(:symbol) do
-        str_sym.then { maybe_sym(it) }
+        type_sym('String', 'String')
+          .then { type_sym('Maybe', 'Maybe').with(args: [it]) }
       end
 
       it { is_expected.to eql ['maybe', 'string'] }
@@ -68,7 +47,8 @@ module Jade
 
     context 'a List(Int)' do
       let(:symbol) do
-        int_sym.then { list_sym(it) }
+        type_sym('Basics', 'Int')
+          .then { type_sym('List', 'List').with(args: [it]) }
       end
 
       it { is_expected.to eql ['list', 'int'] }
@@ -76,7 +56,9 @@ module Jade
 
     context 'a Maybe(List(Int))' do
       let(:symbol) do
-        int_sym.then { list_sym(it) }.then { maybe_sym(it) }
+        type_sym('Basics', 'Int')
+          .then { type_sym('List', 'List').with(args: [it]) }
+          .then { type_sym('Maybe', 'Maybe').with(args: [it]) }
       end
 
       it { is_expected.to eql ['maybe', ['list', 'int']] }
