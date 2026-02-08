@@ -35,6 +35,10 @@ module Jade
 
         def validate_type_symbol(node, registry, symbol = node.symbol)
           case symbol
+          in Symbol::TypeRef
+            byebug
+            validate_type_symbol(node, registry, registry.lookup(symbol))
+
           in Symbol::Variable
             []
 

@@ -11,7 +11,8 @@ module Jade
           end
 
           def message
-            "The `#{@type_name}` type needs #{@expected} arguments, but got #{@actual}"
+            "`#{@type_name}` type needs #{@expected}" +
+              " argument#{@expected > 1 ? 's' : ''} but got #{@actual}"
           end
         end
       end

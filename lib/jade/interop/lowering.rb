@@ -29,16 +29,16 @@ module Jade
 
       def lower_symbol(symbol, registry)
         case symbol
-        in Symbol::TypeRef('Basics', 'Int')
+        in Symbol::TypeApplication(Symbol::TypeRef('Basics', 'Int'), [])
           Result.good('int')
 
-        in Symbol::TypeRef('Basics', 'Float')
+        in Symbol::TypeApplication(Symbol::TypeRef('Basics', 'Float'), [])
           Result.good('float')
 
-        in Symbol::TypeRef('Basics', 'Bool')
+        in Symbol::TypeApplication(Symbol::TypeRef('Basics', 'Bool'), [])
           Result.good('bool')
 
-        in Symbol::TypeRef('String', 'String')
+        in Symbol::TypeApplication(Symbol::TypeRef('String', 'String'), [])
           Result.good('string')
 
         in Symbol::TypeApplication(Symbol::TypeRef['Maybe', 'Maybe'], [arg])
@@ -68,8 +68,8 @@ module Jade
         in Symbol::Function(name:)
           Result.bad(FunctionError.new(name))
 
-        in Symbol::Union(name:)
-          Result.bad(UnionError.new(name))
+        in Symbol::TypeApplication(constructor:)
+          Result.bad(UnionError.new(constructor.name))
 
         end
       end

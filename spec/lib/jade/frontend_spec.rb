@@ -200,13 +200,13 @@ module Jade
       describe 'its params symbols' do
         subject { super().params.first.type.symbol }
 
-        it { is_expected.to be_a(Symbol::TypeApplication).and have_attributes(constructor: Symbol::TypeRef['Basics', 'Int']) }
+        it { is_expected.to be_an_int_symbol }
       end
 
       describe 'its return type symbol' do
-        subject { super().params.return_type.symbol }
+        subject { super().return_type.symbol }
 
-        it { is_expected.to be_a(Symbol::TypeApplication).and have_attributes(constructor: Symbol::TypeRef['Basics', 'Int']) }
+        it { is_expected.to be_an_int_symbol }
       end
 
       describe 'the registry' do
@@ -217,9 +217,9 @@ module Jade
 
           expect(symbol).to be_a(Symbol::Function)
           expect(symbol.module_name).to eql '__Test__'
-          expect(symbol.params).to include('a' => Symbol::TypeRef['Basics', 'Int'])
-          expect(symbol.params).to include('b' => Symbol::TypeRef['Basics', 'Int'])
-          expect(symbol.return_type).to eql(Symbol::TypeRef['Basics', 'Int'])
+          expect(symbol.params['a']).to be_an_int_symbol
+          expect(symbol.params['b']).to be_an_int_symbol
+          expect(symbol.return_type).to be_an_int_symbol
           expect(symbol.name).to eql 'add'
         end
       end

@@ -285,7 +285,7 @@ module Jade
     end
 
     def type_atom
-      type_var | type_application | type_name | grouped(lazy { type_function })
+      type_var | type_application |  grouped(lazy { type_function })
     end
 
     def type_expression
@@ -311,7 +311,7 @@ module Jade
     end
 
     def type_name
-       qualified_type_name | constant.map(&AST.type_name)
+      qualified_type_name | constant.map(&AST.type_name)
     end
 
     def qualified_type_name
@@ -336,12 +336,15 @@ module Jade
     end
 
     def type_application
-      (type_name >>
-        type(:lparen) >>
-        sequence(lazy { type_expression }, separated_by: type(:comma).skip).map { [it] } >>
-        type(:rparen)
-      )
-        .map(&AST.type_application)
+      (
+        type_name >> (
+          (
+            type(:lparen) >>
+            sequence(lazy { type_expression }, separated_by: type(:comma).skip).map { [it] } >>
+            type(:rparen)
+          ) | none.map { [nil, [], nil] }
+        )
+      ).map(&AST.type_application)
     end
 
     def literal

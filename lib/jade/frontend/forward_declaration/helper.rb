@@ -21,14 +21,19 @@ module Jade
               .then { Symbol.type_application(it.to_ref, []) }
 
           in AST::TypeApplication(constructor:, args:)
-            constructor_sym = entry.lookup_type(constructor.type)
+            constructor_sym = case constructor
+            in AST::TypeName
+              entry.lookup_type(constructor.type)
+            in AST::QualifiedTypeName(path:)
+              *module_parts, type_name = path
+              entry.lookup_qualified_type(
+                module_parts.join('.'), type_name
+              )
+            end
+
             args
               .map { figure_out_type(entry, it) }
               .then { Symbol.type_application(constructor_sym.to_ref, it) }
-
-          in AST::QualifiedTypeName(path:)
-            *module_parts, type_name = path
-            entry.lookup_qualified_type(module_parts.join('.'), type_name)
 
           in AST::TypeFunction(params:, return_type:)
             params

@@ -57,7 +57,7 @@ module Jade
 
       it 'fails' do
         expect { test_compiler.require('pepe', pepe_source) }
-          .to raise_error(RuntimeError, /PEPE/)
+          .to raise_error(RuntimeError, /`Maybe` type needs 1 argument but got 0/)
       end
     end
   end
