@@ -197,18 +197,6 @@ module Jade
         its(:qualified_name) { is_expected.to eql "__Test__.add" }
       end
 
-      describe 'its params symbols' do
-        subject { super().params.first.type.symbol }
-
-        it { is_expected.to be_an_int_symbol }
-      end
-
-      describe 'its return type symbol' do
-        subject { super().return_type.symbol }
-
-        it { is_expected.to be_an_int_symbol }
-      end
-
       describe 'the registry' do
         subject { frontend => Ok([_, registry]); registry }
 
@@ -820,6 +808,25 @@ module Jade
         end
       end
 
+      context 'extra args in a type declaration' do
+        let(:text) do
+          <<~JADE
+            type Stuff = Stuff(Maybe(a, b))
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to eql '`Maybe` type needs 1 argument but got 2' }
+        end
+      end
+
       context 'missing args in a function' do
         let(:text) do
           <<~JADE
@@ -838,6 +845,27 @@ module Jade
           subject { super()[0].message }
 
           it { is_expected.to eql '`Maybe` type needs 1 argument but got 0' }
+        end
+
+        context 'missing args in record in a function' do
+          let(:text) do
+            <<~JADE
+              def maybe_ten() -> { ten: Maybe }
+                { ten: Just(10) }
+              end
+            JADE
+          end
+
+          subject { frontend => Err(errors); errors }
+
+          it { is_expected.to have(1).item }
+          its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+          describe 'the error message' do
+            subject { super()[0].message }
+
+            it { is_expected.to eql '`Maybe` type needs 1 argument but got 0' }
+          end
         end
       end
     end

@@ -2,6 +2,7 @@ require 'jade/frontend/semantic_analysis/error'
 
 require 'jade/frontend/semantic_analysis/helper'
 require 'jade/frontend/semantic_analysis/function_declaration'
+require 'jade/frontend/semantic_analysis/type_declaration'
 
 module Jade
   module Frontend
@@ -84,7 +85,7 @@ module Jade
             .add_errors(args_errors)
 
         in AST::TypeDeclaration(name:, symbol:, variants:)
-          Result[scope, []]
+          SemanticAnalysis::TypeDeclaration.analyze(ast, registry, scope)
 
         in AST::IfThenElse(condition:, if_branch:, else_branch:)
           analyze_r(condition, registry, scope) => { errors: condition_errors }
