@@ -827,6 +827,26 @@ module Jade
         end
       end
 
+      context 'missing args in an interop import declaration' do
+        let(:text) do
+          <<~JADE
+            uses Jade::Date with
+              today: Maybe
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to eql '`Maybe` type needs 1 argument but got 0' }
+        end
+      end
+
       context 'missing args in a function' do
         let(:text) do
           <<~JADE

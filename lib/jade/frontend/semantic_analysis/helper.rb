@@ -66,6 +66,10 @@ module Jade
             validate_type_symbol(return_type, registry) +
               params.values.flat_map { validate_type_symbol(it, registry) }
 
+          in Symbol::InteropFunction(params:, return_type:)
+            validate_type_symbol(return_type, registry) +
+              params.flat_map { validate_type_symbol(it, registry) }
+
           in Symbol::RecordType(fields:)
             fields.reduce([]) do |acc, (k, v)|
               acc + validate_type_symbol(v, registry)

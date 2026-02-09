@@ -45,9 +45,17 @@ module Jade
           lower_symbol(arg, registry)
             .wrap('maybe')
 
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef['Maybe', 'Maybe'], args:)
+          # TODO: Is malformed, it will fail later
+          Result.good('maybe')
+
         in Symbol::TypeApplication(constructor: Symbol::TypeRef['List', 'List'], args: [arg])
           lower_symbol(arg, registry)
             .wrap('list')
+
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef['List', 'List'], args:)
+          # TODO: Is malformed, it will fail later
+          Result.good('list')
 
         in Symbol::RecordType(fields:)
           fields

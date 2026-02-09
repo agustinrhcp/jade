@@ -3,6 +3,7 @@ require 'jade/frontend/semantic_analysis/error'
 require 'jade/frontend/semantic_analysis/helper'
 require 'jade/frontend/semantic_analysis/function_declaration'
 require 'jade/frontend/semantic_analysis/type_declaration'
+require 'jade/frontend/semantic_analysis/interop_import_declaration'
 
 module Jade
   module Frontend
@@ -49,7 +50,7 @@ module Jade
           Result[scope, []]
 
         in AST::InteropImportDeclaration
-          Result[scope, []]
+          SemanticAnalysis::InteropImportDeclaration.analyze(ast, registry, scope)
 
         in AST::Literal
           Result[scope, []]
