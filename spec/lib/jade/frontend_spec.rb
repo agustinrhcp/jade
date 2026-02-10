@@ -364,6 +364,25 @@ module Jade
           expect(maybe_symbol.type_params.first).to be_a(Symbol::Variable).and have_attributes(name: 'a')
         end
       end
+
+      context 'with unbound vars' do
+        let(:text) do
+          <<~JADE
+            type Unbound(b) = Bound(a)
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+
+        describe 'the error' do
+          subject { super().first }
+
+          it { is_expected.to be_a Frontend::SemanticAnalysis::Error::UnboundTypeVariable}
+          its(:message) { is_expected.to include 'Type `Unbound` has unbound variables `a`' }
+        end
+      end
     end
 
     context 'type def and reference' do
@@ -811,7 +830,7 @@ module Jade
       context 'extra args in a type declaration' do
         let(:text) do
           <<~JADE
-            type Stuff = Stuff(Maybe(a, b))
+            type Stuff(a, b) = Stuff(Maybe(a, b))
           JADE
         end
 
