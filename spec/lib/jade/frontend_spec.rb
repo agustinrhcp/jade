@@ -908,5 +908,15 @@ module Jade
         end
       end
     end
+
+    context 'a struct declaration' do
+      let(:text) do
+        <<~JADE
+          struct Person = { name: String, age: Int }
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::StructDeclaration) }
+    end
   end
 end

@@ -85,6 +85,10 @@ module Jade
       TypeApplication[constructor, args, span]
     end
 
+    def self.predeclared_struct(name, type_params, span)
+      Struct[nil, name, type_params, nil, span]
+    end
+
     Union = Data.define(:module_name, :name, :type_params, :variants, :decl_span) do
       include Symbol
 
@@ -182,6 +186,14 @@ module Jade
 
     AnonymousRecord = Data.define(:fields, :row_var) do
       include Symbol
+    end
+
+    Struct = Data.define(:module_name, :name, :type_params, :record_type, :decl_span) do
+      include Symbol
+
+      def to_ref
+        TypeRef[module_name, name]
+      end
     end
 
     RecordType = Data.define(:fields, :row_var) do

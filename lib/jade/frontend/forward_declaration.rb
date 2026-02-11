@@ -1,11 +1,14 @@
 require 'jade/frontend/forward_declaration/helper'
 require 'jade/frontend/forward_declaration/error'
 
+require 'jade/interop/lowering'
+
 require 'jade/frontend/forward_declaration/body'
 require 'jade/frontend/forward_declaration/function_declaration'
 require 'jade/frontend/forward_declaration/import_declaration'
 require 'jade/frontend/forward_declaration/interop_import_declaration'
 require 'jade/frontend/forward_declaration/module'
+require 'jade/frontend/forward_declaration/struct_declaration'
 require 'jade/frontend/forward_declaration/type_declaration'
 
 module Jade
@@ -47,12 +50,13 @@ module Jade
 
       def resolver(node, entry)
         case node
-        in AST::Module then Module
+        in AST::Body then Body
+        in AST::FunctionDeclaration then FunctionDeclaration
         in AST::ImportDeclaration then ImportDeclaration
         in AST::InteropImportDeclaration then InteropImportDeclaration
-        in AST::FunctionDeclaration then FunctionDeclaration
+        in AST::Module then Module
+        in AST::StructDeclaration then StructDeclaration
         in AST::TypeDeclaration then TypeDeclaration
-        in AST::Body then Body
         else
           nil
         end
