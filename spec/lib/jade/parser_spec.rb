@@ -844,5 +844,17 @@ module Jade
         its(:functions) { is_expected.to have(2).items }
       end
     end
+
+    describe 'interop import' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          struct Person = { name: String }
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::StructDeclaration) }
+    end
   end
 end

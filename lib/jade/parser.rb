@@ -47,7 +47,8 @@ module Jade
     end
 
     def declaration
-      function_declaration | type_declaration | import_declaration | interop_import_declaration
+      function_declaration | type_declaration | import_declaration | interop_import_declaration |
+        struct_declaration
     end
 
     def expression
@@ -452,6 +453,16 @@ module Jade
     def interop_function
       (identifier >> type(:colon).skip >> type_expression )
         .map(&AST.interop_function)
+    end
+
+    def struct_declaration
+      (
+        type(:struct) >>
+          constant >>
+          (type_params | none.map { [[]] }) >>
+          type(:assign).skip >> type_record
+          
+      ).map(&AST.struct_declaration)
     end
 
     private

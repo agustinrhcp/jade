@@ -28,7 +28,7 @@ module Jade
     define(:VariantDeclaration, :name, :args)
     define(:TypeParam, :name)
     define(:ImportDeclaration, :module_name, :as, :exposing)
-    define(:RecordDeclaration, :name, :type_params, :record_type)
+    define(:StructDeclaration, :name, :type_params, :record_type)
 
     define(:ExposeAll)
     define(:ExposeNone)
@@ -480,6 +480,17 @@ module Jade
           name.value,
           type_expression,
           name.range.begin..type_expression.range.end,
+        ]
+      end
+    end
+
+    def struct_declaration
+      ->((struct_token, name, type_params, record_type)) do
+        StructDeclaration[
+          name.value,
+          type_params,
+          record_type,
+          struct_token.range.begin..record_type.range.end,
         ]
       end
     end
