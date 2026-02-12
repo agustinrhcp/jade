@@ -24,10 +24,31 @@ module Jade
           end
         end
 
+        def collect_vars(symbol, registry)
+          case symbol
+          in Symbol::TypeRef | Symbol::ValueRef
+            registry.lookup(symbol)
+              .then { collect_vars(it, registry) }
+
+          in Symbol::Variant(args:)
+            args.flat_map { collect_vars(it, registry) }
+
+          in Symbol::Variable
+            [symbol]
+
+          in Symbol::TypeApplication(args:)
+            args.flat_map { collect_vars(it, registry) }
+
+          in Symbol::RecordType(row_var:)
+            row_var.nil? ? [] : [row_var]
+          end
+        end
+
         def validate_type_symbol(symbol, registry)
           case symbol
-          in Symbol::Union(variants:)
-            variants.flat_map { validate_type_symbol(it, registry) }
+          in Symbol::Union(variants:, type_params:)
+            variants.flat_map { validate_type_symbol(it, registry) } +
+              type_params.flat_map { validate_type_symbol(it, registry) }
 
           in Symbol::Variant(args:)
             args.flat_map { validate_type_symbol(it, registry) }
@@ -74,6 +95,10 @@ module Jade
             fields.reduce([]) do |acc, (k, v)|
               acc + validate_type_symbol(v, registry)
             end
+
+          in Symbol::Struct(type_params:, record_type:)
+            validate_type_symbol(record_type, registry) +
+              type_params.flat_map { validate_type_symbol(it, registry) }
           end
         end
       end

@@ -4,6 +4,7 @@ require 'jade/frontend/semantic_analysis/helper'
 require 'jade/frontend/semantic_analysis/function_declaration'
 require 'jade/frontend/semantic_analysis/type_declaration'
 require 'jade/frontend/semantic_analysis/interop_import_declaration'
+require 'jade/frontend/semantic_analysis/struct_declaration'
 
 module Jade
   module Frontend
@@ -85,8 +86,11 @@ module Jade
           analyze_r(callee, registry, scope)
             .add_errors(args_errors)
 
-        in AST::TypeDeclaration(name:, symbol:, variants:)
+        in AST::TypeDeclaration
           SemanticAnalysis::TypeDeclaration.analyze(ast, registry, scope)
+
+        in AST::StructDeclaration
+          SemanticAnalysis::StructDeclaration.analyze(ast, registry, scope)
 
         in AST::IfThenElse(condition:, if_branch:, else_branch:)
           analyze_r(condition, registry, scope) => { errors: condition_errors }
