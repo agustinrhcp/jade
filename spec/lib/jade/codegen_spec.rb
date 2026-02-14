@@ -262,5 +262,16 @@ module Jade
 
       it { is_expected.to include "Jade::Runtime.guard(Jade::Date, :today, \"int\").call()" }
     end
+
+    describe 'struct declaration' do
+      let(:text) do
+        <<~JADE
+          struct Person = { name: String, age: Int }
+          Person("Guybrush", 28)
+        JADE
+      end
+
+      it { is_expected.to eql 'Person = Data.define(:name, :age); __Test__::Person.method(:[]).call("Guybrush", 28)' }
+    end
   end
 end

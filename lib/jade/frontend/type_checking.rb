@@ -95,6 +95,7 @@ module Jade
         in AST::Module then Inference::Module
         in AST::QualifiedAccess then Inference::QualifiedAccess
         in AST::RecordAccess then Inference::RecordAccess
+        in AST::StructDeclaration then Inference::StructDeclaration
         in AST::RecordField then Inference::RecordField
         in AST::RecordLiteral then Inference::RecordLiteral
         in AST::RecordUpdate then Inference::RecordUpdate

@@ -70,6 +70,14 @@ module Jade
       in AST::TypeDeclaration(variants:)
         variants.map { generate(it, registry) }.join('; ')
 
+      in AST::StructDeclaration(name:, record_type:)
+        record_type
+          .fields
+          .keys
+          .map { ":#{it}" }.join(", ")
+          .then { "#{name} = Data.define(#{it})"}
+        
+
       in AST::VariantDeclaration(name:, args:)
         args.map.with_index { |_, i| ":_#{i + 1}" }
           .then { it.empty? ? "" : "(#{it.join(", ")})"}

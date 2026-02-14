@@ -14,9 +14,6 @@ module Jade
           its(:bindings) { is_expected.to be_empty }
         end
 
-        describe '.load' do
-        end
-
         describe ".load" do
           let(:var_gen) { VarGen.new }
 
@@ -28,6 +25,7 @@ module Jade
               fn_sym('__Test__', 'f')
                 .with(params: { y: var_sym('a') })
                 .with(return_type: var_sym('a')),
+              struct_sym('__Test__', 'Void'),
             ].reduce(Registry.entry('__Test__')) { |acc, sym| acc.define(sym) }
           end
 
@@ -35,6 +33,7 @@ module Jade
 
           its(:bindings) { is_expected.to include('__Test__.f') }
           its(:bindings) { is_expected.to include('__Test__.id') }
+          its(:definitions) { is_expected.to include('__Test__.Void') }
 
           describe 'id\'s scheme' do
             subject { super().bindings['__Test__.id'] }
@@ -71,6 +70,12 @@ module Jade
 
             expect(first_use.args.first.id).not_to eq(second_use.args.first.id)
             expect(first_use.return_type.id).not_to eq(second_use.return_type.id)
+          end
+
+          describe 'type definitions' do
+            subject { super().definitions['__Test__.Void'] }
+
+            it { is_expected.to be_a(TypeDef) }
           end
         end
       end

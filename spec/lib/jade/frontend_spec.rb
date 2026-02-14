@@ -910,6 +910,8 @@ module Jade
     end
 
     context 'a struct declaration' do
+      include_context "single expression body"
+
       let(:text) do
         <<~JADE
           struct Person = { name: String, age: Int }
@@ -917,6 +919,19 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::StructDeclaration) }
+    end
+
+    context 'constructing a struct' do
+      let(:text) do
+        <<~JADE
+          struct Person = { name: String, age: Int }
+          Person("Guybrush", 28)
+        JADE
+      end
+
+      subject { super().expressions.last }
+
+      it { is_expected.to be_a(AST::FunctionCall) }
     end
   end
 end

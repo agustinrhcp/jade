@@ -153,5 +153,25 @@ module Jade
         end
       end
     end
+
+    describe 'struct' do
+      let(:pepe_source) do
+        <<~JADE
+          module Pepe exposing(person)
+
+          struct Person = { name: String, age: Int }
+
+          def person() -> Person
+            Person("Paul", 55)
+          end
+        JADE
+      end
+
+      it 'generates a person with the right attributes' do
+        expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+
+        expect(Pepe.person.call()).to have_attributes(name: 'Paul', age: 55)
+      end
+    end
   end
 end

@@ -21,6 +21,16 @@ module Jade
       )
     end
 
+    def struct_sym(module_name, name)
+      Symbol::Struct.new(
+        module_name: module_name,
+        name: name,
+        type_params: [],
+        record_type: Symbol::RecordType.new({}, nil){},
+        decl_span: nil,
+      )
+    end
+
     def var_sym(name)
       Symbol.var(name, nil)
     end

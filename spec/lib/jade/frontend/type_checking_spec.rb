@@ -481,6 +481,33 @@ module Jade
           its(:errors) { is_expected.to be_empty  }
         end
       end
+
+      describe'struct def and reference' do
+        let(:text) do
+          <<~JADE
+            struct Person = { name: String, age: Int }
+            Person
+          JADE
+        end
+
+        its(:type) { is_expected.to be_a(Type::Function) }
+        its(:errors) { is_expected.to be_empty }
+
+        context 'in function declaration' do
+          let(:text) do
+            <<~JADE
+              struct Person = { name: String, age: Int }
+
+              def person(name: String, age: Int) -> Person
+                Person(name, age)
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.unit }
+          its(:errors) { is_expected.to be_empty }
+        end
+      end
     end
   end
 end

@@ -9,8 +9,7 @@ module Jade
           def infer(node, registry, env, var_gen, _)
             node => AST::FunctionDeclaration(symbol:, body:, params:)
 
-            fn_type = env.lookup(symbol.qualified_name)
-              .then { instantiate(it, var_gen) }
+            fn_type = env.lookup(symbol.qualified_name).then { instantiate(it, var_gen) }
 
             fn_type
               .args
