@@ -493,6 +493,18 @@ module Jade
         its(:type) { is_expected.to be_a(Type::Function) }
         its(:errors) { is_expected.to be_empty }
 
+        context 'instantiation' do
+          let(:text) do
+            <<~JADE
+              struct Person = { name: String, age: Int }
+              Person("Paul", 55)
+            JADE
+          end
+
+          its(:type) { is_expected.to be_a(Type::Constructor) }
+          its(:errors) { is_expected.to be_empty }
+        end
+
         context 'in function declaration' do
           let(:text) do
             <<~JADE
@@ -505,6 +517,64 @@ module Jade
           end
 
           its(:type) { is_expected.to eql Type.unit }
+          its(:errors) { is_expected.to be_empty }
+        end
+
+        context 'unifying against a record' do
+          let(:text) do
+            <<~JADE
+              struct Person = { name: String, age: Int }
+
+              def person(name: String, age: Int) -> { name: String, age: String }
+                Person(name, age)
+              end
+            JADE
+          end
+
+          xcontext 'it should be one error, but function call unifies twice' do
+            its(:errors) { is_expected.to have(1).item  }
+          end
+
+          its(:errors) { is_expected.to have(2).item  }
+          context 'the message' do
+            subject { super().errors.map(&:message).join(', ') }
+
+            it { is_expected.to include "expected { name : String, age : String } but found Person" }
+          end
+        end
+
+        context 'unifying against an open record' do
+          let(:text) do
+            <<~JADE
+              struct Person = { name: String, age: Int }
+
+              def name(named: { a | name: String }) -> String
+                named.name
+              end
+
+              name(Person("Paul", 55))
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.string }
+          its(:errors) { is_expected.to be_empty }
+        end
+
+        context 'with type params' do
+          let(:text) do
+            <<~JADE
+              struct Person(id) = { name: String, id: id }
+
+              def identified(name: String, id: a) -> Person(a)
+                Person(name, id)
+              end
+
+              Person("Paul", 1)
+              Person("Frank", "asdf-1234")
+            JADE
+          end
+
+          its(:type) { is_expected.to be_a(Type::Application) }
           its(:errors) { is_expected.to be_empty }
         end
       end

@@ -31,7 +31,14 @@ module Jade
                 )
               end
               .then { it.with(type: it.type.return_type) }
-              .and_unify(expected.type) { byebug }
+              .and_unify(expected.type) do |e|
+                Error::FunctionCallTypeMismatch.new(
+                  env.entry_name,
+                  node.range,
+                  expected: e.expected,
+                  actual: e.actual,
+                )
+              end
           end
         end
       end

@@ -1,7 +1,7 @@
 module Jade
   module Frontend
     module TypeChecking
-      TypeDef = Data.define(:qualified_nam, :type_params, :body)
+      TypeDef = Data.define(:qualified_name, :type_params, :body)
 
       Env = Data.define(:entry_name, :bindings, :definitions) do
         def self.empty
@@ -24,7 +24,10 @@ module Jade
               in Symbol::Struct
                 type_params, type_params_map = sym
                   .type_params
-                  .map { Type.send(:from_symbol_r, it, registry, var_gen, {}) }
+                  .reduce([[], {}]) do |(types, local_map), sym|
+                    Type.send(:from_symbol_r, sym, registry, var_gen, local_map)
+                      .then { |(t, new_map)| [types + [t], new_map] }
+                  end
 
                 Type
                   .send(:from_symbol_r, sym.record_type, registry, var_gen, type_params_map)

@@ -172,6 +172,55 @@ module Jade
 
         expect(Pepe.person.call()).to have_attributes(name: 'Paul', age: 55)
       end
+
+      context 'accessor' do
+        let(:pepe_source) do
+          <<~JADE
+            module Pepe exposing(pauls_name)
+
+            struct Person = { name: String, age: Int }
+
+            def named(thing: { a | name : String }) -> String
+              thing.name
+            end
+
+            def pauls_name() -> String
+              Person("Paul", 55) |> named()
+            end
+          JADE
+        end
+
+        it 'generates a person with the right attributes' do
+          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+
+          expect(Pepe.pauls_name.call()).to eql('Paul')
+        end
+      end
+
+      context 'with type params' do
+        let(:pepe_source) do
+          <<~JADE
+            module Pepe exposing(paul, frank)
+
+            struct Person(a) = { name: String, id: a }
+
+            def paul() -> Person(Int)
+              Person("Paul", 1)
+            end
+
+            def frank() -> Person(String)
+              Person("Frank", "f10")
+            end
+          JADE
+        end
+
+        it 'generates a person with the right attributes' do
+          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+
+          expect(Pepe.paul.call().id).to eql(1)
+          expect(Pepe.frank.call().id).to eql('f10')
+        end
+      end
     end
   end
 end

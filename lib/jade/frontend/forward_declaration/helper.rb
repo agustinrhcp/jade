@@ -11,6 +11,8 @@ module Jade
         end
 
         def figure_out_type(entry, node)
+          # TODO: Fail if type not found
+
           case node
           in AST::TypeVar(type:)
             Symbol.var(type, node.range)
@@ -48,7 +50,6 @@ module Jade
             fields
               .transform_values { figure_out_type(entry, it) }
               .then { Symbol.record_type(it, row) }
-
           end
         end
       end
