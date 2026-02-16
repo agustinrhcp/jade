@@ -26,9 +26,13 @@ module Jade
         module_name: module_name,
         name: name,
         type_params: [],
-        record_type: Symbol::RecordType.new({}, nil){},
+        record_type: rec_type_sym,
         decl_span: nil,
       )
+    end
+
+    def rec_type_sym
+      Symbol::RecordType.new({}, nil)
     end
 
     def var_sym(name)

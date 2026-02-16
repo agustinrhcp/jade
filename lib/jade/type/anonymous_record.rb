@@ -13,7 +13,8 @@ module Jade
       end
 
       def unbound_vars
-        row_var ? [row_var] : []
+        (row_var ? row_var.unbound_vars : []) +
+          fields.values.flat_map(&:unbound_vars).uniq
       end
 
       def open?

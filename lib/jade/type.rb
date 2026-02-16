@@ -167,8 +167,7 @@ module Jade
             from_symbol_r(v, registry, var_gen, local_map)
               .then { |(t, new_map)| [type.merge(k => t), new_map] }
           end
-          .then { |t, _| Type.anonymous_record(t, row) }
-          .then { [it, var_map] }
+          .then { |t, map| [Type.anonymous_record(t, row), map] }
 
       in Symbol::TypeApplication(constructor:, args:)
         union_type, union_vars =

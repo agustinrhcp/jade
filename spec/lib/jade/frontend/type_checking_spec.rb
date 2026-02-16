@@ -576,6 +576,19 @@ module Jade
           its(:type) { is_expected.to be_a(Type::Application) }
           its(:errors) { is_expected.to be_empty }
         end
+
+        context 'with type params' do
+          let(:text) do
+            <<~JADE
+              def id(rec: { a | id: id }) -> id
+                rec.id
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.unit }
+          its(:errors) { is_expected.to be_empty }
+        end
       end
     end
   end

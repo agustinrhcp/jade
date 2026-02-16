@@ -195,6 +195,23 @@ module Jade
           expect(left).to eql(right)
         end
       end
+
+      describe 'function from anonymous record with type param { id: id } -> id' do
+        let(:symbol) do
+          fn_sym('__Test__', "id")
+            .with(params: { "rec" => rec_type_sym.with(fields: { 'id' => var_sym('id') })})
+            .with(return_type: var_sym('id'))
+        end
+
+        let(:entry) { Registry.entry('__Test__') }
+
+        it { is_expected.to be_a(Type::Function) }
+
+        it 'reuses the field arg for the return type' do
+          expect(subject.args.first.fields['id']).to eql subject.return_type
+        end
+        its(:unbound_vars) { is_expected.to have(1).items }
+      end
     end
 
     describe '.var' do
