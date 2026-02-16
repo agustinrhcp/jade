@@ -41,7 +41,7 @@ module Jade
         let(:entry) { Registry.entry('__Test__').define(symbol) }
 
         it { is_expected.to be_a(Type::Function) }
-        its(:args) { is_expected.to have(2).items.and all(be_a(Type::Constructor))}
+        its(:args) { is_expected.to have(2).items.and all(be_a(Type::Application))}
       end
 
       describe 'type application: Maybe(a)' do

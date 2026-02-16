@@ -139,7 +139,7 @@ module Jade
 
     describe 'unifying struct with open record' do
       let(:type1) { Type.anonymous_record({ name: Type.string }, Type.var('t1')) }
-      let(:type2) { Type.constructor("__Test__.Person") }
+      let(:type2) { Type.constructor("__Test__.Person").apply([]) }
 
       let(:env) do
         Frontend::TypeChecking::TypeDef[

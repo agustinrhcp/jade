@@ -500,7 +500,7 @@ module Jade
             JADE
           end
 
-          its(:type) { is_expected.to be_a(Type::Constructor) }
+          its(:type) { is_expected.to be_a(Type::Application).and have_attributes(constructor: Type.constructor('__Test__.Person')) }
           its(:errors) { is_expected.to be_empty }
         end
 

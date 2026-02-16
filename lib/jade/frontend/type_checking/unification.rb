@@ -98,22 +98,21 @@ module Jade
                 end
               end
 
-          in [Type::AnonymousRecord, Type::Constructor]
-            return Err[UnificationError.new(type1, type2)] if type1.closed?
-
-            expanded = env.lookup_def(type2.name)
+          in [Type::AnonymousRecord, Type::Application]
+            expanded = env.lookup_def(type2.constructor.name)
 
             return Err[UnificationError.new(type1, type2)] unless expanded
 
-            unify(type1, expanded.body, env)
+            expanded
+              .type_params.map(&:id).zip(type2.args).to_h
+              .reduce(Substitution.new) do |acc, (k, v)|
+                acc.bind(k, v)
+              end
+              .apply(expanded.body)
+              .then { unify(type1, it, env) }
               .and_then { |body_r| unify(type1.row_var, type2, env).map { body_r.compose(it) } }
-
-          in [Type::Constructor, Type::AnonymousRecord]
-            unify(type2, type1, env)
-              .map_error(&:flip)
-
-          in [Type::AnonymousRecord, Type::Application]
-            byebug
+              .on_err { Err[UnificationError.new(type1, type2)] }
+            
 
           in [Type::Application, Type::AnonymousRecord]
             unify(type2, type1, env)

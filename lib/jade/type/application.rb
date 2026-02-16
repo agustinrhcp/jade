@@ -4,6 +4,8 @@ module Jade
       include Base
 
       def to_s
+        return constructor.to_s if args.empty?
+
         "#{constructor.to_s}(#{args.map(&:to_s).join(", ")})"
       end
 

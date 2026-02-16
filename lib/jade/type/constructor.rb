@@ -8,8 +8,6 @@ module Jade
       end
 
       def apply(types)
-        return self if types.empty?
-
         Application[self, types]
       end
 

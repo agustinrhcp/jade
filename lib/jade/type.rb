@@ -25,23 +25,23 @@ module Jade
     end
 
     def int
-      constructor('Basics.Int')
+      constructor('Basics.Int').apply([])
     end
 
     def unit
-      constructor('Basics.Unit')
+      constructor('Basics.Unit').apply([])
     end
 
     def float
-      constructor('Basics.Float')
+      constructor('Basics.Float').apply([])
     end
 
     def string
-      constructor('String.String')
+      constructor('String.String').apply([])
     end
 
     def bool
-      constructor('Basics.Bool')
+      constructor('Basics.Bool').apply([])
     end
 
     def list
@@ -77,11 +77,6 @@ module Jade
         registry
           .lookup(symbol)
           .then { from_symbol_r(it, registry, var_gen, var_map) }
-
-      in Symbol::Union(type_params: [])
-        Type
-          .constructor(symbol.qualified_name)
-          .then { [it, var_map] }
 
       in Symbol::Union
         union_vars, union_map = symbol
