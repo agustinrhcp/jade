@@ -109,7 +109,7 @@ module Jade
           .then { [it, var_map] }
 
       in Symbol::FunctionType | Symbol::InteropFunction
-        # Same as function and stdlib but without keyed params instead.
+        # Same as function and stdlib but without keyed params.
         args, local_map = symbol
           .params
           .reduce([[], {}]) do |(types, local_map), sym|

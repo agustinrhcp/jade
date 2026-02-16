@@ -3,9 +3,13 @@ module Jade
     module TypeChecking
       TypeDef = Data.define(:qualified_name, :type_params, :body)
 
-      Env = Data.define(:entry_name, :bindings, :definitions) do
+      Env = Data.define(:entry_name, :bindings, :definitions, :var_gen) do
         def self.empty
-          Env[nil, {}, {}]
+          Env[nil, {}, {}, VarGen.new]
+        end
+
+        def fresh
+          var_gen.fresh
         end
 
         def self.load(entry, registry, var_gen)

@@ -73,6 +73,30 @@ module Jade
                   final_sub.apply(type2),
                 )
               end
+              .and_then do |fields_r|
+                if type1.open? && type2.open?
+                  fresh_type = env.fresh
+
+                  Type
+                    .anonymous_record(type1.fields.merge(type2.fields), env.fresh)
+                    .then { Substitution.new.bind(fresh_type.id, it)}
+                    .bind(type1.row_var.id, fresh_type)
+                    .bind(type2.row_var.id, fresh_type)
+                    .compose(fields_r)
+                    .then { Ok[it] }
+
+                elsif type1.open?
+                  unify(type1.row_var, type2, env)
+                    .map { fields_r.compose(it) }
+
+                elsif type2.open?
+                  unify(type2.row_var, type1, env)
+                    .map { fields_r.compose(it) }
+
+                else
+                  Ok[fields_r]
+                end
+              end
 
           in [Type::AnonymousRecord, Type::Constructor]
             return Err[UnificationError.new(type1, type2)] if type1.closed?
@@ -107,7 +131,6 @@ module Jade
           fields1 = type1.fields
           fields2 = type2.fields
 
-          # TODO: Reuse unify_many
           shared_fields
             .reduce(Ok[Substitution.new]) do |subs_r, key|
               sub = case subs_r

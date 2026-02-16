@@ -108,7 +108,6 @@ module Jade
 
       private
 
-
       class VarGen
         def initialize
           @next_id = 1
