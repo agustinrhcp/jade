@@ -4,7 +4,7 @@ require 'jade'
 
 module Jade
   describe Frontend::TypeChecking::Unification do
-    let(:env) { Frontend::TypeChecking::Env.empty }
+    let(:env) { Frontend::TypeChecking::Env.empty(Frontend::TypeChecking::VarGen.new) }
     subject { described_class.unify(type1, type2, env) }
 
     describe 'unifying variables' do

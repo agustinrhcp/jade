@@ -15,19 +15,19 @@ module Jade
       end
 
       let(:type_check) do
-        var_gen = TypeChecking::VarGen.new
         Lexer
           .tokenize(source)
           .then { Parser.parse(it) }
           .and_then { Frontend.run_up_to_semantic_analysis(it) }
           # TODO: Make this prettier
           .and_then do |entry, registry|
+            env = TypeChecking::Env.load(entry, registry)
             TypeChecking.check_node(
               entry.ast,
               registry,
-              TypeChecking::Env.load(entry, registry, var_gen),
-              var_gen,
-              TypeChecking::Expected.non_auth(var_gen),
+              env,
+              env.var_gen,
+              TypeChecking::Expected.non_auth(env.var_gen),
             )
           end
       end

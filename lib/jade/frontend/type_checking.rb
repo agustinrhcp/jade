@@ -63,11 +63,9 @@ module Jade
       end
 
       def check(entry, registry)
-        var_gen = VarGen.new
-
         Env
-          .load(entry, registry, var_gen)
-          .then { check_node(entry.ast, registry, it, var_gen, Expected.non_auth(var_gen)) }
+          .load(entry, registry)
+          .then { check_node(entry.ast, registry, it, it.var_gen, Expected.non_auth(it.var_gen)) }
           .to_result
           .map { entry }
       end

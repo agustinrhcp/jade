@@ -4,19 +4,19 @@ module Jade
       TypeDef = Data.define(:qualified_name, :type_params, :body)
 
       Env = Data.define(:entry_name, :bindings, :definitions, :var_gen) do
-        def self.empty
-          Env[nil, {}, {}, VarGen.new]
+        def self.empty(var_gen)
+          Env[nil, {}, {}, var_gen]
         end
 
         def fresh
           var_gen.fresh
         end
 
-        def self.load(entry, registry, var_gen)
+        def self.load(entry, registry)
           half_loaded = entry
             .values
-            .reduce(empty.with(entry_name: entry.name)) do |env, (unq, sym)|
-              Type.from_symbol(sym, registry, var_gen)
+            .reduce(empty(VarGen.new).with(entry_name: entry.name)) do |env, (unq, sym)|
+              Type.from_symbol(sym, registry, env.var_gen)
                 .then { Inference::Helpers.generalize(env, it) }
                 .then { env.bind(sym.qualified_name, it) }
             end
@@ -29,12 +29,12 @@ module Jade
                 type_params, type_params_map = sym
                   .type_params
                   .reduce([[], {}]) do |(types, local_map), sym|
-                    Type.send(:from_symbol_r, sym, registry, var_gen, local_map)
+                    Type.send(:from_symbol_r, sym, registry, env.var_gen, local_map)
                       .then { |(t, new_map)| [types + [t], new_map] }
                   end
 
                 Type
-                  .send(:from_symbol_r, sym.record_type, registry, var_gen, type_params_map)
+                  .send(:from_symbol_r, sym.record_type, registry, env.var_gen, type_params_map)
                   .first
                   .then { TypeDef[sym.qualified_name, type_params, it] }
                   .then { env.define(sym.qualified_name, it) }
