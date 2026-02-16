@@ -26,8 +26,7 @@ module Jade
               entry.ast,
               registry,
               env,
-              env.var_gen,
-              TypeChecking::Expected.non_auth(env.var_gen),
+              TypeChecking::Expected.non_auth(env.fresh),
             )
           end
       end

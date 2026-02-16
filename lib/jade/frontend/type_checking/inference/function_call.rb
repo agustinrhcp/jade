@@ -6,14 +6,14 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen, expected)
+          def infer(node, registry, env, expected)
             node => AST::FunctionCall(callee:, args:)
 
-            callee_r = check(callee, registry, env, var_gen, Expected.non_auth(var_gen))
+            callee_r = check(callee, registry, env, Expected.non_auth(env.fresh))
 
             args
               .reduce(Result.new([], Substitution.new, env, [])) do |acc, arg|
-                check(arg, registry, acc.env, var_gen, Expected.non_auth(var_gen))
+                check(arg, registry, acc.env, Expected.non_auth(env.fresh))
                   .then { it.with(type: acc.type + [it.type]) }
                   .compose_substitution(acc.substitution)
                   .add_errors(acc.errors)

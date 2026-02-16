@@ -21,8 +21,8 @@ module Jade
           self[type, true]
         end
 
-        def self.non_auth(var_gen)
-          self[var_gen.fresh, false]
+        def self.non_auth(type)
+          self[type, false]
         end
       end
 
@@ -65,17 +65,17 @@ module Jade
       def check(entry, registry)
         Env
           .load(entry, registry)
-          .then { check_node(entry.ast, registry, it, it.var_gen, Expected.non_auth(it.var_gen)) }
+          .then { check_node(entry.ast, registry, it, Expected.non_auth(it.fresh)) }
           .to_result
           .map { entry }
       end
 
-      def check_repl(node, registry, env = Env.new, var_gen = VarGen.new)
-        check_node(node, registry, env, var_gen, Expected.non_auth(var_gen.fresh))
+      def check_repl(node, registry, env = Env.new)
+        check_node(node, registry, env, Expected.non_auth(env.fresh))
           .to_result
       end
 
-      def check_node(node, registry, env, var_gen, expected_type)
+      def check_node(node, registry, env, expected_type)
         case node
         in AST::Body then Inference::Body
         in AST::CaseOf then Inference::CaseOf
@@ -101,7 +101,7 @@ module Jade
         in AST::VariableBinding then Inference::VariableBinding
         in AST::VariableReference then Inference::VariableReference
         end
-          .infer(node, registry, env, var_gen, expected_type)
+          .infer(node, registry, env, expected_type)
       end
 
       private

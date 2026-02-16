@@ -6,7 +6,7 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen, expected)
+          def infer(node, registry, env, expected)
             node => AST::List(items:)
 
             if items.empty?
@@ -19,12 +19,12 @@ module Jade
             end
 
             head, *rest = items
-            head_result = check(head, registry, env, var_gen, Expected.non_auth(var_gen))
+            head_result = check(head, registry, env, Expected.non_auth(env.fresh))
 
             rest
               .each_with_index
               .reduce(head_result) do |acc, (item, i)|
-                check(item, registry, acc.env, var_gen, Expected.non_auth(var_gen))
+                check(item, registry, acc.env, Expected.non_auth(env.fresh))
                   .compose_substitution(acc.substitution)
                   .add_errors(acc.errors)
                   .and_unify(acc.type) do

@@ -6,7 +6,7 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, _, env, _, _)
+          def infer(node, _, env, _)
             node => AST::TypeDeclaration
 
             Result[Type.unit, Substitution.new, env, []]

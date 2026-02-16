@@ -6,10 +6,10 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, var_gen, expected_type)
+          def infer(node, registry, env, expected_type)
             node => AST::Module(body:)
 
-            check(body, registry, env, var_gen, expected_type)
+            check(body, registry, env, expected_type)
           end
         end
       end
