@@ -110,7 +110,7 @@ module Jade
     end
 
     def pattern
-      wildcard_pattern | literal_pattern | binding_pattern | constructor_pattern
+      wildcard_pattern | literal_pattern | binding_pattern | constructor_pattern | record_pattern
     end
 
     def wildcard_pattern
@@ -132,6 +132,22 @@ module Jade
           none.map { [[]] }) >>
         type(:rparen)) | none.map { [[]] })
       ).map(&AST.constructor_pattern)
+    end
+
+    def record_pattern
+      (
+        type(:lbrace) >>
+        sequence(record_field_pattern, separated_by: type(:comma).skip).map { [it] } >>
+        type(:rbrace)
+      ).map(&AST.record_pattern)
+    end
+
+    def record_field_pattern
+      (
+        (identifier >> type(:colon) >> lazy { pattern }) | 
+          (identifier >> type(:colon))
+            .map { |identifier, colon| [identifier, colon, AST.binding_pattern.call(identifier)] }
+      ).map(&AST.record_field_pattern)
     end
 
     def body

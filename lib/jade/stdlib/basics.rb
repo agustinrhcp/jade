@@ -39,6 +39,12 @@ module Jade
         'a',
       ) { it }
 
+      function(
+        'not',
+        { a: 'Bool' },
+        'Bool',
+      ) { not it }
+
       default_importing :*
     end
   end

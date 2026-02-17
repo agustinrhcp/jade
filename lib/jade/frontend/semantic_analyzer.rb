@@ -138,6 +138,9 @@ module Jade
 
           analyze_many(patterns, registry, scope)
 
+        in AST::Pattern::Record(fields:)
+          analyze_many(fields.map(&:pattern), registry, scope)
+
         in AST::Lambda(params:, body:)
           params
             .reduce(Result[scope, []]) do |acc, param|

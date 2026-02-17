@@ -13,10 +13,10 @@ module Jade
       qualified_name.split('.').last
     end
 
-    def self.anonymous_record(fields)
+    def self.anonymous_record(fields, row_var = nil)
       fail('fields is expected to be an array') unless fields.is_a?(Array)
 
-      AnonymousRecord[fields, nil]
+      AnonymousRecord[fields, row_var]
     end
 
     def self.record_type(fields, row_var)

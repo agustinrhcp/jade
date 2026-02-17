@@ -47,6 +47,23 @@ module Jade
           expect(Math.floats.call).to eql 42.42
         end
       end
+
+      context 'ruby keyword' do
+        let(:math_source) do
+          <<~JADE
+            module Math exposing (negate)
+
+            def negate(a: Bool) -> Bool
+              not(a)
+            end
+          JADE
+        end
+
+        it 'returns the value negated' do
+          expect(Math.negate.call(true)).to be false
+          expect(Math.negate.call(false)).to be true
+        end
+      end
     end
   end
 end

@@ -181,6 +181,76 @@ module Jade
           expect(Pepe.franks_id.call()).to eql("f10")
         end
       end
+
+      describe 'pattern matching' do
+        let(:pepe_source) do
+          <<~JADE
+            module Pepe exposing(paul_is_paul, frank_is_paul)
+
+            def is_paul(person: { name: String, id: Int }) -> Bool
+              case person
+              of { name: "Paul" } then True
+              of _ then False
+              end
+            end
+
+            def paul_is_paul() -> Bool
+              { name: "Paul", id: 10 } |> is_paul
+            end
+
+            def frank_is_paul() -> Bool
+              { name: "Frank", id: 20 } |> is_paul
+            end
+          JADE
+        end
+
+        it 'updates the record' do
+          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+
+          expect(Pepe.paul_is_paul.call()).to be true
+          expect(Pepe.frank_is_paul.call()).to be false
+        end
+
+        context "with wrong field type" do
+          let(:pepe_source) do
+            <<~JADE
+              module Pepe exposing(is_paul)
+
+              def is_paul(person: { name: String, id: Int }) -> Bool
+                case person
+                of { name: 1 } then True
+                of _ then False
+                end
+              end
+            JADE
+          end
+
+          it 'fails with type mismatch' do
+            expect { test_compiler.require('pepe', pepe_source) }
+              .to raise_error(RuntimeError, /Pattern is trying to match { name : String, id : Int } with { t11 | name : Int }/)
+          end
+        end
+
+        context "with wrong constructor type" do
+          let(:pepe_source) do
+            <<~JADE
+              module Pepe exposing(is_paul)
+
+              def is_paul(person: { name: String, id: Int }) -> Bool
+                case person
+                of { name: Just("Pepe") } then True
+                of _ then False
+                end
+              end
+            JADE
+          end
+
+          it 'fails with type mismatch' do
+            expect { test_compiler.require('pepe', pepe_source) }
+              .to raise_error(RuntimeError, /Pattern is trying to match { name : String, id : Int } with { t12 | name : Maybe(String) }/)
+          end
+        end
+      end
     end
 
     describe 'struct' do
@@ -252,6 +322,38 @@ module Jade
 
           expect(Pepe.paul.call().id).to eql(1)
           expect(Pepe.frank.call().id).to eql('f10')
+        end
+      end
+
+      describe 'pattern matching' do
+        let(:pepe_source) do
+          <<~JADE
+            module Pepe exposing(paul_is_paul, frank_is_paul)
+
+            struct Person = { name: String, id: Int }
+
+            def is_paul(person: Person) -> Bool
+              case person
+              of { name: "Paul" } then True
+              of _ then False
+              end
+            end
+
+            def paul_is_paul() -> Bool
+              Person("Paul", 10) |> is_paul
+            end
+
+            def frank_is_paul() -> Bool
+              Person("Frank", 20) |> is_paul
+            end
+          JADE
+        end
+
+        it 'updates the record' do
+          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+
+          expect(Pepe.paul_is_paul.call()).to be true
+          expect(Pepe.frank_is_paul.call()).to be false
         end
       end
     end

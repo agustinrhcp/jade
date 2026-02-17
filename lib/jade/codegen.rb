@@ -25,11 +25,16 @@ module Jade
           .map { generate(it, registry) }.join("; ")
 
       in AST::VariableReference(symbol:, name:)
+        symbol = symbol.is_a?(Symbol::ValueRef) ? registry.lookup(symbol) : symbol
+
         case symbol
         in Symbol::InteropFunction
           lower_to_ruby(symbol.expected_type)
             .then { "#{symbol.interop_module_name}, :#{symbol.name}, #{it}" }
             .then { "Jade::Runtime.guard(#{it})" }
+
+        in Symbol::StdlibFunction(codegen:)
+          codegen
 
         else
           name
@@ -112,6 +117,12 @@ module Jade
 
       in AST::Pattern::Binding(name:)
         name
+
+      in AST::Pattern::Record(fields:)
+        fields
+          .map { |f| "#{f.name}: #{generate(f.pattern, registry)}"}
+          .join(', ')
+          .then { "{ #{it} }"}
 
       in AST::Pattern::Constructor(symbol:, patterns:)
         sym = registry.lookup(symbol)

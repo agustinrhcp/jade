@@ -94,6 +94,7 @@ module Jade
         in 'a' then Symbol.var('a', nil)
         in 'b' then Symbol.var('b', nil)
         in 'a -> b' then Symbol.function_type([Symbol.var('a', nil)], Symbol.var('b', nil))
+        in 'a -> Bool' then Symbol.function_type([Symbol.var('a', nil)], string_to_ref('Bool'))
         in 'Maybe(Int)' then Symbol.type_ref('Maybe', 'Maybe')
         in 'List(a)' then Symbol.type_ref('List', 'List') 
         in 'List(b)' then Symbol.type_ref('List', 'List') 

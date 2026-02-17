@@ -1,3 +1,5 @@
+require 'jade/frontend/pattern_analysis'
+
 module Jade
   module Frontend
     module TypeChecking
@@ -20,7 +22,6 @@ module Jade
               expression_result,
             ).and_unify(expected.type)
 
-
             rest_branches
               .each_with_index
               .reduce(first_result) do |acc, (branch, i)|
@@ -32,7 +33,10 @@ module Jade
                   .add_errors(acc.errors)
               end
               .with(type: first_result.type)
+              .add_errors(PatternAnalysis::Exhaustiveness.assert(node, env, registry, expression_result.type))
           end
+
+          private
 
           def infer_branch(node, registry, env, expected, expression_result)
             node => AST::CaseOfBranch(pattern:, body:)
@@ -53,8 +57,30 @@ module Jade
 
           def infer_pattern(pattern, registry, env, expected)
             case pattern
+            in AST::Pattern::Record(fields:, symbol:)
+              fields_result = fields
+                .reduce(Result.new([], Substitution.new, env, [])) do |acc, field|
+                  infer_pattern(field.pattern, registry, acc.env, Expected.non_auth(env.fresh))
+                    .then { it.with(type: acc.type + [it.type]) }
+                    .compose_substitution(acc.substitution)
+                    .add_errors(acc.errors)
+                end
+
+              fields
+                .map(&:name)
+                .zip(fields_result.type)
+                .to_h
+                .then { Type.anonymous_record(it, env.fresh) }
+                .then { fields_result.with(type: it) }
+
             in AST::Pattern::Literal(literal:)
               check(literal, registry, env, expected)
+                .and_unify(expected.type) do
+                  Error::PatternTypeMismatch.new(
+                    env.entry_name, pattern.range,
+                    expected: it.expected, actual: it.actual,
+                  )
+                end
 
             in AST::Pattern::Wildcard
               Result[env.fresh, Substitution.new, env, []]

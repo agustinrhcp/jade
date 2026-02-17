@@ -1,3 +1,5 @@
+require 'jade/interop/guard'
+
 module Jade
   module Interop
     module Runtime
