@@ -142,7 +142,7 @@ module Jade
       let(:type2) { Type.constructor("__Test__.Person").apply([]) }
 
       let(:env) do
-        Frontend::TypeChecking::TypeDef[
+        Frontend::TypeChecking::StructDef[
           "__Test__.Person",
           [],
           Type.anonymous_record({ name: Type.string, age: Type.int }, nil),
@@ -164,7 +164,7 @@ module Jade
       let(:type2) { Type.constructor("__Test__.Person").apply([Type.var('t2')]) }
 
       let(:env) do
-        Frontend::TypeChecking::TypeDef[
+        Frontend::TypeChecking::StructDef[
           "__Test__.Person",
           [Type.var('id')],
           Type.anonymous_record({ name: Type.string, age: Type.int, id: Type.var('id')}, nil),

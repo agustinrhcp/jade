@@ -20,6 +20,7 @@ require 'jade/frontend/symbol_resolution/module'
 require 'jade/frontend/symbol_resolution/pattern/binding'
 require 'jade/frontend/symbol_resolution/pattern/constructor'
 require 'jade/frontend/symbol_resolution/pattern/literal'
+require 'jade/frontend/symbol_resolution/pattern/record'
 require 'jade/frontend/symbol_resolution/pattern/wildcard'
 require 'jade/frontend/symbol_resolution/record_field'
 require 'jade/frontend/symbol_resolution/record_literal'
@@ -96,6 +97,7 @@ module Jade
         in AST::Pattern::Binding then Pattern::Binding
         in AST::Pattern::Wildcard then Pattern::Wildcard
         in AST::Pattern::Constructor then Pattern::Constructor
+        in AST::Pattern::Record then Pattern::Record
         in AST::MemberAccess then MemberAccess
         in AST::Lambda then Lambda
         in AST::List then List

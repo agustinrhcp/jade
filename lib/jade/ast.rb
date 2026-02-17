@@ -73,6 +73,8 @@ module Jade
       define(:Literal, :literal)
       define(:Binding, :name)
       define(:Constructor, :constructor, :patterns)
+      define(:Record, :fields)
+      define(:RecordField, :name, :pattern)
     end
 
     def string_literal
@@ -348,6 +350,22 @@ module Jade
           constructor,
           patterns,
           constructor.range.begin..(patterns.first&.range&.end || constructor.range.end)
+        ]
+      end
+    end
+
+    def record_pattern
+      ->((lbrace, fields, r_brace)) do
+        Pattern::Record[fields, lbrace.range.begin..r_brace.range.end]
+      end
+    end
+
+    def record_field_pattern
+      ->((identifier, _, pattern)) do
+        Pattern::RecordField[
+          identifier.value,
+          pattern,
+          identifier.range.begin..pattern.range.end,
         ]
       end
     end

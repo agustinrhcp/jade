@@ -649,27 +649,89 @@ module Jade
         end
       end
 
-      context 'list' do
+      context 'with record pattern' do
         let(:text) do
           <<~JADE
-            [12, 42]
+            case { name: "Pepe" }
+            of { name: name } then name
+            end
           JADE
         end
 
-        it { is_expected.to be_a AST::List }
-        its(:items) { is_expected.to all(be_a(AST::Literal)) }
-      end
+        describe 'the branch' do
+          subject { super().branches.first }
 
-      context 'comment' do
-        let(:text) do
-          <<~JADE
-            # This is a comment
-            type Pepe = Lala
-          JADE
+          its(:pattern) { is_expected.to be_a(AST::Pattern::Record) }
+
+          describe 'the record pattern' do
+            subject { super().pattern }
+
+            its(:fields) { is_expected.to have(1).items.and all(be_a(AST::Pattern::RecordField)) }
+
+            describe 'the record pattern field' do
+              subject { super().fields.first }
+
+              its(:name) { is_expected.to eql "name" }
+              its(:pattern) { is_expected.to be_a(AST::Pattern::Binding).and have_attributes(name: 'name') }
+            end
+          end
         end
 
-        it { is_expected.to be_a AST::TypeDeclaration }
+        context 'with record pattern sugared' do
+          let(:text) do
+            <<~JADE
+              case { name: "Pepe" }
+              of { name: } then name
+              end
+            JADE
+          end
+
+          describe 'the branch' do
+            subject { super().branches.first }
+
+            its(:pattern) { is_expected.to be_a(AST::Pattern::Record) }
+
+            describe 'the record pattern' do
+              subject { super().pattern }
+
+              its(:fields) { is_expected.to have(1).items.and all(be_a(AST::Pattern::RecordField)) }
+
+              describe 'the record pattern field' do
+                subject { super().fields.first }
+
+                its(:name) { is_expected.to eql "name" }
+                its(:pattern) { is_expected.to be_a(AST::Pattern::Binding).and have_attributes(name: 'name') }
+              end
+            end
+          end
+        end
       end
+    end
+
+    context 'list' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          [12, 42]
+        JADE
+      end
+
+      it { is_expected.to be_a AST::List }
+      its(:items) { is_expected.to all(be_a(AST::Literal)) }
+    end
+
+    context 'comment' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          # This is a comment
+          type Pepe = Lala
+        JADE
+      end
+
+      it { is_expected.to be_a AST::TypeDeclaration }
     end
 
     describe 'record literal' do

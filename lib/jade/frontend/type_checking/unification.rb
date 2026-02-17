@@ -7,17 +7,16 @@ module Jade
         def unify(type1, type2, env)
           case [type1, type2]
           in [Type::Application, Type::Application]
-            unify_many(type1.args, type2.args, env)
-              .then do |args_r|
-                unify(type1.constructor, type2.constructor, env)
-                  .on_err { args_r.and_then { Err[it] } }
-                  .and_then { |sub| args_r.map_both { it.compose(sub) } }
-              end
-              .map_error do |final_sub|
-                UnificationError.new(
-                  final_sub.apply(type1),
-                  final_sub.apply(type2),
-                )
+            unify(type1.constructor, type2.constructor, env)
+              .map_error { UnificationError.new(type1,type2) }
+              .and_then do |cons|
+                unify_many(type1.args, type2.args, env)
+                  .map_error do |final_sub|
+                    UnificationError.new(
+                      final_sub.apply(type1),
+                      final_sub.apply(type2),
+                    )
+                  end
               end
 
           in [Type::Var, _]

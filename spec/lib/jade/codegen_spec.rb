@@ -192,6 +192,19 @@ module Jade
 
         it { is_expected.to include "in __Test__::Nothing then 0; in __Test__::Just(x) then x; end" }
       end
+
+      context 'with record pattern' do
+        let(:text) do
+          <<~JADE
+            case { name: "Pepe" }
+            of { name: "Pepe" } then True
+            of _ then False
+            end
+          JADE
+        end
+
+        it { is_expected.to include 'in { name: "Pepe" } then true' }
+      end
     end
 
     describe 'lambda' do
@@ -272,6 +285,19 @@ module Jade
       end
 
       it { is_expected.to eql 'Person = Data.define(:name, :age); __Test__::Person.method(:[]).call("Guybrush", 28)' }
+    end
+
+    describe 'stdlib with codgen as' do
+      context 'with grouping' do
+        let(:text) do
+          <<~JADE
+            not(False)
+          JADE
+        end
+
+
+        it { is_expected.to eql "Jade::Runtime.intr('Basics.not').call(false)" }
+      end
     end
   end
 end

@@ -15,7 +15,7 @@ module Jade
         end
 
         describe ".load" do
-          let(:entry) do
+          let(:entry_before_stdlib) do
             [
               fn_sym('__Test__', 'id')
                 .with(params: { x: var_sym('a') })
@@ -27,7 +27,18 @@ module Jade
             ].reduce(Registry.entry('__Test__')) { |acc, sym| acc.define(sym) }
           end
 
-          subject(:env) { described_class.load(entry, Registry.new) }
+          let(:registry) do
+            Stdlib
+              .load(Registry.new)
+              .add_module(entry_before_stdlib)
+              .then { Stdlib.apply(it) }
+          end
+
+          let(:entry) do
+            registry.get(entry_before_stdlib.name)
+          end
+
+          subject(:env) { described_class.load(entry, registry) }
 
           its(:bindings) { is_expected.to include('__Test__.f') }
           its(:bindings) { is_expected.to include('__Test__.id') }
@@ -71,9 +82,20 @@ module Jade
           end
 
           describe 'type definitions' do
-            subject { super().definitions['__Test__.Void'] }
+            its(:definitions) { is_expected.to include('__Test__.Void') }
+            its(:definitions) { is_expected.to include('Maybe.Maybe') }
 
-            it { is_expected.to be_a(TypeDef) }
+            describe 'a struct' do
+              subject { super().definitions['__Test__.Void'] }
+
+              it { is_expected.to be_a(StructDef) }
+            end
+
+            describe 'a type' do
+              subject { super().definitions['Maybe.Maybe'] }
+
+              it { is_expected.to be_a(TypeDef) }
+            end
           end
         end
       end

@@ -60,6 +60,12 @@ module Jade
         'String'
       ) { it.join }
 
+      function(
+        :join,
+        { list: 'List(String)', with: 'String' },
+        'String'
+      ) { |list, with| list.join(with) }
+
       default_importing('String')
     end
   end

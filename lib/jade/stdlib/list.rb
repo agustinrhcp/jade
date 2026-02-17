@@ -59,6 +59,12 @@ module Jade
         'b',
       ) { |list, initial, fn| list.reduce(initial, &fn) }
 
+      function(
+        :filter,
+        { list: 'List(a)', fn: 'a -> Bool' },
+        'List(a)',
+      ) { |list, fn| list.filter(&fn) }
+
       default_importing('List')
     end
   end

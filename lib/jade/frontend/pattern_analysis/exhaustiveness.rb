@@ -1,0 +1,63 @@
+# TODOS:
+#
+# [] List analysis?
+# assignment pattern
+# arguments pattern
+# error message
+module Jade
+  module Frontend
+    module PatternAnalysis
+      module Exhaustiveness
+        extend self
+
+        def assert(node, env, registry, expected)
+          node => AST::CaseOf(branches:)
+
+          Matrix[
+            branches.map { [node_to_matrix_pattern(it.pattern)] },
+            [expected],
+          ]
+            .missing_patterns(env)
+            .then { to_errors(it, node, env) }
+        end
+
+        private
+
+        def to_errors(matrix, node, env)
+          return [] if matrix.empty?
+
+          [TypeChecking::Error::MissingPatterns.new(env.entry_name, node.range, missing_patterns: matrix.rows)]
+        end
+
+        def node_to_matrix_pattern(pattern_node)
+          case pattern_node
+          in AST::Pattern::Record(fields:)
+            Record[
+              fields
+                .map(&:name)
+                .zip(fields.map(&:pattern))
+                .to_h
+                .transform_values { node_to_matrix_pattern(it) },
+            ]
+
+          in AST::Pattern::Constructor(constructor:, patterns:)
+            Constructor[
+              constructor.symbol.qualified_name,
+              patterns.map { node_to_matrix_pattern(it) },
+            ]
+
+          in AST::Pattern::Binding | AST::Pattern::Wildcard
+            Wildcard[]
+
+          in AST::Pattern::Literal(literal: { value:, symbol: })
+            Literal[
+              value,
+              symbol.qualified_name,
+            ]
+
+          end
+        end
+      end
+    end
+  end
+end

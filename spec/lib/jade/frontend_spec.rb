@@ -547,6 +547,34 @@ module Jade
 
         it { is_expected.to be_a(AST::CaseOf) }
       end
+
+      context 'record pattern' do
+        let(:text) do
+          <<~JADE
+            case { name: "Pepe" }
+            of { name: name } then name
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::CaseOf) }
+      end
+
+      context 'record pattern mismatch String to Maybe(String)' do
+        let(:text) do
+          <<~JADE
+            case { name: "Pepe" }
+            of { name: Just(name) } then name
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(2).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::PatternTypeMismatch) }
+        its([1]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
+      end
     end
 
     context 'case of with constructor' do
@@ -932,6 +960,21 @@ module Jade
       subject { super().expressions.last }
 
       it { is_expected.to be_a(AST::FunctionCall) }
+    end
+
+    context 'pattern exhaustiveness' do
+      let(:text) do
+        <<~JADE
+          case 1
+          of 1 then True
+          of 2 then True
+          end
+        JADE
+      end
+
+      subject { expect(frontend).to be_error; frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
     end
   end
 end
