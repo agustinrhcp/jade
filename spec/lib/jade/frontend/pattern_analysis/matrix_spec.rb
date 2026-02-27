@@ -88,7 +88,7 @@ module Jade
                 [[
                   Constructor['Maybe.Just', [Literal[1, Type.int]]]
                 ]],
-                [Type.maybe(Type.int)],
+                [Type.parse("Maybe(Int)")],
               ]
             end
 
@@ -103,7 +103,7 @@ module Jade
                     [Constructor['Maybe.Just', [Literal[1, Type.int]]]],
                     [Constructor['Maybe.Nothing', []]],
                   ],
-                  [Type.maybe(Type.int)],
+                  [Type.parse("Maybe(Int)")],
                 ]
               end
 
@@ -121,7 +121,7 @@ module Jade
                     [Constructor['Maybe.Just', [Wildcard[]]]],
                     [Constructor['Maybe.Nothing', []]],
                   ],
-                  [Type.maybe(Type.int)],
+                  [Type.parse("Maybe(Int)")],
                 ]
               end
 
@@ -135,7 +135,7 @@ module Jade
                   [[
                     Constructor['Maybe.Just', [Wildcard[]]]
                   ]],
-                  [Type.maybe(Type.var('a'))],
+                  [Type.parse("Maybe(a)")],
                 ]
               end
 

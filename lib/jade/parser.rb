@@ -481,8 +481,6 @@ module Jade
       ).map(&AST.struct_declaration)
     end
 
-    private
-
     def at_least_one(parser, separated_by: none.skip)
       parser >> ((separated_by >> sequence(parser, separated_by:)) | none.map { [] })
     end
@@ -561,6 +559,8 @@ module Jade
         block.call.call(input)
       end
     end
+
+    private
 
     State = Data.define(:tokens, :position, :context_stack) do
       def initialize(tokens:, position: 0, context_stack: [])
