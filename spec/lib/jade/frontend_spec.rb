@@ -2,7 +2,7 @@ require 'spec_helper'
 
 require 'jade/symbol'
 require 'jade/frontend'
-require 'jade/parser'
+require 'jade/parsing'
 require 'jade/lexer'
 require 'jade/ast'
 require 'jade/ast/pretty_printer'
@@ -16,7 +16,7 @@ module Jade
     let(:frontend) do
       Lexer
         .tokenize(source)
-        .then { Parser.parse(it) }
+        .then { Parsing.parse(it) }
         .and_then  { Frontend.run(it) }
     end
 
@@ -265,7 +265,7 @@ module Jade
       let(:frontend) do
         Lexer
           .tokenize(source)
-          .then { Parser.parse(it) }
+          .then { Parsing.parse(it) }
           .and_then  { Frontend.run(it) }
       end
 

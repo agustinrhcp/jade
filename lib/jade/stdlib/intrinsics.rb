@@ -30,6 +30,14 @@ module Jade
           .tap { Runtime.register(qualified_fn_name, &block) }
       end
 
+      def interface(name, type_param, functions)
+        functions
+          .transform_values do |v|
+            
+          end
+          .then { Symbol.interface(name, type_param, it) }
+      end
+
       def symbols
         @symbols || []
       end
@@ -84,24 +92,7 @@ module Jade
       end
 
       def string_to_ref(str)
-        case str
-        in 'Int' then Symbol::TypeRef['Basics', 'Int']
-        in 'Float' then Symbol::TypeRef['Basics', 'Float']
-        in 'Bool' then Symbol::TypeRef['Basics', 'Bool']
-        in 'String' then Symbol::TypeRef['String', 'String']
-
-      # TODO: don't hardcode thaaat much
-        in 'a' then Symbol.var('a', nil)
-        in 'b' then Symbol.var('b', nil)
-        in 'a -> b' then Symbol.function_type([Symbol.var('a', nil)], Symbol.var('b', nil))
-        in 'a -> Bool' then Symbol.function_type([Symbol.var('a', nil)], string_to_ref('Bool'))
-        in 'Maybe(Int)' then Symbol.type_ref('Maybe', 'Maybe')
-        in 'List(a)' then Symbol.type_ref('List', 'List') 
-        in 'List(b)' then Symbol.type_ref('List', 'List') 
-        in 'List(String)' then Symbol.type_ref('List', 'List') 
-        in 'Int, a -> b' then Symbol.function_type([string_to_ref('Int'), string_to_ref('a')], string_to_ref('b'))
-        in 'b, a -> b' then Symbol.function_type([string_to_ref('b'), string_to_ref('a')], string_to_ref('b'))
-        end
+        Symbol.parse(str)
       end
 
       def module_name

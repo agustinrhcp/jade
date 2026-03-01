@@ -14,7 +14,7 @@ module Jade
       def parse(annotation)
         Lexer
           .tokenize(Source.new(uri: nil, text: annotation))
-          .then { Parser.parse(it) }
+          .then { TypeFactory::Parser.parse(it) }
       end
     end
   end

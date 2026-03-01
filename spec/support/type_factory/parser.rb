@@ -1,15 +1,16 @@
 require 'jade/type'
-require 'jade/parser'
+require 'jade/parsing'
 require 'jade/lexer'
 
 module Jade
   module TypeFactory
     module Parser
+      include Jade::Parsing::Combinators
       extend self
 
       def parse(tokens)
         parser
-          .call(Jade::Parser::State.new(tokens))
+          .call(State.new(tokens))
           .map(&:first) => Ok(type)
 
         type
@@ -27,10 +28,10 @@ module Jade
 
       def record
         (
-          Jade::Parser.type(:lbrace).skip >>
+          type(:lbrace).skip >>
             record_row >>
             record_fields >>
-            Jade::Parser.type(:rbrace).skip
+            type(:rbrace).skip
         )
           .map do |(row, fields)|
             Type.anonymous_record(
@@ -41,32 +42,31 @@ module Jade
       end
 
       def record_row
-        (var >> Jade::Parser.type(:pipe).skip) | Jade::Parser.none.map { nil }
+        (var >> type(:pipe).skip) | none.map { nil }
       end
 
       def record_fields
-        Jade::Parser.sequence(
-          (Jade::Parser.type(:identifier) >>
-            Jade::Parser.type(:colon).skip >>
-            Jade::Parser.lazy { type_expression }
+        sequence(
+          (type(:identifier) >>
+            type(:colon).skip >>
+            lazy { type_expression }
           ).map { [it] },
-          separated_by: Jade::Parser.type(:comma).skip,
+          separated_by: type(:comma).skip,
         ).map { [it] }
       end
 
       def var
-        Jade::Parser
-          .type(:identifier)
+        type(:identifier)
           .map { Type.var(it.value) }
       end
 
       def atom
-        var | application | Jade::Parser.grouped(Jade::Parser.lazy { function })
+        var | application | grouped(lazy { function })
       end
 
       def function
-        (Jade::Parser.sequence(atom, separated_by: Jade::Parser.type(:comma).skip).map { [it] } >>
-          Jade::Parser.type(:arrow).skip >>
+        (sequence(atom, separated_by: type(:comma).skip).map { [it] } >>
+          type(:arrow).skip >>
           atom
         ).map { |(params, ret_type)| Type.function(params, ret_type) }
       end
@@ -74,24 +74,24 @@ module Jade
       def constructor_name
         (
           (
-            Jade::Parser.type(:constant) >> Jade::Parser.type(:dot).skip >> 
-            Jade::Parser.sequence(Jade::Parser.type(:constant), separated_by: Jade::Parser.type(:dot).skip)
+            type(:constant) >> type(:dot).skip >> 
+            sequence(type(:constant), separated_by: type(:dot).skip)
           )
             .map { it.map(&:value).join('.') }
-        ) | Jade::Parser.type(:constant).map(&:value)
+        ) | type(:constant).map(&:value)
       end
 
       def application
         (
           constructor_name >> (
             (
-              Jade::Parser.type(:lparen).skip >>
-                Jade::Parser.sequence(
-                  Jade::Parser.lazy { type_expression },
-                  separated_by: Jade::Parser.type(:comma).skip
+              type(:lparen).skip >>
+                sequence(
+                  lazy { type_expression },
+                  separated_by: type(:comma).skip
                 ).map { [it] } >>
-                Jade::Parser.type(:rparen).skip
-            ) | Jade::Parser.none.map { [[]] }
+                type(:rparen).skip
+            ) | none.map { [[]] }
           )
         ).map do |(constructor, args)|
           qualified_constructor =

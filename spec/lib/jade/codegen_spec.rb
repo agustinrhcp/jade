@@ -2,7 +2,7 @@ require 'spec_helper'
 
 require 'jade/ast'
 require 'jade/frontend'
-require 'jade/parser'
+require 'jade/parsing'
 require 'jade/lexer'
 require 'jade/codegen'
 
@@ -15,7 +15,7 @@ module Jade
     let(:generation) do
       Lexer
         .tokenize(source)
-        .then { Parser.parse(it) }
+        .then { Parsing.parse(it) }
         .and_then  { Frontend.run(it) }
         .map  { Codegen.generate(*it) }
     end

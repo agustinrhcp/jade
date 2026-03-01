@@ -8,7 +8,7 @@ module Jade
 
         source
           .then { Lexer.tokenize(it) }
-          .then { Parser.parse(it) } => Ok(ast)
+          .then { Parsing.parse(it) } => Ok(ast)
 
         @entry = Registry
           .entry(source.to_module_name)

@@ -1,207 +1,125 @@
+require 'jade/symbol/base'
+require 'jade/symbol/parser'
+
+require 'jade/symbol/anonymous_record'
+require 'jade/symbol/function'
+require 'jade/symbol/function_type'
+require 'jade/symbol/implementation'
+require 'jade/symbol/interface'
+require 'jade/symbol/interop_function'
+require 'jade/symbol/lambda'
+require 'jade/symbol/record_type'
+require 'jade/symbol/stdlib_function'
+require 'jade/symbol/struct'
+require 'jade/symbol/type_application'
+require 'jade/symbol/type_param'
+require 'jade/symbol/type_ref'
+require 'jade/symbol/union'
+require 'jade/symbol/value_ref'
+require 'jade/symbol/variable'
+require 'jade/symbol/variant'
+
 module Jade
   module Symbol
-    def self.module_name(qualified_name)
+    extend self
+
+    def module_name(qualified_name)
       *module_parts, _ = qualified_name
       module_parts.join('.')
     end
 
-    def qualified_name
-      [module_name, name].join('.')
-    end
-
-    def self.unqualified_name(qualified_name)
+    def unqualified_name(qualified_name)
       qualified_name.split('.').last
     end
 
-    def self.anonymous_record(fields, row_var = nil)
+    def anonymous_record(fields, row_var = nil)
       fail('fields is expected to be an array') unless fields.is_a?(Array)
 
       AnonymousRecord[fields, row_var]
     end
 
-    def self.record_type(fields, row_var)
+    def record_type(fields, row_var)
       fail('fields is expected to be a hash') unless fields.is_a?(Hash)
 
       RecordType[fields, row_var]
     end
 
-    def self.union(name, type_params, variants, span)
+    def union(name, type_params, variants, span)
       Union[nil, name, type_params, variants.map(&:to_ref), span]
     end
 
-    def self.variant(name, args, union, span)
+    def variant(name, args, union, span)
       Variant[nil, name, args, union, span]
     end
 
-    def self.predeclared_variant(name, span)
+    def predeclared_variant(name, span)
       Variant[nil, name, [], nil, span]
     end
 
-    def self.lambda(arity)
+    def lambda(arity)
       Lambda[arity]
     end
 
-    def self.type_ref(module_name, name)
+    def type_ref(module_name, name)
       TypeRef[module_name, name]
     end
 
-    def self.value_ref(module_name, name)
+    def value_ref(module_name, name)
       ValueRef[module_name, name]
     end
 
-    def self.var(name, span)
+    def var(name, span)
       Variable[name, span]
     end
 
-    def self.param(name)
+    def param(name)
       Param[name]
     end
 
-    def self.predeclared_function(name)
+    def predeclared_function(name)
       Function[nil, name, nil, nil]
     end
 
-    def self.function(name, params, return_type)
+    def function(name, params, return_type)
       Function[nil, name, params, return_type]
     end
 
-    def self.function_type(params, return_type)
+    def function_type(params, return_type)
       FunctionType[params, return_type]
     end
 
-    def self.stdlib_function(name, params, return_type, codegen)
+    def stdlib_function(name, params, return_type, codegen)
       StdlibFunction[nil, name, params, return_type, codegen]
     end
 
-    def self.predeclared_interop_function(name)
+    def predeclared_interop_function(name)
       InteropFunction[nil, name, [], nil, nil, nil]
     end
 
-    def self.interop_function(name, params, return_type, interop_module_name, expected_type)
+    def interop_function(name, params, return_type, interop_module_name, expected_type)
       InteropFunction[nil, name, params, return_type, interop_module_name, expected_type]
     end
 
-    def self.type_application(constructor, args, span)
+    def type_application(constructor, args, span)
       TypeApplication[constructor, args, span]
     end
 
-    def self.predeclared_struct(name, type_params, span)
+    def predeclared_struct(name, type_params, span)
       Struct[nil, name, type_params, nil, span]
     end
 
-    Union = Data.define(:module_name, :name, :type_params, :variants, :decl_span) do
-      include Symbol
-
-      def to_ref
-        TypeRef[module_name, name]
-      end
-
-      def qualified_name
-        [module_name, name].join('.')
-      end
+    def interface(name, type_var, functions)
+      Interface[nil, name, type_var, functions]
     end
 
-    TypeRef = Data.define(:module_name, :name) do
-      include Symbol
-
-      def qualified_name
-        [module_name, name].join('.')
-      end
-
-      def to_ref
-        self
-      end
+    def interface(name, type_var, functions)
+      Interface[nil, name, type_var, functions]
     end
 
-    Function = Data.define(:module_name, :name, :params, :return_type) do
-      include Symbol
-
-      def to_ref
-        ValueRef[module_name, name]
-      end
-    end
-
-    FunctionType = Data.define(:params, :return_type) do
-      include Symbol
-    end
-
-    Lambda = Data.define(:arity) do
-      include Symbol
-    end
-
-    Variant = Data.define(:module_name, :name, :args, :union, :decl_span) do
-      include Symbol
-
-      def to_ref
-        ValueRef[module_name, name]
-      end
-
-      def qualified_name
-        [module_name, name].join('.')
-      end
-    end
-
-    StdlibFunction = Data.define(:module_name, :name, :params, :return_type, :codegen) do
-      include Symbol
-
-      def to_ref
-        ValueRef[module_name, name]
-      end
-    end
-
-    InteropFunction = Data.define(
-      :module_name,
-      :name,
-      :params,
-      :return_type,
-      :interop_module_name,
-      :expected_type
-    ) do
-      include Symbol
-
-      def to_ref
-        ValueRef[module_name, name]
-      end
-    end
-
-    ValueRef = Data.define(:module_name, :name) do
-      include Symbol
-
-      def to_ref
-        self
-      end
-
-      def qualified_name
-        [module_name, name].join('.')
-      end
-    end
-
-    Variable = Data.define(:name, :decl_span) do
-      include Symbol
-    end
-
-    Param = Data.define(:name) do
-      include Symbol
-    end
-
-    AnonymousRecord = Data.define(:fields, :row_var) do
-      include Symbol
-    end
-
-    Struct = Data.define(:module_name, :name, :type_params, :record_type, :decl_span) do
-      include Symbol
-
-      def to_ref
-        TypeRef[module_name, name]
-      end
-    end
-
-    RecordType = Data.define(:fields, :row_var) do
-      include Symbol
-    end
-
-    TypeApplication = Data.define(:constructor, :args, :span) do
-      include Symbol
+    def parse(annotation)
+      Lexer
+        .tokenize(Source.new(uri: nil, text: annotation))
+        .then { Parser.parse(it) }
     end
   end
 end

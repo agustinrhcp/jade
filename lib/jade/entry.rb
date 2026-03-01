@@ -1,5 +1,15 @@
 module Jade
-  Entry = Data.define(:name, :defined_values, :defined_types, :imports, :exposes, :ast, :source, :generated, :entry) do
+  Entry = Data.define(
+    :name,
+    :defined_values,
+    :defined_types,
+    :imports,
+    :exposes,
+    :ast,
+    :source,
+    :generated,
+    :entry
+  ) do
     def expose(symbol)
       with(exposes: exposes + Set[symbol])
     end

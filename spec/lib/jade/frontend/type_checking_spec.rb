@@ -3,7 +3,7 @@ require 'spec_helper'
 require 'jade/symbol'
 require 'jade/type'
 require 'jade/frontend'
-require 'jade/parser'
+require 'jade/parsing'
 require 'jade/lexer'
 require 'jade/ast'
 
@@ -17,7 +17,7 @@ module Jade
       let(:type_check) do
         Lexer
           .tokenize(source)
-          .then { Parser.parse(it) }
+          .then { Parsing.parse(it) }
           .and_then { Frontend.run_up_to_semantic_analysis(it) }
           # TODO: Make this prettier
           .and_then do |entry, registry|

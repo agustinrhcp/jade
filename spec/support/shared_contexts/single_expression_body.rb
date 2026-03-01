@@ -6,4 +6,3 @@ RSpec.shared_context "single expression body" do
     body.expressions.last
   end
 end
-

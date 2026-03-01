@@ -9,6 +9,10 @@ module Jade
       union :Float
       union :Bool
 
+      # interface('Eq', 'a', { '(==)' => 'a, a -> Bool' })
+
+      # implementation(:Eq, 'Int', 'int_eq')
+
       function(
         '(+)',
         { a: 'Int', b: 'Int' },
@@ -46,6 +50,12 @@ module Jade
       ) { not it }
 
       default_importing :*
+
+      function(
+        'int_eq',
+        { one: 'Int', other: 'Int' },
+        'Bool',
+      ) { |one, other| one == other }
     end
   end
 end
