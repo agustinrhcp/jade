@@ -162,7 +162,7 @@ module Jade
 
     def operator
       type(:plus) | type(:minus) | type(:star) | type(:slash) |
-        type(:pipe_forward) | type(:pipe_backward)
+        type(:pipe_forward) | type(:pipe_backward) | type(:eq)
     end
 
     def primary

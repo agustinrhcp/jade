@@ -21,8 +21,8 @@ module Jade
         Symbol
           .stdlib_function(
             name.to_s,
-            params.transform_values { string_to_ref(it) },
-            string_to_ref(ret),
+            params.transform_values { Symbol.parse(it) },
+            Symbol.parse(ret),
             "Jade::Runtime.intr('#{qualified_fn_name}')",
           )
           .with(module_name:)
@@ -32,10 +32,21 @@ module Jade
 
       def interface(name, type_param, functions)
         functions
-          .transform_values do |v|
-            
-          end
-          .then { Symbol.interface(name, type_param, it) }
+          .map { |k, v| Symbol.parse(v).then { to_interface_function(name, k, it) }.with(module_name:) }
+          .then { Symbol.interface(name, type_param, it, nil) }
+          .with(module_name:)
+          .then { store(it); it.functions.each { |fn| store(fn) } }
+      end
+
+      def implementation(interface, type, functions)
+        Symbol
+          .implementation(
+            interface_to_ref(interface),
+            Symbol.type_ref(module_name, type),
+            functions.transform_values { Symbol.value_ref(module_name, it) },
+            nil,
+          )
+          .then { store(it) }
       end
 
       def symbols
@@ -74,7 +85,9 @@ module Jade
       private
 
       def exposes
-        @symbols.map { it.to_ref }
+        @symbols
+          .reject { it.is_a?(Symbol::Implementation) }
+          .map { it.to_ref }
       end
 
       def resolve_imports(entry)
@@ -91,12 +104,28 @@ module Jade
         @symbols.concat << symbol
       end
 
-      def string_to_ref(str)
-        Symbol.parse(str)
-      end
-
       def module_name
         "#{self.name.split('::').last}"
+      end
+
+      def interface_to_ref(interface)
+        case interface
+        in 'Eq'
+          'Basics'
+        end
+          .then { Symbol.type_ref(it, interface.to_s) }
+      end
+
+      def to_interface_function(interface_name, fn_name, fn)
+        fn => Symbol::FunctionType(params:, return_type:)
+
+        Symbol.interface_function(
+          fn_name,
+          interface_to_ref(interface_name),
+          params,
+          return_type,
+          nil,
+        )
       end
     end
   end

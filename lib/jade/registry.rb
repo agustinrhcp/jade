@@ -27,6 +27,7 @@ module Jade
         ast: nil,
         source: nil,
         generated: nil,
+        implementations: {},
         entry: false,
       )
     end

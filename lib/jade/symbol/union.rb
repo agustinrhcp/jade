@@ -6,10 +6,6 @@ module Jade
       def to_ref
         TypeRef[module_name, name]
       end
-
-      def qualified_name
-        [module_name, name].join('.')
-      end
     end
   end
 end

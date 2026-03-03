@@ -42,8 +42,10 @@ module Jade
         case type
         in 'Int' | 'Float' | 'Bool'
           'Basics'
+
         in 'String' | 'Maybe' | 'List'
           type
+
         end
           .then { [it, type] }
       end

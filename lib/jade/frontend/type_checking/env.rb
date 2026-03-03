@@ -5,6 +5,7 @@ module Jade
       StructDef = Data.define(:name, :type_params, :body)
       TypeDef = Data.define(:name, :type_params, :constructors)
       ConstructorDef = Data.define(:name, :parent_name, :args)
+      InterfaceDef = Data.define(:name)
 
       module Definition
         extend self
@@ -36,6 +37,9 @@ module Jade
                   .then { Definition.constructor(variant.qualified_name, sym.qualified_name, it.args) }
               end
               .then { Definition.type(sym.qualified_name, type.args, it) }
+
+          in Symbol::Interface(name:)
+            InterfaceDef[name]
 
           in Symbol::TypeRef
             registry

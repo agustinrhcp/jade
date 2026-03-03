@@ -6,6 +6,7 @@ require 'jade/symbol/function'
 require 'jade/symbol/function_type'
 require 'jade/symbol/implementation'
 require 'jade/symbol/interface'
+require 'jade/symbol/interface_function'
 require 'jade/symbol/interop_function'
 require 'jade/symbol/lambda'
 require 'jade/symbol/record_type'
@@ -108,12 +109,16 @@ module Jade
       Struct[nil, name, type_params, nil, span]
     end
 
-    def interface(name, type_var, functions)
-      Interface[nil, name, type_var, functions]
+    def interface(name, type_var, functions, span)
+      Interface[nil, name, type_var, functions, span]
     end
 
-    def interface(name, type_var, functions)
-      Interface[nil, name, type_var, functions]
+    def interface_function(name, inteface, params, return_type, span)
+      InterfaceFunction[nil, name, inteface, params, return_type, span]
+    end
+
+    def implementation(interface, type, functions, span)
+      Implementation[nil, interface, type, functions, span]
     end
 
     def parse(annotation)

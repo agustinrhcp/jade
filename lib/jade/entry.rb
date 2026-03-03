@@ -8,6 +8,7 @@ module Jade
     :ast,
     :source,
     :generated,
+    :implementations,
     :entry
   ) do
     def expose(symbol)
@@ -64,10 +65,14 @@ module Jade
 
     def define(symbol)
       case symbol
-      in Symbol::Union | Symbol::Struct
+      in Symbol::Union | Symbol::Struct | Symbol::Interface
         add_defined_type(symbol)
 
-      in Symbol::Function | Symbol::StdlibFunction | Symbol::Variant | Symbol::InteropFunction
+      in Symbol::Implementation
+        add_implementation(symbol)
+
+      in Symbol::Function | Symbol::StdlibFunction | Symbol::Variant|
+        Symbol::InteropFunction | Symbol::InterfaceFunction
         add_defined_value(symbol)
       end
     end
@@ -92,6 +97,13 @@ module Jade
 
     private
 
+    def add_implementation(symbol)
+      symbol
+        .with(module_name: name)
+        .then { implementations.merge([it.interface.qualified_name, it.type.qualified_name] => it) }
+        .then { with(implementations: it) }
+    end
+
     def add_defined_value(symbol)
       symbol
         .with(module_name: name)
@@ -106,6 +118,11 @@ module Jade
             module_name: name,
             variants: symbol.variants.map { it.with(module_name: name) },
           )
+      in Symbol::Interface(functions:)
+        symbol
+          .with(module_name: name)
+          .with(functions: functions.map { it.with(module_name: name) })
+
       else
         symbol.with(module_name: name)
       end

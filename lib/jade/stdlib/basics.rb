@@ -9,9 +9,11 @@ module Jade
       union :Float
       union :Bool
 
-      # interface('Eq', 'a', { '(==)' => 'a, a -> Bool' })
+      interface('Eq', 'a', { '(==)' => 'a, a -> Bool' })
 
-      # implementation(:Eq, 'Int', 'int_eq')
+      implementation('Eq', 'Int', '(==)' => 'int_eq')
+      implementation('Eq', 'Int', '(==)' => 'float_eq')
+      implementation('Eq', 'Bool', '(==)' =>  'bool_eq')
 
       function(
         '(+)',
@@ -54,6 +56,18 @@ module Jade
       function(
         'int_eq',
         { one: 'Int', other: 'Int' },
+        'Bool',
+      ) { |one, other| one == other }
+
+      function(
+        'float_eq',
+        { one: 'Float', other: 'Float' },
+        'Bool',
+      ) { |one, other| one == other }
+
+      function(
+        'bool_eq',
+        { one: 'Bool', other: 'Bool' },
         'Bool',
       ) { |one, other| one == other }
     end
