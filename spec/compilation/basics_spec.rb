@@ -64,6 +64,23 @@ module Jade
           expect(Math.negate.call(false)).to be true
         end
       end
+
+      context 'interfaces' do
+        let(:math_source) do
+          <<~JADE
+            module Math exposing (int_equality)
+
+            def int_equality(int1: Int, int2: Int) -> Bool
+              int1 == int2
+            end
+          JADE
+        end
+
+        it 'returns the value negated' do
+          expect(Math.int_equality.call(1, 2)).to be false
+          expect(Math.int_equality.call(1, 1)).to be true
+        end
+      end
     end
   end
 end

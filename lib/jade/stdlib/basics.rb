@@ -12,7 +12,7 @@ module Jade
       interface('Eq', 'a', { '(==)' => 'a, a -> Bool' })
 
       implementation('Eq', 'Int', '(==)' => 'int_eq')
-      implementation('Eq', 'Int', '(==)' => 'float_eq')
+      implementation('Eq', 'Foat', '(==)' => 'float_eq')
       implementation('Eq', 'Bool', '(==)' =>  'bool_eq')
 
       function(

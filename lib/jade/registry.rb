@@ -3,13 +3,14 @@ require 'jade/entry'
 
 module Jade
   class Registry
-    attr_reader :dependency_graph, :modules, :source_root
+    attr_reader :dependency_graph, :modules, :source_root, :implementations
 
     def initialize
       @source_root = nil
       @modules = {}
       # TODO: [ModuleLoaderRefactor] Can leave outside module loader
       @dependency_graph = ModuleLoader::DependencyGraph.new
+      @implementations = {}
     end
 
     def with(**kwargs)
@@ -62,6 +63,8 @@ module Jade
         # Stdlib intrinsics don't have ast
         ModuleLoader::DependencyResolver.resolve(entry, self)
       end
+      
+      @implementations.merge!(entry.implementations)
 
       self
     end

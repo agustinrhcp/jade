@@ -44,6 +44,8 @@ module Jade
         '/' => Fixity[7, :left],
         '|>' => Fixity[2, :left],
         '<|' => Fixity[2, :right],
+        '==' => Fixity[4, :none],
+        '!=' => Fixity[4, :none],
       }.freeze
 
       def fix_entry(entry)

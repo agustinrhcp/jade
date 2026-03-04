@@ -36,6 +36,13 @@ module Jade
         in Symbol::StdlibFunction(codegen:)
           codegen
 
+        in Symbol::InterfaceFunction
+          impl_fn_sym_ref = registry.implementations[
+            [symbol.interface.qualified_name, 'Basics.Int']
+          ].functions[symbol.name]
+
+          impl_fn_sym = registry.lookup(impl_fn_sym_ref)
+          impl_fn_sym.codegen
         else
           name
         end
@@ -62,7 +69,13 @@ module Jade
       in AST::InfixApplication(left:, operator:, right:)
         symbol = registry.lookup(operator.symbol)
 
-        "#{symbol.codegen}.call(#{generate(left, registry)}, #{generate(right, registry)})"
+        operator_as_var_ref = AST::VariableReference.new(
+          name: "(#{operator.value})",
+          symbol: operator.symbol,
+          range: nil,
+        )
+
+        "#{generate(operator_as_var_ref, registry)}.call(#{generate(left, registry)}, #{generate(right, registry)})"
 
       in AST::FunctionCall(callee:, args:)
         args_code = args.map { generate(it, registry) }.join(', ')
