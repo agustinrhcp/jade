@@ -64,6 +64,7 @@ module Jade
               '__Test__.add' => TypeChecking::Scheme[
                 [],
                 Type.function([Type.int, Type.int], Type.int),
+                [],
               ]
             )
           end
@@ -145,7 +146,7 @@ module Jade
 
           its(:bindings) do
             is_expected.to have_key('hello')
-            is_expected.to include('hello' => TypeChecking::Scheme[[], Type.string])
+            is_expected.to include('hello' => TypeChecking::Scheme[[], Type.string, []])
           end
         end
       end

@@ -1,7 +1,7 @@
 module Jade
   module Frontend
     module TypeChecking
-      Scheme = Data.define(:quantified, :type) do
+      Scheme = Data.define(:quantified, :type, :constraints) do
         def unbound_vars
           type.unbound_vars
         end
@@ -16,7 +16,7 @@ module Jade
 
         def generalize(env, type)
           (type.unbound_vars - env.free_vars)
-            .then { Scheme[it, type] }
+            .then { Scheme[it, type, type.respond_to?(:constraints) ? type.constraints : []] }
         end
       end
     end

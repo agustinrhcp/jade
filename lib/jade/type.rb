@@ -1,11 +1,12 @@
 require 'jade/type/base'
 
-require 'jade/type/var'
+require 'jade/type/anonymous_record'
+require 'jade/type/application'
+require 'jade/type/constraint'
 require 'jade/type/constructor'
 require 'jade/type/function'
-require 'jade/type/application'
 require 'jade/type/unit'
-require 'jade/type/anonymous_record'
+require 'jade/type/var'
 
 module Jade
   module Type
@@ -17,7 +18,11 @@ module Jade
     end
 
     def var(id, name = nil)
-      Var[id, name, false]
+      Var[id, name, [], false]
+    end
+
+    def constraint_var(id, constraints, name = nil)
+      Var[id, name, constraints, nil]
     end
 
     def unit
@@ -52,12 +57,16 @@ module Jade
       Constructor[name]
     end
 
-    def function(args, return_type)
-      Function[args, return_type]
+    def function(args, return_type, constraints = [])
+      Function[args, return_type, constraints]
     end
 
     def anonymous_record(fields, row_var)
       AnonymousRecord[fields, row_var]
+    end
+
+    def constraint(interface, type)
+      Constraint[interface, type]
     end
 
     private
@@ -103,7 +112,7 @@ module Jade
           .then { |(t, _)| Type.function(args, t) }
           .then { [it, var_map] }
 
-      in Symbol::FunctionType | Symbol::InteropFunction | Symbol::InterfaceFunction
+      in Symbol::FunctionType | Symbol::InteropFunction
         # Same as function and stdlib but without keyed params.
         args, local_map = symbol
           .params
@@ -114,6 +123,22 @@ module Jade
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
           .then { |(t, _)| Type.function(args, t) }
+          .then { [it, var_map] }
+
+      in Symbol::InterfaceFunction
+        # Same as function and stdlib but without keyed params.
+        args, local_map = symbol
+          .params
+          .reduce([[], {}]) do |(types, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, new_map)| [types + [t], new_map] }
+          end
+
+        interface = registry.lookup(symbol.interface)
+        constraint = Type.constraint(symbol.interface, interface.type_param)
+
+        from_symbol_r(symbol.return_type, registry, var_gen, local_map)
+          .then { |(t, _)| Type.function(args, t, [constraint]) }
           .then { [it, var_map] }
 
       in Symbol::Variant

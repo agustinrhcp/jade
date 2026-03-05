@@ -1,6 +1,6 @@
 module Jade
   module Type
-    Function = Data.define(:args, :return_type) do
+    Function = Data.define(:args, :return_type, :constraints) do
       include Base
 
       def to_s

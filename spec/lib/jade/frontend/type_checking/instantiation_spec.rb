@@ -13,7 +13,8 @@ module Jade
             scheme =
               Scheme.new(
                 quantified: [a],
-                type: Type.function([a], a)
+                type: Type.function([a], a),
+                constraints: [],
               )
 
             fn = described_class.instantiate(scheme, VarGen.new)

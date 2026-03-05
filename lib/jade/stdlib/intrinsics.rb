@@ -33,7 +33,7 @@ module Jade
       def interface(name, type_param, functions)
         functions
           .map { |k, v| Symbol.parse(v).then { to_interface_function(name, k, it) }.with(module_name:) }
-          .then { Symbol.interface(name, type_param, it, nil) }
+          .then { Symbol.interface(name, Symbol.parse(type_param), it, nil) }
           .with(module_name:)
           .then { store(it); it.functions.each { |fn| store(fn) } }
       end
