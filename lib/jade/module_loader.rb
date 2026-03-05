@@ -35,7 +35,6 @@ module Jade
 
         full_path = File.join(path, entry.path)
         FileUtils.mkdir_p(File.dirname(full_path))
-        puts entry.generated
         File.write(full_path, entry.generated)
       end
 

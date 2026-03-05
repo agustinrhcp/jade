@@ -1,3 +1,7 @@
+require 'jade/codegen/helpers'
+
+require 'jade/codegen/function_declaration'
+
 module Jade
   module Codegen
     extend self
@@ -59,9 +63,8 @@ module Jade
           "\"#{value}\""
         end
 
-      in AST::FunctionDeclaration(name:, params:, body:)
-        params_code = params.map { generate(it, registry) }.join(', ')
-        "def #{name}; ->(#{params_code}) { #{generate(body, registry)} }; end"
+      in AST::FunctionDeclaration
+        FunctionDeclaration.generate(node, registry)
 
       in AST::FunctionDeclarationParam(name:)
         name
@@ -83,7 +86,7 @@ module Jade
         "#{generate(callee, registry)}.call(#{args_code})"
 
       in AST::ConstructorReference(name:, symbol:)
-        "#{symbol.qualified_name.gsub('.', '::')}.method(:[])"
+        to_qualified(symbol.qualified_name) + ".method(:[])"
 
       in AST::TypeDeclaration(variants:)
         variants.map { generate(it, registry) }.join('; ')
@@ -92,14 +95,16 @@ module Jade
         record_type
           .fields
           .keys
-          .map { ":#{it}" }.join(", ")
-          .then { "#{name} = Data.define(#{it})"}
+          .then { data_define(it) }
+          .then { "#{name} = #{it}"}
         
 
       in AST::VariantDeclaration(name:, args:)
-        args.map.with_index { |_, i| ":_#{i + 1}" }
-          .then { it.empty? ? "" : "(#{it.join(", ")})"}
-          .then { "#{name} = Data.define#{it}" }
+        args
+          .map
+          .with_index { |_, i| "_#{i + 1}" }
+          .then { data_define(it) }
+          .then { "#{name} = #{it}" }
 
       in AST::QualifiedAccess(symbol:)
         case registry.lookup(symbol)
@@ -107,10 +112,10 @@ module Jade
           codegen
 
         in Symbol::Function(module_name:, name:)
-          "#{module_name.gsub('.', '::')}.#{name}"
+          to_qualified(module_name) + ".#{name}"
 
         in Symbol::Variant(module_name:, name:)
-          "#{module_name.gsub('.', '::')}::#{name}.method(:[])"
+          to_qualified(module_name + "." + name) + ".method(:[])"
         end
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)
@@ -158,7 +163,7 @@ module Jade
       in AST::RecordLiteral(fields:)
         fields_sorted = fields.sort_by { it.key }
 
-        "Data.define(#{fields_sorted.map { ":#{it.key}" }.join(', ')})" +
+        data_define(fields.map(&:key).sort) +
           "[#{fields_sorted.map { generate(it.value, registry) }.join(', ')}]"
 
       in AST::RecordAccess(target:, name:)
@@ -173,6 +178,16 @@ module Jade
     end
 
     private
+
+    def to_qualified(module_name)
+      "#{module_name.gsub('.', '::')}"
+    end
+
+    def data_define(fields)
+      return "Data.define" if fields.empty?
+
+      "Data.define(#{fields.map { ":#{it}" }.join(', ')})"
+    end
 
     def load_path
       return '$LOAD_PATH.unshift(File.expand_path("lib"));'
