@@ -84,7 +84,6 @@ module Jade
         in AST::Grouping then Inference::Grouping
         in AST::IfThenElse then Inference::IfThenElse
         in AST::ImportDeclaration then Inference::ImportDeclaration
-        in AST::InfixApplication then Inference::InfixApplication
         in AST::InteropImportDeclaration then Inference::InteropImportDeclaration
         in AST::Lambda then Inference::Lambda
         in AST::List then Inference::List

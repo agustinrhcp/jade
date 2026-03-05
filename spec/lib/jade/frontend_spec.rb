@@ -116,7 +116,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to be_a(AST::InfixApplication) }
+      it { is_expected.to be_a(AST::FunctionCall) }
 
       it 'precedence is respected' do
         expect(AST::PrettyPrinter.print(subject)).to eql "((1 + (2 * 3)) - (4 / 5))"
@@ -129,7 +129,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to be_a(AST::InfixApplication) }
+        it { is_expected.to be_a(AST::FunctionCall) }
 
         it 'precedence is respected' do
           expect(AST::PrettyPrinter.print(subject)).to eql "((2 * 2) + (3 * 3))"
@@ -143,7 +143,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to be_a(AST::InfixApplication) }
+        it { is_expected.to be_a(AST::FunctionCall) }
 
         it 'precedence is respected' do
           expect(AST::PrettyPrinter.print(subject)).to eql "(1 + (2 * 3))"
@@ -987,7 +987,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to be_a(AST::InfixApplication) }
+      it { is_expected.to be_a(AST::FunctionCall) }
     end
   end
 end

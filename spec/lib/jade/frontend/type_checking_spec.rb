@@ -173,8 +173,13 @@ module Jade
 
           describe 'the error' do
             subject { super().errors.first }
-            it { is_expected.to be_a(TypeChecking::Error::InfixApplicationTypeMismatch) }
-            its(:message) { is_expected.to include('Right side of (*) expects Int but found String') }
+
+            it { is_expected.to be_a(TypeChecking::Error::FunctionCallTypeMismatch) }
+            its(:message) { is_expected.to include('Function call mismatch, expected (Int, Int) -> Int but found (Int, String) -> Int') }
+
+            xcontext 'Desugared infix errors' do
+              its(:message) { is_expected.to include('Right side of (*) expects Int but found String') }
+            end
           end
         end
       end

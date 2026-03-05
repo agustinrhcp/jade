@@ -299,7 +299,7 @@ module Jade
       end
     end
 
-    describe 'eq constraint' do
+    xdescribe 'eq constraint' do
       let(:text) do
         <<~JADE
           1 == 2

@@ -68,17 +68,6 @@ module Jade
       in AST::FunctionDeclarationParam(name:)
         name
 
-      in AST::InfixApplication(left:, operator:, right:)
-        symbol = registry.lookup(operator.symbol)
-
-        operator_as_var_ref = AST::VariableReference.new(
-          name: "(#{operator.value})",
-          symbol: operator.symbol,
-          range: nil,
-        )
-
-        "#{generate(operator_as_var_ref, registry)}.call(#{generate(left, registry)}, #{generate(right, registry)})"
-
       in AST::FunctionCall(callee:, args:)
         args_code = generate_many(args, registry)
 
