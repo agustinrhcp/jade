@@ -38,9 +38,18 @@ module Jade
                 )
               end
 
+            final_substitution =
+              left_result.substitution.compose(right_result.substitution)
+
+            constraints =
+              final_substitution.apply(fn_type).constraints
+
+            # mutates the node
+            node.dictionaries.concat(constraints)
+
             Result[
               fn_type.return_type,
-              left_result.substitution.compose(right_result.substitution), 
+              final_substitution, 
               right_result.env,
               left_result.errors + right_result.errors,
             ]

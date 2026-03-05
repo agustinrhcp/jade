@@ -11,7 +11,7 @@ module Jade
                 .constraints
                 .select { it.type.name == var.name }
 
-              Type.constraint_var(var_gen.fresh, constraints, var.name)
+              var_gen.fresh(var.name).with(constraints:)
                 .then { subs.bind(var.id, it) }
             end
             .then { it.apply(scheme.type) }

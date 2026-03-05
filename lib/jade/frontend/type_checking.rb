@@ -28,7 +28,6 @@ module Jade
 
       Result = Data.define(:type, :substitution, :env, :errors) do
         def and_unify(actual, &block)
-          fail if actual.is_a?(Expected)
           case Unification.unify(type, actual, env)
           in Ok(sub)
             compose_substitution(sub)

@@ -135,7 +135,11 @@ module Jade
           end
 
         interface = registry.lookup(symbol.interface)
-        constraint = Type.constraint(symbol.interface, interface.type_param)
+        constraint = Type
+          .constraint(
+            symbol.interface,
+            from_symbol_r(interface.type_param, registry, var_gen, local_map).first,
+          )
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
           .then { |(t, _)| Type.function(args, t, [constraint]) }

@@ -977,12 +977,13 @@ module Jade
       it { is_expected.to have(1).item }
     end
 
-    describe 'pepe' do
-      include_context "single expression body"
+    describe 'eq constraint' do
+      subject { super().expressions.last}
 
       let(:text) do
         <<~JADE
           1 == 2
+          False == True
         JADE
       end
 

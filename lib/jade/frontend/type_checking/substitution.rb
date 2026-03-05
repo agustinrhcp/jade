@@ -8,10 +8,14 @@ module Jade
 
         def apply(type)
           case type
-          in Type::Function(args:, return_type:)
+          in Type::Constraint(type: constraint_type)
+            type.with(type: apply(constraint_type))
+
+          in Type::Function(args:, return_type:, constraints:)
             type
               .with(args: args.map { apply(it) })
               .with(return_type: apply(return_type) )
+              .with(constraints: constraints.map { apply(it) })
 
           in Type::Constructor
             type

@@ -29,7 +29,7 @@ module Jade
                 .then { desugar(it) }
 
             else
-              AST::FunctionCall[right, [left], node.range]
+              AST::FunctionCall[right, [left], [], node.range]
             end
               .then { desugar(it) }
 

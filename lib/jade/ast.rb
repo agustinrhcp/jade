@@ -42,10 +42,10 @@ module Jade
     define(:LambdaParam, :name)
 
     define(:Grouping, :expression)
-    define(:InfixApplication, :left, :operator, :right)
+    define(:InfixApplication, :left, :operator, :right, :dictionaries)
     define(:InfixOperator, :value)
 
-    define(:FunctionCall, :callee, :args)
+    define(:FunctionCall, :callee, :args, :dictionaries)
     define(:MemberAccess, :target, :name)
     define(:QualifiedAccess, :target, :name)
     define(:RecordAccess, :target, :name)
@@ -221,6 +221,7 @@ module Jade
           left,
           InfixOperator[token_op.value, token_op.range],
           right,
+          [],
           left.range.begin..right.range.end,
         ]
       end
@@ -231,6 +232,7 @@ module Jade
         FunctionCall[
           callee,
           args,
+          [],
           lparen.range.begin..rparen.range.end,
         ]
       end

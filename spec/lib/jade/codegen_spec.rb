@@ -295,9 +295,19 @@ module Jade
           JADE
         end
 
-
         it { is_expected.to eql "Jade::Runtime.intr('Basics.not').call(false)" }
       end
+    end
+
+    describe 'eq constraint' do
+      let(:text) do
+        <<~JADE
+          1 == 2
+          False == True
+        JADE
+      end
+
+      it { is_expected.to eql "Jade::Runtime.intr('Basics.int_eq').call(1, 2); Jade::Runtime.intr('Basics.bool_eq').call(false, true)" }
     end
   end
 end
