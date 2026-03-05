@@ -32,6 +32,18 @@ module Jade
                   .bind(type2.id, type2.add_constraints(type1.constraints))
                   .bind(type1.id, type2)
                   .then { Ok[it] }
+
+              in Type::Application(constructor:)
+                missing_constraints = type1
+                  .constraints
+                  .select do |c|
+                    env
+                      .implementations[
+                        [c.interface.qualified_name, constructor.name]
+                      ].nil?
+                  end
+                
+                return Err[UnificationError.new(type2, type2)] if missing_constraints.any?
               end
 
               Ok[Substitution.new.bind(type1.id, type2)]

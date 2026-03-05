@@ -61,9 +61,9 @@ module Jade
         end
       end
 
-      Env = Data.define(:entry_name, :bindings, :definitions, :var_gen) do
+      Env = Data.define(:entry_name, :bindings, :definitions, :implementations, :var_gen) do
         def self.empty(var_gen = VarGen.new)
-          Env[nil, {}, {}, var_gen]
+          Env[nil, {}, {}, {}, var_gen]
         end
 
         def fresh
@@ -75,6 +75,7 @@ module Jade
             .with(entry_name: entry.name)
             .load_bindings(entry, registry)
             .load_definitions(entry, registry)
+            .with(implementations: registry.implementations)
         end
 
         def bind(key, value)

@@ -11,6 +11,14 @@ module Jade
         Type.constructor('List.List').apply([inner])
       end
 
+      def eq_constraint
+        Type.constraint(Symbol.type_ref('Basics', 'Eq'), Type.var('a'))
+      end
+
+      def ord_constraint
+        Type.constraint(Symbol.type_ref('Basics', 'Ord'), Type.var('a'))
+      end
+
       def parse(annotation)
         Lexer
           .tokenize(Source.new(uri: nil, text: annotation))
