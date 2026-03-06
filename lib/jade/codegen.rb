@@ -1,6 +1,7 @@
 require 'jade/codegen/helpers'
 
 require 'jade/codegen/function_declaration'
+require 'jade/codegen/function_call'
 
 module Jade
   module Codegen
@@ -68,10 +69,11 @@ module Jade
       in AST::FunctionDeclarationParam(name:)
         name
 
-      in AST::FunctionCall(callee:, args:)
-        args_code = generate_many(args, registry)
+      in AST::FunctionCall
+        FunctionCall.generate(node, registry)
+        # args_code = generate_many(args, registry)
 
-        "#{generate(callee, registry)}.call(#{args_code})"
+        # "#{generate(callee, registry)}.call(#{args_code})"
 
       in AST::ConstructorReference(name:, symbol:)
         to_qualified(symbol.qualified_name) + ".method(:[])"

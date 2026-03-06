@@ -44,6 +44,9 @@ module Jade
                   end
                 
                 return Err[UnificationError.new(type2, type2)] if missing_constraints.any?
+
+              else
+                return Err[UnificationError.new(type2, type2)]
               end
 
               Ok[Substitution.new.bind(type1.id, type2)]

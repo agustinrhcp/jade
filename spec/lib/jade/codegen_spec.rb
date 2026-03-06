@@ -86,7 +86,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "def add; ->(a, b) { Jade::Runtime.intr('Basics.(+)').call(a, b) }; end; add.call(1, 2)" }
+      it { is_expected.to eql "def add; ->(a, b) { Jade::Runtime.intr('Basics.(+)').call(a, b) }; end; __Test__.add.call(1, 2)" }
     end
 
     context 'type def' do
@@ -299,7 +299,7 @@ module Jade
       end
     end
 
-    xdescribe 'eq constraint' do
+    describe 'eq constraint' do
       let(:text) do
         <<~JADE
           1 == 2

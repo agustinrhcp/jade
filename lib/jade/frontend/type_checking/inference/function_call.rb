@@ -39,6 +39,20 @@ module Jade
                   actual: e.actual,
                 )
               end
+              .tap(&add_dictionaries_to_node(node, callee_r.type))
+          end
+
+          private
+
+          def add_dictionaries_to_node(node, callee_type)
+            ->(result) do
+              result
+                .substitution
+                .apply(callee_type)
+                .constraints
+                # mutates the node
+                .then { node.dictionaries.concat(it) }
+            end
           end
         end
       end

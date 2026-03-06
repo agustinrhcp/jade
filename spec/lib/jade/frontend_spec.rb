@@ -989,5 +989,18 @@ module Jade
 
       it { is_expected.to be_a(AST::FunctionCall) }
     end
+
+    context 'without implementation' do
+      let(:text) do
+        <<~JADE
+          { salute: "Hola" } == { salute: "Hei" }
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Jade::Frontend::TypeChecking::Error::FunctionCallTypeMismatch) }
+    end
   end
 end
