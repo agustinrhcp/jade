@@ -1,6 +1,6 @@
 module Jade
   module Symbol
-    Interface = Data.define(:module_name, :name, :type_param, :functions, :decl_span) do
+    Interface = Data.define(:module_name, :name, :type_param, :functions, :default, :decl_span) do
       include Base
 
       def to_ref

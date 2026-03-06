@@ -308,6 +308,16 @@ module Jade
       end
 
       it { is_expected.to eql "Jade::Runtime.intr('Basics.int_eq').call(1, 2); Jade::Runtime.intr('Basics.bool_eq').call(false, true)" }
+
+      context 'using a defaulted function' do
+        let(:text) do
+          <<~JADE
+            1 != 2
+          JADE
+        end
+
+        it { is_expected.to eql "->(one, other) { Jade::Runtime.intr('Basics.not').call(Jade::Runtime.intr('Basics.int_eq').call(one, other)) }.call(1, 2)" }
+      end
     end
   end
 end

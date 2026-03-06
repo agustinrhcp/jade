@@ -918,5 +918,17 @@ module Jade
 
       it { is_expected.to be_a(AST::StructDeclaration) }
     end
+
+    describe 'not_eq' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          1 != 2
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::InfixApplication) }
+    end
   end
 end

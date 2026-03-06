@@ -71,9 +71,6 @@ module Jade
 
       in AST::FunctionCall
         FunctionCall.generate(node, registry)
-        # args_code = generate_many(args, registry)
-
-        # "#{generate(callee, registry)}.call(#{args_code})"
 
       in AST::ConstructorReference(name:, symbol:)
         to_qualified(symbol.qualified_name) + ".method(:[])"

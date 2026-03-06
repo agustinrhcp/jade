@@ -9,7 +9,20 @@ module Jade
       union :Float
       union :Bool
 
-      interface('Eq', 'a', { '(==)' => 'a, a -> Bool' })
+      interface(
+        'Eq',
+        'a',
+        {
+          '(==)' => 'a, a -> Bool',
+          '(!=)' => 'a, a -> Bool',
+         },
+         default: {
+           '(!=)' => default_implementation(
+             params: ['one', 'other'],
+             body: [:call, [:fn, 'Basics.not'], [[:call, [:impl, '(==)'], ['one', 'other']]]]
+           )
+         }
+       )
 
       implementation('Eq', 'Int', '(==)' => 'int_eq')
       implementation('Eq', 'Foat', '(==)' => 'float_eq')

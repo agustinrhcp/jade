@@ -11,6 +11,7 @@ require 'jade/symbol/interop_function'
 require 'jade/symbol/lambda'
 require 'jade/symbol/record_type'
 require 'jade/symbol/stdlib_function'
+require 'jade/symbol/stdlib_implementation'
 require 'jade/symbol/struct'
 require 'jade/symbol/type_application'
 require 'jade/symbol/type_param'
@@ -109,8 +110,8 @@ module Jade
       Struct[nil, name, type_params, nil, span]
     end
 
-    def interface(name, type_var, functions, span)
-      Interface[nil, name, type_var, functions, span]
+    def interface(name, type_var, functions, default, span)
+      Interface[nil, name, type_var, functions, default, span]
     end
 
     def interface_function(name, inteface, params, return_type, span)

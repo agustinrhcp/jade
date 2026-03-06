@@ -30,20 +30,29 @@ module Jade
           .tap { Runtime.register(qualified_fn_name, &block) }
       end
 
-      def interface(name, type_param, functions)
+      def interface(name, type_param, functions, default: {})
         functions
           .map { |k, v| Symbol.parse(v).then { to_interface_function(name, k, it) }.with(module_name:) }
-          .then { Symbol.interface(name, Symbol.parse(type_param), it, nil) }
+          .then { Symbol.interface(name, Symbol.parse(type_param), it, default, nil) }
           .with(module_name:)
           .then { store(it); it.functions.each { |fn| store(fn) } }
       end
 
-      def implementation(interface, type, functions)
+      def implementation(interface_name, type, functions)
+        interface = symbols
+          .find { it.is_a?(Symbol::Interface) && it.name == interface_name } ||
+          @imports
+            .first
+            .symbols
+            .find { it.is_a?(Symbol::Interface) && it.name == interface_name }
+
         Symbol
           .implementation(
-            interface_to_ref(interface),
+            interface.to_ref,
             Symbol.type_ref(module_name, type),
-            functions.transform_values { Symbol.value_ref(module_name, it) },
+            functions
+              .transform_values { Symbol.value_ref(module_name, it) }
+              .merge(interface.default),
             nil,
           )
           .then { store(it) }
@@ -80,6 +89,10 @@ module Jade
 
       def default_imports
         @default_imports || {}
+      end
+
+      def default_implementation(params:, body:)
+        Symbol::StdlibImplementation[params, body]
       end
 
       private
