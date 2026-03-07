@@ -9,6 +9,10 @@ module Jade
         def free_vars
           type.unbound_vars - quantified
         end
+
+        def self.mono(type)
+          new([], type, type.constraints)
+        end
       end
 
       module Generalization

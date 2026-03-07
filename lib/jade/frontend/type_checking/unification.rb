@@ -33,23 +33,12 @@ module Jade
                   .bind(type1.id, type2)
                   .then { Ok[it] }
 
-              in Type::Application(constructor:)
-                missing_constraints = type1
-                  .constraints
-                  .select do |c|
-                    env
-                      .implementations[
-                        [c.interface.qualified_name, constructor.name]
-                      ].nil?
-                  end
-                
-                return Err[UnificationError.new(type2, type2)] if missing_constraints.any?
+              in Type::Application | Type::Function
+                return resolve_constraints(type1, type2, env)
 
               else
-                return Err[UnificationError.new(type2, type2)]
+                return Err[UnificationError.new(type1, type2)]
               end
-
-              Ok[Substitution.new.bind(type1.id, type2)]
             end
 
             Ok[Substitution.new.bind(type1.id, type2)]
@@ -195,12 +184,38 @@ module Jade
             end
         end
 
-        class UnificationError
-          attr_reader :expected, :actual
+        def resolve_constraints(type1, type2, env)
+          type_name =
+            case type2
+            in Type::Application(constructor:, args: [])
+              constructor.name
+            in Type::Function
+              'Function'
+            end
 
-          def initialize(actual, expected)
+          missing_constraints = type1
+            .constraints
+            .select do |c|
+              env
+                .implementations[
+                  [c.interface.qualified_name, type_name]
+                ].nil?
+            end
+
+          if missing_constraints.any?
+            return Err[UnificationError.new(type2, type2, missing_constraints)]
+          end
+
+          Ok[Substitution.new.bind(type1.id, type2)]
+        end
+
+        class UnificationError
+          attr_reader :expected, :actual, :missing_constraints
+
+          def initialize(actual, expected, missing_constraints = [])
             @actual = actual
             @expected = expected
+            @missing_constraints = missing_constraints
           end
 
           def flip

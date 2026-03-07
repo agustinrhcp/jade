@@ -217,5 +217,18 @@ module Jade
         its(:mappings) { is_expected.to include('t1' => type2) }
       end
     end
+
+    describe 'unifying lambdas' do
+      let(:type1) { Type.parse "t1"}
+      let(:type2) { Type.parse "a, a -> Bool" }
+
+      it { is_expected.to be_ok }
+
+      describe 'the substitution' do
+        subject { super() => Ok(substitution); substitution }
+
+        its(:mappings) { is_expected.to include('t1' => type2) }
+      end
+    end
   end
 end

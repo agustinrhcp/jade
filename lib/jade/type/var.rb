@@ -4,7 +4,8 @@ module Jade
       include Base
 
       def to_s
-        name || id
+        (constraints.map(&:interface).map(&:name) + [name || id])
+          .join(' ')
       end
 
       def unbound_vars

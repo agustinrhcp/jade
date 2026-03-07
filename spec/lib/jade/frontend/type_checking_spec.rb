@@ -7,6 +7,8 @@ require 'jade/parsing'
 require 'jade/lexer'
 require 'jade/ast'
 
+using Jade::TypeFactory
+
 module Jade
   module Frontend
     describe TypeChecking do
@@ -487,6 +489,17 @@ module Jade
         end
       end
 
+      describe 'lambdas' do
+        let(:text) do
+          <<~JADE
+            (a, b) -> { a + b }
+          JADE
+        end
+
+        its(:type) { is_expected.to be_a(Type::Function) }
+        its(:type) { is_expected.to eql Type.parse('Int, Int -> Int')}
+      end
+
       describe'struct def and reference' do
         let(:text) do
           <<~JADE
@@ -594,6 +607,43 @@ module Jade
 
           its(:type) { is_expected.to eql Type.unit }
           its(:errors) { is_expected.to be_empty }
+        end
+
+        context 'unifying type var with function' do
+          let(:text) do
+            <<~JADE
+              def stuff(something: a) -> Bool
+                True
+              end
+
+              stuff((something) -> { something + 1 })
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.bool }
+          its(:errors) { is_expected.to be_empty }
+        end
+
+        context 'unifying constraint type var with function' do
+          let(:text) do
+            <<~JADE
+              def stuff(something: a, something_else: a) -> Bool
+                something == something_else
+              end
+
+              fn = (something) -> { something + 1 }
+              stuff(fn, fn)
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.bool }
+          its(:errors) { is_expected.to have(1).item }
+
+          describe 'the error' do
+            subject { super().errors.first }
+
+            its(:message) { is_expected.to include 'it returns Int but its signature says it should be a' }
+          end
         end
       end
     end
