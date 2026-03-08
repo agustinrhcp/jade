@@ -12,7 +12,7 @@ module Jade
             *first_expressions, last_expression = expressions
 
             first_expressions_result = first_expressions
-              .reduce(Result[Type.unit, Substitution.new, env, []]) do |acc, expr|
+              .reduce(Result.init(Type.unit, env)) do |acc, expr|
                 check(expr, registry, acc.env, Expected.non_auth(env.fresh))
                   .add_errors(acc.errors)
                   .compose_substitution(acc.substitution)

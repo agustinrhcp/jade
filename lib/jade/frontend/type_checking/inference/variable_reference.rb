@@ -16,7 +16,7 @@ module Jade
               env.bindings[symbol.qualified_name]
             end
               .then { instantiate(it, env.var_gen) }
-              .then { Result[it, Substitution.new, env, []] }
+              .then { |(type, constraints)| Result.init(type, env, constraints) }
           end
         end
       end

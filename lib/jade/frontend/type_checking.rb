@@ -26,12 +26,17 @@ module Jade
         end
       end
 
-      Result = Data.define(:type, :substitution, :env, :errors) do
+      Result = Data.define(:type, :constraints, :substitution, :env, :errors) do
+        def self.init(type, env, constraints = [])
+          new(type:, constraints:, env:, errors: [], substitution: Substitution.new)
+        end
+
         def and_unify(actual, &block)
           case Unification.unify(type, actual, env)
           in Ok(sub)
             compose_substitution(sub)
               .apply
+
           in Err(error)
             fail "block is mandatory" unless block
 

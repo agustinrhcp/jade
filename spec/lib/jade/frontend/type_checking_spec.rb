@@ -624,6 +624,20 @@ module Jade
           its(:errors) { is_expected.to be_empty }
         end
 
+        context 'typechecking a function that should have constraints' do
+          let(:text) do
+            <<~JADE
+              def stuff(something: a, something_else: a) -> Bool
+                something == something_else
+              end
+            JADE
+          end
+
+          it 'does the thing' do
+            subject
+          end
+        end
+
         context 'unifying constraint type var with function' do
           let(:text) do
             <<~JADE

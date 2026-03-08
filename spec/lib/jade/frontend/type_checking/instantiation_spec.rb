@@ -17,13 +17,14 @@ module Jade
                 constraints: [],
               )
 
-            fn = described_class.instantiate(scheme, VarGen.new)
+            fn, constraints = described_class.instantiate(scheme, VarGen.new)
 
             arg = fn.args.first
             ret = fn.return_type
 
             expect(arg).to eq ret
             expect(arg).to_not eql a
+            expect(constraints).to be_empty
           end
         end
       end

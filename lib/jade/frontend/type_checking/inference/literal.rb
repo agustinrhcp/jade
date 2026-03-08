@@ -10,7 +10,7 @@ module Jade
             node => AST::Literal(symbol:)
 
             type_from_symbol(symbol, registry, env.var_gen)
-              .then { Result[it, Substitution.new, env, []] }
+              .then { Result.init(it, env) }
           end
         end
       end

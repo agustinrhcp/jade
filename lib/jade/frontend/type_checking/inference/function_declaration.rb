@@ -9,13 +9,16 @@ module Jade
           def infer(node, registry, env, _)
             node => AST::FunctionDeclaration(symbol:, body:, params:)
 
-            fn_type = env.lookup(symbol.qualified_name).then { instantiate(it, env.var_gen) }
+            # TODO: Do something with constraints
+            fn_type, constraints = env
+              .lookup(symbol.qualified_name)
+              .then { instantiate(it, env.var_gen) }
 
             fn_type
               .args
               .zip(params)
               .reduce(env) do |body_env, (t, p)|
-                body_env.bind(p.name, Scheme[[], t, fn_type.constraints])
+                body_env.bind(p.name, Scheme[[], t, constraints])
               end
               .then { check(body, registry, it, Expected.auth(fn_type.return_type)) }
               .and_unify(fn_type.return_type.make_rigid) do |error|
