@@ -18,11 +18,7 @@ module Jade
     end
 
     def var(id, name = nil)
-      Var[id, name, [], false]
-    end
-
-    def constraint_var(id, constraints, name = nil)
-      Var[id, name, constraints, nil]
+      Var[id, name, false]
     end
 
     def unit

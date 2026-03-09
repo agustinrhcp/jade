@@ -1,6 +1,6 @@
 module Jade
   module Type
-    Var = Data.define(:id, :name, :constraints, :rigid) do
+    Var = Data.define(:id, :name, :rigid) do
       include Base
 
       def to_s
@@ -16,10 +16,6 @@ module Jade
         return false unless other.is_a?(Var)
 
         id == other.id
-      end
-
-      def add_constraints(more)
-        with(constraints: (constraints + more).uniq)
       end
 
       def make_rigid(rigid_val = true)

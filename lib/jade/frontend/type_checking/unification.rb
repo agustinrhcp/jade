@@ -24,23 +24,6 @@ module Jade
               return Err[UnificationError.new(type1, type2)]
             end
 
-            if type1.constraints.any?
-              case type2
-              in Type::Var
-                return Substitution
-                  .new
-                  .bind(type2.id, type2.add_constraints(type1.constraints))
-                  .bind(type1.id, type2)
-                  .then { Ok[it] }
-
-              in Type::Application | Type::Function
-                return resolve_constraints(type1, type2, env)
-
-              else
-                return Err[UnificationError.new(type1, type2)]
-              end
-            end
-
             Ok[Substitution.new.bind(type1.id, type2)]
 
           in [_, Type::Var]

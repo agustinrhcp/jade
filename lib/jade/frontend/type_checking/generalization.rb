@@ -11,7 +11,7 @@ module Jade
         end
 
         def self.mono(type)
-          new([], type, type.constraints)
+          new([], type, [])
         end
       end
 

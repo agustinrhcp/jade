@@ -21,20 +21,6 @@ module Jade
         its(:mappings) { is_expected.to include('t1' => Type.var('t2')) }
       end
 
-      context 'unifying variables with constraints' do
-        let(:type1) { Type.parse('t1').with(constraints: [Type.eq_constraint]) }
-        let(:type2) { Type.parse('t2').with(constraints: [Type.ord_constraint]) }
-
-        it { is_expected.to be_ok }
-
-        describe 'the substitution' do
-          subject { super() => Ok(substitution); substitution }
-
-          its(:mappings) { is_expected.to include('t1' => Type.var('t2')) }
-          its(:mappings) { is_expected.to include('t2' => Type.constraint_var('t2', ['Eq', 'Ord'])) }
-        end
-      end
-
       context 'unifying two rigid vars' do
         context 'same rigid var' do
           let(:type1) { Type.parse('t1').make_rigid }
@@ -81,27 +67,6 @@ module Jade
           subject { super() => Ok(substitution); substitution }
 
           its(:mappings) { is_expected.to include('t1' => Type.int) }
-        end
-      end
-
-      context 'when the variable has constraints' do
-        let(:type1) { Type.parse('t1').with(constraints: [Type.eq_constraint]) }
-
-        context 'when theres an implementation' do
-          let(:env) do
-            super().with(implementations: { ['Basics.Eq', 'Basics.Int'] => true })
-          end
-          it { is_expected.to be_ok }
-
-          describe 'the substitution' do
-            subject { super() => Ok(substitution); substitution }
-
-            its(:mappings) { is_expected.to include('t1' => Type.int) }
-          end
-        end
-
-        context 'when thers not implementation' do
-          it { is_expected.to be_error }
         end
       end
     end
