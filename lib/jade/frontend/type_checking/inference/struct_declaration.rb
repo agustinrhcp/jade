@@ -9,7 +9,7 @@ module Jade
           def infer(node, _, env, _)
             node => AST::StructDeclaration
 
-            Result[Type.unit, Substitution.new, env, []]
+            Result.init(Type.unit, env)
           end
         end
       end

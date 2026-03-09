@@ -14,8 +14,7 @@ module Jade
             first_expressions_result = first_expressions
               .reduce(Result.init(Type.unit, env)) do |acc, expr|
                 check(expr, registry, acc.env, Expected.non_auth(env.fresh))
-                  .add_errors(acc.errors)
-                  .compose_substitution(acc.substitution)
+                  .then { acc.merge(it) }
               end
 
             check(last_expression, registry, first_expressions_result.env, expected)

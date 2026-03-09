@@ -27,10 +27,10 @@ module Jade
               .reduce(first_result) do |acc, (branch, i)|
                 infer_branch(branch, registry, expression_result.env, expected, expression_result)
                   .and_unify(acc.type) do
-                    Error::CaseOfBranchesTypeMismatch.new(env.entry_name, branch.range, actual: it.actual, expected: it.expected, actual_index: i + 2)
+                    Error::CaseOfBranchesTypeMismatch
+                      .new(env.entry_name, branch.range, actual: it.actual, expected: it.expected, actual_index: i + 2)
                   end
-                  .compose_substitution(acc.substitution)
-                  .add_errors(acc.errors)
+                  .then { acc.merge(it) }
               end
               .with(type: first_result.type)
               .add_errors(PatternAnalysis::Exhaustiveness.assert(node, env, registry, expression_result.type))
@@ -51,19 +51,17 @@ module Jade
               end
 
             check(body, registry, pattern_result.env, expected)
-              .compose_substitution(pattern_result.substitution)
-              .add_errors(pattern_result.errors)
+              .then { pattern_result.merge(it) }
           end
 
           def infer_pattern(pattern, registry, env, expected)
             case pattern
             in AST::Pattern::Record(fields:, symbol:)
               fields_result = fields
-                .reduce(Result.new([], Substitution.new, env, [])) do |acc, field|
+                .reduce(Result.init([], env)) do |acc, field|
                   infer_pattern(field.pattern, registry, acc.env, Expected.non_auth(env.fresh))
                     .then { it.with(type: acc.type + [it.type]) }
-                    .compose_substitution(acc.substitution)
-                    .add_errors(acc.errors)
+                    .then { acc.merge(it) }
                 end
 
               fields
@@ -83,29 +81,26 @@ module Jade
                 end
 
             in AST::Pattern::Wildcard
-              Result[env.fresh, Substitution.new, env, []]
+              Result.init(env.fresh, env)
                 .and_unify(expected.type)
 
             in AST::Pattern::Binding(name:)
-              Result[
+              Result.init(
                 env.fresh,
-                Substitution.new,
                 env.bind(name, generalize(env, expected.type)),
-                [],
-              ].and_unify(expected.type)
+              ).and_unify(expected.type)
 
             in AST::Pattern::Constructor(symbol:, patterns:)
-              constructor_type = env.lookup(symbol.qualified_name)
+              constructor_type, constraints = env.lookup(symbol.qualified_name)
                 .then { instantiate(it, env.var_gen) }
 
               patterns_result = constructor_type
                 .args
                 .zip(patterns)
-                .reduce(Result.new([], Substitution.new, env, [])) do |acc, (inner_expected, pattern)|
+                .reduce(Result.init([], env, constraints)) do |acc, (inner_expected, pattern)|
                   infer_pattern(pattern, registry, acc.env, Expected.auth(inner_expected))
                     .then { it.with(type: acc.type + [it.type]) }
-                    .compose_substitution(acc.substitution)
-                    .add_errors(acc.errors)
+                    .then { acc.merge(it) }
                 end
 
               constructor_type

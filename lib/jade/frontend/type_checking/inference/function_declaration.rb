@@ -9,7 +9,6 @@ module Jade
           def infer(node, registry, env, _)
             node => AST::FunctionDeclaration(symbol:, body:, params:)
 
-            # TODO: Do something with constraints
             fn_type, constraints = env
               .lookup(symbol.qualified_name)
               .then { instantiate(it, env.var_gen) }

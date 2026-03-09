@@ -13,10 +13,11 @@ module Jade
 
             params
               .zip(params_types)
-              .reduce(env) { |body_env, (p, t)| body_env.bind(p.name, generalize(env, t)) }
+              .reduce(env) { |body_env, (p, t)| body_env.bind(p.name, Scheme.mono(t)) }
               .then { check(body, registry, it, Expected.non_auth(env.fresh)) }
               .then do |r|
-                Type.function(params_types, r.type)
+                Type
+                  .function(params_types, r.type)
                   .then { r.substitution.apply(it) }
                   .then { r.with(type: it) }
               end

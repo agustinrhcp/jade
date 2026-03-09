@@ -10,10 +10,9 @@ module Jade
             node => AST::RecordLiteral(fields:, symbol:)
 
             fields
-              .reduce(Result[{}, Substitution.new, env, []]) do |acc, field|
+              .reduce(Result.init({}, env)) do |acc, field|
                 check(field, registry, env, Expected.non_auth(env.fresh))
-                  .compose_substitution(acc.substitution)
-                  .add_errors(acc.errors)
+                  .then { acc.merge(it) }
                   .then { it.with(type: acc.type.merge(field.key => it.type)) }
               end
               .then { it.with(type: Type.anonymous_record(it.type, nil)) }

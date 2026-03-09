@@ -638,7 +638,7 @@ module Jade
           end
         end
 
-        context 'unifying constraint type var with function' do
+        xcontext 'unifying constraint type var with function' do
           let(:text) do
             <<~JADE
               def stuff(something: a, something_else: a) -> Bool

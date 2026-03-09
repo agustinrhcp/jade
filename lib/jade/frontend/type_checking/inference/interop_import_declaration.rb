@@ -7,7 +7,7 @@ module Jade
           extend self
 
           def infer(_, _, env, _)
-            Result[Type.unit, Substitution.new, env, []]
+            Result.init(Type.unit, env)
           end
         end
       end

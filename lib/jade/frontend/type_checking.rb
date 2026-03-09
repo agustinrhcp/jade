@@ -49,12 +49,24 @@ module Jade
           with(errors: errors + more_errors)
         end
 
+        def add_constraints(cons)
+          with(constraints: (constraints + cons).to_set.to_a)
+        end
+
         def compose_substitution(sub)
           with(substitution: substitution.compose(sub))
         end
 
         def apply
           with(type: substitution.apply(type))
+           .with(constraints: constraints.map { substitution.apply(it) })
+        end
+
+        def merge(other)
+          other
+            .add_errors(errors)
+            .add_constraints(constraints)
+            .compose_substitution(substitution)
         end
 
         def to_result
