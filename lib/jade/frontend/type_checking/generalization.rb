@@ -10,17 +10,20 @@ module Jade
           type.unbound_vars - quantified
         end
 
-        def self.mono(type)
-          new([], type, [])
+        def self.mono(type, constraints = [])
+          new([], type, constraints)
         end
       end
 
       module Generalization
         extend self
 
-        def generalize(env, type)
-          (type.unbound_vars - env.free_vars)
-            .then { Scheme[it, type, type.respond_to?(:constraints) ? type.constraints : []] }
+        def generalize(env, type, constraints = [])
+          (type.unbound_vars + constraints.flat_map(&:unbound_vars))
+            .to_set
+            .to_a
+            .then { it - env.free_vars }
+            .then { Scheme[it, type, constraints] }
         end
       end
     end

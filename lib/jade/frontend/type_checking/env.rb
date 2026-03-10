@@ -84,6 +84,11 @@ module Jade
             .then { with(bindings: it) }
         end
 
+        def bind!(key, value)
+          bindings
+            .merge!(key => value)
+        end
+
         def define(key, value)
           definitions
             .merge(key => value)
@@ -106,8 +111,7 @@ module Jade
           entry
             .values
             .reduce(self) do |env, (unq, sym)|
-              Type.from_symbol(sym, registry, env.var_gen)
-                .then { Inference::Helpers.generalize(env, it) }
+              scheme_from_symbol(sym, registry, env)
                 .then { env.bind(sym.qualified_name, it) }
             end
         end
@@ -119,6 +123,29 @@ module Jade
               Definition.from_symbol(sym, registry)
                 .then { env.define(sym.qualified_name, it) }
             end
+        end
+
+        def scheme_from_symbol(sym, registry, env)
+          var_gen = env.var_gen
+
+          case sym
+          in Symbol::ValueRef
+            registry
+              .lookup(sym)
+              .then { scheme_from_symbol(it, registry, env) }
+
+          in Symbol::InterfaceFunction | Symbol::StdlibFunction | Symbol::Variant | Symbol::InteropFunction
+            Type
+              .from_symbol(sym, registry, var_gen)
+              # TODO: Clean up
+              .then { Inference::Helpers.generalize(env, it, it.respond_to?(:constraints) ? it.constraints : []) }
+
+          in Symbol::Function
+            Type
+              .from_symbol(sym, registry, var_gen)
+              .then { Scheme.mono(it) }
+
+          end
         end
       end
     end

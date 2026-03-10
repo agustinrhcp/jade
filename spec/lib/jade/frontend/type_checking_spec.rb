@@ -620,6 +620,7 @@ module Jade
             JADE
           end
 
+          its(:constraints) { is_expected.to be_empty }
           its(:type) { is_expected.to eql Type.bool }
           its(:errors) { is_expected.to be_empty }
         end
@@ -635,6 +636,24 @@ module Jade
 
           it 'does the thing' do
             subject
+          end
+        end
+
+        context 'unifying constraint type var with function' do
+          let(:text) do
+            <<~JADE
+              42 == 10
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.bool }
+          its(:constraints) { is_expected.to_not be_empty }
+
+          describe 'the constraint' do
+            subject { super().constraints.first }
+
+            its(:type) { is_expected.to eql Type.parse('Int') }
+            its(:interface) { is_expected.to eql Symbol.type_ref('Basics', 'Eq') }
           end
         end
 

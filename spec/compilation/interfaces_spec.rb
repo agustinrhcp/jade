@@ -49,7 +49,7 @@ module Jade
 
       it 'fails, because functions cant be compared' do
         expect { test_compiler.require('interface_test', source) }
-          .to raise_error(RuntimeError, /it returns { name : String, age : Int } but its signature says it should be { name : String, age : Float }/)
+          .to raise_error(RuntimeError, /Cannot satisfy Basics.Eq constraint/)
       end
     end
   end
