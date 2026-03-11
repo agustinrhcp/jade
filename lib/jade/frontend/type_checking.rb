@@ -1,5 +1,6 @@
 require 'jade/frontend/type_checking/result'
 require 'jade/frontend/type_checking/env'
+require 'jade/frontend/type_checking/definition'
 require 'jade/frontend/type_checking/substitution'
 require 'jade/frontend/type_checking/unification'
 require 'jade/frontend/type_checking/generalization'
