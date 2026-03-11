@@ -11,8 +11,8 @@ module Jade
         Type.constructor('List.List').apply([inner])
       end
 
-      def eq_constraint
-        Type.constraint(Symbol.type_ref('Basics', 'Eq'), Type.var('a'))
+      def eq(type)
+        Type.constraint('Basics.Eq', type)
       end
 
       def ord_constraint

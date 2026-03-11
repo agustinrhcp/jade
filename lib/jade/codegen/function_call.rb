@@ -66,7 +66,7 @@ module Jade
       def constraint_to_dispatch(constraint, registry)
         case constraint.type
         in Type::Application(constructor: { name: })
-          [constraint.interface.qualified_name, name]
+          [constraint.interface, name]
             .then { registry.implementations[it] }
             .functions
         end

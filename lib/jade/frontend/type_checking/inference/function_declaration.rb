@@ -53,12 +53,12 @@ module Jade
                 implementation = case cons.type
                   in Type::Application(constructor:, args: [])
                     [
-                      cons.interface.qualified_name,
+                      cons.interface,
                       cons.type.constructor.name,
                     ]
                   else
                     [
-                      cons.interface.qualified_name,
+                      cons.interface,
                       cons.type.to_s,
                     ]
                   end

@@ -21,7 +21,20 @@ module Jade
             type
 
           in Type::Var(id:)
-            mappings[id] || type
+            mapping = mappings[id]
+
+            return type unless mapping
+
+            case mapping
+            in Type::Var(id: ^id)
+              mapping
+
+            in Type::Var
+              apply(mapping)
+
+            else
+              mapping
+            end
 
           in Type::Application(args:)
             type

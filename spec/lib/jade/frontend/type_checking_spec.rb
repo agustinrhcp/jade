@@ -653,7 +653,7 @@ module Jade
             subject { super().constraints.first }
 
             its(:type) { is_expected.to eql Type.parse('Int') }
-            its(:interface) { is_expected.to eql Symbol.type_ref('Basics', 'Eq') }
+            its(:interface) { is_expected.to eql 'Basics.Eq' }
           end
         end
 

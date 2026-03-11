@@ -9,7 +9,7 @@ module Jade
           end
 
           def message
-            "Cannot satisfy #{@constraint.interface.qualified_name} constraint"
+            "Cannot satisfy #{@constraint.interface} constraint"
           end
         end
       end
