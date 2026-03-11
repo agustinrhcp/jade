@@ -657,7 +657,7 @@ module Jade
           end
         end
 
-        xcontext 'unifying constraint type var with function' do
+        context 'unifying constraint type var with function' do
           let(:text) do
             <<~JADE
               def stuff(something: a, something_else: a) -> Bool
@@ -675,7 +675,7 @@ module Jade
           describe 'the error' do
             subject { super().errors.first }
 
-            its(:message) { is_expected.to include 'it returns Int but its signature says it should be a' }
+            its(:message) { is_expected.to include 'Cannot satisfy Basics.Eq constraint' }
           end
         end
       end

@@ -52,5 +52,55 @@ module Jade
           .to raise_error(RuntimeError, /Cannot satisfy Basics.Eq constraint/)
       end
     end
+
+    context 'constraint propagation' do
+      let(:source) do
+        <<~JADE
+          module InterfaceTest exposing (compare)
+
+          def compare(a: Int, b: Int) -> Bool
+            eq(a, b)
+          end
+
+          def eq(a: a, b: a) -> Bool
+            a == b
+          end
+
+        JADE
+      end
+
+      it 'propagates constraints through functions' do
+        test_compiler.require('interface_test', source)
+
+        expect(InterfaceTest.compare.call(1, 1)).to be true
+      end
+    end
+
+    context 'polymorphic equality' do
+      let(:source) do
+        <<~JADE
+          module InterfaceTest exposing (int_eq, bool_eq)
+
+          def poly_eq(a: a, b: a) -> Bool
+            a == b
+          end
+
+          def int_eq(a: Int, b: Int) -> Bool
+            poly_eq(a, b)
+          end
+
+          def bool_eq(a: Bool, b: Bool) -> Bool
+            poly_eq(a, b)
+          end
+        JADE
+      end
+
+      it 'works for ints and bools' do
+        test_compiler.require('interface_test', source)
+
+        expect(InterfaceTest.int_eq.call(1, 1)).to be true
+        expect(InterfaceTest.bool_eq.call(true, true)).to be true
+      end
+    end
   end
 end

@@ -37,6 +37,9 @@ module Jade
                   actual: e.actual,
                 )
               end
+              .then do |it|
+                it.add_errors(solve_constraints(it.constraints, registry, env))
+              end
               .tap(&add_dictionaries_to_node(node))
           end
 
