@@ -1,6 +1,23 @@
 module Jade
   module Frontend
     module TypeChecking
+      class EnvEntry
+        attr_accessor :type
+        attr_reader :signature
+
+        def initialize(type, signature)
+          @type = type
+          @signature = signature
+        end
+
+        def free_vars
+          Scheme.mono(type).free_vars
+        end
+
+        def quantified
+          Scheme.mono(type).quantified
+        end
+      end
 
       Env = Data.define(
         :entry_name,
@@ -14,8 +31,8 @@ module Jade
           Env[nil, {}, {}, {}, [], var_gen]
         end
 
-        def fresh
-          var_gen.fresh
+        def fresh(name = nil)
+          var_gen.fresh(name)
         end
 
         def self.load(entry, registry)
@@ -44,7 +61,15 @@ module Jade
         end
 
         def lookup(key)
-          bindings[key]
+          case bindings[key]
+          in EnvEntry => entry
+            entry
+              .type
+              .then { Scheme.mono(it) }
+          in Scheme => scheme
+            scheme
+          end
+            .then { Instantiation.instantiate(it, var_gen) }
         end
 
         def lookup_def(key)
@@ -55,12 +80,24 @@ module Jade
           bindings.values.flat_map(&:free_vars).to_set.to_a
         end
 
+        def add_constraints!(other_constraints)
+          constraints << other_constraints
+          self
+        end
+
         def load_bindings(entry, registry)
           entry
             .values
             .reduce(self) do |env, (unq, sym)|
-              scheme_from_symbol(sym, registry, env)
-                .then { env.bind(sym.qualified_name, it) }
+              if sym.module_name == entry.name && !sym.is_a?(Symbol::Variant) && !sym.is_a?(Symbol::Struct)
+                scheme_from_symbol(sym, registry, env)
+                  .then { EnvEntry.new(env.fresh, it) }
+                  .then { env.bind(sym.qualified_name, it) }
+                
+              else
+                scheme_from_symbol(sym, registry, env)
+                  .then { env.bind(sym.qualified_name, it) }
+              end
             end
         end
 

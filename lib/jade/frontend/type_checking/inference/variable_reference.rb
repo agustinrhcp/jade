@@ -11,11 +11,10 @@ module Jade
         
             case symbol
             in Symbol::Variable
-              env.bindings[symbol.name]
+              env.lookup(symbol.name)
             else
-              env.bindings[symbol.qualified_name]
+              env.lookup(symbol.qualified_name)
             end
-              .then { instantiate(it, env.var_gen) }
               .then { |(type, cons)| Result.init(type, env, cons) }
           end
         end

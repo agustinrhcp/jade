@@ -18,7 +18,7 @@ module Jade
                   .then { acc.merge(it) }
               end
               # TODO: What if callee_r type is not a function!??
-              .then { it.with(type: Type.function(it.type, callee_r.type.return_type)) }
+              .then { it.with(type: Type.function(it.type, env.fresh)) }
               .then { callee_r.merge(it) }
               .and_unify(callee_r.type) do |e|
                 Error::FunctionCallTypeMismatch.new(

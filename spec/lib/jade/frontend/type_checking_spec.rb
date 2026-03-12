@@ -60,15 +60,20 @@ module Jade
         context 'it binds the function to the env' do
           subject { super().env }
 
-          its(:bindings) do
-            is_expected.to have_key('__Test__.add')
-            is_expected.to include(
-              '__Test__.add' => TypeChecking::Scheme[
-                [],
-                Type.function([Type.int, Type.int], Type.int),
-                [],
-              ]
-            )
+          its(:bindings) { is_expected.to have_key('__Test__.add') }
+
+          describe 'the declared function binding' do
+            subject { super().bindings['__Test__.add'] }
+
+            it { is_expected.to be_a(TypeChecking::EnvEntry) }
+
+            its(:signature) do
+              is_expected.to be_a(TypeChecking::Scheme)
+                .and have_attributes(
+                  quantified: [],
+                  type: Type.function([Type.int, Type.int], Type.int)
+                )
+            end
           end
         end
 
@@ -84,6 +89,14 @@ module Jade
 
           its(:type) { is_expected.to eql Type.unit }
           its(:errors) { is_expected.to be_empty }
+
+          it 'updates the env entry' do
+            subject => { env: }
+            expect(env.bindings).to have_key('__Test__.add')
+            expect(env.bindings['__Test__.add'])
+              .to be_a(TypeChecking::EnvEntry)
+              .and have_attributes(type: Type.parse('Int, Int -> Int'))
+          end
         end
 
         context 'when type return type and the body types mismatch' do

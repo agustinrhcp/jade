@@ -10,8 +10,7 @@ module Jade
             node => AST::ConstructorReference(symbol:)
 
             env
-              .bindings[symbol.qualified_name]
-              .then { instantiate(it, env.var_gen) }
+              .lookup(symbol.qualified_name)
               .then { |(type, cons)| Result.init(type, env, cons) }
               .and_unify(expected.type)
           end

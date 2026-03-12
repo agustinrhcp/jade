@@ -92,7 +92,6 @@ module Jade
 
             in AST::Pattern::Constructor(symbol:, patterns:)
               constructor_type, constraints = env.lookup(symbol.qualified_name)
-                .then { instantiate(it, env.var_gen) }
 
               patterns_result = constructor_type
                 .args

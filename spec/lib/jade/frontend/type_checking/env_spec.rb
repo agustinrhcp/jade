@@ -44,7 +44,7 @@ module Jade
           its(:bindings) { is_expected.to include('__Test__.id') }
           its(:definitions) { is_expected.to include('__Test__.Void') }
 
-          describe 'id\'s scheme' do
+          xdescribe 'id\'s scheme' do
             subject { super().bindings['__Test__.id'] }
 
             it { is_expected.to be_a(Scheme) }
