@@ -12,7 +12,7 @@ module Jade
       end
 
       def eq(type)
-        Type.constraint('Basics.Eq', type)
+        Type.constraint('Basics.Eq', type, nil)
       end
 
       def ord_constraint

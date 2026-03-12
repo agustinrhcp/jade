@@ -5,6 +5,10 @@ module Jade
         module Helpers
           extend self
 
+          def with_span(node, constraints)
+            constraints.map { it.with(span: node.range) }
+          end
+
           def unify(actual, expected)
             Unification.unify(actual, expected)
           end

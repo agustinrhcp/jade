@@ -81,7 +81,7 @@ module Jade
         end
 
         def add_constraints!(other_constraints)
-          constraints << other_constraints
+          constraints.concat(other_constraints)
           self
         end
 

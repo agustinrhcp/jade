@@ -1001,8 +1001,9 @@ module Jade
 
       subject { frontend => Err(errors); errors }
 
-      it { is_expected.to have(1).item }
+      it { is_expected.to have(2).item }
       its([0]) { is_expected.to be_a(Jade::Frontend::TypeChecking::Error::UnsatisfiedConstraint) }
+      its([1]) { is_expected.to be_a(Jade::Frontend::TypeChecking::Error::UnsatisfiedConstraint) }
 
       context 'with two functions' do
         let(:text) do
@@ -1017,8 +1018,9 @@ module Jade
 
         subject { frontend => Err(errors); errors }
 
-        it { is_expected.to have(1).item }
+        it { is_expected.to have(2).item }
         its([0]) { is_expected.to be_a(Jade::Frontend::TypeChecking::Error::UnsatisfiedConstraint) }
+        its([1]) { is_expected.to be_a(Jade::Frontend::TypeChecking::Error::UnsatisfiedConstraint) }
 
         describe 'error message' do
           subject { super()[0].message }

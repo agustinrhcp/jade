@@ -6,6 +6,7 @@ require 'jade/frontend/type_checking/unification'
 require 'jade/frontend/type_checking/generalization'
 require 'jade/frontend/type_checking/instantiation'
 require 'jade/frontend/type_checking/inference'
+require 'jade/frontend/type_checking/constraint_solver'
 require 'jade/frontend/type_checking/error'
 
 module Jade
@@ -32,6 +33,7 @@ module Jade
         Env
           .load(entry, registry)
           .then { check_node(entry.ast, registry, it, Expected.non_auth(it.fresh)) }
+          .then { solve_constraints(it, registry) }
           .to_result
           .map { entry }
       end
@@ -70,6 +72,12 @@ module Jade
       end
 
       private
+
+      def solve_constraints(result, registry)
+        result => { env: }
+        ConstraintSolver.solve_all(env, registry) => { errors: }
+        result.add_errors(errors)
+      end
 
       class VarGen
         def initialize

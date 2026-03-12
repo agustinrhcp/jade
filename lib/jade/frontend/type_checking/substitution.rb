@@ -6,6 +6,10 @@ module Jade
           super
         end
 
+        def empty?
+          mappings.empty?
+        end
+
         def apply(type)
           case type
           in Type::Constraint(type: constraint_type)

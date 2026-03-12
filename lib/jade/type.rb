@@ -61,8 +61,8 @@ module Jade
       AnonymousRecord[fields, row_var]
     end
 
-    def constraint(interface_id, type)
-      Constraint[interface_id, type]
+    def constraint(interface_id, type, span)
+      Constraint[interface_id, type, span]
     end
 
     private
@@ -135,6 +135,7 @@ module Jade
           .constraint(
             symbol.interface.qualified_name,
             from_symbol_r(interface.type_param, registry, var_gen, local_map).first,
+            nil,
           )
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)

@@ -11,7 +11,7 @@ module Jade
 
             env
               .lookup(symbol.qualified_name)
-              .then { |(type, cons)| Result.init(type, env, cons) }
+              .then { |(type, cons)| Result.init(type, env, with_span(node, cons)) }
               .and_unify(expected.type)
           end
         end
