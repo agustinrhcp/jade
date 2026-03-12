@@ -2,6 +2,8 @@ require 'spec_helper'
 
 require 'jade'
 
+using Jade::TypeFactory
+
 module Jade
   module Frontend
     module TypeChecking

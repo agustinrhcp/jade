@@ -20,7 +20,6 @@ module Jade
 
         in AST::InfixApplication(left:, right:, operator:)
           case operator
-
           in AST::InfixOperator(value: '|>')
             case right
             in AST::FunctionCall(args:)
@@ -29,14 +28,19 @@ module Jade
                 .then { desugar(it) }
 
             else
-              AST::FunctionCall[right, [left], node.range]
+              AST::FunctionCall[right, [left], true, nil, node.range]
+
             end
               .then { desugar(it) }
 
           else
-            node
-              .with(right: desugar(right))
-              .with(left: desugar(left))
+            AST::FunctionCall[
+              AST::VariableReference["(#{operator.value})", operator.range],
+              [desugar(left), desugar(right)],
+              operator,
+              nil,
+              node.range
+            ]
           end
 
         in AST::FunctionCall(callee:, args:)

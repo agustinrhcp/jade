@@ -6,26 +6,29 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, expected)
+          def infer(node, registry, state, expected)
             node => AST::RecordUpdate(base:, fields:)
 
-            check(base, registry, env, Expected.non_auth(env.fresh)) => {
-              type: base_type, errors: base_errors,
-            }
+            base_state, base_result = check(base, registry, state, Expected.non_auth(state.fresh))
 
-            fields
-              .reduce(Result[{}, Substitution.new, env, []]) do |acc, field|
-                check(field, registry, env, Expected.non_auth(env.fresh))
-                  .compose_substitution(acc.substitution)
-                  .add_errors(acc.errors)
-                  .then { it.with(type: acc.type.merge(field.key => it.type)) }
+            fields_state, fields_types = fields
+              .reduce([base_state, {}]) do |(state_acc, types_acc), field|
+                new_state, result = check(field, registry, state_acc, Expected.non_auth(state_acc.fresh))
+                [new_state, types_acc.merge(field.key => result.type)]
               end
-              .then { it.with(type: Type.anonymous_record(it.type, env.fresh)) }
-              .add_errors(base_errors)
-              .and_unify(base_type) do
-                RecordAccessTypeMismatchError.new(node, it.actual, it.expected)
-              end
-              .and_unify(expected.type)
+
+            update_record = Type.anonymous_record(fields_types, fields_state.fresh)
+
+            after_state, result = fields_state.unify_result(base_result, update_record) do
+              Error::RecordAccessTypeMismatch.new(
+                state.env.entry_name,
+                node.range,
+                expected: it.expected,
+                actual: it.actual,
+              )
+            end
+
+            after_state.unify_result(result, expected.type)
           end
         end
       end

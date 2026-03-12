@@ -3,9 +3,11 @@ require 'spec_helper'
 require 'jade/symbol'
 require 'jade/type'
 require 'jade/frontend'
-require 'jade/parser'
+require 'jade/parsing'
 require 'jade/lexer'
 require 'jade/ast'
+
+using Jade::TypeFactory
 
 module Jade
   module Frontend
@@ -17,16 +19,22 @@ module Jade
       let(:type_check) do
         Lexer
           .tokenize(source)
-          .then { Parser.parse(it) }
+          .then { Parsing.parse(it) }
           .and_then { Frontend.run_up_to_semantic_analysis(it) }
           # TODO: Make this prettier
           .and_then do |entry, registry|
             env = TypeChecking::Env.load(entry, registry)
-            TypeChecking.check_node(
+            state = TypeChecking::State.init(env)
+            check_state, result = TypeChecking.check_node(
               entry.ast,
               registry,
-              env,
-              TypeChecking::Expected.non_auth(env.fresh),
+              state,
+              TypeChecking::Expected.non_auth(state.fresh),
+            )
+            Data.define(:type, :errors, :env).new(
+              type: result.type,
+              errors: check_state.errors,
+              env: check_state.env,
             )
           end
       end
@@ -172,7 +180,8 @@ module Jade
 
           describe 'the error' do
             subject { super().errors.first }
-            it { is_expected.to be_a(TypeChecking::Error::InfixApplicationTypeMismatch) }
+
+            it { is_expected.to be_a(TypeChecking::Error::FunctionCallTypeMismatch) }
             its(:message) { is_expected.to include('Right side of (*) expects Int but found String') }
           end
         end
@@ -209,6 +218,17 @@ module Jade
             it { is_expected.to be_a(TypeChecking::Error::FunctionCallTypeMismatch) }
             its(:message) { is_expected.to include('Function call mismatch, expected (Int, Int) -> Int but found (Int, String) -> Int') }
           end
+        end
+      end
+
+      context 'a function call' do
+        let(:text) do
+          <<~JADE
+            def add(a: Int, b: Int) -> Int
+              a + b
+            end
+            add(1, "Hello")
+          JADE
         end
       end
 
@@ -479,6 +499,44 @@ module Jade
 
           its(:errors) { is_expected.to be_empty  }
         end
+
+        describe 'calling identity function' do
+          let(:text) do
+            <<~JADE
+              def f(x: a) -> a
+                x
+              end
+
+              f(1)
+              f("one")
+            JADE
+          end
+
+          its(:errors) { is_expected.to be_empty  }
+        end
+
+        describe 'loop function' do
+          let(:text) do
+            <<~JADE
+              def f(x: a) -> b
+                f(x)
+              end
+            JADE
+          end
+
+          its(:errors, 'this function never returns so typechecks with bananas') { is_expected.to be_empty  }
+        end
+      end
+
+      describe 'lambdas' do
+        let(:text) do
+          <<~JADE
+            (a, b) -> { a + b }
+          JADE
+        end
+
+        its(:type) { is_expected.to be_a(Type::Function) }
+        its(:type) { is_expected.to eql Type.parse('Int, Int -> Int')}
       end
 
       describe'struct def and reference' do

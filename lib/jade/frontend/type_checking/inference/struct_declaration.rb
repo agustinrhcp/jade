@@ -6,10 +6,10 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, _, env, _)
+          def infer(node, _, state, _)
             node => AST::StructDeclaration
 
-            Result[Type.unit, Substitution.new, env, []]
+            [state, Result.init(Type.unit)]
           end
         end
       end

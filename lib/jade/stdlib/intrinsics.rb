@@ -4,8 +4,9 @@ require 'jade/symbol'
 module Jade
   module Stdlib
     module Intrinsics
-      def generate_entry(_)
-        entry
+      def generate_entry(registry)
+        @entry = entry
+          .then { load_env(it, registry) }
       end
 
       def union(name, *type_params)
@@ -21,8 +22,8 @@ module Jade
         Symbol
           .stdlib_function(
             name.to_s,
-            params.transform_values { string_to_ref(it) },
-            string_to_ref(ret),
+            params.transform_values { Symbol.parse(it) },
+            Symbol.parse(ret),
             "Jade::Runtime.intr('#{qualified_fn_name}')",
           )
           .with(module_name:)
@@ -35,7 +36,7 @@ module Jade
       end
 
       def entry
-        symbols
+        @entry || symbols
           .reduce(Registry.entry(module_name)) do |acc, sym|
             acc.define(sym)
           end
@@ -83,29 +84,14 @@ module Jade
         @symbols.concat << symbol
       end
 
-      def string_to_ref(str)
-        case str
-        in 'Int' then Symbol::TypeRef['Basics', 'Int']
-        in 'Float' then Symbol::TypeRef['Basics', 'Float']
-        in 'Bool' then Symbol::TypeRef['Basics', 'Bool']
-        in 'String' then Symbol::TypeRef['String', 'String']
-
-      # TODO: don't hardcode thaaat much
-        in 'a' then Symbol.var('a', nil)
-        in 'b' then Symbol.var('b', nil)
-        in 'a -> b' then Symbol.function_type([Symbol.var('a', nil)], Symbol.var('b', nil))
-        in 'a -> Bool' then Symbol.function_type([Symbol.var('a', nil)], string_to_ref('Bool'))
-        in 'Maybe(Int)' then Symbol.type_ref('Maybe', 'Maybe')
-        in 'List(a)' then Symbol.type_ref('List', 'List') 
-        in 'List(b)' then Symbol.type_ref('List', 'List') 
-        in 'List(String)' then Symbol.type_ref('List', 'List') 
-        in 'Int, a -> b' then Symbol.function_type([string_to_ref('Int'), string_to_ref('a')], string_to_ref('b'))
-        in 'b, a -> b' then Symbol.function_type([string_to_ref('b'), string_to_ref('a')], string_to_ref('b'))
-        end
-      end
-
       def module_name
         "#{self.name.split('::').last}"
+      end
+
+      def load_env(entry, registry)
+        Frontend::TypeChecking::Env
+          .load(entry, registry.add_module(entry))
+          .then { entry.with(env: it) }
       end
     end
   end

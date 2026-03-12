@@ -45,6 +45,18 @@ module Jade
         'Bool',
       ) { not it }
 
+      function(
+        '(==)',
+        { a: 'Int', b: 'Int' },
+        'Bool',
+      ) { |a, b| a == b }
+
+      function(
+        '(<=)',
+        { a: 'Int', b: 'Int' },
+        'Bool',
+      ) { |a, b| a <= b }
+
       default_importing :*
     end
   end

@@ -6,39 +6,45 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, expected)
+          def infer(node, registry, state, expected)
             node => AST::FunctionCall(callee:, args:)
 
-            callee_r = check(callee, registry, env, Expected.non_auth(env.fresh))
+            callee_state, callee_result = check(callee, registry, state, Expected.non_auth(state.fresh))
 
-            args
-              .reduce(Result.new([], Substitution.new, env, [])) do |acc, arg|
-                check(arg, registry, acc.env, Expected.non_auth(env.fresh))
-                  .then { it.with(type: acc.type + [it.type]) }
-                  .compose_substitution(acc.substitution)
-                  .add_errors(acc.errors)
+            args_state, args_acc = args
+              .reduce([callee_state, Result.accumulator]) do |(state_acc, acc), arg|
+                new_state, result = check(arg, registry, state_acc, Expected.non_auth(state_acc.fresh))
+                [new_state, acc.add(result)]
               end
-              # TODO: What if callee_r type is not a function!??
-              .then { it.with(type: Type.function(it.type, callee_r.type.return_type)) }
-              .add_errors(callee_r.errors)
-              .compose_substitution(callee_r.substitution)
-              .and_unify(callee_r.type) do |e|
-                Error::FunctionCallTypeMismatch.new(
-                  env.entry_name,
-                  node.range,
-                  expected: e.expected,
-                  actual: e.actual,
-                )
-              end
-              .then { it.with(type: it.type.return_type) }
-              .and_unify(expected.type) do |e|
-                Error::FunctionCallTypeMismatch.new(
-                  env.entry_name,
-                  node.range,
-                  expected: e.expected,
-                  actual: e.actual,
-                )
-              end
+
+            return_type = args_state.fresh
+            fn_type = Type.function(args_acc.types, return_type)
+
+            after_callee_state, _fn_result = args_state.unify_result(
+              Result.init(fn_type),
+              callee_result.type,
+              &type_error(state, node)
+            )
+
+            after_callee_state.unify_result(
+              callee_result.map(&:return_type),
+              expected.type,
+              &type_error(state, node)
+            )
+          end
+
+          private
+
+          def type_error(state, node)
+            ->(e) do
+              Error::FunctionCallTypeMismatch.new(
+                state.env.entry_name,
+                node.range,
+                expected: e.expected,
+                actual: e.actual,
+                infix: node.infix,
+              )
+            end
           end
         end
       end

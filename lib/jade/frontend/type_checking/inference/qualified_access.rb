@@ -6,11 +6,12 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, _)
+          def infer(node, registry, state, expected)
             node => AST::QualifiedAccess(symbol:)
 
-            type_from_symbol(symbol, registry, env.var_gen)
-              .then { Result[it, Substitution.new, env, []] }
+            state.env.lookup(symbol.qualified_name)
+              .then { Result.init(it) }
+              .then { state.unify_result(it, expected.type) }
           end
         end
       end

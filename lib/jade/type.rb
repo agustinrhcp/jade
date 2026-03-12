@@ -1,11 +1,11 @@
 require 'jade/type/base'
 
-require 'jade/type/var'
+require 'jade/type/anonymous_record'
+require 'jade/type/application'
 require 'jade/type/constructor'
 require 'jade/type/function'
-require 'jade/type/application'
 require 'jade/type/unit'
-require 'jade/type/anonymous_record'
+require 'jade/type/var'
 
 module Jade
   module Type
@@ -58,6 +58,10 @@ module Jade
 
     def anonymous_record(fields, row_var)
       AnonymousRecord[fields, row_var]
+    end
+
+    def constraint(interface_id, type, span)
+      Constraint[interface_id, type, span]
     end
 
     private
@@ -116,9 +120,30 @@ module Jade
           .then { |(t, _)| Type.function(args, t) }
           .then { [it, var_map] }
 
-      in Symbol::Variant
+      in Symbol::InterfaceFunction
+        # Same as function and stdlib but without keyed params.
+        args, local_map = symbol
+          .params
+          .reduce([[], {}]) do |(types, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, new_map)| [types + [t], new_map] }
+          end
+
+        interface = registry.lookup(symbol.interface)
+        constraint = Type
+          .constraint(
+            symbol.interface.qualified_name,
+            from_symbol_r(interface.type_param, registry, var_gen, local_map).first,
+            nil,
+          )
+
+        from_symbol_r(symbol.return_type, registry, var_gen, local_map)
+          .then { |(t, _)| Type.function(args, t, [constraint]) }
+          .then { [it, var_map] }
+
+      in Symbol::Constructor
         union_type, union_vars =
-          from_symbol_r(symbol.union, registry, var_gen, var_map)
+          from_symbol_r(symbol.parent, registry, var_gen, var_map)
 
         args, args_map = symbol
           .args

@@ -18,17 +18,7 @@ module Jade
     end
 
     def self.entry(name)
-      Entry.new(
-        name:,
-        defined_values: {},
-        defined_types: {},
-        imports: Set[],
-        exposes: Set[],
-        ast: nil,
-        source: nil,
-        generated: nil,
-        entry: false,
-      )
+      Entry.empty(name)
     end
 
     def modules_in_topo_order

@@ -6,11 +6,11 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, _)
+          def infer(node, registry, state, _)
             node => AST::Literal(symbol:)
 
-            type_from_symbol(symbol, registry, env.var_gen)
-              .then { Result[it, Substitution.new, env, []] }
+            type_from_symbol(symbol, registry, state.env.var_gen)
+              .then { [state, Result.init(it)] }
           end
         end
       end

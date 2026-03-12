@@ -6,17 +6,16 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, expected)
+          def infer(node, registry, state, expected)
             node => AST::RecordLiteral(fields:, symbol:)
 
-            fields
-              .reduce(Result[{}, Substitution.new, env, []]) do |acc, field|
-                check(field, registry, env, Expected.non_auth(env.fresh))
-                  .compose_substitution(acc.substitution)
-                  .add_errors(acc.errors)
-                  .then { it.with(type: acc.type.merge(field.key => it.type)) }
+            fields_state, fields_types = fields
+              .reduce([state, {}]) do |(state_acc, types_acc), field|
+                new_state, result = check(field, registry, state_acc, Expected.non_auth(state_acc.fresh))
+                [new_state, types_acc.merge(field.key => result.type)]
               end
-              .then { it.with(type: Type.anonymous_record(it.type, nil)) }
+
+            [fields_state, Result.init(Type.anonymous_record(fields_types, nil))]
           end
         end
       end

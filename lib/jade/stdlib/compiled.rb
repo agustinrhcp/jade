@@ -8,18 +8,20 @@ module Jade
 
         source
           .then { Lexer.tokenize(it) }
-          .then { Parser.parse(it) } => Ok(ast)
+          .then { Parsing.parse(it) } => Ok(ast)
 
-        @entry = Registry
+        Registry
           .entry(source.to_module_name)
           .with(ast:)
           .with(source:)
           .then { resolve_imports(it) }
           .then do
-            Frontend::ForwardDeclaration
-              .declare_entry(it, registry) => Ok(declared)
-            declared
-          end
+            Frontend
+              .run_entry(it, registry.add_module(it))
+              .map { Codegen.generate_entry(it, registry) }
+          end => Ok(entry)
+
+          @entry = entry
       end
 
       def entry

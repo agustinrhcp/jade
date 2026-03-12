@@ -6,21 +6,18 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, expected)
+          def infer(node, registry, state, expected)
             node => AST::Body(expressions:)
 
             *first_expressions, last_expression = expressions
 
-            first_expressions_result = first_expressions
-              .reduce(Result[Type.unit, Substitution.new, env, []]) do |acc, expr|
-                check(expr, registry, acc.env, Expected.non_auth(env.fresh))
-                  .add_errors(acc.errors)
-                  .compose_substitution(acc.substitution)
+            first_expressions_state = first_expressions
+              .reduce(state) do |acc, expr|
+                new_state, _ = check(expr, registry, acc, Expected.non_auth(state.fresh))
+                new_state
               end
 
-            check(last_expression, registry, first_expressions_result.env, expected)
-              .compose_substitution(first_expressions_result.substitution)
-              .add_errors(first_expressions_result.errors)
+            check(last_expression, registry, first_expressions_state, expected)
           end
         end
       end

@@ -47,7 +47,7 @@ module Jade
             registry.lookup(symbol)
               .then { collect_vars(it, registry) }
 
-          in Symbol::Variant(args:)
+          in Symbol::Constructor(args:)
             args.flat_map { collect_vars(it, registry) }
 
           in Symbol::Variable

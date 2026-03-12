@@ -6,17 +6,16 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, _)
+          def infer(node, registry, state, _)
             node => AST::VariableReference(symbol:)
         
             case symbol
             in Symbol::Variable
-              env.bindings[symbol.name]
+              state.env.lookup(symbol.name)
             else
-              env.bindings[symbol.qualified_name]
+              state.env.lookup(symbol.qualified_name)
             end
-              .then { instantiate(it, env.var_gen) }
-              .then { Result[it, Substitution.new, env, []] }
+              .then { [state, Result.init(it)] }
           end
         end
       end

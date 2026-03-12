@@ -6,8 +6,10 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(_, _, env, _)
-            Result[Type.unit, Substitution.new, env, []]
+          def infer(node, _, state, _)
+            node => AST::InteropImportDeclaration
+
+            [state, Result.init(Type.unit)]
           end
         end
       end

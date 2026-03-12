@@ -30,7 +30,7 @@ module Jade
             registry.lookup(symbol)
               .then { collect_vars(it, registry) }
 
-          in Symbol::Variant(args:)
+          in Symbol::Constructor(args:)
             args.flat_map { collect_vars(it, registry) }
 
           in Symbol::Variable
@@ -50,7 +50,7 @@ module Jade
             variants.flat_map { validate_type_symbol(it, registry) } +
               type_params.flat_map { validate_type_symbol(it, registry) }
 
-          in Symbol::Variant(args:)
+          in Symbol::Constructor(args:)
             args.flat_map { validate_type_symbol(it, registry) }
 
           in Symbol::TypeRef

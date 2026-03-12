@@ -6,22 +6,23 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, expected)
+          def infer(node, registry, state, expected)
             node => AST::Lambda(body:, params:)
 
-            params_types = params.map { env.fresh }
+            params_types = params.map { state.fresh }
 
-            params
+            params_state = params
               .zip(params_types)
-              .reduce(env) { |body_env, (p, t)| body_env.bind(p.name, generalize(env, t)) }
-              .then { check(body, registry, it, Expected.non_auth(env.fresh)) }
-              .then do |r|
-                Type.function(params_types, r.type)
-                  .then { r.substitution.apply(it) }
-                  .then { r.with(type: it) }
-              end
-              .then { it.with(env:) }
-              .and_unify(expected.type)
+              .reduce(state) { |acc, (p, t)| acc.bind(p.name, Scheme.mono(t)) }
+
+            body_state, body_result = check(
+              body, registry, params_state, Expected.non_auth(params_state.fresh),
+            )
+
+            fn_type = Type.function(params_types, body_result.type)
+            result = Result.init(fn_type).apply(body_state.env.substitution)
+
+            body_state.unify_result(result, expected.type)
           end
         end
       end

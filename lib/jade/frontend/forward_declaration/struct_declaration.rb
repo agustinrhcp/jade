@@ -22,10 +22,11 @@ module Jade
 
           record_type_symbol = figure_out_type(entry, record_type)
 
-          constructor_fn_symbol = Symbol.function(
+          constructor_fn_symbol = Symbol.constructor(
             name,
-            record_type_symbol.fields,
+            record_type_symbol.fields.values,
             symbol.to_ref,
+            nil,
           )
 
           record_type_symbol
