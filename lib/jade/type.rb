@@ -141,9 +141,9 @@ module Jade
           .then { |(t, _)| Type.function(args, t, [constraint]) }
           .then { [it, var_map] }
 
-      in Symbol::Variant
+      in Symbol::Constructor
         union_type, union_vars =
-          from_symbol_r(symbol.union, registry, var_gen, var_map)
+          from_symbol_r(symbol.parent, registry, var_gen, var_map)
 
         args, args_map = symbol
           .args

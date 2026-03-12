@@ -19,7 +19,7 @@ require 'jade/symbol/type_ref'
 require 'jade/symbol/union'
 require 'jade/symbol/value_ref'
 require 'jade/symbol/variable'
-require 'jade/symbol/variant'
+require 'jade/symbol/constructor'
 
 module Jade
   module Symbol
@@ -54,8 +54,12 @@ module Jade
       Variant[nil, name, args, union, span]
     end
 
-    def predeclared_variant(name, span)
-      Variant[nil, name, [], nil, span]
+    def constructor(name, args, parent, span)
+      Constructor[nil, name, args, parent, span]
+    end
+
+    def predeclared_constructor(name, span)
+      Constructor[nil, name, [], nil, span]
     end
 
     def lambda(arity)

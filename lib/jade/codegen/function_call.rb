@@ -44,7 +44,7 @@ module Jade
         in Symbol::Function(module_name:, name:)
           to_qualified(module_name) + "." + name
 
-        in Symbol::Variant(module_name:, name:)
+        in Symbol::Constructor(module_name:, name:)
           to_qualified(module_name + "." + name) + ".method(:[])"
 
         in Symbol::StdlibImplementation => symbol

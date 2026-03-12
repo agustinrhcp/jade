@@ -89,7 +89,7 @@ module Jade
           entry
             .values
             .reduce(self) do |env, (unq, sym)|
-              if sym.module_name == entry.name && !sym.is_a?(Symbol::Variant) && !sym.is_a?(Symbol::Struct)
+              if sym.module_name == entry.name && !sym.is_a?(Symbol::Constructor)
                 scheme_from_symbol(sym, registry, env)
                   .then { EnvEntry.new(env.fresh, it) }
                   .then { env.bind(sym.qualified_name, it) }
@@ -119,7 +119,7 @@ module Jade
               .lookup(sym)
               .then { scheme_from_symbol(it, registry, env) }
 
-          in Symbol::InterfaceFunction | Symbol::StdlibFunction | Symbol::Variant | Symbol::InteropFunction
+          in Symbol::InterfaceFunction | Symbol::StdlibFunction | Symbol::Constructor | Symbol::InteropFunction
             Type
               .from_symbol(sym, registry, var_gen)
               # TODO: Clean up

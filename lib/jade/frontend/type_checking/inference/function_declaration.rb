@@ -24,14 +24,16 @@ module Jade
               .reduce(env) do |body_env, (t, p)|
                 body_env.bind(p.name, Scheme.mono(t))
               end
-              .then { check(body, registry, it, Expected.non_auth(env.fresh)) }
+              .then { check(body, registry, it, Expected.auth(fn_type.return_type)) }
 
             body_r = body_r
-              .and_unify(fn_type.return_type, &type_error(env, node))
+              .and_unify(fn_type.return_type.make_rigid, &type_error(env, node))
               # .then(&check_body_signature(env, node))
 
-            full_fn_type = Type.function(fn_type.args, body_r.type)
-            body_r.tap { |r| entry.type = r.substitution.apply(full_fn_type) }
+            if body_r.errors.empty?
+              full_fn_type = Type.function(fn_type.args, body_r.type)
+              body_r.tap { |r| entry.type = r.substitution.apply(full_fn_type) }
+            end
 
             env
               .add_constraints!(constraints)
