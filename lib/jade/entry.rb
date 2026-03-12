@@ -1,5 +1,20 @@
 module Jade
-  Entry = Data.define(:name, :defined_values, :defined_types, :imports, :exposes, :ast, :source, :generated, :entry) do
+  Entry = Data.define(:name, :defined_values, :defined_types, :imports, :exposes, :ast, :source, :env, :generated, :entry) do
+    def self.empty(name)
+      new(
+        name:,
+        defined_values: {},
+        defined_types: {},
+        imports: Set[],
+        exposes: Set[],
+        ast: nil,
+        source: nil,
+        generated: nil,
+        env: nil,
+        entry: false,
+      )
+    end
+
     def expose(symbol)
       with(exposes: exposes + Set[symbol])
     end
@@ -57,7 +72,7 @@ module Jade
       in Symbol::Union | Symbol::Struct
         add_defined_type(symbol)
 
-      in Symbol::Function | Symbol::StdlibFunction | Symbol::Variant | Symbol::InteropFunction
+      in Symbol::Function | Symbol::StdlibFunction | Symbol::Constructor | Symbol::InteropFunction
         add_defined_value(symbol)
       end
     end

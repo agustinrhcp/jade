@@ -79,7 +79,7 @@ module Jade
     def evaluate(src, registry, current_entry, scope, env, var_gen)
       Source.new(nil, src)
         .then { Lexer.tokenize(it) }
-        .then { Parser.parse(it) }
+        .then { Parsing.parse(it) }
         .on_err { return Err[it.message] } => Ok(ast)
 
       Frontend::FixityFixer.fix(ast)

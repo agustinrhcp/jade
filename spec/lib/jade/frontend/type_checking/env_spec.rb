@@ -57,8 +57,8 @@ module Jade
           end
 
           it "generalizes the function's free vars" do
-            id_scheme = env.lookup("__Test__.id")
-            f_scheme  = env.lookup("__Test__.f")
+            id_scheme = env.bindings.dig("__Test__.id")
+            f_scheme  = env.bindings.dig("__Test__.f")
 
             expect(id_scheme.quantified.map(&:name)).to include("a")
             expect(f_scheme.quantified.map(&:name)).to include("a")
@@ -66,16 +66,16 @@ module Jade
           end
 
           it "does not share type variables between schemes" do
-            id_scheme = env.lookup("__Test__.id")
-            f_scheme  = env.lookup("__Test__.f")
+            id_scheme = env.bindings.dig("__Test__.id")
+            f_scheme  = env.bindings.dig("__Test__.f")
 
             expect(id_scheme.quantified.first.id).not_to eq(f_scheme.quantified.first.id)
           end
 
           it "instantiates fresh vars per usage" do
-            id_scheme = env.lookup("__Test__.id")
-            first_use  = Inference::Helpers.instantiate(id_scheme, env.var_gen)
-            second_use = Inference::Helpers.instantiate(id_scheme, env.var_gen)
+            id_scheme  = env.bindings.dig("__Test__.id")
+            first_use  = env.lookup('__Test__.id')
+            second_use = env.lookup('__Test__.id')
 
             expect(first_use.args.first.id).not_to eq(second_use.args.first.id)
             expect(first_use.return_type.id).not_to eq(second_use.return_type.id)

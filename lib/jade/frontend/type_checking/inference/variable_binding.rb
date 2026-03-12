@@ -6,11 +6,14 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, expected)
+          def infer(node, registry, state, expected)
             node => AST::VariableBinding(name:, expression:)
 
-            check(expression, registry, env, expected)
-              .then { it.with(env: it.env.bind(name, generalize(env, it.type))) }
+            new_state, new_result = check(expression, registry, state, expected)
+
+            new_state
+              .bind(name, generalize(state.env, new_result.type))
+              .unify_result(new_result, expected.type)
           end
         end
       end

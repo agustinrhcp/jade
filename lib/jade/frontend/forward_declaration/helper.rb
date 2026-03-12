@@ -35,6 +35,7 @@ module Jade
                 )
               end
 
+            byebug if constructor_sym.nil?
             args
               .map { figure_out_type(entry, it) }
               .then { Symbol.type_application(constructor_sym.to_ref, it, node.range) }

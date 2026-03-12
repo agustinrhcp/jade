@@ -1,3 +1,8 @@
+require 'jade/codegen/helpers'
+
+require 'jade/codegen/function_declaration'
+require 'jade/codegen/function_call'
+
 module Jade
   module Codegen
     extend self
@@ -21,8 +26,7 @@ module Jade
         ""
 
       in AST::Body(expressions:)
-        expressions
-          .map { generate(it, registry) }.join("; ")
+        generate_many(expressions, registry, "; ")
 
       in AST::VariableReference(symbol:, name:)
         symbol = symbol.is_a?(Symbol::ValueRef) ? registry.lookup(symbol) : symbol
@@ -52,41 +56,35 @@ module Jade
           "\"#{value}\""
         end
 
-      in AST::FunctionDeclaration(name:, params:, body:)
-        params_code = params.map { generate(it, registry) }.join(', ')
-        "def #{name}; ->(#{params_code}) { #{generate(body, registry)} }; end"
+      in AST::FunctionDeclaration
+        FunctionDeclaration.generate(node, registry)
 
       in AST::FunctionDeclarationParam(name:)
         name
 
-      in AST::InfixApplication(left:, operator:, right:)
-        symbol = registry.lookup(operator.symbol)
-
-        "#{symbol.codegen}.call(#{generate(left, registry)}, #{generate(right, registry)})"
-
-      in AST::FunctionCall(callee:, args:)
-        args_code = args.map { generate(it, registry) }.join(', ')
-
-        "#{generate(callee, registry)}.call(#{args_code})"
+      in AST::FunctionCall
+        FunctionCall.generate(node, registry)
 
       in AST::ConstructorReference(name:, symbol:)
-        "#{symbol.qualified_name.gsub('.', '::')}.method(:[])"
+        to_qualified(symbol.qualified_name) + ".method(:[])"
 
       in AST::TypeDeclaration(variants:)
-        variants.map { generate(it, registry) }.join('; ')
+        generate_many(variants, registry, '; ')
 
       in AST::StructDeclaration(name:, record_type:)
         record_type
           .fields
           .keys
-          .map { ":#{it}" }.join(", ")
-          .then { "#{name} = Data.define(#{it})"}
+          .then { data_define(it) }
+          .then { "#{name} = #{it}"}
         
 
       in AST::VariantDeclaration(name:, args:)
-        args.map.with_index { |_, i| ":_#{i + 1}" }
-          .then { it.empty? ? "" : "(#{it.join(", ")})"}
-          .then { "#{name} = Data.define#{it}" }
+        args
+          .map
+          .with_index { |_, i| "_#{i + 1}" }
+          .then { data_define(it) }
+          .then { "#{name} = #{it}" }
 
       in AST::QualifiedAccess(symbol:)
         case registry.lookup(symbol)
@@ -94,17 +92,17 @@ module Jade
           codegen
 
         in Symbol::Function(module_name:, name:)
-          "#{module_name.gsub('.', '::')}.#{name}"
+          to_qualified(module_name) + ".#{name}"
 
-        in Symbol::Variant(module_name:, name:)
-          "#{module_name.gsub('.', '::')}::#{name}.method(:[])"
+        in Symbol::Constructor(module_name:, name:)
+          to_qualified(module_name + "." + name) + ".method(:[])"
         end
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)
         "if (#{generate(condition, registry)}) then; #{generate(if_branch, registry)}; else; #{generate(else_branch, registry)}; end"
 
       in AST::CaseOf(expression:, branches:)
-        "case #{generate(expression, registry)}; " + branches.map { generate(it, registry) }.join + "end"
+        "case #{generate(expression, registry)}; " + generate_many(branches, registry, "") + "end"
 
       in AST::CaseOfBranch(pattern:, body:)
         "in #{generate(pattern, registry)} then #{generate(body, registry)}; "
@@ -119,19 +117,18 @@ module Jade
         name
 
       in AST::Pattern::Record(fields:)
-        fields
-          .map { |f| "#{f.name}: #{generate(f.pattern, registry)}"}
-          .join(', ')
+        generate_many(fields, registry)
           .then { "{ #{it} }"}
+
+      in AST::Pattern::RecordField(name:, pattern:)
+          "#{name}: #{generate(pattern, registry)}"
 
       in AST::Pattern::Constructor(symbol:, patterns:)
         sym = registry.lookup(symbol)
 
-        patterns
-          .map { generate(it, registry) }
-          .join(', ')
+        generate_many(patterns, registry)
           .then { it.empty? ? it : "(#{it})"}
-          .then { "#{sym.qualified_name.gsub('.', '::')}#{it}" }
+          .then { "#{to_qualified(sym.qualified_name)}#{it}" }
 
       in AST::Lambda(params:, body:)
         "->(#{params.map(&:name).join(', ')}) { #{generate(body, registry)} }"
@@ -140,26 +137,45 @@ module Jade
         "(#{generate(expression, registry)})"
 
       in AST::List(items:)
-        "[#{items.map { generate(it, registry)}.join(', ')}]"
+        "[#{generate_many(items, registry)}]"
 
       in AST::RecordLiteral(fields:)
         fields_sorted = fields.sort_by { it.key }
 
-        "Data.define(#{fields_sorted.map { ":#{it.key}" }.join(', ')})" +
-          "[#{fields_sorted.map { generate(it.value, registry) }.join(', ')}]"
+        data_define(fields.map(&:key).sort) +
+          "[#{generate_many(fields_sorted.map(&:value), registry)}]"
+
+      in AST::RecordField(key:, value:)
+        "#{key}: #{generate(value, registry)}"
 
       in AST::RecordAccess(target:, name:)
         "#{generate(target, registry)}.#{name.name}"
 
       in AST::RecordUpdate(base:, fields:)
-        fields
-          .map { "#{it.key}: #{generate(it.value, registry)}" }
-          .join(', ')
+        generate_many(fields, registry)
           .then { "#{generate(base, registry)}.with(#{it})" }
       end
     end
 
     private
+
+    def generate_many(nodes, registry, sep = ", ")
+      nodes.map do
+        next yield(it) if block_given?
+
+        generate(it, registry)
+      end.join(sep)
+    end
+
+    def to_qualified(module_name)
+      "#{module_name.gsub('.', '::')}"
+    end
+
+    def data_define(fields)
+      return "Data.define" if fields.empty?
+
+      "Data.define(#{fields.map { ":#{it}" }.join(', ')})"
+    end
 
     def load_path
       return '$LOAD_PATH.unshift(File.expand_path("lib"));'

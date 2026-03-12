@@ -2,6 +2,8 @@ require 'spec_helper'
 
 require 'jade'
 
+using Jade::TypeFactory
+
 module Jade
   module Frontend
     module TypeChecking
@@ -13,7 +15,7 @@ module Jade
             scheme =
               Scheme.new(
                 quantified: [a],
-                type: Type.function([a], a)
+                type: Type.function([a], a),
               )
 
             fn = described_class.instantiate(scheme, VarGen.new)
@@ -23,6 +25,22 @@ module Jade
 
             expect(arg).to eq ret
             expect(arg).to_not eql a
+          end
+
+          it "generates fresh variables for each instantiation" do
+            a = Type.var(0, "a")
+
+            scheme =
+              Scheme.new(
+                quantified: [a],
+                type: Type.function([a], a),
+              )
+
+            var_gen = VarGen.new
+            fn1 = described_class.instantiate(scheme, var_gen)
+            fn2 = described_class.instantiate(scheme, var_gen)
+
+            expect(fn1.args.first).not_to eq fn2.args.first
           end
         end
       end

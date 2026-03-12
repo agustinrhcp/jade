@@ -1,6 +1,9 @@
+require 'jade/frontend/type_checking/result'
 require 'jade/frontend/type_checking/env'
+require 'jade/frontend/type_checking/definition'
 require 'jade/frontend/type_checking/substitution'
 require 'jade/frontend/type_checking/unification'
+require 'jade/frontend/type_checking/scheme'
 require 'jade/frontend/type_checking/generalization'
 require 'jade/frontend/type_checking/instantiation'
 require 'jade/frontend/type_checking/inference'
@@ -26,48 +29,13 @@ module Jade
         end
       end
 
-      Result = Data.define(:type, :substitution, :env, :errors) do
-        def and_unify(actual, &block)
-          fail if actual.is_a?(Expected)
-          case Unification.unify(type, actual, env)
-          in Ok(sub)
-            compose_substitution(sub)
-              .apply
-          in Err(error)
-            fail "block is mandatory" unless block
-
-            add_errors([block.call(error)])
-              .with(type: error.actual)
-          end
-        end
-
-        def add_errors(more_errors)
-          with(errors: errors + more_errors)
-        end
-
-        def compose_substitution(sub)
-          with(substitution: substitution.compose(sub))
-        end
-
-        def apply
-          with(type: substitution.apply(type))
-        end
-
-        def to_result
-          if errors.any?
-            Err[errors]
-          else
-            Ok[[type, env]]
-          end
-        end
-      end
-
       def check(entry, registry)
         Env
           .load(entry, registry)
-          .then { check_node(entry.ast, registry, it, Expected.non_auth(it.fresh)) }
+          .then { check_node(entry.ast, registry, State.init(it), Expected.non_auth(it.fresh)) }
+          .first
           .to_result
-          .map { entry }
+          .map { entry.with(env: it) }
       end
 
       def check_repl(node, registry, env = Env.new)
@@ -75,7 +43,7 @@ module Jade
           .to_result
       end
 
-      def check_node(node, registry, env, expected_type)
+      def check_node(node, registry, state, expected_type)
         case node
         in AST::Body then Inference::Body
         in AST::CaseOf then Inference::CaseOf
@@ -85,7 +53,6 @@ module Jade
         in AST::Grouping then Inference::Grouping
         in AST::IfThenElse then Inference::IfThenElse
         in AST::ImportDeclaration then Inference::ImportDeclaration
-        in AST::InfixApplication then Inference::InfixApplication
         in AST::InteropImportDeclaration then Inference::InteropImportDeclaration
         in AST::Lambda then Inference::Lambda
         in AST::List then Inference::List
@@ -101,7 +68,7 @@ module Jade
         in AST::VariableBinding then Inference::VariableBinding
         in AST::VariableReference then Inference::VariableReference
         end
-          .infer(node, registry, env, expected_type)
+          .infer(node, registry, state, expected_type)
       end
 
       private

@@ -6,14 +6,14 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, expected)
+          def infer(node, registry, state, expected)
             node => AST::ConstructorReference(symbol:)
 
-            env
-              .bindings[symbol.qualified_name]
-              .then { instantiate(it, env.var_gen) }
-              .then { Result.new(it, Substitution.new, env, []) }
-              .and_unify(expected.type)
+            state
+              .env
+              .lookup(symbol.qualified_name)
+              .then { Result.init(it) }
+              .then { state.unify_result(it, expected.type) }
           end
         end
       end

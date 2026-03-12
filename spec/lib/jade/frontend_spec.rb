@@ -2,7 +2,7 @@ require 'spec_helper'
 
 require 'jade/symbol'
 require 'jade/frontend'
-require 'jade/parser'
+require 'jade/parsing'
 require 'jade/lexer'
 require 'jade/ast'
 require 'jade/ast/pretty_printer'
@@ -16,8 +16,8 @@ module Jade
     let(:frontend) do
       Lexer
         .tokenize(source)
-        .then { Parser.parse(it) }
-        .and_then  { Frontend.run(it) }
+        .then { Parsing.parse(it) }
+        .and_then { Frontend.run(it) }
     end
 
     subject { frontend => Ok([node, _]); node }
@@ -116,7 +116,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to be_a(AST::InfixApplication) }
+      it { is_expected.to be_a(AST::FunctionCall) }
 
       it 'precedence is respected' do
         expect(AST::PrettyPrinter.print(subject)).to eql "((1 + (2 * 3)) - (4 / 5))"
@@ -129,7 +129,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to be_a(AST::InfixApplication) }
+        it { is_expected.to be_a(AST::FunctionCall) }
 
         it 'precedence is respected' do
           expect(AST::PrettyPrinter.print(subject)).to eql "((2 * 2) + (3 * 3))"
@@ -143,7 +143,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to be_a(AST::InfixApplication) }
+        it { is_expected.to be_a(AST::FunctionCall) }
 
         it 'precedence is respected' do
           expect(AST::PrettyPrinter.print(subject)).to eql "(1 + (2 * 3))"
@@ -265,7 +265,7 @@ module Jade
       let(:frontend) do
         Lexer
           .tokenize(source)
-          .then { Parser.parse(it) }
+          .then { Parsing.parse(it) }
           .and_then  { Frontend.run(it) }
       end
 

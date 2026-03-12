@@ -8,110 +8,107 @@ module Jade
           extend Helpers
           extend self
 
-          def infer(node, registry, env, expected)
+          def infer(node, registry, state, expected)
             node => AST::CaseOf(expression:, branches:)
 
-            expression_result = check(expression, registry, env, Expected.non_auth(env.fresh))
+            new_state, expr_result = check(expression, registry, state, Expected.non_auth(state.fresh))
 
             first_branch, *rest_branches = branches
-            first_result = infer_branch(
+            after_first_state, first_result = infer_branch(
               first_branch,
               registry,
-              expression_result.env,
+              new_state,
               expected,
-              expression_result,
-            ).and_unify(expected.type)
+              expr_result,
+            )
 
             rest_branches
               .each_with_index
-              .reduce(first_result) do |acc, (branch, i)|
-                infer_branch(branch, registry, expression_result.env, expected, expression_result)
-                  .and_unify(acc.type) do
-                    Error::CaseOfBranchesTypeMismatch.new(env.entry_name, branch.range, actual: it.actual, expected: it.expected, actual_index: i + 2)
-                  end
-                  .compose_substitution(acc.substitution)
-                  .add_errors(acc.errors)
+              .reduce(after_first_state) do |acc, (branch, i)|
+                new_acc, type = infer_branch(branch, registry, acc, expected, expr_result)
+                new_acc.unify(type.type, first_result.type) do
+                  Error::CaseOfBranchesTypeMismatch
+                    .new(new_acc.env.entry_name, branch.range, actual: it.actual, expected: it.expected, actual_index: i + 2)
+                end
               end
-              .with(type: first_result.type)
-              .add_errors(PatternAnalysis::Exhaustiveness.assert(node, env, registry, expression_result.type))
+              .then { check_exhaustiveness(node, it, registry, expr_result) }
+              .then { [it, first_result.apply(it.env.substitution)] }
           end
 
           private
 
+          def check_exhaustiveness(node, state, registry, result)
+            PatternAnalysis::Exhaustiveness
+              .assert(node, state.env, registry, result.type)
+              .then { state.add_errors(it) }
+          end
+
           def infer_branch(node, registry, env, expected, expression_result)
             node => AST::CaseOfBranch(pattern:, body:)
 
-            pattern_result = infer_pattern(pattern, registry, env, Expected.auth(expression_result.type))
-              .compose_substitution(expression_result.substitution)
-              .and_unify(expression_result.type) do
-                Error::PatternTypeMismatch.new(
-                  env.entry_name, pattern.range,
-                  expected: it.expected, actual: it.actual,
-                )
-              end
+            pattern_state, _pattern_result = infer_pattern(
+              pattern, registry, env, Expected.auth(expression_result.type)
+            )
 
-            check(body, registry, pattern_result.env, expected)
-              .compose_substitution(pattern_result.substitution)
-              .add_errors(pattern_result.errors)
+            check(body, registry, pattern_state, expected)
           end
 
-          def infer_pattern(pattern, registry, env, expected)
+          def infer_pattern(pattern, registry, state, expected)
             case pattern
             in AST::Pattern::Record(fields:, symbol:)
-              fields_result = fields
-                .reduce(Result.new([], Substitution.new, env, [])) do |acc, field|
-                  infer_pattern(field.pattern, registry, acc.env, Expected.non_auth(env.fresh))
-                    .then { it.with(type: acc.type + [it.type]) }
-                    .compose_substitution(acc.substitution)
-                    .add_errors(acc.errors)
+              fields_state, fields_result = fields
+                .reduce([state, Result.accumulator]) do |(state_acc, result_acc), field|
+                  st, rs = infer_pattern(field.pattern, registry, state_acc, Expected.non_auth(state_acc.fresh))
+                  [st, result_acc.add(rs)]
                 end
 
               fields
                 .map(&:name)
-                .zip(fields_result.type)
+                .zip(fields_result.types)
                 .to_h
-                .then { Type.anonymous_record(it, env.fresh) }
-                .then { fields_result.with(type: it) }
+                .then { Type.anonymous_record(it, state.fresh) }
+                .then { Result.init(it) }
+                .then { fields_state.unify_result(it, expected.type, &type_error(state, pattern)) }
 
             in AST::Pattern::Literal(literal:)
-              check(literal, registry, env, expected)
-                .and_unify(expected.type) do
-                  Error::PatternTypeMismatch.new(
-                    env.entry_name, pattern.range,
-                    expected: it.expected, actual: it.actual,
-                  )
-                end
+              new_state, literal_result = check(literal, registry, state, expected)
+              new_state.unify_result(literal_result, expected.type, &type_error(state, pattern))
 
             in AST::Pattern::Wildcard
-              Result[env.fresh, Substitution.new, env, []]
-                .and_unify(expected.type)
+              Result
+                .init(state.fresh)
+                .then { state.unify_result(it, expected.type) }
 
             in AST::Pattern::Binding(name:)
-              Result[
-                env.fresh,
-                Substitution.new,
-                env.bind(name, generalize(env, expected.type)),
-                [],
-              ].and_unify(expected.type)
+              state
+                .bind(name, generalize(state.env, expected.type))
+                .then { it.unify_result(Result.init(it.fresh), expected.type) }
 
             in AST::Pattern::Constructor(symbol:, patterns:)
-              constructor_type = env.lookup(symbol.qualified_name)
-                .then { instantiate(it, env.var_gen) }
+              constructor_type = state.env.lookup(symbol.qualified_name)
 
-              patterns_result = constructor_type
+              patterns_state, patterns_result = constructor_type
                 .args
                 .zip(patterns)
-                .reduce(Result.new([], Substitution.new, env, [])) do |acc, (inner_expected, pattern)|
-                  infer_pattern(pattern, registry, acc.env, Expected.auth(inner_expected))
-                    .then { it.with(type: acc.type + [it.type]) }
-                    .compose_substitution(acc.substitution)
-                    .add_errors(acc.errors)
+                .reduce([state, Result.accumulator]) do |(acc_state, acc_result), (inner_expected, pattern)|
+                  new_state, result = infer_pattern(pattern, registry, acc_state, Expected.auth(inner_expected))
+                  [new_state, acc_result.add(result)]
                 end
 
-              constructor_type
-                .then { patterns_result.substitution.apply(it).return_type }
-                .then { patterns_result.with(type: it ) }
-                .and_unify(expected.type)
+              patterns_result.types
+                .then { Type.function(it, expected.type) }
+                .then { Result.init(it) }
+                .then { patterns_state.unify_result(it, constructor_type) }
+                .then { |(state, result)| [state, result.map(&:return_type)] }
+            end
+          end
+
+          def type_error(state, pattern)
+            ->(error) do
+              Error::PatternTypeMismatch.new(
+                state.env.entry_name, pattern.range,
+                expected: error.expected, actual: error.actual,
+              )
             end
           end
         end

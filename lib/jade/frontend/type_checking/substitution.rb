@@ -6,6 +6,10 @@ module Jade
           super
         end
 
+        def empty?
+          mappings.empty?
+        end
+
         def apply(type)
           case type
           in Type::Function(args:, return_type:)
@@ -17,7 +21,20 @@ module Jade
             type
 
           in Type::Var(id:)
-            mappings[id] || type
+            mapping = mappings[id]
+
+            return type unless mapping
+
+            case mapping
+            in Type::Var(id: ^id)
+              type.rigid? ? type : mapping
+
+            in Type::Var
+              type.rigid? ? apply(mapping.make_rigid) : apply(mapping)
+
+            else
+              type.rigid? ? type : mapping
+            end
 
           in Type::Application(args:)
             type

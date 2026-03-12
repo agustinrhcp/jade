@@ -10,7 +10,6 @@ require 'jade/frontend/symbol_resolution/function_declaration'
 require 'jade/frontend/symbol_resolution/grouping'
 require 'jade/frontend/symbol_resolution/if_then_else'
 require 'jade/frontend/symbol_resolution/import_declaration'
-require 'jade/frontend/symbol_resolution/infix_application'
 require 'jade/frontend/symbol_resolution/interop_import_declaration'
 require 'jade/frontend/symbol_resolution/lambda'
 require 'jade/frontend/symbol_resolution/list'
@@ -86,7 +85,6 @@ module Jade
         in AST::VariableReference then VariableReference
         in AST::ConstructorReference then ConstructorReference
         in AST::FunctionDeclaration then FunctionDeclaration
-        in AST::InfixApplication then InfixApplication
         in AST::FunctionCall then FunctionCall
         in AST::TypeDeclaration then TypeDeclaration
         in AST::VariantDeclaration then VariantDeclaration

@@ -74,12 +74,6 @@ module Jade
         in AST::FunctionDeclaration(name:, params:, body:, symbol:)
           SemanticAnalysis::FunctionDeclaration.analyze(ast, registry, scope)
 
-        in AST::InfixApplication(left:, right:)
-          analyze_r(left, registry, scope) => { errors: l_errors }
-          analyze_r(right, registry, scope) => { errors: r_errors }
-
-          Result[scope, l_errors + r_errors]
-
         in AST::FunctionCall(callee:, args:)
           analyze_many(args, registry, scope) => { errors: args_errors, scope: args_scope }
 

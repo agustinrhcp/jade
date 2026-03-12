@@ -10,6 +10,12 @@ module Jade
       def list(inner)
         Type.constructor('List.List').apply([inner])
       end
+
+      def parse(annotation)
+        Lexer
+          .tokenize(Source.new(uri: nil, text: annotation))
+          .then { TypeFactory::Parser.parse(it) }
+      end
     end
   end
 end

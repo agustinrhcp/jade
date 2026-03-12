@@ -1,6 +1,6 @@
 require 'fileutils'
 
-require 'jade/parser'
+require 'jade/parsing'
 require 'jade/lexer'
 require 'jade/ast'
 require 'jade/registry'
@@ -63,7 +63,7 @@ module Jade
     def load_(source, registry, entry: false)
       source
         .then { Lexer.tokenize(it) }
-        .then { Parser.parse(it) } => Ok(ast)
+        .then { Parsing.parse(it) } => Ok(ast)
 
       Registry
         .entry(source.to_module_name)

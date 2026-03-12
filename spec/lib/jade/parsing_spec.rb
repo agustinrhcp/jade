@@ -1,16 +1,16 @@
 require 'spec_helper'
 
-require 'jade/parser'
+require 'jade/parsing'
 require 'jade/lexer'
 require 'jade/ast'
 
 module Jade
-  describe Parser do
+  describe Parsing do
     let(:source) do
       Source.new(uri: 'test', text:)
     end
 
-    let(:parse) { Lexer.tokenize(source).then { Parser.parse(it) } }
+    let(:parse) { Lexer.tokenize(source).then { Parsing.parse(it) } }
     subject { parse => Ok(node); node }
 
     context 'literals' do
@@ -56,7 +56,7 @@ module Jade
 
         subject { parse => Err(err); err }
 
-        it { is_expected.to be_kind_of(Parser::Error) }
+        it { is_expected.to be_kind_of(Parsing::Error) }
         its(:message) { is_expected.to include("Unexpected end of input, expected quote") }
       end
     end
@@ -84,7 +84,7 @@ module Jade
         subject { parse => Err(err); err }
 
         # TODO: [Parser:MultipleErrors]
-        it { is_expected.to be_kind_of(Parser::Error) }
+        it { is_expected.to be_kind_of(Parsing::Error) }
       end
 
       context 'when it is incomplete with an incomplete string' do
@@ -96,7 +96,7 @@ module Jade
 
         subject { parse => Err(err); err }
 
-        it { is_expected.to be_kind_of(Parser::Error) }
+        it { is_expected.to be_kind_of(Parsing::Error) }
         its(:message) { is_expected.to include("expected quote") }
       end
     end 
@@ -917,6 +917,18 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::StructDeclaration) }
+    end
+
+    describe 'not_eq' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          1 != 2
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::InfixApplication) }
     end
   end
 end

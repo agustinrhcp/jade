@@ -1,8 +1,14 @@
 require 'result'
+require 'jade/parsing/combinators'
+require 'jade/parsing/type'
+require 'jade/parsing/token'
 
 module Jade
-  module Parser
+  module Parsing
     extend self
+    include Combinators
+    include Token
+    include Type
 
     FunctionCallPostfix = Data.define(:lparen, :args, :rparen) do
       def apply(node)
@@ -156,7 +162,8 @@ module Jade
 
     def operator
       type(:plus) | type(:minus) | type(:star) | type(:slash) |
-        type(:pipe_forward) | type(:pipe_backward)
+        type(:pipe_forward) | type(:pipe_backward) | type(:eq) | type(:not_eq) |
+        type(:lt) | type(:gt) | type(:lte) | type(:gte)
     end
 
     def primary
@@ -285,85 +292,6 @@ module Jade
       ).map(&AST.variant_declaration)
     end
 
-    def type_params
-      type(:lparen).skip >>
-        sequence(type_param, separated_by: type(:comma).skip).map { [it] } >>
-        type(:rparen).skip
-    end
-
-    def type_expressions
-      type(:lparen).skip >>
-        sequence(type_expression, separated_by: type(:comma).skip).map { [it] } >>
-        type(:rparen).skip
-    end
-
-    def type_param
-      identifier.map(&AST.type_param)
-    end
-
-    def type_atom
-      type_var | type_application |  grouped(lazy { type_function })
-    end
-
-    def type_expression
-      type_function | type_atom | type_record
-    end
-
-    def type_record
-      (type(:lbrace) >> type_record_row >> type_record_fields >> type(:rbrace)).map(&AST.type_record)
-    end
-
-    def type_record_row
-      (type_param >> type(:pipe).skip) | none.map { nil }
-    end
-
-    def type_record_fields
-      sequence(
-        (identifier >>
-          type(:colon).skip >>
-          lazy { type_expression }
-        ).map { [it] },
-        separated_by: type(:comma).skip,
-      ).map { [it] }
-    end
-
-    def type_name
-      qualified_type_name | constant.map(&AST.type_name)
-    end
-
-    def qualified_type_name
-      (constant >> type(:dot).skip >> 
-        sequence(constant, separated_by: type(:dot).skip)
-      ).map(&AST.qualified_type_name)
-    end
-
-    def type_var
-      identifier.map(&AST.type_var)
-    end
-
-    def type_function
-      (sequence(type_atom, separated_by: type(:comma).skip).map { [it] } >>
-        type(:arrow).skip >>
-        type_atom
-      ).map(&AST.type_function)
-    end
-
-    def grouped(parser)
-      type(:lparen).skip >> parser >> type(:rparen).skip
-    end
-
-    def type_application
-      (
-        type_name >> (
-          (
-            type(:lparen) >>
-            sequence(lazy { type_expression }, separated_by: type(:comma).skip).map { [it] } >>
-            type(:rparen)
-          ) | none.map { [nil, [], nil] }
-        )
-      ).map(&AST.type_application)
-    end
-
     def literal
       string | int | bool | float | list
     end
@@ -397,28 +325,6 @@ module Jade
           type(:assign) >>
           (expression).map_error(&:commit)
       ).map(&AST.variable_binding)
-    end
-
-    def many(parser)
-      P.new do |state|
-        oks = []
-        current = state
-
-        loop do
-          break if current.eof?
-
-          case parser.call(current)
-          in Ok([value, next_state])
-            oks << value
-            current = next_state
-          in Err([err, err_state])
-            current = err_state
-            break
-          end
-        end
-
-        Ok[[oks, current]]
-      end
     end
 
     # Records
@@ -481,25 +387,6 @@ module Jade
       ).map(&AST.struct_declaration)
     end
 
-    private
-
-    def at_least_one(parser, separated_by: none.skip)
-      parser >> ((separated_by >> sequence(parser, separated_by:)) | none.map { [] })
-    end
-
-    def sequence(parser, separated_by: none.skip)
-      (parser.map { [it] } >> many(separated_by >> parser))
-        .map { it.flatten(1) }
-    end
-
-    def none
-      P.new { |state| Ok[[nil, state]] }
-    end
-
-    def skip(parser)
-      parser.map { |_| :skip }
-    end
-
     def int
       type(:int).map(&AST.literal)
     end
@@ -519,167 +406,6 @@ module Jade
             .map_error(&:commit)
       )
         .map(&AST.string_literal)
-    end
-
-    def identifier
-      type(:identifier)
-    end
-
-    def constant
-      type(:constant)
-    end
-
-    def type(type)
-      P.new do |state|
-        if state.eof?
-          Err[[
-            EOFError.new(
-              expected: type,
-              position: state.position,
-            ),
-            state,
-          ]]
-
-        elsif state.current.type == type
-          Ok[([state.current, state.advance])]
-
-        else
-          Err[[
-            UnexpectedTokenError.new(
-              actual: state.current,
-              expected: type,
-              position: state.position,
-            ),
-            state,
-          ]]
-        end
-      end
-    end
-
-    def lazy(&block)
-      P.new do |input|
-        block.call.call(input)
-      end
-    end
-
-    State = Data.define(:tokens, :position, :context_stack) do
-      def initialize(tokens:, position: 0, context_stack: [])
-        super
-      end
-
-      def current
-        tokens[position]
-      end
-
-      def advance(n = 1)
-        with(tokens:, position: position + n)
-      end
-
-      def eof?
-        position >= tokens.length
-      end
-    end
-
-    class P
-      def initialize(&block)
-        @fn = block
-      end
-
-      def call(tokens)
-        @fn.call(tokens)
-      end
-
-      def map(&block)
-        P.new do |state|
-          call(state)
-            .map { |(value, ok_state)| [block.call(value), ok_state] }
-        end
-      end
-
-      def map_error(&block)
-        P
-          .new do |state|
-            call(state)
-              .map_error { |(err, err_state)| [block.call(err), err_state] }
-          end
-      end
-
-      def |(other)
-        P.new do |state|
-          call(state)
-            .on_err do |(error, state2)|
-              if error.committed?
-                Err[[error, state2]]
-              else
-                other.call(state)
-              end
-            end
-        end
-      end
-
-      def >>(other)
-        P.new do |state|
-          call(state).and_then do |(value1, state1)|
-            other.call(state1)
-              .map do |(value2, state2)|
-                [[value1, value2].reject { it == :skip }.flatten(1), state2]
-              end
-              .map_error do |(err, err_state)|
-                [err, state]
-              end
-          end
-        end
-      end
-
-      def skip
-        self.map { |_| :skip }
-      end
-
-      def many
-        Parser.many(self)
-      end
-    end
-
-    class Error
-      def initialize(position:, actual:, expected:, committed: false)
-        @position = position
-        @actual = actual
-        @expected = expected
-        @committed = committed
-      end
-
-      def committed?
-        @committed
-      end
-
-      def commit
-        @committed = true
-        self
-      end
-
-      protected
-
-      attr_reader :actual, :expected
-    end
-
-    class EOFError < Error
-      def initialize(position:, actual: nil, expected:, committed: false)
-        super
-      end
-
-      def message
-        "Unexpected end of input, expected #{expected}"
-      end
-    end
-
-    class UnexpectedTokenError < Error
-      def initialize(position:, actual:, expected:, committed: false)
-        super
-      end
-
-      def message
-        "Unexpected end token #{actual}, #{expected}"
-      end
     end
   end
 end
