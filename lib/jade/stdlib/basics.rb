@@ -57,6 +57,36 @@ module Jade
         'Bool',
       ) { |a, b| a <= b }
 
+      function(
+        '(>=)',
+        { a: 'Int', b: 'Int' },
+        'Bool',
+      ) { |a, b| a >= b }
+
+      function(
+        '(>)',
+        { a: 'Int', b: 'Int' },
+        'Bool',
+      ) { |a, b| a > b }
+
+      function(
+        '(<)',
+        { a: 'Int', b: 'Int' },
+        'Bool',
+      ) { |a, b| a < b }
+
+      function(
+        '(&&)',
+        { a: 'Bool', b: 'Bool' },
+        'Bool',
+      ) { |a, b| a && b }
+
+      function(
+        '(||)',
+        { a: 'Bool', b: 'Bool' },
+        'Bool',
+      ) { |a, b| a || b }
+
       default_importing :*
     end
   end
