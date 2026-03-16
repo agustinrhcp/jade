@@ -1,5 +1,6 @@
 require 'jade/type/base'
 
+require 'jade/type/constraint'
 require 'jade/type/anonymous_record'
 require 'jade/type/application'
 require 'jade/type/constructor'
@@ -138,7 +139,7 @@ module Jade
           )
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
-          .then { |(t, _)| Type.function(args, t, [constraint]) }
+          .then { |(t, _)| Type.function(args, t) }
           .then { [it, var_map] }
 
       in Symbol::Constructor

@@ -6,7 +6,7 @@ module Jade
   module Stdlib
     describe Basics do
       describe 'its symbols' do
-        subject { described_class.symbols.map(&:name) }
+        subject { described_class.symbols.reject { it.is_a?(Symbol::Implementation) }.map(&:name) }
 
         it { is_expected.to include('Int') }
         it { is_expected.to include('Float') }
