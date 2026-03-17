@@ -85,7 +85,7 @@ module Jade
                 .then { it.unify_result(Result.init(it.fresh), expected.type) }
 
             in AST::Pattern::Constructor(symbol:, patterns:)
-              constructor_type = state.env.lookup(symbol.qualified_name)
+              constructor_type = state.env.lookup(symbol.qualified_name).type
 
               patterns_state, patterns_result = constructor_type
                 .args

@@ -45,13 +45,16 @@ module Jade
         end
       end
 
-      Result = Data.define(:type) do
-        def self.init(type)
-          new(type)
+      Result = Data.define(:type, :constraints) do
+        def self.init(type, constraints = [])
+          new(type:, constraints:)
         end
 
         def apply(substitution)
-          with(type: substitution.apply(type))
+          with(
+            type: substitution.apply(type),
+            constraints: constraints.map { it.with(type: substitution.apply(it.type)) },
+          )
         end
 
         def map(&block)
@@ -61,13 +64,16 @@ module Jade
         end
 
         def self.accumulator
-          ResultAcc[[]]
+          ResultAcc[types: [], constraints: []]
         end
       end
 
-      ResultAcc = Data.define(:types) do
+      ResultAcc = Data.define(:types, :constraints) do
         def add(result)
-          with(types: types + [result.type])
+          with(
+            types: types + [result.type],
+            constraints: constraints + result.constraints,
+          )
         end
       end
     end

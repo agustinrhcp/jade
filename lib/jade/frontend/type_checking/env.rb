@@ -31,11 +31,12 @@ module Jade
         end
 
         def lookup(key)
-          binding = bindings[key]
+          type, constraints = Instantiation.instantiate(bindings[key], var_gen)
 
-          Instantiation
-            .instantiate(binding, var_gen)
-            .then { substitution.apply(it) }
+          Result.init(
+            substitution.apply(type),
+            constraints.map { it.with(type: substitution.apply(it.type)) },
+          )
         end
 
         def lookup_def(key)

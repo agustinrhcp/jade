@@ -15,7 +15,7 @@ module Jade
             else
               state.env.lookup(symbol.qualified_name)
             end
-              .then { [state, Result.init(it)] }
+              .then { [state, it] }
           end
         end
       end
