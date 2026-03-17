@@ -287,6 +287,38 @@ module Jade
       it { is_expected.to eql 'Person = Data.define(:name, :age); __Test__::Person.method(:[]).call("Guybrush", 28)' }
     end
 
+    describe 'tuple' do
+      context 'two elements' do
+        let(:text) do
+          <<~JADE
+            (1, 2)
+          JADE
+        end
+
+        it { is_expected.to eql "Tuple::Tuple2.method(:[]).call(1, 2)" }
+      end
+
+      context 'three elements' do
+        let(:text) do
+          <<~JADE
+            (1, 2, 3)
+          JADE
+        end
+
+        it { is_expected.to eql "Tuple::Tuple3.method(:[]).call(1, 2, 3)" }
+      end
+
+      context 'four elements' do
+        let(:text) do
+          <<~JADE
+            (1, 2, 3, 4)
+          JADE
+        end
+
+        it { is_expected.to eql "Tuple::Tuple4.method(:[]).call(1, 2, 3, 4)" }
+      end
+    end
+
     describe 'stdlib with codgen as' do
       context 'with grouping' do
         let(:text) do

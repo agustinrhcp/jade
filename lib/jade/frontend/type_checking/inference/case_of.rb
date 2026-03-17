@@ -98,7 +98,16 @@ module Jade
               patterns_result.types
                 .then { Type.function(it, expected.type) }
                 .then { Result.init(it) }
-                .then { patterns_state.unify_result(it, constructor_type) }
+                .then do
+                   patterns_state
+                    .unify_result(it, constructor_type) do |error|
+                      Error::PatternTypeMismatch.new(
+                        state.env.entry_name, pattern.range,
+                        expected: error.expected.return_type,
+                        actual: error.actual.return_type,
+                      )
+                    end
+                 end
                 .then { |(state, result)| [state, result.map(&:return_type)] }
             end
           end

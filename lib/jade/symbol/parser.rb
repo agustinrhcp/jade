@@ -46,6 +46,9 @@ module Jade
         in 'String' | 'Maybe' | 'List'
           type
 
+        in 'Tuple2' | 'Tuple3' | 'Tuple4'
+          'Tuple'
+
         end
           .then { [it, type] }
       end

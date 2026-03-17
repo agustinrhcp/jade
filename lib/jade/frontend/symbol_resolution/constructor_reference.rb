@@ -7,7 +7,10 @@ module Jade
         def resolve(node, registry, current_entry)
           node => AST::ConstructorReference(name:)
 
-          case current_entry.lookup_value(name)
+          symbol = current_entry.lookup_value(name) ||
+            resolve_private_constructor(name, registry)
+
+          case symbol
           in nil
             Error::ConstructorNotFound
               .new(current_entry.name, node.range, name:)
@@ -17,6 +20,14 @@ module Jade
             symbol.to_ref
               .then { node.with(symbol: it) }
               .then { Result[it, []] }
+          end
+        end
+
+        private
+
+        def resolve_private_constructor(name, registry)
+          if Stdlib.private_constructor?(name)
+            registry.lookup(Symbol::ValueRef.new(*name.split('.')))
           end
         end
       end

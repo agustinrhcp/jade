@@ -9,7 +9,11 @@ module Jade
           end
 
           def message
-            "Pattern is trying to match #{@expected} with #{@actual}"
+            patterns_str = @missing_patterns
+              .map { |row| row.map(&:to_s).join(', ') }
+              .map { "  #{it}" }
+              .join("\n")
+            "Pattern match is not exhaustive. Missing cases:\n#{patterns_str}"
           end
         end
       end

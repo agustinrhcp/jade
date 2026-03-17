@@ -962,6 +962,104 @@ module Jade
       it { is_expected.to be_a(AST::FunctionCall) }
     end
 
+    describe 'tuple' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          (1, 2)
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionCall) }
+      its(:args) { is_expected.to have(2).items.and all(be_a(AST::Literal)) }
+
+      context 'and pattern match' do
+        let(:text) do
+          <<~JADE
+            case (1, "one")
+            of (1, "1") then 1
+            of (2, "2") then 2
+            of _ then 0
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::CaseOf) }
+      end
+
+      context 'and non exhaustive pattern match' do
+        let(:text) do
+          <<~JADE
+            case (1, "one")
+            of (1, "1") then 1
+            of (2, "2") then 2
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
+
+        describe 'its message' do
+          subject { super().first.message }
+
+          it { is_expected.to eql "Pattern match is not exhaustive. Missing cases:\n  (_, _)" }
+        end
+      end
+
+      context 'and mismatch pattern match' do
+        let(:text) do
+          <<~JADE
+            case (1, "one")
+            of (1, "1") then 1
+            of (2, 2) then 2
+            of _ then 0
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::PatternTypeMismatch) }
+
+        describe 'its message' do
+          subject { super().first.message }
+
+          it { is_expected.to eql 'Pattern is trying to match (Int, Int) with (Int, String)' }
+        end
+      end
+    end
+
+    describe 'tuple type in a function declaration' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          def swap(pair: (Int, String)) -> (String, Int)
+            (Tuple.second(pair), Tuple.first(pair))
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+      describe 'param type' do
+        subject { super().params.first => AST::FunctionDeclarationParam(type:); type }
+
+        it { is_expected.to be_a(AST::TypeTuple) }
+      end
+
+      describe 'return type' do
+        subject { super().return_type }
+
+        it { is_expected.to be_a(AST::TypeTuple) }
+      end
+    end
+
     context 'pattern exhaustiveness' do
       let(:text) do
         <<~JADE

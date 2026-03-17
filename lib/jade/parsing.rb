@@ -61,6 +61,16 @@ module Jade
       case_of | if_then_else | lambda | infix_expression
     end
 
+    def tuple
+      (
+        type(:lparen) >>
+          lazy { expression } >>
+          type(:comma).skip >>
+          sequence(lazy { expression }, separated_by: type(:comma).skip).map { [it] } >>
+          type(:rparen)
+      ).map(&AST.tuple)
+    end
+
     def grouping
       (type(:lparen) >> lazy { expression } >> type(:rparen)).map(&AST.grouping)
     end
@@ -116,7 +126,17 @@ module Jade
     end
 
     def pattern
-      wildcard_pattern | literal_pattern | binding_pattern | constructor_pattern | record_pattern
+      wildcard_pattern | literal_pattern | binding_pattern | constructor_pattern | tuple_pattern | record_pattern
+    end
+
+    def tuple_pattern
+      (
+        type(:lparen) >>
+          lazy { pattern } >>
+          type(:comma).skip >>
+          sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } >>
+          type(:rparen)
+      ).map(&AST.tuple_pattern)
     end
 
     def wildcard_pattern
@@ -176,7 +196,7 @@ module Jade
     end
 
     def atom
-      variable_reference | literal | constructor_reference | grouping | record_literal |
+      variable_reference | literal | constructor_reference | tuple | grouping | record_literal |
        record_update_sugar | record_access_sugar | record_update
     end
 

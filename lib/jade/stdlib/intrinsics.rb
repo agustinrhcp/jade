@@ -9,11 +9,22 @@ module Jade
           .then { load_env(it, registry) }
       end
 
-      def union(name, *type_params)
-        Symbol
+      def union(name, *type_params, constructor: false)
+        union_symbol = Symbol
           .union(name.to_s, type_params.map { Symbol.var(it, nil) }, [], nil)
           .with(module_name:)
-          .then { store(it) }
+          .tap { store(it) }
+
+        constructor_symbol = if constructor
+          Symbol.constructor(
+            name.to_s,
+            type_params.map { Symbol.var(it, nil) },
+            union_symbol,
+            nil,
+          )
+            .with(module_name:)
+            .then { store(it) }
+        end
       end
 
       def function(name, params, ret, &block)

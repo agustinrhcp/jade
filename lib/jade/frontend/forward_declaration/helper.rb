@@ -35,7 +35,6 @@ module Jade
                 )
               end
 
-            byebug if constructor_sym.nil?
             args
               .map { figure_out_type(entry, it) }
               .then { Symbol.type_application(constructor_sym.to_ref, it, node.range) }
@@ -44,6 +43,13 @@ module Jade
             params
               .map { figure_out_type(entry, it) }
               .then { Symbol.function_type(it, figure_out_type(entry, return_type)) }
+
+          in AST::TypeTuple(items:)
+            type_name = Stdlib::Tuple.constructor_by_arity(items.length)
+
+            items
+              .map { figure_out_type(entry, it) }
+              .then { Symbol.type_application(Symbol.type_ref(*type_name.split('.')), it, node.range) }
 
           in AST::TypeRecord(fields:, row_var:)
             row = row_var&.then { |row| Symbol.var(row.name, row.range) }
