@@ -78,8 +78,8 @@ module Jade
       Variable[name, span]
     end
 
-    def param(name)
-      Param[name]
+    def param(name, span)
+      Param[name, span]
     end
 
     def predeclared_function(name)

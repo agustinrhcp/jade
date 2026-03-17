@@ -5,13 +5,12 @@ module Jade
         extend self
         extend Helper
 
-        def analyze(node, registry, scope)
+        def analyze(node, registry, scope, entry)
           node => AST::InteropImportDeclaration(functions:)
 
-          annotation_errors = functions
+          functions
             .flat_map { validate_type_symbol(it.symbol, registry) }
-
-          SemanticAnalyzer::Result[scope, annotation_errors]
+            .then { Result[scope, it] }
         end
       end
     end

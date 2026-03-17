@@ -1,14 +1,12 @@
 module Jade
   module Frontend
     module SemanticAnalysis
-      module FunctionDeclaration
+      module Lambda
         extend self
         extend Helper
 
         def analyze(node, registry, scope, entry)
-          node => AST::FunctionDeclaration(name:, body:, params:, symbol:)
-
-          annotation_errors = validate_type_symbol(symbol, registry)
+          node => AST::Lambda(params:, body:)
 
           params
             .reduce(Result[scope, []]) do |acc, param|
@@ -19,8 +17,7 @@ module Jade
               analyze_node(body, registry, it.scope, entry)
                 .add_errors(it.errors)
             end
-              .add_errors(annotation_errors)
-              .with(scope:)
+            .with(scope:)
         end
       end
     end
