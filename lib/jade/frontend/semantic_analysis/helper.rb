@@ -2,26 +2,45 @@ module Jade
   module Frontend
     module SemanticAnalysis
       module Helper
-        def analyze_node(node, registry, scope)
-          SemanticAnalyzer.send(:analyze_r, node, registry, scope)
+        def analyze_node(node, registry, scope, entry)
+          SemanticAnalysis.send(:analyze_node, node, registry, scope, entry)
         end
 
-        def bind(scope, name, symbol)
+        def bind(scope, symbol, entry)
+          name = symbol.name
           if scope.lookup(name)
-            SemanticAnalyzer::Result[scope, [ShadowingError.new(name)]]
-
+            Error::ShadowingError.new(entry.name, symbol.decl_span, name:)
+              .then { Result[scope, [it]] }
           else
-            SemanticAnalyzer::Result[scope.bind(name, symbol), []]
+            Result[scope.bind(name, symbol), []]
           end
         end
 
-        def lookup(scope, name)
+        def lookup(scope, name, entry, span)
           if scope.lookup(name)
-            SemanticAnalyzer::Result[scope, []]
+            Result[scope, []]
           else
-            UndefinedVariable.new(name)
+            Error::UndefinedVariable.new(entry.name, span, var_ref: name)
               .then { Result[scope, [it]] }
           end
+        end
+
+        def analyze_many(nodes, registry, scope, entry)
+          nodes.reduce(Result[scope, []]) do |acc, node|
+            analyze_node(node, registry, acc.scope, entry) => Result[node_scope, node_errors]
+            Result[node_scope, node_errors + acc.errors]
+          end
+        end
+
+        def analyze_duplicate_fields(fields, entry)
+          fields
+            .group_by(&:key)
+            .select { |_, v| v.size > 1 }
+            .map do |k, v|
+              first, *rest = v
+              Error::DuplicateRecordField
+                .new(entry.name, first.range, field_name: k, duplicate_spans: rest.map(&:range))
+            end
         end
 
         def collect_vars(symbol, registry)

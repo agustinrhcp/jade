@@ -79,7 +79,7 @@ module Jade
         subject { frontend => Err(errors); errors }
 
         it { is_expected.to have(1).item }
-        its([0]) { is_expected.to be_a(Frontend::SemanticAnalyzer::ShadowingError) }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::ShadowingError) }
       end
     end
 
@@ -103,7 +103,7 @@ module Jade
         subject { frontend => Err(errors); errors }
 
         it { is_expected.to have(1).item }
-        its([0]) { is_expected.to be_a(Frontend::SemanticAnalyzer::UndefinedVariable) }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::UndefinedVariable) }
       end
     end
 

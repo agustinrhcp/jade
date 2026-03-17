@@ -4,7 +4,7 @@ require 'jade/type'
 require 'jade/stdlib'
 
 require 'jade/frontend/forward_declaration'
-require 'jade/frontend/semantic_analyzer'
+require 'jade/frontend/semantic_analysis'
 require 'jade/frontend/symbol_resolution'
 require 'jade/frontend/type_checking'
 require 'jade/frontend/fixity_fixer'
@@ -20,7 +20,7 @@ module Jade
         .map { FixityFixer.fix_entry(it) }
         .map { Desugaring.desugar_entry(it) }
         .and_then { SymbolResolution.resolve_entry(it, registry.update_module(it)) }
-        .and_then { SemanticAnalyzer.analyze(it, registry.update_module(it)) }
+        .and_then { SemanticAnalysis.analyze(it, registry.update_module(it)) }
         .and_then { TypeChecking.check(it, registry.update_module(it)) }
     end
 
@@ -36,7 +36,7 @@ module Jade
     def run_repl(ast, registry, current_entry, scope, env, var_gen)
       registry ||= registry_with_basics
       current_entry ||= entry_with_basics('JadeRepl')
-      scope ||= SemanticAnalyzer::Scope.new
+      scope ||= SemanticAnalysis::Scope.new
       env ||= TypeChecking::Env.new
       var_gen ||= TypeChecking::VarGen.new
 
@@ -48,7 +48,7 @@ module Jade
           SymbolResolution
             .resolve(fixed_ast, updated_registry, updated_entry) 
             .then do |enhanced_ast|
-              SemanticAnalyzer
+              SemanticAnalysis
                 .analyze_repl(enhanced_ast, updated_registry, scope)
                 .and_then do |scope|
                   TypeChecking.check_repl(enhanced_ast, updated_registry, env, var_gen)
@@ -71,7 +71,7 @@ module Jade
             .resolve(enh_ast, registry.update_module(entry), entry)
             .map { entry.with(ast: it) }
         end
-        .and_then { |entry| SemanticAnalyzer.analyze(entry, registry.update_module(entry)) }
+        .and_then { |entry| SemanticAnalysis.analyze(entry, registry.update_module(entry)) }
         .map { [it, registry.update_module(it)] }
     end
 
