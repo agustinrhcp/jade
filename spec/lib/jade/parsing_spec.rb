@@ -230,6 +230,70 @@ module Jade
       end
     end
 
+    context 'tuple type' do
+      context 'as a parameter type' do
+        include_context "single expression body"
+
+        let(:text) do
+          <<~JADE
+            def something(tuple: (Int, String)) -> Int
+              1
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+        describe 'the param type' do
+          subject { super().params.first => AST::FunctionDeclarationParam(type:); type }
+
+          it { is_expected.to be_a(AST::TypeTuple) }
+          its(:items) { is_expected.to have(2).items }
+          its('items.first') { is_expected.to be_a(AST::TypeApplication) }
+          its('items.last')  { is_expected.to be_a(AST::TypeApplication) }
+        end
+      end
+
+      context 'as a return type' do
+        include_context "single expression body"
+
+        let(:text) do
+          <<~JADE
+            def something(a: Int) -> (String, Int)
+              1
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+        describe 'the return type' do
+          subject { super().return_type }
+
+          it { is_expected.to be_a(AST::TypeTuple) }
+          its(:items) { is_expected.to have(2).items }
+        end
+      end
+
+      context 'three elements' do
+        include_context "single expression body"
+
+        let(:text) do
+          <<~JADE
+            def something(a: Int) -> (String, Int, Bool)
+              1
+            end
+          JADE
+        end
+
+        describe 'the return type' do
+          subject { super().return_type }
+
+          its(:items) { is_expected.to have(3).items }
+        end
+      end
+    end
+
     context 'operators' do
       include_context "single expression body"
 
@@ -585,6 +649,54 @@ module Jade
             expect(subject.left.right).to be_a(AST::Grouping)
           end
         end
+      end
+    end
+
+    context 'tuple' do
+      include_context "single expression body"
+
+      context 'two elements' do
+        let(:text) do
+          <<~JADE
+            (1, 2)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::Tuple) }
+        its(:items) { is_expected.to have(2).items }
+        its('items.first') { is_expected.to be_a(AST::Literal) }
+        its('items.last')  { is_expected.to be_a(AST::Literal) }
+      end
+
+      context 'three elements' do
+        let(:text) do
+          <<~JADE
+            (1, 2, 3)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::Tuple) }
+        its(:items) { is_expected.to have(3).items }
+      end
+
+      context 'single element is still a grouping' do
+        let(:text) do
+          <<~JADE
+            (1)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::Grouping) }
+      end
+
+      context 'lambda with same syntax is not a tuple' do
+        let(:text) do
+          <<~JADE
+            (a, b) -> { a }
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::Lambda) }
       end
     end
 

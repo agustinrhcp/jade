@@ -114,6 +114,28 @@ module Jade
               ]
             end
 
+        in AST::Tuple(items:)
+          AST::FunctionCall[
+            AST::ConstructorReference["Tuple.Tuple#{items.size}", node.range],
+            items.map { desugar(it) },
+            false,
+            nil,
+            node.range,
+          ]
+
+        in AST::Pattern::Tuple(patterns:)
+          AST::ConstructorReference[
+            "Tuple.Tuple#{patterns.size}",
+            nil,
+          ]
+            .then do
+              AST::Pattern::Constructor.new(
+                constructor: it,
+                patterns:,
+                range: node.range,
+              )
+            end
+
         in AST::Literal | AST::VariableReference | AST::ConstructorReference |
           AST::TypeDeclaration | AST::ImportDeclaration | AST::Pattern::Constructor |
           AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard |

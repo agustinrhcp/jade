@@ -6,7 +6,17 @@ module Jade
       end
 
       def type_atom
-        type_var | type_application |  grouped(lazy { type_function })
+        type_var | type_application | type_tuple | grouped(lazy { type_function })
+      end
+
+      def type_tuple
+        (
+          type(:lparen) >>
+            lazy { type_atom } >>
+            type(:comma).skip >>
+            sequence(lazy { type_atom }, separated_by: type(:comma).skip).map { [it] } >>
+            type(:rparen)
+        ).map(&AST.type_tuple)
       end
 
       def type_record

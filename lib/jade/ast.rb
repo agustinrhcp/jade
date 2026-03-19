@@ -42,6 +42,7 @@ module Jade
     define(:LambdaParam, :name)
 
     define(:Grouping, :expression)
+    define(:Tuple, :items)
     define(:InfixApplication, :left, :operator, :right)
     define(:InfixOperator, :value)
 
@@ -56,6 +57,7 @@ module Jade
     define(:TypeApplication, :constructor, :args)
     define(:TypeFunction, :params, :return_type)
     define(:TypeRecord, :fields, :row_var)
+    define(:TypeTuple, :items)
 
     define(:IfThenElse, :condition, :if_branch, :else_branch)
     define(:CaseOf, :expression, :branches)
@@ -75,6 +77,7 @@ module Jade
       define(:Constructor, :constructor, :patterns)
       define(:Record, :fields)
       define(:RecordField, :name, :pattern)
+      define(:Tuple, :patterns)
     end
 
     def string_literal
@@ -371,12 +374,30 @@ module Jade
       end
     end
 
+    def tuple_pattern
+      ->((lparen_token, first, rest, rparen_token)) do
+        Pattern::Tuple[[first, *rest], lparen_token.range.begin..rparen_token.range.end]
+      end
+    end
+
     def grouping
       ->((lparen_token, expression, rparen_token)) do
         Grouping[
           expression,
           lparen_token.range.begin..rparen_token.range.end
         ]
+      end
+    end
+
+    def tuple
+      ->((lparen_token, first, rest, rparen_token)) do
+        Tuple[[first, *rest], lparen_token.range.begin..rparen_token.range.end]
+      end
+    end
+
+    def type_tuple
+      ->((lparen_token, first, rest, rparen_token)) do
+        TypeTuple[[first, *rest], lparen_token.range.begin..rparen_token.range.end]
       end
     end
 

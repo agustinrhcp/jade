@@ -123,6 +123,9 @@ module Jade
               TypeChecking::ConstructorDef['Basics.True', 'Basics.Bool', []],
               TypeChecking::ConstructorDef['Basics.False', 'Basics.Bool', []],
             ]
+          in Type::Application(constructor: Type::Constructor(name: /^Tuple\.Tuple([2-9])$/ => name))
+            n = name[-1].to_i
+            [TypeChecking::Definition.constructor(name, name, Array.new(n) { env.fresh })]
 
           else
             type_def = env.lookup_def(type.constructor.name)

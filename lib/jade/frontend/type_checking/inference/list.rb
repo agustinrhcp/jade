@@ -28,7 +28,9 @@ module Jade
             result = Result.init(Type.list.apply([items_result.type]))
             items_state.unify_result(result, expected.type)
           end
+
           private
+
           def type_error(state, item, index)
             ->(error) do
               Error::ListItemTypeMismatch.new(
