@@ -1,7 +1,6 @@
 module Jade
   module Frontend
     module TypeChecking
-
       Placeholder = Data.define(:type, :constraints) do
         def free_vars
           type.unbound_vars + constraints.flat_map(&:unbound_vars)
@@ -22,6 +21,26 @@ module Jade
             .with(entry_name: entry.name)
             .load_bindings(entry, registry)
             .load_definitions(entry, registry)
+        end
+
+        def finalize
+          bindings
+            .map do |(k, binding)|
+              case binding
+              in Placeholder(type:, constraints:)
+                Inference::Helpers.generalize(
+                  self,
+                  substitution.apply(type),
+                  constraints.map { substitution.apply(it) }
+                )
+                  .then { [k, it]}
+                  
+              else
+                [k, binding]
+              end
+            end
+            .to_h
+            .then { with(bindings: it) }
         end
 
         def bind(key, value)

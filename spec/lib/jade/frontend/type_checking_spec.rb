@@ -70,8 +70,7 @@ module Jade
           its(:bindings) do
             is_expected.to have_key('__Test__.add')
             is_expected.to include(
-              '__Test__.add' => TypeChecking::Scheme[
-                [],
+              '__Test__.add' => TypeChecking::Placeholder[
                 Type.function([Type.int, Type.int], Type.int),
                 [],
               ]
