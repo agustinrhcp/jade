@@ -331,5 +331,19 @@ module Jade
         it { is_expected.to eql "Jade::Runtime.intr('Basics.not').call(false)" }
       end
     end
+
+    describe 'calling a record field that is a function' do
+      let(:text) do
+        <<~JADE
+          record_w_fn = {
+            some_fn: (n) -> { n + 2 }
+          }
+
+          record_w_fn.some_fn(1)
+        JADE
+      end
+
+      it { is_expected.to eql "record_w_fn = Data.define(:some_fn)[->(n) { Jade::Runtime.intr('Basics.(+)').call(n, 2) }]; record_w_fn.some_fn.call(1)" }
+    end
   end
 end
