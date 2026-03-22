@@ -31,6 +31,7 @@ require 'jade/frontend/symbol_resolution/record_literal'
 require 'jade/frontend/symbol_resolution/record_update'
 require 'jade/frontend/symbol_resolution/struct_declaration'
 require 'jade/frontend/symbol_resolution/type_declaration'
+require 'jade/frontend/symbol_resolution/interface_declaration'
 require 'jade/frontend/symbol_resolution/assign'
 require 'jade/frontend/symbol_resolution/variable_reference'
 require 'jade/frontend/symbol_resolution/variant_declaration'
@@ -109,6 +110,7 @@ module Jade
         in AST::RecordField then RecordField
         in AST::RecordUpdate then RecordUpdate
         in AST::StructDeclaration then StructDeclaration
+        in AST::InterfaceDeclaration then InterfaceDeclaration
         end
           .resolve(node, registry, current_entry)
       end

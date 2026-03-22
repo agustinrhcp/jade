@@ -12,6 +12,7 @@ require 'jade/frontend/forward_declaration/interop_import_declaration'
 require 'jade/frontend/forward_declaration/module'
 require 'jade/frontend/forward_declaration/struct_declaration'
 require 'jade/frontend/forward_declaration/type_declaration'
+require 'jade/frontend/forward_declaration/interface_declaration'
 
 module Jade
   module Frontend
@@ -60,6 +61,7 @@ module Jade
         in AST::Module then Module
         in AST::StructDeclaration then StructDeclaration
         in AST::TypeDeclaration then TypeDeclaration
+        in AST::InterfaceDeclaration then InterfaceDeclaration
         else
           nil
         end

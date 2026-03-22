@@ -14,7 +14,7 @@ module Jade
 
       let(:sql_source) do
         <<~JADE
-          module Sql exposing(column)
+          module Sql exposing(column, from)
 
           struct Expr(a) = { to_sql: String, type_: a }
 
@@ -38,6 +38,13 @@ module Jade
               |> String.join(".")
 
             Expr(sql, type_)
+          end
+
+          def from(table_: Table(a), select_fn: (a -> QueryOptions)) -> Query
+            Query(
+              From(table_.alias_),
+              table_.alias_ |> table_.columns |> select_fn
+            )
           end
         JADE
       end

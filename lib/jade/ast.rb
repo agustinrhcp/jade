@@ -73,6 +73,9 @@ module Jade
     define(:Implementation, :interface, :applied_type, :extends, :functions)
     define(:ImplementationFunction, :name, :fn)
 
+    define(:InterfaceDeclaration, :name, :type_param, :functions)
+    define(:InterfaceFunctionDecl, :name, :type)
+
     module Pattern
       extend self
       extend Nodes
@@ -583,6 +586,33 @@ module Jade
           canonical_name,
           fn,
           name.range.begin..fn.range.end,
+        ]
+      end
+    end
+
+    def interface_declaration
+      ->((interface_token, name, type_param, functions)) do
+        InterfaceDeclaration[
+          name.value,
+          type_param,
+          functions,
+          interface_token.range.begin..functions.last.range.end,
+        ]
+      end
+    end
+
+    def interface_function_decl
+      ->((name, type)) do
+        canonical_name =
+          case name.type
+          in :identifier then name.value
+          else "(#{name.value})"
+          end
+
+        InterfaceFunctionDecl[
+          canonical_name,
+          type,
+          name.range.begin..type.range.end,
         ]
       end
     end

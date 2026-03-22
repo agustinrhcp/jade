@@ -1173,6 +1173,100 @@ module Jade
           end
         end
       end
+
+      context 'extra args in an interface function param' do
+        let(:text) do
+          <<~JADE
+            interface Show(a) with
+              show : String(Int) -> a
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to eql '`String` type needs 0 argument but got 1' }
+        end
+      end
+
+      context 'extra args in an interface function return type' do
+        let(:text) do
+          <<~JADE
+            interface Show(a) with
+              show : a -> Int(a)
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TypeArgsMismatch) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to eql '`Int` type needs 0 argument but got 1' }
+        end
+      end
+    end
+
+    describe 'unused interface type parameter' do
+      context 'type param never appears in any function signature' do
+        let(:text) do
+          <<~JADE
+            interface Pepe(a) with
+              show : Int -> String
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::UnusedInterfaceTypeParam) }
+
+        describe 'the error message' do
+          subject { super()[0].message }
+
+          it { is_expected.to include 'Interface `Pepe` declares type parameter `a`' }
+          it { is_expected.to include 'nothing to dispatch on' }
+        end
+      end
+
+      context 'type param appears in a function param' do
+        let(:text) do
+          <<~JADE
+            interface Show(a) with
+              show : a -> String
+            end
+          JADE
+        end
+
+        subject { frontend }
+
+        it { is_expected.to be_a(Ok) }
+      end
+
+      context 'type param appears only in a function return type' do
+        let(:text) do
+          <<~JADE
+            interface Default(a) with
+              default : Int -> a
+            end
+          JADE
+        end
+
+        subject { frontend }
+
+        it { is_expected.to be_a(Ok) }
+      end
     end
 
     context 'a struct declaration' do
