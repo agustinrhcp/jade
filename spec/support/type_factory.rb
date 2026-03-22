@@ -11,6 +11,10 @@ module Jade
         Type.constructor('List.List').apply([inner])
       end
 
+      def eq(type)
+        Type.constraint('Basics.Eq', type, nil)
+      end
+
       def parse(annotation)
         Lexer
           .tokenize(Source.new(uri: nil, text: annotation))

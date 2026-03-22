@@ -7,7 +7,11 @@ module Jade
     include SymbolFactory
 
     describe '.from_symbol' do
-      subject { described_class.from_symbol(symbol, registry, Frontend::TypeChecking::VarGen.new) }
+      subject do
+        described_class
+          .from_symbol(symbol, registry, Frontend::TypeChecking::VarGen.new)
+          .first
+      end
 
       let(:registry) do
         Stdlib

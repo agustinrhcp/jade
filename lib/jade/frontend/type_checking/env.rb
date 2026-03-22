@@ -2,6 +2,12 @@ module Jade
   module Frontend
     module TypeChecking
 
+      Placeholder = Data.define(:type, :constraints) do
+        def free_vars
+          type.unbound_vars + constraints.flat_map(&:unbound_vars)
+        end
+      end
+
       Env = Data.define(:entry_name, :bindings, :substitution, :definitions, :var_gen) do
         def self.empty(var_gen = VarGen.new)
           Env[nil, {}, Substitution.new, {}, var_gen]
@@ -31,7 +37,19 @@ module Jade
         end
 
         def lookup(key)
-          type, constraints = Instantiation.instantiate(bindings[key], var_gen)
+            type, constraints =
+              case bindings[key]
+              in Scheme => scheme
+                Instantiation.instantiate(scheme, var_gen)
+
+              in Placeholder => placeholder
+                Scheme[placeholder.free_vars, placeholder.type, placeholder.constraints]
+                  .then { Instantiation.instantiate(it, var_gen) }
+
+              # in Placeholder => placeholder 
+              #   # TODO: if looking up current function (recursion)
+              #   [placeholder.type, placeholder.constraints]
+              end
 
           Result.init(
             substitution.apply(type),
@@ -58,9 +76,19 @@ module Jade
 
         def load_local_bindings(entry, registry)
           entry.defined_values.reduce(self) do |env, (_, sym)|
-            Type
-              .from_symbol(sym, registry, env.var_gen)
-              .then { Inference::Helpers.generalize(env, it) }
+            case sym
+            in Symbol::Function
+              Type
+                .from_symbol(sym, registry, env.var_gen)
+                .then { Placeholder[*it] }
+
+            in Symbol::InterfaceFunction | Symbol::StdlibFunction | Symbol::Constructor |
+              Symbol::InteropFunction
+
+              Type
+                .from_symbol(sym, registry, env.var_gen)
+                .then { Inference::Helpers.generalize(env, *it) }
+            end
               .then { env.bind(sym.qualified_name, it) }
           end
         end

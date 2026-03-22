@@ -20,7 +20,7 @@ module Jade
         .and_then { Frontend.run(it) }
     end
 
-    subject { frontend => Ok([node, _]); node }
+    subject { frontend => Ok([entry, _]); entry.ast }
 
     context 'literals' do
       include_context "single expression body"
@@ -1073,6 +1073,35 @@ module Jade
       subject { expect(frontend).to be_error; frontend => Err(errors); errors }
 
       it { is_expected.to have(1).item }
+    end
+
+    describe 'eq constraint' do
+      subject { super().expressions.last}
+
+      let(:text) do
+        <<~JADE
+          1 == 2
+          False == True
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionCall) }
+
+      context 'without implementation' do
+        let(:text) do
+          <<~JADE
+            def test() -> Bool
+              { salute: "Hola" } == { salute: "Hei" }
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(2).item }
+        its([0]) { is_expected.to be_a(Jade::Frontend::TypeChecking::Error::UnsatisfiedConstraint) }
+        its([1]) { is_expected.to be_a(Jade::Frontend::TypeChecking::Error::UnsatisfiedConstraint) }
+      end
     end
   end
 end

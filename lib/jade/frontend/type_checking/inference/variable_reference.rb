@@ -13,6 +13,7 @@ module Jade
             in Symbol::Variable
               state.env.lookup(symbol.name)
             else
+              # byebug if symbol.qualified_name == "Basics.(==)"
               state.env.lookup(symbol.qualified_name)
             end
               .then { [state, it] }

@@ -31,8 +31,9 @@ module Jade
               state,
               TypeChecking::Expected.non_auth(state.fresh),
             )
-            Data.define(:type, :errors, :env).new(
+            Data.define(:type, :constraints, :errors, :env).new(
               type: result.type,
+              constraints: result.constraints,
               errors: check_state.errors,
               env: check_state.env,
             )
@@ -647,6 +648,22 @@ module Jade
 
           its(:type) { is_expected.to eql Type.unit }
           its(:errors) { is_expected.to be_empty }
+        end
+
+      end
+
+      context 'interfaces' do
+        context 'with type params' do
+          let(:text) do
+            <<~JADE
+              a = 1
+              b = 2
+              a == b
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.bool }
+          its(:constraints) { is_expected.to include Type.eq(Type.int) }
         end
       end
     end

@@ -17,7 +17,7 @@ module Jade
         .tokenize(source)
         .then { Parsing.parse(it) }
         .and_then  { Frontend.run(it) }
-        .map  { Codegen.generate(*it) }
+        .map  { |e, r| Codegen.generate(e.ast, r) }
     end
 
     subject { generation => Ok(code); code }
@@ -344,6 +344,27 @@ module Jade
       end
 
       it { is_expected.to eql "record_w_fn = Data.define(:some_fn)[->(n) { Jade::Runtime.intr('Basics.(+)').call(n, 2) }]; record_w_fn.some_fn.call(1)" }
+    end
+
+    describe 'eq constraint' do
+      let(:text) do
+        <<~JADE
+          1 == 2
+          False == True
+        JADE
+      end
+
+      it { is_expected.to eql "Jade::Runtime.intr('Basics.int_eq').call(1, 2); Jade::Runtime.intr('Basics.bool_eq').call(false, true)" }
+
+      context 'using a defaulted function' do
+        let(:text) do
+          <<~JADE
+            1 != 2
+          JADE
+        end
+
+        it { is_expected.to eql "->(one, other) { Jade::Runtime.intr('Basics.not').call(Jade::Runtime.intr('Basics.int_eq').call(one, other)) }.call(1, 2)" }
+      end
     end
   end
 end

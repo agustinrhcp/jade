@@ -9,7 +9,8 @@ module Jade
           def infer(node, registry, state, expected)
             node => AST::FunctionCall(callee:, args:)
 
-            callee_state, callee_result = check(callee, registry, state, Expected.non_auth(state.fresh))
+            callee_state, callee_result =
+              check(callee, registry, state, Expected.non_auth(state.fresh))
 
             args_state, args_acc = args
               .reduce([callee_state, Result.accumulator]) do |(state_acc, acc), arg|
