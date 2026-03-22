@@ -50,7 +50,8 @@ module Jade
         def collect_vars(symbol, registry)
           case symbol
           in Symbol::TypeRef | Symbol::ValueRef
-            registry.lookup(symbol)
+            registry
+              .lookup(symbol)
               .then { collect_vars(it, registry) }
 
           in Symbol::Constructor(args:)
@@ -64,6 +65,12 @@ module Jade
             symbol
               .args
               .flat_map { collect_vars(it, registry) }
+
+          in Symbol::FunctionType | Symbol::InterfaceFunction
+            symbol
+              .params
+              .flat_map { collect_vars(it, registry) } +
+                collect_vars(symbol.return_type, registry)
 
           in Symbol::RecordType(row_var:)
             row_var.nil? ? [] : [row_var]
@@ -108,17 +115,13 @@ module Jade
               []
             end + args.flat_map { validate_type_symbol(it, registry) }
 
-          in Symbol::FunctionType(params:, return_type:)
-            validate_type_symbol(return_type, registry) +
-              params.flat_map { validate_type_symbol(it, registry) }
+          in Symbol::FunctionType | Symbol::InterfaceFunction | Symbol::InteropFunction
+            validate_type_symbol(symbol.return_type, registry) +
+              symbol.params.flat_map { validate_type_symbol(it, registry) }
 
           in Symbol::Function(params:, return_type:)
             validate_type_symbol(return_type, registry) +
               params.values.flat_map { validate_type_symbol(it, registry) }
-
-          in Symbol::InteropFunction(params:, return_type:)
-            validate_type_symbol(return_type, registry) +
-              params.flat_map { validate_type_symbol(it, registry) }
 
           in Symbol::RecordType(fields:)
             fields.reduce([]) do |acc, (k, v)|

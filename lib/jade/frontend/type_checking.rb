@@ -37,6 +37,7 @@ module Jade
             b_entry_name = k.split('.')[0..-2].join(',')
             b_entry_name == entry_name
           end
+          .reject { |k, _| interface_function?(k, registry) }
           .values
           .flat_map(&:constraints)
           .flat_map { Constraints.solve_at_finalize(it, registry, entry_name) }
@@ -50,6 +51,14 @@ module Jade
         state
           .with(errors: state.errors + errors)
           .to_result
+      end
+
+      def interface_function?(qname, registry)
+        *module_parts, name = qname.split('.')
+        Symbol
+          .value_ref(module_parts.join('.'), name)
+          .then { registry.lookup(it) }
+          .is_a?(Symbol::InterfaceFunction)
       end
 
       def check_repl(node, registry, env = Env.new)
@@ -76,6 +85,7 @@ module Jade
         in AST::QualifiedAccess then Inference::QualifiedAccess
         in AST::RecordAccess then Inference::RecordAccess
         in AST::StructDeclaration then Inference::StructDeclaration
+        in AST::InterfaceDeclaration then Inference::InterfaceDeclaration
         in AST::RecordField then Inference::RecordField
         in AST::RecordLiteral then Inference::RecordLiteral
         in AST::RecordUpdate then Inference::RecordUpdate

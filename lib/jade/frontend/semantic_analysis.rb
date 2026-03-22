@@ -14,6 +14,7 @@ require 'jade/frontend/semantic_analysis/type_declaration'
 require 'jade/frontend/semantic_analysis/interop_import_declaration'
 require 'jade/frontend/semantic_analysis/implementation'
 require 'jade/frontend/semantic_analysis/struct_declaration'
+require 'jade/frontend/semantic_analysis/interface_declaration'
 require 'jade/frontend/semantic_analysis/if_then_else'
 require 'jade/frontend/semantic_analysis/qualified_access'
 require 'jade/frontend/semantic_analysis/record_access'
@@ -59,36 +60,37 @@ module Jade
 
       def analyze_node(ast, registry, scope, entry)
         case ast
-        in AST::Module                         then ModuleNode
-        in AST::ImportDeclaration              then ImportDeclaration
-        in AST::InteropImportDeclaration       then InteropImportDeclaration
-        in AST::Literal | AST::CharLiteral     then Literal
-        in AST::Assign                         then Assign
-        in AST::VariableReference              then VariableReference
-        in AST::ConstructorReference           then ConstructorReference
-        in AST::Body                           then Body
-        in AST::FunctionDeclaration            then FunctionDeclaration
-        in AST::FunctionCall                   then FunctionCall
-        in AST::TypeDeclaration                then TypeDeclaration
-        in AST::Implementation                 then Implementation
-        in AST::StructDeclaration              then StructDeclaration
-        in AST::IfThenElse                     then IfThenElse
-        in AST::QualifiedAccess                then QualifiedAccess
-        in AST::RecordAccess                   then RecordAccess
-        in AST::CaseOf                         then CaseOf
-        in AST::CaseOfBranch                   then CaseOfBranch
-        in AST::Pattern::Wildcard              then PatternWildcard
-        in AST::Pattern::Literal               then PatternLiteral
-        in AST::Pattern::Binding               then PatternBinding
-        in AST::Pattern::Constructor           then PatternConstructor
-        in AST::Pattern::Record                then PatternRecord
-        in AST::Pattern::List                  then PatternList
-        in AST::Lambda                         then Lambda
-        in AST::Grouping                       then Grouping
-        in AST::List                           then List
-        in AST::RecordLiteral                  then RecordLiteral
-        in AST::RecordUpdate                   then RecordUpdate
-        in AST::RecordField                    then RecordField
+        in AST::Module then ModuleNode
+        in AST::ImportDeclaration then ImportDeclaration
+        in AST::InteropImportDeclaration then InteropImportDeclaration
+        in AST::Literal | AST::CharLiteral then Literal
+        in AST::Assign then Assign
+        in AST::VariableReference then VariableReference
+        in AST::ConstructorReference then ConstructorReference
+        in AST::Body then Body
+        in AST::FunctionDeclaration then FunctionDeclaration
+        in AST::FunctionCall then FunctionCall
+        in AST::TypeDeclaration then TypeDeclaration
+        in AST::Implementation then Implementation
+        in AST::StructDeclaration then StructDeclaration
+        in AST::InterfaceDeclaration then InterfaceDeclaration
+        in AST::IfThenElse then IfThenElse
+        in AST::QualifiedAccess then QualifiedAccess
+        in AST::RecordAccess then RecordAccess
+        in AST::CaseOf then CaseOf
+        in AST::CaseOfBranch then CaseOfBranch
+        in AST::Pattern::Wildcard then PatternWildcard
+        in AST::Pattern::Literal then PatternLiteral
+        in AST::Pattern::Binding then PatternBinding
+        in AST::Pattern::Constructor then PatternConstructor
+        in AST::Pattern::Record then PatternRecord
+        in AST::Pattern::List then PatternList
+        in AST::Lambda then Lambda
+        in AST::Grouping then Grouping
+        in AST::List then List
+        in AST::RecordLiteral then RecordLiteral
+        in AST::RecordUpdate then RecordUpdate
+        in AST::RecordField then RecordField
         end
           .analyze(ast, registry, scope, entry)
       end

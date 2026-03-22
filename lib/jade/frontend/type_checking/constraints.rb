@@ -38,7 +38,9 @@ module Jade
               .then { return it }
           end
 
-          Err[Error::MissingImplementation.new(entry_name, constraint.origin.range, constraint:)]
+          constraint.origin.range
+            .then { Error::MissingImplementation.new(entry_name, it, constraint:) }
+            .then { Err[it] }
         end
 
         def attach_dictionary(constraint, impl)

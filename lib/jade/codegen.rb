@@ -96,7 +96,10 @@ module Jade
           .keys
           .then { data_define(it) }
           .then { "#{name} = #{it}"}
-        
+
+      in AST::InterfaceDeclaration
+        ""
+
 
       in AST::VariantDeclaration(name:, args:)
         args

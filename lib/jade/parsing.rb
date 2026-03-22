@@ -58,7 +58,7 @@ module Jade
 
     def declaration
       function_declaration | type_declaration | import_declaration | interop_import_declaration |
-        struct_declaration | implementation
+        struct_declaration | implementation | interface_declaration
     end
 
     def expression
@@ -470,6 +470,31 @@ module Jade
           ).commit
       ).map(&AST.implementation)
        .context("implementation")
+    end
+
+    def interface_declaration
+      (
+        type(:interface) >>
+          (
+            type(:constant) >>
+            type(:lparen).skip >>
+            type_param >>
+            type(:rparen).skip >>
+            type(:with).skip >>
+            (at_least_one(interface_function_decl, separated_by: type(:comma).skip) | none.map { [] })
+              .map { [it] } >>
+            type(:end).skip
+          ).commit
+      ).map(&AST.interface_declaration)
+       .context("interface declaration")
+    end
+
+    def interface_function_decl
+      (
+        (type(:identifier) | (type(:lparen).skip >> operator >> type(:rparen).skip)) >>
+        type(:colon).skip >>
+        type_expression
+      ).map(&AST.interface_function_decl)
     end
 
     def implementation_function
