@@ -29,6 +29,7 @@ module Jade
                   function_name: node.name,
                 )
               end
+              .then { it.add_constraints_to_placeholder(symbol, body_result.constraints) }
               .then { [it, Result.init(Type.unit)] }
           end
         end

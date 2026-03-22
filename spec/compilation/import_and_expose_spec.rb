@@ -228,7 +228,7 @@ module Jade
       end
     end
 
-    context 'when using a polypmorphic exposed functoin' do
+    context 'when using a polypmorphic exposed function' do
       let(:exposing_source) do
         <<~JADE
           module Exposing exposing(id)

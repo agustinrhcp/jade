@@ -31,12 +31,15 @@ module Jade
               state,
               TypeChecking::Expected.non_auth(state.fresh),
             )
-            Data.define(:type, :constraints, :errors, :env).new(
-              type: result.type,
-              constraints: result.constraints,
-              errors: check_state.errors,
-              env: check_state.env,
-            )
+
+            Data
+              .define(:type, :constraints, :errors, :env)
+              .new(
+                type: result.type,
+                constraints: result.constraints,
+                errors: check_state.errors,
+                env: check_state.env,
+              )
           end
       end
 
@@ -652,17 +655,33 @@ module Jade
       end
 
       context 'interfaces' do
-        context 'with type params' do
+        let(:text) do
+          <<~JADE
+            a = 1
+            b = 2
+            a == b
+          JADE
+        end
+
+        its(:type) { is_expected.to eql Type.bool }
+        its(:constraints) { is_expected.to include Type.eq(Type.int) }
+
+        context 'a function declaration' do
           let(:text) do
             <<~JADE
-              a = 1
-              b = 2
-              a == b
+              def stuff(a: a) -> Bool
+                a == a
+              end
             JADE
           end
 
-          its(:type) { is_expected.to eql Type.bool }
-          its(:constraints) { is_expected.to include Type.eq(Type.int) }
+          subject { super().env }
+
+          it 'accumulates constraints' do
+            binding = subject.bindings['__Test__.stuff']
+            expect(binding).to be_a(TypeChecking::Placeholder)
+            expect(binding.constraints).to_not be_empty
+          end
         end
       end
     end

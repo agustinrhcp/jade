@@ -5,11 +5,11 @@ module Jade
       extend Helpers
 
       def generate(node, registry)
-        node => AST::FunctionCall(callee:, args:)
+        node => AST::FunctionCall(callee:, args:, dictionaries:)
 
         args_code = generate_many(args, registry)
 
-        "#{generate_callee(callee, registry, {})}.call(#{args_code})"
+        "#{generate_callee(callee, registry, dictionaries)}.call(#{args_code})"
       end
 
       private

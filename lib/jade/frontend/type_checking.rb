@@ -1,5 +1,6 @@
 require 'jade/frontend/type_checking/result'
 require 'jade/frontend/type_checking/env'
+require 'jade/frontend/type_checking/constraint_solver'
 require 'jade/frontend/type_checking/definition'
 require 'jade/frontend/type_checking/substitution'
 require 'jade/frontend/type_checking/unification'
@@ -33,7 +34,7 @@ module Jade
         Env
           .load(entry, registry)
           .then { check_node(entry.ast, registry, State.init(it), Expected.non_auth(it.fresh)) }
-          .first
+          .then { finalize(it.first, registry) }
           .to_result
           .map { entry.with(env: it) }
       end
@@ -72,6 +73,38 @@ module Jade
       end
 
       private
+
+      def finalize(state, registry)
+        state => { env: }
+        env
+          .bindings
+          .reduce(state) do |acc, (k, binding)|
+            case binding
+            in Placeholder(type:, constraints:)
+              unbound_cs, concrete_cs = constraints
+                .map { acc.env.substitution.apply(it) }
+                .uniq
+                .partition { it.unbound_vars.any? }
+
+              cs_errors = concrete_cs
+                .map do |cs|
+                  ConstraintSolver
+                    .solve(cs, registry, env)
+                    .errors
+                end
+                .flatten
+              
+              Inference::Helpers.generalize(
+                state.env.without_binding(k),
+                acc.env.substitution.apply(type),
+                concrete_cs,
+              )
+                .then { acc.bind(k, it).add_errors(cs_errors) }
+            else
+              next acc
+            end
+          end
+      end
 
       class VarGen
         def initialize

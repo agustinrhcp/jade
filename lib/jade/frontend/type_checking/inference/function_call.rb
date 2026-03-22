@@ -27,14 +27,31 @@ module Jade
               &type_error(state, node)
             )
 
-            after_callee_state.unify_result(
-              callee_result.map(&:return_type),
-              expected.type,
-              &type_error(state, node)
-            )
+            after_callee_state
+              .unify_result(
+                callee_result.map(&:return_type),
+                expected.type,
+                &type_error(state, node)
+              )
+            .then do |st, rs|
+              [
+                state.add_errors(solve_constraints(rs.constraints, registry, state.env)),
+                rs,
+              ]
+            end
+            .tap(&add_dictionaries_to_node(node))
           end
 
           private
+
+          def add_dictionaries_to_node(node)
+            ->((_, result)) do
+              result
+                .constraints
+                # mutates the node
+                .then { node.dictionaries.concat(it) }
+            end
+          end
 
           def type_error(state, node)
             ->(e) do

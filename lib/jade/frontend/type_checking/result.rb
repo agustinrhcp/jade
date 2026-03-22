@@ -43,6 +43,16 @@ module Jade
             Ok[env]
           end
         end
+
+        def add_constraints_to_placeholder(symbol, constraints)
+          placeholder = env
+            .bindings[symbol.qualified_name]
+
+          placeholder
+            .with(constraints: placeholder.constraints + constraints)
+            .then { env.bind(symbol.qualified_name, it) }
+            .then { with(env: it) }
+        end
       end
 
       Result = Data.define(:type, :constraints) do

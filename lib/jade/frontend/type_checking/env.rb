@@ -29,14 +29,17 @@ module Jade
               case binding
               in Placeholder(type:, constraints:)
                 Inference::Helpers.generalize(
-                  self,
+                  without_binding(k),
                   substitution.apply(type),
-                  constraints.map { substitution.apply(it) }
+                  constraints
+                    .map { substitution.apply(it) }
+                    .filter { it.unbound_vars.empty? }
+                    .uniq
                 )
-                  .then { [k, it]}
+                  .then { acc.bind(k, it) }
                   
               else
-                [k, binding]
+                next acc
               end
             end
             .to_h
@@ -134,6 +137,14 @@ module Jade
               Definition.from_symbol(sym, registry)
                 .then { env.define(sym.qualified_name, it) }
             end
+        end
+
+        # Need to remove the placeholder from the env
+        #  else the placeholder vars are never quantifiable.
+        def without_binding(binding_name)
+          bindings
+            .reject { |k, v| k == k}
+            .then { with(bindings: it) }
         end
       end
     end
