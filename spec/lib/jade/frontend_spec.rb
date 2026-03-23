@@ -17,7 +17,13 @@ module Jade
       Lexer
         .tokenize(source)
         .then { Parsing.parse(it) }
-        .and_then { Frontend.run(it) }
+        .and_then do |ast|
+          registry, entry = Frontend.entry_with_basics(ast)
+
+          Frontend
+            .run_entry(entry, registry)
+            .map { [it, registry.update_module(it)] }
+        end
     end
 
     subject { frontend => Ok([entry, _]); entry.ast }
@@ -266,7 +272,13 @@ module Jade
         Lexer
           .tokenize(source)
           .then { Parsing.parse(it) }
-          .and_then  { Frontend.run(it) }
+          .and_then do |ast|
+            registry, entry = Frontend.entry_with_basics(ast)
+
+            Frontend
+              .run_entry(entry, registry)
+              .map { [it, registry.update_module(it)] }
+          end
       end
 
       it { is_expected.to be_a(AST::Node).and be_a(AST::Body) }

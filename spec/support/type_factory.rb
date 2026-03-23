@@ -15,6 +15,10 @@ module Jade
         Type.constraint('Basics.Eq', type, nil)
       end
 
+      def num(type)
+        Type.constraint('Basics.num', type, nil)
+      end
+
       def parse(annotation)
         Lexer
           .tokenize(Source.new(uri: nil, text: annotation))

@@ -24,15 +24,6 @@ module Jade
         .and_then { TypeChecking.check(it, registry.update_module(it)) }
     end
 
-    def run(ast)
-      run_up_to_semantic_analysis(ast)
-        .and_then do |(entry, registry)|
-          TypeChecking
-            .check(entry, registry)
-            .map { [entry, registry] }
-       end
-    end
-
     def run_repl(ast, registry, current_entry, scope, env, var_gen)
       registry ||= registry_with_basics
       current_entry ||= entry_with_basics('JadeRepl')
@@ -56,23 +47,6 @@ module Jade
                 end
             end
         end
-    end
-
-    def run_up_to_semantic_analysis(ast)
-      registry, current_entry = entry_with_basics(ast)
-
-      ForwardDeclaration
-        .declare(ast, registry, current_entry)
-        # TODO: [Frontend:HandleErrors]
-        .map { |entry| FixityFixer.fix(ast).then { [it, entry] } }
-        .map { |enh_ast, entry| Desugaring.desugar(enh_ast).then { [it, entry] } }
-        .and_then do |enh_ast, entry|
-          SymbolResolution
-            .resolve(enh_ast, registry.update_module(entry), entry)
-            .map { entry.with(ast: it) }
-        end
-        .and_then { |entry| SemanticAnalysis.analyze(entry, registry.update_module(entry)) }
-        .map { [it, registry.update_module(it)] }
     end
 
     def entry_with_basics(ast)

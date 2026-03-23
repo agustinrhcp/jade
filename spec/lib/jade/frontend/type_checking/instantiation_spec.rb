@@ -47,7 +47,7 @@ module Jade
         describe 'constraints' do
           it "instantiates constraint type vars with the same fresh vars as the type" do
             a = Type.var(0, "a")
-            constraint = Type::Constraint[interface: 'Num', type: a, span: nil]
+            constraint = Type.num(a)
 
             scheme = Scheme.new(
               quantified: [a],
@@ -64,7 +64,7 @@ module Jade
 
           it "generates fresh constraint vars independently per instantiation" do
             a = Type.var(0, "a")
-            constraint = Type::Constraint[interface: 'Num', type: a, span: nil]
+            constraint = Type.num(a)
 
             scheme = Scheme.new(
               quantified: [a],

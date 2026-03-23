@@ -20,8 +20,17 @@ module Jade
         Lexer
           .tokenize(source)
           .then { Parsing.parse(it) }
-          .and_then { Frontend.run_up_to_semantic_analysis(it) }
-          # TODO: Make this prettier
+          .and_then do |ast|
+            registry, entry = Frontend.entry_with_basics(ast)
+
+            entry
+              .then { ForwardDeclaration.declare_entry(it, registry) }
+              .map { FixityFixer.fix_entry(it) }
+              .map { Desugaring.desugar_entry(it) }
+              .and_then { SymbolResolution.resolve_entry(it, registry.update_module(it)) }
+              .and_then { SemanticAnalysis.analyze(it, registry.update_module(it)) }
+              .map { [it, registry.update_module(it)] }
+          end
           .and_then do |entry, registry|
             env = TypeChecking::Env.load(entry, registry)
             state = TypeChecking::State.init(env)

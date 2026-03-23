@@ -34,15 +34,13 @@ module Jade
                 expected.type,
                 &type_error(state, node)
               )
-            .then do |st, rs|
-              # TODO: This is only for concrete constraints.
-              [
-                state.add_errors(solve_constraints(rs.constraints, registry, state.env)),
-                rs,
-              ]
-            end
-            # # TODO: NEED TO ATTACH DICTIONARY AFTER SUBSTITUTION.
-            # .tap(&add_dictionaries_to_node(node))
+              .then do |st, rs|
+                # TODO: This is only for concrete constraints.
+                [
+                  st.add_errors(solve_constraints(rs.constraints, registry, st.env)),
+                  rs,
+                ]
+              end
           end
 
           private
