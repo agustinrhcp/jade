@@ -45,7 +45,11 @@ module Jade
                   end
                   .then { registry.implementations[it] }
 
-                next if implementation
+                if implementation
+                  cons.origin.dictionaries.concat([cons])
+
+                  next
+                end
 
                 Error::UnsatisfiedConstraint.new(
                   env.entry_name,

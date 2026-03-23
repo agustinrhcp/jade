@@ -76,6 +76,7 @@ module Jade
 
       def finalize(state, registry)
         state => { env: }
+
         env
           .bindings
           .reduce(state) do |acc, (k, binding)|

@@ -16,8 +16,14 @@ module Jade
       Lexer
         .tokenize(source)
         .then { Parsing.parse(it) }
-        .and_then  { Frontend.run(it) }
-        .map  { |e, r| Codegen.generate(e.ast, r) }
+        .and_then do |ast|
+          registry, entry = Frontend.entry_with_basics(ast)
+
+          Frontend
+            .run_entry(entry, registry)
+            .map { [it, registry.update_module(it)] }
+        end
+        .map { |e, r| Codegen.generate(e.ast, r) }
     end
 
     subject { generation => Ok(code); code }

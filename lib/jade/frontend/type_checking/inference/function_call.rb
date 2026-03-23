@@ -12,7 +12,6 @@ module Jade
             callee_state, callee_result =
               check(callee, registry, state, Expected.non_auth(state.fresh))
                 .then { |st, rs| [st, rs.attach_origin(node)] }
-            byebug if callee_result.constraints.any?
 
             args_state, args_acc = args
               .reduce([callee_state, Result.accumulator]) do |(state_acc, acc), arg|
@@ -35,13 +34,13 @@ module Jade
                 expected.type,
                 &type_error(state, node)
               )
-            # .then do |st, rs|
-            #   # TODO: This is only for concrete constraints.
-            #   [
-            #     state.add_errors(solve_constraints(rs.constraints, registry, state.env)),
-            #     rs,
-            #   ]
-            # end
+            .then do |st, rs|
+              # TODO: This is only for concrete constraints.
+              [
+                state.add_errors(solve_constraints(rs.constraints, registry, state.env)),
+                rs,
+              ]
+            end
             # # TODO: NEED TO ATTACH DICTIONARY AFTER SUBSTITUTION.
             # .tap(&add_dictionaries_to_node(node))
           end

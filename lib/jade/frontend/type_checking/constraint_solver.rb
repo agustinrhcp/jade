@@ -62,7 +62,6 @@ module Jade
           if implementation
             cons.origin.dictionaries.concat([cons])
 
-            byebug
             return Result.ok 
           end
 
