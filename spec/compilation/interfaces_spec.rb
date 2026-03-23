@@ -65,7 +65,6 @@ module Jade
           def eq(a: a, b: a) -> Bool
             a == b
           end
-
         JADE
       end
 

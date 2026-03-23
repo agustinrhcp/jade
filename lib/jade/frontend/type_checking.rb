@@ -94,11 +94,11 @@ module Jade
                     .errors
                 end
                 .flatten
-              
+  
               Inference::Helpers.generalize(
                 state.env.without_binding(k),
                 acc.env.substitution.apply(type),
-                concrete_cs,
+                unbound_cs,
               )
                 .then { acc.bind(k, it).add_errors(cs_errors) }
             else
