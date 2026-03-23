@@ -76,6 +76,12 @@ module Jade
         def self.accumulator
           ResultAcc[types: [], constraints: []]
         end
+
+        def attach_origin(node)
+          constraints
+            .map { it.with(origin: it.origin || node )}
+            .then { with(constraints: it) }
+        end
       end
 
       ResultAcc = Data.define(:types, :constraints) do

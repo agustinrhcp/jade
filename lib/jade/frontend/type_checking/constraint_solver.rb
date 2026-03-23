@@ -49,7 +49,22 @@ module Jade
             end
             .then { registry.implementations[it] }
 
-          return Result.ok if implementation
+          # byebug if implementation
+
+          # def add_dictionaries_to_node(node)
+          #   ->((_, result)) do
+          #     result
+          #       .constraints
+          #       # mutates the node
+          #       .then { node.dictionaries.concat(it) }
+          #   end
+          # end
+          if implementation
+            cons.origin.dictionaries.concat([cons])
+
+            byebug
+            return Result.ok 
+          end
 
           Error::UnsatisfiedConstraint
             .new(

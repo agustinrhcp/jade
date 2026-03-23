@@ -1,6 +1,6 @@
 module Jade
   module Type
-    Constraint = Data.define(:interface, :type, :span) do
+    Constraint = Data.define(:interface, :type, :span, :origin) do
       include Base
 
       def unbound_vars

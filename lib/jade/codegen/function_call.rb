@@ -9,6 +9,7 @@ module Jade
 
         args_code = generate_many(args, registry)
 
+        puts dictionaries
         "#{generate_callee(callee, registry, dictionaries)}.call(#{args_code})"
       end
 

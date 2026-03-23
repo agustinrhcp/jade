@@ -62,7 +62,7 @@ module Jade
     end
 
     def constraint(interface_id, type, span)
-      Constraint[interface_id, type, span]
+      Constraint[interface_id, type, span, nil]
     end
 
     private

@@ -9,8 +9,8 @@ module Jade
             Unification.unify(actual, expected)
           end
 
-          def instantiate(scheme, var_gen)
-            Instantiation.instantiate(scheme, var_gen)
+          def instantiate(scheme, var_gen, origin: nil)
+            Instantiation.instantiate(scheme, var_gen, origin:)
           end
 
           def generalize(env, type, constraints = [])
