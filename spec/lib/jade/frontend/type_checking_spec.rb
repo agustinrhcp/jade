@@ -692,6 +692,30 @@ module Jade
             expect(binding.constraints).to_not be_empty
           end
         end
+
+        context 'constraint propagation: first pass scheme coherence' do
+          let(:text) do
+            <<~JADE
+              def eq(a: a, b: a) -> Bool
+                a == b
+              end
+            JADE
+          end
+
+          subject { super().env }
+
+          it 'stores constraints that reference the same vars as the function type' do
+            binding = subject.bindings['__Test__.eq']
+            expect(binding).to be_a(TypeChecking::Placeholder)
+            expect(binding.constraints).to have(1).item
+
+            type_vars = binding.type.unbound_vars.map(&:id).to_set
+            constraint_vars = binding.constraints.flat_map { it.type.unbound_vars.map(&:id) }.to_set
+
+            expect(constraint_vars).to be_subset(type_vars),
+              "constraint vars #{constraint_vars.inspect} should be a subset of type vars #{type_vars.inspect}"
+          end
+        end
       end
     end
   end

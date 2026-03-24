@@ -4,6 +4,7 @@ module Jade
       include Base
 
       def to_s
+        return id
         name || id
       end
 

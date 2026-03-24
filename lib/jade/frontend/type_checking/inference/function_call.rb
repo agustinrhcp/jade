@@ -19,6 +19,7 @@ module Jade
                 [new_state, acc.add(result)]
               end
 
+
             return_type = args_state.fresh
             fn_type = Type.function(args_acc.types, return_type)
 
@@ -37,7 +38,7 @@ module Jade
               .then do |st, rs|
                 # TODO: This is only for concrete constraints.
                 [
-                  st.add_errors(solve_constraints(rs.constraints, registry, st.env)),
+                  st.add_errors(solve_constraints(rs.constraints.map { st.env.substitution.apply(it) }, registry, st.env)),
                   rs,
                 ]
               end

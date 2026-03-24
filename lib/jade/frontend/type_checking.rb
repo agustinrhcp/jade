@@ -35,6 +35,17 @@ module Jade
           .load(entry, registry)
           .then { check_node(entry.ast, registry, State.init(it), Expected.non_auth(it.fresh)) }
           .then { finalize(it.first, registry) }
+          .then do
+            new_env = it.env.with(substitution: Substitution.new, var_gen: VarGen.new)
+
+            check_node(
+              entry.ast,
+              registry,
+              State.init(new_env),
+              Expected.non_auth(new_env.fresh),
+            )
+          end
+          .first
           .to_result
           .map { entry.with(env: it) }
       end

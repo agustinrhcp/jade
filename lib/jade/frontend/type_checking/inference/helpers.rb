@@ -26,7 +26,6 @@ module Jade
           end
 
           def solve_constraints(constraints, registry, env)
-            # byebug if constraints.any?
             constraints
               .filter_map do |cons|
                 next if cons.type.is_a?(Type::Var)

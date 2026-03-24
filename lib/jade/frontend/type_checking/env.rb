@@ -7,6 +7,12 @@ module Jade
         end
       end
 
+      Mono = Data.define(:type) do
+        def free_vars
+          []
+        end
+      end
+
       Env = Data.define(:entry_name, :bindings, :substitution, :definitions, :var_gen) do
         def self.empty(var_gen = VarGen.new)
           Env[nil, {}, Substitution.new, {}, var_gen]
@@ -58,6 +64,22 @@ module Jade
             .then { with(definitions: it) }
         end
 
+        def lookup_for_def(key)
+          type, constraints =
+            case bindings[key]
+            in Scheme => scheme
+              Instantiation.instantiate(scheme, var_gen)
+
+            in Placeholder => placeholder 
+              [substitution.apply(placeholder .type), placeholder.constraints]
+            end
+
+          Result.init(
+            substitution.apply(type),
+            constraints.map { it.with(type: substitution.apply(it.type)) },
+          )
+        end
+
         def lookup(key)
             type, constraints =
               case bindings[key]
@@ -67,6 +89,9 @@ module Jade
               in Placeholder => placeholder
                 Scheme[placeholder.free_vars, placeholder.type, placeholder.constraints]
                   .then { Instantiation.instantiate(it, var_gen) }
+
+              in Mono => mono
+                [mono.type, []]
 
               # in Placeholder => placeholder 
               #   # TODO: if looking up current function (recursion)
