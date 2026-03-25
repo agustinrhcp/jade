@@ -13,8 +13,7 @@ module Jade
           # where the vars are rigid just withing the block
           unrigid_type = type.make_rigid(false)
           (unrigid_type.unbound_vars + constraints.flat_map(&:unbound_vars))
-            .to_set
-            .to_a
+            .uniq(&:id)
             .then { it - env.free_vars }
             .then { Scheme[it, unrigid_type, constraints] }
         end

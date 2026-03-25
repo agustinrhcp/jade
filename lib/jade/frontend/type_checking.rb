@@ -35,6 +35,16 @@ module Jade
           .load(entry, registry)
           .then { check_node(entry.ast, registry, State.init(it), Expected.non_auth(it.fresh)) }
           .then { finalize(it.first, registry) }
+          .then do
+            new_env = it.env.with(substitution: Substitution.new, var_gen: VarGen.new)
+
+            check_node(
+              entry.ast,
+              registry,
+              State.init(new_env),
+              Expected.non_auth(new_env.fresh),
+            ).first
+          end
           .to_result
           .map { entry.with(env: it) }
       end
@@ -70,6 +80,11 @@ module Jade
         in AST::VariableReference then Inference::VariableReference
         end
           .infer(node, registry, state, expected_type)
+          .tap do |(st, rs)|
+            if state.env.entry_name == 'Pepe'
+              puts "node: #{node.class.name} -> #{rs.type.to_s}"
+            end
+          end
       end
 
       private
@@ -77,7 +92,7 @@ module Jade
       def finalize(state, registry)
         state => { env: }
 
-        env
+        new_state = env
           .bindings
           .reduce(state) do |acc, (k, binding)|
             case binding
@@ -94,10 +109,10 @@ module Jade
                     .errors
                 end
                 .flatten
+              byebug if  env.entry_name == 'Pepe'
   
-              # byebug if env.entry_name == '__Test__'
               Inference::Helpers.generalize(
-                state.env.without_binding(k),
+                acc.env.without_binding(k),
                 acc.env.substitution.apply(type),
                 unbound_cs,
               )
@@ -106,6 +121,10 @@ module Jade
               next acc
             end
           end
+
+          puts new_state.env.bindings if env.entry_name == 'Pepe'
+
+        new_state
       end
 
       class VarGen

@@ -9,12 +9,14 @@ module Jade
 
         args_code = generate_many(args, registry)
 
+        # puts dictionaries
         "#{generate_callee(callee, registry, dictionaries)}.call(#{args_code})"
       end
 
       private
 
       def generate_callee(callee, registry, dictionaries)
+        # puts callee.symbol
         case callee
         in AST::ConstructorReference | AST::RecordAccess
           return generate_node(callee, registry)
