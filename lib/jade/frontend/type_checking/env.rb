@@ -58,6 +58,22 @@ module Jade
             .then { with(definitions: it) }
         end
 
+        def lookup_for_def(key)
+          type, constraints =
+            case bindings[key]
+            in Scheme => scheme
+              Instantiation.instantiate(scheme, var_gen)
+
+            in Placeholder => placeholder 
+              [placeholder.type, placeholder.constraints]
+            end
+
+          Result.init(
+            type,
+            constraints,
+          )
+        end
+
         def lookup(key)
             type, constraints =
               case bindings[key]

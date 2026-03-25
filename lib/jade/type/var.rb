@@ -3,7 +3,12 @@ module Jade
     Var = Data.define(:id, :name, :rigid) do
       include Base
 
+      def rigid?
+        rigid
+      end
+
       def to_s
+        # return id
         name || id
       end
 

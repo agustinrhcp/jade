@@ -95,6 +95,7 @@ module Jade
                 end
                 .flatten
   
+              # byebug if env.entry_name == '__Test__'
               Inference::Helpers.generalize(
                 state.env.without_binding(k),
                 acc.env.substitution.apply(type),

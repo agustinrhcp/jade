@@ -692,6 +692,68 @@ module Jade
             expect(binding.constraints).to_not be_empty
           end
         end
+
+        context 'constraint propagation: first pass scheme coherence' do
+          let(:type_check) do
+            Lexer
+              .tokenize(source)
+              .then { Parsing.parse(it) }
+              .and_then do |ast|
+                registry, entry = Frontend.entry_with_basics(ast)
+
+                entry
+                  .then { ForwardDeclaration.declare_entry(it, registry) }
+                  .map { FixityFixer.fix_entry(it) }
+                  .map { Desugaring.desugar_entry(it) }
+                  .and_then { SymbolResolution.resolve_entry(it, registry.update_module(it)) }
+                  .and_then { SemanticAnalysis.analyze(it, registry.update_module(it)) }
+                  .map { [it, registry.update_module(it)] }
+              end
+              .and_then do |entry, registry|
+                env = TypeChecking::Env.load(entry, registry)
+                state = TypeChecking::State.init(env)
+                check_state, result = TypeChecking.check_node(
+                  entry.ast,
+                  registry,
+                  state,
+                  TypeChecking::Expected.non_auth(state.fresh),
+                )
+
+                final_state = TypeChecking.send(:finalize, check_state, registry)
+
+                Data
+                  .define(:type, :constraints, :errors, :env)
+                  .new(
+                    type: result.type,
+                    constraints: result.constraints,
+                    errors: final_state.errors,
+                    env: final_state.env,
+                  )
+              end
+          end
+
+          let(:text) do
+            <<~JADE
+              def eq(a: a, b: a) -> Bool
+                a == b
+              end
+            JADE
+          end
+
+          subject { super().env }
+
+          it 'stores constraints that reference the same vars as the function type' do
+            binding = subject.bindings['__Test__.eq']
+            expect(binding).to be_a(TypeChecking::Scheme)
+            expect(binding.constraints).to have(1).item
+
+            type_vars = binding.type.unbound_vars.map(&:id).to_set
+            constraint_vars = binding.constraints.flat_map { it.type.unbound_vars.map(&:id) }.to_set
+
+            expect(constraint_vars).to be_subset(type_vars),
+              "constraint vars #{constraint_vars.inspect} should be a subset of type vars #{type_vars.inspect}"
+          end
+        end
       end
     end
   end
