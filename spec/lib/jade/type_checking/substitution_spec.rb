@@ -45,6 +45,17 @@ module Jade
               is_expected.to eq(Type.parse('{ name: String, id: Int }'))
             end
           end
+
+          describe 'applying substitution where row var resolves to concrete record' do
+            let(:substitution) do
+              Unification.unify(Type.parse("{ t2 | id: t1 }"), Type.parse("{ name: String, id: Int }"), Env.empty) => Ok(sub)
+              sub
+            end
+  
+            subject { substitution.apply(Type.parse("{ t2 | id: t1 }")) }
+  
+            it { is_expected.to eq(Type.parse('{ name: String, id: Int }')) }
+          end
         end
       end
     end

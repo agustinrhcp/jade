@@ -124,6 +124,20 @@ module Jade
       end
     end
 
+    describe 'unifying record open record with literal' do
+      let(:type1) { Type.parse "{ name: String, id: Int }" }
+      let(:type2) { Type.parse "{ t2 | id: t1 }" }
+
+      it { is_expected.to be_ok }
+
+      describe 'the substitution' do
+        subject { super() => Ok(substitution); substitution }
+
+        its(:mappings) { is_expected.to include('t1' => Type.int) }
+        its(:mappings) { is_expected.to include('t2' => type1) }
+      end
+    end
+
     describe 'unifying two open records' do
       let(:type1) { Type.parse "{ a | a: Int }" }
       let(:type2) { Type.parse "{ b | b: String }" }
@@ -133,9 +147,9 @@ module Jade
       describe 'the substitution' do
         subject { super() => Ok(substitution); substitution }
 
-        its(:mappings) { is_expected.to include('a' => Type.parse('{ t2 | a: Int, b: String }')) }
-        its(:mappings) { is_expected.to include('b' => Type.parse('{ t2 | a: Int, b: String }')) }
-        its(:mappings) { is_expected.to include('t1' => Type.parse('{ t2 | a: Int, b: String }')) }
+        its(:mappings) { is_expected.to include('a' => Type.parse('{ t1 | a: Int, b: String }')) }
+        its(:mappings) { is_expected.to include('b' => Type.parse('{ t1 | a: Int, b: String }')) }
+        its(:mappings) { is_expected.to include('t1' => Type.parse('{ t1 | a: Int, b: String }')) }
       end
     end
 

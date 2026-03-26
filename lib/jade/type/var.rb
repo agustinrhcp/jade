@@ -10,6 +10,7 @@ module Jade
       def to_s
         # return id
         name || id
+          .then { rigid? ? "[#{it}]" : it }
       end
 
       def unbound_vars

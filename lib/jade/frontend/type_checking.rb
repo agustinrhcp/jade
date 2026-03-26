@@ -110,7 +110,7 @@ module Jade
                     .errors
                 end
                 .flatten
-              byebug if  env.entry_name == 'Pepe'
+              # byebug if  env.entry_name == 'Pepe'
   
               # TODO: DAMNIT WE NEED QUANTIFIED
               Inference::Helpers.generalize(

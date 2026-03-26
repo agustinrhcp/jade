@@ -31,6 +31,7 @@ module Jade
 
       def make_rigid(val = true)
         with(row_var: row_var&.make_rigid(val))
+          .with(fields: fields.transform_values { it.make_rigid(val) })
       end
     end
   end

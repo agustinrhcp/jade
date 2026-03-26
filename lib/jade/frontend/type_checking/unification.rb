@@ -82,6 +82,7 @@ module Jade
                   )
   
                   Substitution.new
+                    .bind(fresh.id, fresh)
                     .bind(type1.row_var.id, merged)
                     .bind(type2.row_var.id, merged)
                     .compose(fields_r)
