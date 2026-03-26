@@ -14,10 +14,6 @@ module Jade
       def unbound_vars
         []
       end
-
-      def make_rigid(_ = true)
-        self
-      end
     end
   end
 end

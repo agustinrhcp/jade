@@ -7,7 +7,11 @@ using Jade::TypeFactory
 module Jade
   describe Frontend::TypeChecking::Unification do
     let(:env) { Frontend::TypeChecking::Env.empty(Frontend::TypeChecking::VarGen.new) }
-    subject { described_class.unify(type1, type2, env) }
+
+    let(:rigid_vars) { [] }
+    let(:ctx) { Frontend::TypeChecking::Unification::Context[rigid_vars] }
+
+    subject { described_class.unify(type1, type2, env, ctx) }
 
     describe 'unifying variables' do
       let(:type1) { Type.parse('t1') }
@@ -23,23 +27,36 @@ module Jade
 
       context 'unifying two rigid vars' do
         context 'same rigid var' do
-          let(:type1) { Type.parse('t1').make_rigid }
-          let(:type2) { Type.parse('t1').make_rigid }
+          let(:rigid_vars) { [type1] }
+
+          let(:type1) { Type.parse('t1') }
+          let(:type2) { Type.parse('t1') }
 
           it { is_expected.to be_ok }
         end
 
         context 'different rigid vars' do
-          let(:type1) { Type.parse('t1').make_rigid }
-          let(:type2) { Type.parse('t2').make_rigid }
+          let(:rigid_vars) { [type1, type2] }
+
+          let(:type1) { Type.parse('t1') }
+          let(:type2) { Type.parse('t2') }
 
           it { is_expected.to be_error }
         end
       end
 
       context 'unifying flexible against rigid' do
+        let(:rigid_vars) { [type2] }
         let(:type1) { Type.parse('t1') }
-        let(:type2) { Type.parse('t2').make_rigid }
+        let(:type2) { Type.parse('t2') }
+
+        it { is_expected.to be_error }
+      end
+
+      context 'unifying concrete against rigid' do
+        let(:rigid_vars) { [type2] }
+        let(:type1) { Type.parse('Int') }
+        let(:type2) { Type.parse('t2') }
 
         it { is_expected.to be_error }
       end
@@ -84,8 +101,10 @@ module Jade
       end
 
       context 'when the vars are rigid' do
+        let(:rigid_vars) { [type2.args.first] }
+
         let(:type1) { Type.parse('t1 -> t1') }
-        let(:type2) { Type.function([Type.var('t2').make_rigid], Type.var('t1')) }
+        let(:type2) { Type.function([Type.var('t2')], Type.var('t1')) }
 
         it { is_expected.to be_error }
       end

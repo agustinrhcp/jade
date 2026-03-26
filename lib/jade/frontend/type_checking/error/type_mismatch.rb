@@ -10,7 +10,7 @@ module Jade
           end
 
           def message
-            fail NotImplementederror
+            "Expected #{@expected} but got #{@actual}"
           end
         end
       end

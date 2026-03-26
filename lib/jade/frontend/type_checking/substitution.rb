@@ -27,13 +27,10 @@ module Jade
 
             case mapping
             in Type::Var(id: ^id)
-              type.rigid? ? type : mapping
-
-            in Type::Var
-              type.rigid? ? apply(mapping.make_rigid) : apply(mapping)
+              mapping
 
             else
-              type.rigid? ? type : mapping
+              apply(mapping)
             end
 
           in Type::Application(args:)
@@ -41,10 +38,21 @@ module Jade
               .with(args: args.map { apply(it) })
 
           in Type::AnonymousRecord(fields:, row_var:)
-            fields
-              .transform_values { apply(it) }
-              .then { type.with(fields: it) }
-              .then { it.open? ? it.with(row_var: apply(it.row_var)) : it }
+            applied_fields = fields.transform_values { apply(it) }
+
+            return type.with(fields: applied_fields) if type.closed?
+  
+            case apply(row_var)
+            in Type::AnonymousRecord(fields: extra_fields, row_var: new_row_var)
+              Type.anonymous_record(applied_fields.merge(extra_fields), new_row_var)
+
+            in Type::Var => applied_row_var
+              type.with(fields: applied_fields, row_var: applied_row_var)
+
+            in Type::Application => struct
+              type.with(fields: applied_fields, row_var: struct)
+
+            end
           end
         end
 

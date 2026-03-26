@@ -16,7 +16,7 @@ module Jade
               .reduce(state) { |acc, (p, t)| acc.bind(p.name, Scheme.mono(t)) }
 
             body_state, body_result = check(
-              body, registry, params_state, Expected.non_auth(params_state.fresh),
+              body, registry, params_state, Expected.infer(params_state.fresh),
             )
 
             fn_type = Type.function(params_types, body_result.type)
