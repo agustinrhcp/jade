@@ -46,16 +46,18 @@ module Jade
           in Type::AnonymousRecord(fields:, row_var:)
             applied_fields = fields.transform_values { apply(it) }
   
-            if row_var.nil?
-              type.with(fields: applied_fields)
-            else
+            if type.open?
               resolved = apply(row_var)
               case resolved
               in Type::AnonymousRecord(fields: extra_fields, row_var: new_row_var)
                 Type.anonymous_record(applied_fields.merge(extra_fields), new_row_var)
+
               else
                 type.with(fields: applied_fields, row_var: resolved)
               end
+
+            else
+              type.with(fields: applied_fields)
             end
           end
         end
