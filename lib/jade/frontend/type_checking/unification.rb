@@ -74,13 +74,16 @@ module Jade
               end
               .and_then do |fields_r|
                 if type1.open? && type2.open?
-                  fresh_type = env.fresh
-
-                  Type
-                    .anonymous_record(type1.fields.merge(type2.fields), env.fresh)
-                    .then { Substitution.new.bind(fresh_type.id, it)}
-                    .bind(type1.row_var.id, fresh_type)
-                    .bind(type2.row_var.id, fresh_type)
+                  fresh = env.fresh
+  
+                  merged = Type.anonymous_record(
+                    type1.fields.merge(type2.fields),
+                    fresh
+                  )
+  
+                  Substitution.new
+                    .bind(type1.row_var.id, merged)
+                    .bind(type2.row_var.id, merged)
                     .compose(fields_r)
                     .then { Ok[it] }
 

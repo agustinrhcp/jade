@@ -17,7 +17,7 @@ module Jade
               .args
               .zip(params)
               .reduce(state) do |acc, (t, p)|
-                acc.bind(p.name, Scheme.mono(t))
+                acc.bind(p.name, Local[t])
               end
               .then { check(body, registry, it, Expected.auth(fn_type.return_type)) }
             # puts body_result.type.to_s if state.env.entry_name == '__Test__'

@@ -94,6 +94,7 @@ module Jade
 
         new_state = env
           .bindings
+          .reject { |(k, v)| v.is_a?(Local) }
           .reduce(state) do |acc, (k, binding)|
             case binding
             in Placeholder(type:, constraints:)
@@ -111,8 +112,11 @@ module Jade
                 .flatten
               byebug if  env.entry_name == 'Pepe'
   
+              # TODO: DAMNIT WE NEED QUANTIFIED
               Inference::Helpers.generalize(
-                acc.env.without_binding(k),
+                acc.env
+                  .without_binding(k)
+                  .without_locals,
                 acc.env.substitution.apply(type),
                 unbound_cs,
               )

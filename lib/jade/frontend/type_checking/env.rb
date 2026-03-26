@@ -7,6 +7,12 @@ module Jade
         end
       end
 
+      Local = Data.define(:type) do
+        def free_vars
+          []
+        end
+      end
+
       Env = Data.define(:entry_name, :bindings, :substitution, :definitions, :var_gen) do
         def self.empty(var_gen = VarGen.new)
           Env[nil, {}, Substitution.new, {}, var_gen]
@@ -66,6 +72,10 @@ module Jade
 
             in Placeholder => placeholder 
               [placeholder.type, placeholder.constraints]
+
+            in Local => local
+              Scheme.mono(local.type)
+                .then { Instantiation.instantiate(it, var_gen) }
             end
 
           Result.init(
@@ -84,6 +94,9 @@ module Jade
                 Scheme[placeholder.free_vars, placeholder.type, placeholder.constraints]
                   .then { Instantiation.instantiate(it, var_gen) }
 
+            in Local => local
+              Scheme.mono(local.type)
+                .then { Instantiation.instantiate(it, var_gen) }
               # in Placeholder => placeholder 
               #   # TODO: if looking up current function (recursion)
               #   [placeholder.type, placeholder.constraints]
@@ -160,6 +173,12 @@ module Jade
         def without_binding(binding_name)
           bindings
             .reject { |k, v| k == k}
+            .then { with(bindings: it) }
+        end
+
+        def without_locals
+          bindings
+            .reject { |(k, v)| v.is_a?(Local) }
             .then { with(bindings: it) }
         end
       end

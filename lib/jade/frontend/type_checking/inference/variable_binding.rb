@@ -12,7 +12,7 @@ module Jade
             new_state, new_result = check(expression, registry, state, expected)
 
             new_state
-              .bind(name, generalize(state.env, new_result.type))
+              .bind(name, Local[new_result.type])
               .unify_result(new_result, expected.type)
           end
         end
