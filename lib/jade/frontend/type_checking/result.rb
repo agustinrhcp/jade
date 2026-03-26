@@ -6,16 +6,16 @@ module Jade
           new(env, [])
         end
 
-        def unify_result(result, right, &block)
-          unify(result.type, right, &block)
+        def unify_result(result, right, rigid_vars = [], &block)
+          unify(result.type, right, rigid_vars, &block)
             .then { [it, result.apply(it.env.substitution)] }
         end
 
-        def unify(left, right, &block)
+        def unify(left, right, rigid_vars = [], &block)
           applied_left = env.substitution.apply(left)
           applied_right = env.substitution.apply(right)
 
-          case Unification.unify(applied_left, applied_right, env)
+          case Unification.unify(applied_left, applied_right, env, Unification::Context[rigid_vars])
           in Ok(sub)
             with(env: env.composose_substitution(sub))
 

@@ -11,7 +11,7 @@ module Jade
           def infer(node, registry, state, expected)
             node => AST::CaseOf(expression:, branches:)
 
-            new_state, expr_result = check(expression, registry, state, Expected.non_auth(state.fresh))
+            new_state, expr_result = check(expression, registry, state, Expected.infer(state.fresh))
 
             first_branch, *rest_branches = branches
             after_first_state, first_result = infer_branch(
@@ -47,7 +47,7 @@ module Jade
             node => AST::CaseOfBranch(pattern:, body:)
 
             pattern_state, _pattern_result = infer_pattern(
-              pattern, registry, env, Expected.auth(expression_result.type)
+              pattern, registry, env, Expected.infer(expression_result.type)
             )
 
             check(body, registry, pattern_state, expected)
@@ -58,7 +58,7 @@ module Jade
             in AST::Pattern::Record(fields:, symbol:)
               fields_state, fields_result = fields
                 .reduce([state, Result.accumulator]) do |(state_acc, result_acc), field|
-                  st, rs = infer_pattern(field.pattern, registry, state_acc, Expected.non_auth(state_acc.fresh))
+                  st, rs = infer_pattern(field.pattern, registry, state_acc, Expected.infer(state_acc.fresh))
                   [st, result_acc.add(rs)]
                 end
 
@@ -91,7 +91,7 @@ module Jade
                 .args
                 .zip(patterns)
                 .reduce([state, Result.accumulator]) do |(acc_state, acc_result), (inner_expected, pattern)|
-                  new_state, result = infer_pattern(pattern, registry, acc_state, Expected.auth(inner_expected))
+                  new_state, result = infer_pattern(pattern, registry, acc_state, Expected.check(inner_expected))
                   [new_state, acc_result.add(result)]
                 end
 

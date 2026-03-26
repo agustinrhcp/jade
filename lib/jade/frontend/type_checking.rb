@@ -16,30 +16,34 @@ module Jade
       extend self
 
       Expected = Data.define(:type, :authoritative) do
-        def auth?
+        def check?
           authoritative == true
         end
 
-        def self.auth(type)
+        def self.check(type)
           self[type, true]
         end
 
-        def self.non_auth(type)
+        def self.infer(type)
           self[type, false]
+        end
+
+        def rigid_vars
+          check? ? type.unbound_vars : []
         end
       end
 
       def check(entry, registry)
         Env
           .load(entry, registry)
-          .then { check_node(entry.ast, registry, State.init(it), Expected.non_auth(it.fresh)) }
+          .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
           .first
           .to_result
           .map { entry.with(env: it) }
       end
 
       def check_repl(node, registry, env = Env.new)
-        check_node(node, registry, env, Expected.non_auth(env.fresh))
+        check_node(node, registry, env, Expected.infer(env.fresh))
           .to_result
       end
 

@@ -28,10 +28,6 @@ module Jade
       def field_names
         fields.keys
       end
-
-      def make_rigid(val = true)
-        with(row_var: row_var&.make_rigid(val))
-      end
     end
   end
 end

@@ -14,7 +14,7 @@ module Jade
               state.fresh.with(name: 'a'),
             )
 
-            target_state, target_result = check(target, registry, state, Expected.non_auth(state.fresh))
+            target_state, target_result = check(target, registry, state, Expected.infer(state.fresh))
             after_state, _ = target_state.unify_result(target_result, record_expected) do
               Error::RecordAccessTypeMismatch.new(
                 state.env.entry_name,

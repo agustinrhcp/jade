@@ -29,7 +29,7 @@ module Jade
               entry.ast,
               registry,
               state,
-              TypeChecking::Expected.non_auth(state.fresh),
+              TypeChecking::Expected.infer(state.fresh),
             )
             Data.define(:type, :errors, :env).new(
               type: result.type,
@@ -478,12 +478,31 @@ module Jade
               JADE
             end
 
-            its(:errors) { is_expected.to have(1).item }
+            its(:errors) { is_expected.to have(2).item }
 
             describe 'the error' do
               subject { super().errors.map(&:message).join(' ') }
 
               it { is_expected.to include 'it returns Int but its signature says it should be a' }
+              it { is_expected.to include "If branches must return the same type" }
+            end
+          end
+
+          context 'open record' do
+            let(:text) do
+              <<~JADE
+                def f(x: a) -> { id: a }
+                  { id: 1 }
+                end
+              JADE
+            end
+
+            its(:errors) { is_expected.to have(1).item }
+
+            describe 'the error' do
+              subject { super().errors.map(&:message).join(' ') }
+
+              it { is_expected.to eql "There's a problem with the body of `f` definition: it returns { id : Int } but its signature says it should be { id : a }" }
             end
           end
         end

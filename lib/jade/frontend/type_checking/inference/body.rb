@@ -13,7 +13,7 @@ module Jade
 
             first_expressions_state = first_expressions
               .reduce(state) do |acc, expr|
-                new_state, _ = check(expr, registry, acc, Expected.non_auth(state.fresh))
+                new_state, _ = check(expr, registry, acc, Expected.infer(state.fresh))
                 new_state
               end
 

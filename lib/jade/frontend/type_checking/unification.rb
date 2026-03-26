@@ -4,13 +4,25 @@ module Jade
       module Unification
         extend self
 
-        def unify(type1, type2, env)
+        Context = Data.define(:rigid_vars) do
+          def self.empty
+            new([])
+          end
+
+          def rigid?(var)
+            rigid_vars
+              .find { var.id == it.id }
+              .then { !it.nil? }
+          end
+        end
+
+        def unify(type1, type2, env, ctx = Context.empty)
           case [type1, type2]
           in [Type::Application, Type::Application]
-            unify(type1.constructor, type2.constructor, env)
+            unify(type1.constructor, type2.constructor, env, ctx)
               .map_error { UnificationError.new(type1,type2) }
               .and_then do |cons|
-                unify_many(type1.args, type2.args, env)
+                unify_many(type1.args, type2.args, env, ctx)
                   .map_error do |final_sub|
                     UnificationError.new(
                       final_sub.apply(type1),
@@ -20,14 +32,14 @@ module Jade
               end
 
           in [Type::Var, _]
-            if (type1.rigid? || type2.rigid?) && type1 != type2
+            if (ctx.rigid?(type1) || ctx.rigid?(type2)) && type1 != type2
               return Err[UnificationError.new(type1, type2)]
             end
 
             Ok[Substitution.new.bind(type1.id, type2)]
 
           in [_, Type::Var]
-            unify(type2, type1, env)
+            unify(type2, type1, env, ctx)
               .map_error(&:flip)
 
           in [Type::Function, Type::Function]
@@ -35,9 +47,9 @@ module Jade
               return Err[UnificationError.new(type1, type2)]
             end
 
-            unify_many(type1.args, type2.args, env)
+            unify_many(type1.args, type2.args, env, ctx)
               .then do |args_r|
-                unify(type1.return_type, type2.return_type, env)
+                unify(type1.return_type, type2.return_type, env, ctx)
                   .on_err { args_r.and_then { Err[it] } }
                   .and_then { |sub| args_r.map_both { it.compose(sub) } }
               end
@@ -65,7 +77,7 @@ module Jade
               return Err[UnificationError.new(type1, type2)]
             end
 
-            unify_shared_fields(type1, type2, env)
+            unify_shared_fields(type1, type2, env, ctx)
               .map_error do |final_sub|
                 UnificationError.new(
                   final_sub.apply(type1),
@@ -85,11 +97,11 @@ module Jade
                     .then { Ok[it] }
 
                 elsif type1.open?
-                  unify(type1.row_var, type2, env)
+                  unify(type1.row_var, type2, env, ctx)
                     .map { fields_r.compose(it) }
 
                 elsif type2.open?
-                  unify(type2.row_var, type1, env)
+                  unify(type2.row_var, type1, env, ctx)
                     .map { fields_r.compose(it) }
 
                 else
@@ -108,13 +120,13 @@ module Jade
                 acc.bind(k, v)
               end
               .apply(expanded.body)
-              .then { unify(type1, it, env) }
-              .and_then { |body_r| unify(type1.row_var, type2, env).map { body_r.compose(it) } }
+              .then { unify(type1, it, env, ctx) }
+              .and_then { |body_r| unify(type1.row_var, type2, env, ctx).map { body_r.compose(it) } }
               .on_err { Err[UnificationError.new(type1, type2)] }
             
 
           in [Type::Application, Type::AnonymousRecord]
-            unify(type2, type1, env)
+            unify(type2, type1, env, ctx)
               .map_error(&:flip)
 
           else
@@ -124,7 +136,7 @@ module Jade
 
         private
 
-        def unify_shared_fields(type1, type2, env)
+        def unify_shared_fields(type1, type2, env, ctx)
           shared_fields = type1.field_names & type2.field_names
           fields1 = type1.fields
           fields2 = type2.fields
@@ -138,7 +150,7 @@ module Jade
                 sub
               end
 
-              case unify(fields1[key], fields2[key], env)
+              case unify(fields1[key], fields2[key], env, ctx)
               in Err
                 next subs_r.and_then { Err[it] }
               in Ok(k_sub)
@@ -147,7 +159,7 @@ module Jade
             end
         end
 
-        def unify_many(types1, types2, env)
+        def unify_many(types1, types2, env, ctx)
           types1
             .zip(types2)
             .reduce(Ok[Substitution.new]) do |subs_r, args|
@@ -158,7 +170,7 @@ module Jade
                 sub
               end
 
-              case unify(*args.map { sub.apply(it) }, env)
+              case unify(*args.map { sub.apply(it) }, env, ctx)
               in Err
                 next subs_r.and_then { Err[it] }
               in Ok(arg_sub)

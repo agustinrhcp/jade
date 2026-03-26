@@ -17,10 +17,14 @@ module Jade
               .reduce(state) do |acc, (t, p)|
                 acc.bind(p.name, Scheme[[], t])
               end
-              .then { check(body, registry, it, Expected.auth(fn_type.return_type)) }
+              .then { check(body, registry, it, Expected.check(fn_type.return_type)) }
 
             new_state
-              .unify(body_result.type, fn_type.return_type.make_rigid) do
+              .unify(
+                body_result.type,
+                fn_type.return_type,
+                fn_type.unbound_vars
+              ) do
                 Error::FunctionBodyTypeMismatch.new(
                   state.env.entry_name,
                   node.range,

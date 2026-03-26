@@ -13,11 +13,6 @@ module Jade
         (args.flat_map(&:unbound_vars) + return_type.unbound_vars)
           .to_set.to_a
       end
-
-      def make_rigid(val = true)
-        with(args: args.map { it.make_rigid(val) })
-          .with(return_type: return_type.make_rigid(val))
-      end
     end
   end
 end

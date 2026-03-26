@@ -17,7 +17,7 @@ module Jade
     end
 
     def var(id, name = nil)
-      Var[id, name, false]
+      Var[id, name]
     end
 
     def unit
