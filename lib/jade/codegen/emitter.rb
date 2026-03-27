@@ -1,0 +1,74 @@
+module Jade
+  module Codegen
+    module Emitter
+      extend self
+
+      def emit(ir) 
+        case ir
+        in [:var, expr]
+          expr
+
+        in [:!, expr]
+          "!(#{emit(expr)})"
+
+        in [:and, expr1, expr2]
+          "#{emit(expr1)} && #{emit(expr2)}"
+
+        in Integer | TrueClass | FalseClass | Float
+          ir.to_s
+
+        in String
+          "\"#{ir}\""
+
+        in [:case, subject, branches]
+          branches
+            .map { [:case_branch, *it] }
+            .map { emit(it) }
+            .join('; ')
+            .then { "case #{emit(subject)}; #{it}; end" }
+
+        in [:case_branch, pattern, body]
+          body
+            .map { emit(it) }.join('; ')
+            .then { "in #{emit(pattern)} then #{it}" }
+
+        in [:call, callee, args]
+          args
+            .map { emit(it) }
+            .join(', ')
+            .then { "#{emit(callee)}.call(#{it})"}
+
+        in [:impl_arg, index, fn]
+          "impl_arg[#{index}]['#{fn}']"
+
+        in [:list, exprs]
+          exprs
+            .map { emit(it) }
+            .join(', ')
+            .then { "[#{it}]" }
+
+        in [:access, expr, key]
+          "#{emit(expr)}.#{key}"
+
+        # patterns
+
+        in [:constructor, name, args]
+          args
+            .map { "#{it}" }
+            .join(',')
+            .then { "#{to_qualified(name)}(#{it})" }
+
+        in [:_]
+          '_'
+
+        end
+      end
+
+      private
+
+      def to_qualified(module_name)
+        "#{module_name.gsub('.', '::')}"
+      end
+    end
+  end
+end

@@ -28,7 +28,7 @@ module Jade
                 .then { desugar(it) }
 
             else
-              AST::FunctionCall[right, [left], true, nil, node.range]
+              AST::FunctionCall[right, [left], operator, [], node.range]
 
             end
               .then { desugar(it) }
@@ -38,7 +38,7 @@ module Jade
               AST::VariableReference["(#{operator.value})", operator.range],
               [desugar(left), desugar(right)],
               operator,
-              nil,
+              [],
               node.range
             ]
           end

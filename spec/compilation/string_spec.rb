@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 require 'jade'
-require 'jade/module_loader'
 
 module Jade
   describe 'String' do

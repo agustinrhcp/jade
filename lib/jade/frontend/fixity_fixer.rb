@@ -38,18 +38,20 @@ module Jade
       end
 
       FIXITY = {
-        '+' => Fixity[6, :left],
-        '-' => Fixity[6, :left],
-        '*' => Fixity[7, :left],
-        '/' => Fixity[7, :left],
+        '+'  => Fixity[6, :left],
+        '-'  => Fixity[6, :left],
+        '*'  => Fixity[7, :left],
+        '/'  => Fixity[7, :left],
         '|>' => Fixity[2, :left],
         '<|' => Fixity[2, :right],
         '==' => Fixity[4, :none],
         '!=' => Fixity[4, :none],
         '<=' => Fixity[4, :none],
         '>=' => Fixity[4, :none],
-        '>' => Fixity[4, :none],
-        '<' => Fixity[4, :none],
+        '>'  => Fixity[4, :none],
+        '<'  => Fixity[4, :none],
+        '&&'  => Fixity[3, :right],
+        '||'  => Fixity[3, :right],
       }.freeze
 
       def fix_entry(entry)

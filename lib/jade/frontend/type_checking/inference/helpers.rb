@@ -1,3 +1,6 @@
+require 'jade/frontend/type_checking/generalization'
+require 'jade/frontend/type_checking/instantiation'
+
 module Jade
   module Frontend
     module TypeChecking
@@ -13,8 +16,8 @@ module Jade
             Instantiation.instantiate(scheme, var_gen)
           end
 
-          def generalize(env, type)
-            Generalization.generalize(env, type)
+          def generalize(env, type, constraints = [])
+            Generalization.generalize(env, type, constraints)
           end
 
           def check(node, registry, env, expected_type)

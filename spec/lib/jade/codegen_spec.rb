@@ -331,5 +331,95 @@ module Jade
         it { is_expected.to eql "Jade::Runtime.intr('Basics.not').call(false)" }
       end
     end
+
+    describe 'calling a record field that is a function' do
+      let(:text) do
+        <<~JADE
+          record_w_fn = {
+            some_fn: (n) -> { n + 2 }
+          }
+
+          record_w_fn.some_fn(1)
+        JADE
+      end
+
+      it { is_expected.to eql "record_w_fn = Data.define(:some_fn)[->(n) { Jade::Runtime.intr('Basics.(+)').call(n, 2) }]; record_w_fn.some_fn.call(1)" }
+    end
+
+    describe 'eq constraint' do
+      let(:text) do
+        <<~JADE
+          1 == 2
+          False == True
+        JADE
+      end
+
+      it { is_expected.to eql "Jade::Runtime.intr('Basics.int_eq').call(1, 2); Jade::Runtime.intr('Basics.bool_eq').call(false, true)" }
+
+      context 'using a defaulted function' do
+        let(:text) do
+          <<~JADE
+            1 != 2
+          JADE
+        end
+
+        it { is_expected.to eql "->(one, other) { Jade::Runtime.intr('Basics.not').call(Jade::Runtime.intr('Basics.int_eq').call(one, other)) }.call(1, 2)" }
+      end
+
+      context 'without implementation' do
+        context 'for type applications' do
+          let(:text) do
+            <<~JADE
+              def test() -> Bool
+                Nothing() == Just(1)
+              end
+            JADE
+          end
+
+          it('is derived') { is_expected.to include("impl_arg[0]['(==)'].call(l0, r0)") }
+          it { is_expected.to start_with "def test; ->() { ->(impl_arg) { ->(one, other) { " }
+          it { is_expected.to end_with ".call(Maybe::Nothing.method(:[]).call(), Maybe::Just.method(:[]).call(1)) }; end" }
+
+          context 'when calling !=' do
+            let(:text) do
+              <<~JADE
+                def test() -> Bool
+                  Nothing() != Just(1)
+                end
+              JADE
+            end
+
+            it { is_expected.to start_with "def test; ->() { ->(impl_arg) { ->(one, other) { !" }
+          end
+
+          context 'with a type with different type params per variant' do
+            let(:text) do
+              <<~JADE
+                def test() -> Bool
+                  Ok("OK") != Err(404)
+                end
+              JADE
+            end
+
+            it('is derived') { is_expected.to include("impl_arg[0]['(==)'].call(l0, r0)") }
+            it { is_expected.to start_with "def test; ->() { ->(impl_arg) { ->(one, other) { " }
+          end
+        end
+
+        context 'for anonymous records' do
+          let(:text) do
+            <<~JADE
+              def test() -> Bool
+                { salute: "Hola", n: 1 } == { salute: "Hei", n: 2 }
+              end
+            JADE
+          end
+
+          it('is derived') { is_expected.to include("impl_arg[0]['(==)'].call(one.salute, other.salute) && impl_arg[1]['(==)'].call(one.n, other.n)") }
+          it { is_expected.to start_with "def test; ->() { ->(impl_arg) { ->(one, other) { " }
+          it { is_expected.to end_with ".call(Data.define(:n, :salute)[1, \"Hola\"], Data.define(:n, :salute)[2, \"Hei\"]) }; end" }
+        end
+      end
+    end
   end
 end

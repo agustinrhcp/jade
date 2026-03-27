@@ -1,13 +1,16 @@
-require 'jade/frontend/type_checking/result'
-require 'jade/frontend/type_checking/env'
+require 'jade/frontend/type_checking/constraints'
 require 'jade/frontend/type_checking/definition'
+require 'jade/frontend/type_checking/env'
+require 'jade/frontend/type_checking/error'
+require 'jade/frontend/type_checking/expected'
+require 'jade/frontend/type_checking/inference'
+require 'jade/frontend/type_checking/loader'
+require 'jade/frontend/type_checking/result'
+require 'jade/frontend/type_checking/state'
 require 'jade/frontend/type_checking/substitution'
 require 'jade/frontend/type_checking/unification'
-require 'jade/frontend/type_checking/scheme'
-require 'jade/frontend/type_checking/generalization'
-require 'jade/frontend/type_checking/instantiation'
-require 'jade/frontend/type_checking/inference'
-require 'jade/frontend/type_checking/error'
+
+require 'jade/frontend/type_checking/generalizer'
 
 module Jade
   module Frontend
@@ -15,31 +18,38 @@ module Jade
       extend Inference::Helpers
       extend self
 
-      Expected = Data.define(:type, :authoritative) do
-        def check?
-          authoritative == true
-        end
-
-        def self.check(type)
-          self[type, true]
-        end
-
-        def self.infer(type)
-          self[type, false]
-        end
-
-        def rigid_vars
-          check? ? type.unbound_vars : []
-        end
-      end
-
       def check(entry, registry)
-        Env
+        Loader
           .load(entry, registry)
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
-          .first
-          .to_result
+          .then { Generalizer.generalize(it.first.env) }
+          .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
+          .then { finalize(*it, registry) }
           .map { entry.with(env: it) }
+      end
+
+      def finalize(state, result, registry)
+        state.env => { bindings:, entry_name: }
+
+        errors = bindings
+          .select do |k,v|
+            # filter locals
+            b_entry_name = k.split('.')[0..-2].join(',')
+            b_entry_name == entry_name
+          end
+          .values
+          .flat_map(&:constraints)
+          .flat_map { Constraints.solve_at_finalize(it, registry, entry_name) }
+
+        # TODO: impl declarations need their own finalization pass here.
+        # Unresolved constraints from impl function bodies (e.g. Eq(a) from
+        # `one.id == other.id` inside `impl Eq for Pepe(a)`) should be promoted
+        # to impl-level requirements — making the impl an ImplementationTemplate
+        # with those constraints — rather than being dropped silently.
+
+        state
+          .with(errors: state.errors + errors)
+          .to_result
       end
 
       def check_repl(node, registry, env = Env.new)
@@ -73,30 +83,6 @@ module Jade
         in AST::VariableReference then Inference::VariableReference
         end
           .infer(node, registry, state, expected_type)
-      end
-
-      private
-
-      class VarGen
-        def initialize
-          @next_id = 1
-        end
-
-        def fresh_id
-          "t#{@next_id}"
-            .tap { @next_id += 1 }
-        end
-
-        def fresh(name = nil)
-          fresh_id
-            .then { Type.var(it, name) }
-        end
-
-        def next(name)
-          "#{name}#{@next_id}"
-            .tap { @next_id += 1 }
-            .then { Type.var(it, name) }
-        end
       end
     end
   end
