@@ -1,6 +1,11 @@
 module Jade
   module Frontend
     module TypeChecking
+      Placeholder = Data.define(:type, :constraints) do
+        def free_vars
+          type.unbound_vars + constraints.flat_map(&:unbound_vars)
+        end
+      end
 
       Env = Data.define(:entry_name, :bindings, :substitution, :definitions, :var_gen) do
         def self.empty(var_gen = VarGen.new)
@@ -33,9 +38,17 @@ module Jade
         def lookup(key)
           binding = bindings[key]
 
-          Instantiation
-            .instantiate(binding, var_gen)
-            .then { substitution.apply(it) }
+          type, constraints =
+            case bindings[key]
+            in Scheme => scheme
+              Instantiation.instantiate(scheme, var_gen)
+
+            in Placeholder => placeholder
+              Scheme[placeholder.free_vars, placeholder.type, placeholder.constraints]
+                .then { Instantiation.instantiate(it, var_gen) }
+            end
+
+          Result.init(type)
         end
 
         def lookup_def(key)
@@ -57,9 +70,18 @@ module Jade
 
         def load_local_bindings(entry, registry)
           entry.defined_values.reduce(self) do |env, (_, sym)|
-            Type
-              .from_symbol(sym, registry, env.var_gen)
-              .then { Inference::Helpers.generalize(env, it) }
+            case sym
+            in Symbol::Function
+              Type
+                .from_symbol(sym, registry, env.var_gen)
+                .then { [it, []] }
+                .then { Placeholder[*it] }
+
+            else
+              Type
+                .from_symbol(sym, registry, env.var_gen)
+                .then { Inference::Helpers.generalize(env, it) }
+            end
               .then { env.bind(sym.qualified_name, it) }
           end
         end
@@ -70,6 +92,7 @@ module Jade
               .select { it.is_a?(Symbol::ValueRef) }
               .reduce(env) do |env, sym|
                 next env if env.bindings[sym.qualified_name]
+
                 registry
                   .get(sym.module_name)
                   .env

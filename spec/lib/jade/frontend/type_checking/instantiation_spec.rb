@@ -16,6 +16,7 @@ module Jade
               Scheme.new(
                 quantified: [a],
                 type: Type.function([a], a),
+                constraints: [],
               )
 
             fn = described_class.instantiate(scheme, VarGen.new)
@@ -34,6 +35,7 @@ module Jade
               Scheme.new(
                 quantified: [a],
                 type: Type.function([a], a),
+                constraints: [],
               )
 
             var_gen = VarGen.new

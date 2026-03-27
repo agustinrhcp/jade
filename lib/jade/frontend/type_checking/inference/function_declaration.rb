@@ -9,13 +9,13 @@ module Jade
           def infer(node, registry, state, _)
             node => AST::FunctionDeclaration(symbol:, body:, params:)
 
-            fn_type = state.env.lookup(symbol.qualified_name)
+            state.env.lookup(symbol.qualified_name) => { type: fn_type }
 
             new_state, body_result = fn_type
               .args
               .zip(params)
               .reduce(state) do |acc, (t, p)|
-                acc.bind(p.name, Scheme[[], t])
+                acc.bind(p.name, Scheme.mono(t))
               end
               .then { check(body, registry, it, Expected.check(fn_type.return_type)) }
 
