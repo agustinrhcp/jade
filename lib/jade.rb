@@ -8,6 +8,7 @@ require 'jade/ast'
 require 'jade/codegen'
 require 'jade/compiler'
 require 'jade/interop'
+require 'jade/stdlib'
 
 module Jade
   extend self

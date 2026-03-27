@@ -81,11 +81,11 @@ module Jade
 
             in AST::Pattern::Binding(name:)
               state
-                .bind(name, generalize(state.env, expected.type))
+                .bind(name, generalize(state.env, expected.type, []))
                 .then { it.unify_result(Result.init(it.fresh), expected.type) }
 
             in AST::Pattern::Constructor(symbol:, patterns:)
-              constructor_type = state.env.lookup(symbol.qualified_name)
+              state.env.lookup(symbol.qualified_name) => { type: constructor_type }
 
               patterns_state, patterns_result = constructor_type
                 .args

@@ -1,5 +1,6 @@
 require 'jade/type/base'
 
+require 'jade/type/constraint'
 require 'jade/type/anonymous_record'
 require 'jade/type/application'
 require 'jade/type/constructor'
@@ -13,7 +14,7 @@ module Jade
 
     def from_symbol(symbol, registry, var_gen)
       from_symbol_r(symbol, registry, var_gen, {})
-        .first
+        .then { |type, constraints, _| [type, constraints] }
     end
 
     def var(id, name = nil)
@@ -60,8 +61,9 @@ module Jade
       AnonymousRecord[fields, row_var]
     end
 
-    def constraint(interface_id, type, span)
-      Constraint[interface_id, type, span]
+    def constraint(interface_id, type, origin)
+      fail unless interface_id in String
+      Constraint[interface_id, type, origin]
     end
 
     private
@@ -70,11 +72,11 @@ module Jade
       case symbol
       in Symbol::Variable(name:)
         if var_map[name]
-          [var_map[name], var_map]
+          [var_map[name], [], var_map]
         else
           var_gen
             .next(name)
-            .then { [it, var_map.merge(name => it)] }
+            .then { [it, [], var_map.merge(name => it)] }
         end
 
       in Symbol::TypeRef | Symbol::ValueRef
@@ -83,50 +85,50 @@ module Jade
           .then { from_symbol_r(it, registry, var_gen, var_map) }
 
       in Symbol::Union
-        union_vars, union_map = symbol
+        union_vars, union_cs, union_map = symbol
           .type_params
-          .reduce([[], var_map]) do |(types, local_map), sym|
+          .reduce([[], [], var_map]) do |(types, cs, local_map), sym|
             from_symbol_r(sym, registry, var_gen, local_map)
-              .then { |(t, new_map)| [types + [t], new_map] }
+              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
         Type
           .constructor(symbol.qualified_name)
-          .then { [it.apply(union_vars), union_map] }
+          .then { [it.apply(union_vars), union_cs, union_map] }
 
       in Symbol::Function | Symbol::StdlibFunction
-        args, local_map = symbol
+        args, arg_cs, local_map = symbol
           .params
           .values
-          .reduce([[], {}]) do |(types, local_map), sym|
+          .reduce([[], [], {}]) do |(types, cs, local_map), sym|
             from_symbol_r(sym, registry, var_gen, local_map)
-              .then { |(t, new_map)| [types + [t], new_map] }
+              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
-          .then { |(t, _)| Type.function(args, t) }
-          .then { [it, var_map] }
+          .then { |(t, c, _)| [Type.function(args, t), c + arg_cs] }
+          .then { it + [var_map] }
 
       in Symbol::FunctionType | Symbol::InteropFunction
         # Same as function and stdlib but without keyed params.
-        args, local_map = symbol
+        args, arg_cs, local_map = symbol
           .params
-          .reduce([[], {}]) do |(types, local_map), sym|
+          .reduce([[], [], {}]) do |(types, cs, local_map), sym|
             from_symbol_r(sym, registry, var_gen, local_map)
-              .then { |(t, new_map)| [types + [t], new_map] }
+              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
-          .then { |(t, _)| Type.function(args, t) }
-          .then { [it, var_map] }
+          .then { |(t, c, _)| [Type.function(args, t), c] }
+          .then { it + [var_map] }
 
       in Symbol::InterfaceFunction
         # Same as function and stdlib but without keyed params.
-        args, local_map = symbol
+        args, arg_cs, local_map = symbol
           .params
-          .reduce([[], {}]) do |(types, local_map), sym|
+          .reduce([[], [], {}]) do |(types, cs, local_map), sym|
             from_symbol_r(sym, registry, var_gen, local_map)
-              .then { |(t, new_map)| [types + [t], new_map] }
+              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
         interface = registry.lookup(symbol.interface)
@@ -138,18 +140,18 @@ module Jade
           )
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
-          .then { |(t, _)| Type.function(args, t, [constraint]) }
-          .then { [it, var_map] }
+          .then { |(t, c, _)| [Type.function(args, t), c + arg_cs + [constraint]] }
+          .then { it + [var_map] }
 
       in Symbol::Constructor
-        union_type, union_vars =
+        union_type, union_cs, union_vars =
           from_symbol_r(symbol.parent, registry, var_gen, var_map)
 
-        args, args_map = symbol
+        args, arg_cs, args_map = symbol
           .args
-          .reduce([[], union_vars]) do |(types, local_map), sym|
+          .reduce([[], [], union_vars]) do |(types, cs, local_map), sym|
             from_symbol_r(sym, registry, var_gen, local_map)
-              .then { |(t, new_map)| [types + [t], new_map] }
+              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
         Type
@@ -157,52 +159,52 @@ module Jade
             args,
             union_type,
           )
-          .then { [it, args_map]}
+          .then { [it, union_cs + arg_cs, args_map] }
 
       in Symbol::AnonymousRecord(fields:)
         fields
           .map { |k, _| [k, var_gen.next(k)] }.to_h
           .then { Type.anonymous_record(it, nil) }
-          .then { [it, var_map] }
+          .then { [it, [], var_map] }
 
       in Symbol::Struct(record_type:)
-        struct_vars, struct_map = symbol
+        struct_vars, struct_cs, struct_map = symbol
           .type_params
-          .reduce([[], var_map]) do |(types, local_map), sym|
+          .reduce([[], [], var_map]) do |(types, cs, local_map), sym|
             from_symbol_r(sym, registry, var_gen, local_map)
-              .then { |(t, new_map)| [types + [t], new_map] }
+              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
         Type
           .constructor(symbol.qualified_name)
-          .then { [it.apply(struct_vars), struct_map] }
+          .then { [it.apply(struct_vars), struct_cs, struct_map] }
 
       in Symbol::RecordType(fields:, row_var:)
-        row, row_map = row_var
+        row, _, row_map = row_var
           &.then { from_symbol_r(row_var, registry, var_gen, var_map) } ||
-          [nil, var_map]
+          [nil, [], var_map]
 
         fields
-          .reduce([{}, row_map]) do |(type, local_map), (k, v)|
+          .reduce([{}, [], row_map]) do |(type, cs, local_map), (k, v)|
             from_symbol_r(v, registry, var_gen, local_map)
-              .then { |(t, new_map)| [type.merge(k => t), new_map] }
+              .then { |(t, c, new_map)| [type.merge(k => t), c + cs, new_map] }
           end
-          .then { |t, map| [Type.anonymous_record(t, row), map] }
+          .then { |t, cs, map| [Type.anonymous_record(t, row), cs, map] }
 
       in Symbol::TypeApplication(constructor:, args:)
-        union_type, union_vars =
+        union_type, union_cs, union_vars =
           from_symbol_r(constructor, registry, var_gen, var_map)
 
-        args, args_map = symbol
+        args, args_cs, args_map = symbol
           .args
-          .reduce([[], union_vars]) do |(types, local_map), sym|
+          .reduce([[], [], union_vars]) do |(types, cs, local_map), sym|
             from_symbol_r(sym, registry, var_gen, local_map)
-              .then { |(t, new_map)| [types + [t], new_map] }
+              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
         Type
           .constructor(symbol.constructor.qualified_name)
-          .then { [it.apply(args), args_map] }
+          .then { [it.apply(args), union_cs + args_cs, args_map] }
       end
     end
   end

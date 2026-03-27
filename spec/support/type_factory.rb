@@ -16,6 +16,10 @@ module Jade
           .tokenize(Source.new(uri: nil, text: annotation))
           .then { TypeFactory::Parser.parse(it) }
       end
+
+      def eq(type)
+        Type.constraint('Basics.Eq', type, nil)
+      end
     end
   end
 end

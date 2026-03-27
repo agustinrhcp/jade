@@ -5,20 +5,18 @@ module Jade
       extend Helpers
 
       def generate(node, registry)
-        node => AST::FunctionCall(callee:, args:)
+        node => AST::FunctionCall(callee:, args:, dictionaries:)
 
         args_code = generate_many(args, registry)
 
-        "#{generate_callee(callee, registry, {})}.call(#{args_code})"
+        "#{generate_callee(callee, registry, dictionaries)}.call(#{args_code})"
       end
 
       private
 
       def generate_callee(callee, registry, dictionaries)
-        case callee
-        in AST::ConstructorReference(symbol:)
-          return generate_node(callee, registry)
-        else
+        if callee in AST::ConstructorReference | AST::RecordAccess
+          return generate_node(callee, registry) 
         end
 
         case callee.symbol
@@ -32,8 +30,8 @@ module Jade
             .then { "#{symbol.interop_module_name}, :#{symbol.name}, #{it}" }
             .then { "Jade::Runtime.guard(#{it})" }
 
-        in Symbol::StdlibFunction(codegen:)
-          codegen
+        in Symbol::StdlibFunction
+          callee.symbol.codegen
 
         in Symbol::Variable(name:)
           name
@@ -49,59 +47,89 @@ module Jade
 
         in Symbol::StdlibImplementation => symbol
           dispatch = dictionaries
-            .reduce({}) { |acc, cons| acc.merge constraint_to_dispatch(cons, registry) }
+            .reduce({}) { |acc, impl| acc.merge generate_impl_dispatch(impl, registry) }
 
-          generate_stdlib_implementation(callee, registry, dispatch)
+          generate_stdlib_implementation(symbol, registry, dispatch)
 
         in Symbol::InterfaceFunction
           dispatch = dictionaries
-            .reduce({}) { |acc, cons| acc.merge constraint_to_dispatch(cons, registry) }
-             
+            .reduce({}) { |acc, impl| acc.merge generate_impl_dispatch(impl, registry) }
+
           dispatch[callee.symbol.name]
-            .then { callee.with(symbol: it) }
-            .then { generate_callee(it, registry, dictionaries) }
         end
       end
 
-      def constraint_to_dispatch(constraint, registry)
-        case constraint.type
-        in Type::Application(constructor: { name: })
-          [constraint.interface, name]
-            .then { registry.implementations[it] }
-            .functions
+      def generate_impl_dispatch(impl, registry)
+        dep_dispatches = impl.deps.map { |dep| generate_impl_dispatch(dep, registry) }
+        impl.functions.transform_values { |fn|
+          generate_impl_fn(fn, dep_dispatches, impl.functions, registry)
+        }
+      end
+
+      def generate_impl_fn(fn, dep_dispatches, sibling_fns, registry)
+        case fn
+        in Symbol::DerivedFunction(params:, body:)
+          inner = "->(#{params.join(', ')}) { #{emit(body, registry)} }"
+          return inner if dep_dispatches.empty?
+
+          impl_arg = build_impl_arg(dep_dispatches)
+          "->(impl_arg) { #{inner} }.call(#{impl_arg})"
+
+        in Symbol::StdlibFunction
+          fn.codegen
+
+        in Symbol::StdlibImplementation
+          sibling_dispatch = sibling_fns
+            .reject { |_, sib| sib.is_a?(Symbol::StdlibImplementation) }
+            .transform_values { |sib| generate_impl_fn(sib, dep_dispatches, sibling_fns, registry) }
+          params = fn.params.join(', ')
+          body = build_std_impl_str(fn.body, sibling_dispatch, registry)
+          "->(#{params}) { #{body} }"
+
+        in Symbol::ValueRef
+          registry.lookup(fn).then { generate_impl_fn(it, dep_dispatches, sibling_fns, registry) }
         end
       end
 
-      def generate_stdlib_implementation(callee, registry, dispatch)
-        callee
-          .symbol
+      def build_impl_arg(dep_dispatches)
+        entries = dep_dispatches.map { |dispatch|
+          fns = dispatch.map { |fn_name, code| "#{fn_name.inspect} => #{code}" }.join(', ')
+          "{ #{fns} }"
+        }
+        "[#{entries.join(', ')}]"
+      end
+
+      # Stdlib intrinsics implementation language.
+
+      def generate_stdlib_implementation(symbol, registry, dispatch)
+        symbol
           .params
           .join(', ')
           .then { "->(#{it})" }
-          .then { "#{it} { #{build_std_impl(callee, callee.symbol.body, registry, dispatch)} }" }
+          .then { "#{it} { #{build_std_impl_str(symbol.body, dispatch, registry)} }" }
       end
 
-      def build_std_impl(callee, body, registry, dispatch)
+      def build_std_impl_str(body, dispatch, registry)
         case body
         in [:call, fn, args]
-          args
-            .map { build_std_impl(callee, it, registry, dispatch) }.join(', ')
-            .then { "#{build_std_impl(callee, fn, registry, dispatch)}.call(#{it})" }
+          args.map { build_std_impl_str(it, dispatch, registry) }.join(', ')
+            .then { "#{build_std_impl_str(fn, dispatch, registry)}.call(#{it})" }
 
         in String
           body
 
         in [:impl, impl]
           dispatch[impl]
-            .then { callee.with(symbol: it) }
-            .then { generate_callee(it, registry, dispatch) }
 
         in [:fn, name]
           *mod_parts, fn_name = name.split('.')
-          Symbol.value_ref(mod_parts.join('.'), fn_name)
-            .then { callee.with(symbol: it) }
-            .then { generate_callee(it, registry, dispatch) }
+          sym = Symbol.value_ref(mod_parts.join('.'), fn_name)
+          registry.lookup(sym).then { generate_impl_fn(it, [], {}, registry) }
         end
+      end
+
+      def emit(ir, registry)
+        Emitter.emit(ir)
       end
     end
   end
