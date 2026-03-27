@@ -10,6 +10,7 @@ module Jade
             node => AST::FunctionCall(callee:, args:)
 
             callee_state, callee_result = check(callee, registry, state, Expected.infer(state.fresh))
+              .then { |st, rs| [st, rs.attach_origin(node)] }
 
             args_state, args_acc = args
               .reduce([callee_state, Result.accumulator]) do |(state_acc, acc), arg|
@@ -31,6 +32,17 @@ module Jade
               expected.type,
               &type_error(state, node)
             )
+            .then do |st, rs|
+              # TODO: This is only for concrete constraints. Unresolved ones (type
+              # vars like Eq(a)) bubble up in rs.constraints. Inside an impl body,
+              # these should eventually become impl-level deps rather than being
+              # left for finalize to drop.
+              rs
+                .constraints
+                .flat_map { Constraints.solve_at_call_site(it, registry, st.env.entry_name) }
+                .then { st.add_errors(it) }
+                .then { [it, rs] }
+            end
           end
 
           private

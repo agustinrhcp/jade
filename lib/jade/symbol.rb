@@ -2,9 +2,12 @@ require 'jade/symbol/base'
 require 'jade/symbol/parser'
 
 require 'jade/symbol/anonymous_record'
+require 'jade/symbol/constructor'
+require 'jade/symbol/derived_function'
 require 'jade/symbol/function'
 require 'jade/symbol/function_type'
 require 'jade/symbol/implementation'
+require 'jade/symbol/implementation_template'
 require 'jade/symbol/interface'
 require 'jade/symbol/interface_function'
 require 'jade/symbol/interop_function'
@@ -19,7 +22,6 @@ require 'jade/symbol/type_ref'
 require 'jade/symbol/union'
 require 'jade/symbol/value_ref'
 require 'jade/symbol/variable'
-require 'jade/symbol/constructor'
 
 module Jade
   module Symbol
@@ -68,6 +70,11 @@ module Jade
 
     def type_ref(module_name, name)
       TypeRef[module_name, name]
+    end
+
+    def type_ref_from_qualified_name(q_name)
+      *qualified_parts, name = q_name.split('.')
+      TypeRef[qualified_parts.join('.'), name]
     end
 
     def value_ref(module_name, name)
@@ -122,8 +129,25 @@ module Jade
       InterfaceFunction[nil, name, inteface, params, return_type, span]
     end
 
-    def implementation(interface, type, functions, span)
-      Implementation[nil, interface, type, functions, span]
+    def implementation(
+      interface,
+      type,
+      type_params,
+      constraints,
+      functions,
+      deps,
+      span
+    )
+      Implementation[
+        nil,
+        interface,
+        type,
+        type_params,
+        constraints,
+        functions,
+        deps,
+        span,
+      ]
     end
 
     def parse(annotation)

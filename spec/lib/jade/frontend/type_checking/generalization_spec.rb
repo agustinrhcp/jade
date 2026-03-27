@@ -11,7 +11,7 @@ module Jade
         it 'free vars exclude quantified vars' do
           a = Type.var(1, 'a')
           b = Type.var(2, 'b')
-          scheme = Scheme[[a], Type.function([a], b)]
+          scheme = Scheme[[a], Type.function([a], b), []]
 
           expect(scheme.free_vars).to eql [b]
         end

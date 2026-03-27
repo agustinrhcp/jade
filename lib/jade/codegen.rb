@@ -1,11 +1,14 @@
 require 'jade/codegen/helpers'
 
+require 'jade/codegen/emitter'
+
 require 'jade/codegen/function_declaration'
 require 'jade/codegen/function_call'
 
 module Jade
   module Codegen
     extend self
+    extend Emitter
 
     def generate_entry(entry, registry)
       generate(entry.ast, registry)
@@ -48,13 +51,7 @@ module Jade
         "#{name} = #{generate(expression, registry)}"
 
       in AST::Literal(value:)
-        case value
-        in Integer | TrueClass | FalseClass | Float
-          value.to_s
-
-        in String
-          "\"#{value}\""
-        end
+        emit(value)
 
       in AST::FunctionDeclaration
         FunctionDeclaration.generate(node, registry)

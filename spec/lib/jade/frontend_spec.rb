@@ -1074,5 +1074,53 @@ module Jade
 
       it { is_expected.to have(1).item }
     end
+
+    describe 'eq constraint' do
+      subject { super().expressions.last}
+
+      let(:text) do
+        <<~JADE
+          1 == 2
+          False == True
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionCall) }
+
+      context 'without implementation' do
+        context 'type application' do
+          let(:text) do
+            <<~JADE
+              Just(1) == Nothing()
+            JADE
+          end
+
+          it { is_expected.to be_a(AST::FunctionCall) }
+        end
+
+        context 'type application with unknown types' do
+          let(:text) do
+            <<~JADE
+              Nothing() == Nothing()
+            JADE
+          end
+
+          it { is_expected.to be_a(AST::FunctionCall) }
+        end
+
+        context 'anonymous records' do
+          let(:text) do
+            <<~JADE
+              def test() -> Bool
+                { salute: "Hola" } == { salute: "Hei" }
+              end
+            JADE
+          end
+
+          # TODO: Derive records.
+          it('is derived') { is_expected.to be_a(AST::FunctionDeclaration) }
+        end
+      end
+    end
   end
 end

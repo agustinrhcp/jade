@@ -18,7 +18,7 @@ module Jade
               .type_params
               .reduce([[], {}]) do |(types, local_map), sym|
                 Type.send(:from_symbol_r, sym, registry, var_gen, local_map)
-                  .then { |(t, new_map)| [types + [t], new_map] }
+                  .then { |(t, _, new_map)| [types + [t], new_map] }
               end
 
             Type
@@ -27,14 +27,14 @@ module Jade
               .then { Definition.struct(sym.qualified_name, type_params, it) }
 
           in Symbol::Union
-            type = Type.from_symbol(sym, registry, var_gen)
+            type = Type.from_symbol(sym, registry, var_gen).first
 
             sym
               .variants
               .map do |variant|
                 Type
                   .from_symbol(variant, registry, var_gen)
-                  .then { Definition.constructor(variant.qualified_name, sym.qualified_name, it.args) }
+                  .then { Definition.constructor(variant.qualified_name, sym.qualified_name, it.first.args) }
               end
               .then { Definition.type(sym.qualified_name, type.args, it) }
 

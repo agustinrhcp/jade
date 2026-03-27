@@ -9,13 +9,13 @@ module Jade
           def infer(node, registry, state, _)
             node => AST::FunctionDeclaration(symbol:, body:, params:)
 
-            fn_type = state.env.lookup(symbol.qualified_name)
+            state.env.lookup(symbol.qualified_name) => { type: fn_type, constraints: fn_constraints }
 
             new_state, body_result = fn_type
               .args
               .zip(params)
               .reduce(state) do |acc, (t, p)|
-                acc.bind(p.name, Scheme[[], t])
+                acc.bind(p.name, Scheme.mono(t))
               end
               .then { check(body, registry, it, Expected.check(fn_type.return_type)) }
 
@@ -31,6 +31,26 @@ module Jade
                   expected: it.expected,
                   actual: it.actual,
                   function_name: node.name,
+                )
+              end
+              .then do |st|
+                next st if st.env.bindings[symbol.qualified_name].is_a?(Scheme)
+
+                updated_constraints = (fn_constraints + body_result.constraints)
+                  .map { st.env.substitution.apply(it) }
+                  .uniq
+
+                # TODO: for impl function declarations, unresolved constraints here
+                # (e.g. Eq(a) when the body calls == on a field of type a) should
+                # be stored as impl-level constraints, not function-level ones.
+                # The impl finalization pass (see TypeChecking.finalize) should then
+                # promote them into deps when the impl is instantiated for a concrete type.
+                st.bind(
+                  symbol.qualified_name,
+                  Placeholder[
+                    st.env.substitution.apply(fn_type),
+                    updated_constraints,
+                  ]
                 )
               end
               .then { [it, Result.init(Type.unit)] }

@@ -9,6 +9,25 @@ module Jade
       union :Float
       union :Bool
 
+      interface(
+        'Eq',
+        'a',
+        {
+          '(==)' => 'a, a -> Bool',
+          '(!=)' => 'a, a -> Bool',
+         },
+         default: {
+           '(!=)' => default_implementation(
+             params: ['one', 'other'],
+             body: [:call, [:fn, 'Basics.not'], [[:call, [:impl, '(==)'], ['one', 'other']]]]
+           )
+         }
+       )
+
+      implementation('Eq', 'Int', '(==)' => 'int_eq')
+      implementation('Eq', 'Float', '(==)' => 'float_eq')
+      implementation('Eq', 'Bool', '(==)' =>  'bool_eq')
+
       function(
         '(+)',
         { a: 'Int', b: 'Int' },
@@ -46,18 +65,60 @@ module Jade
       ) { not it }
 
       function(
-        '(==)',
-        { a: 'Int', b: 'Int' },
-        'Bool',
-      ) { |a, b| a == b }
-
-      function(
         '(<=)',
         { a: 'Int', b: 'Int' },
         'Bool',
       ) { |a, b| a <= b }
 
+      function(
+        '(>=)',
+        { a: 'Int', b: 'Int' },
+        'Bool',
+      ) { |a, b| a >= b }
+
+      function(
+        '(>)',
+        { a: 'Int', b: 'Int' },
+        'Bool',
+      ) { |a, b| a > b }
+
+      function(
+        '(<)',
+        { a: 'Int', b: 'Int' },
+        'Bool',
+      ) { |a, b| a < b }
+
+      function(
+        '(&&)',
+        { a: 'Bool', b: 'Bool' },
+        'Bool',
+      ) { |a, b| a && b }
+
+      function(
+        '(||)',
+        { a: 'Bool', b: 'Bool' },
+        'Bool',
+      ) { |a, b| a || b }
+
       default_importing :*
+
+      function(
+        'int_eq',
+        { one: 'Int', other: 'Int' },
+        'Bool',
+      ) { |one, other| one == other }
+
+      function(
+        'float_eq',
+        { one: 'Float', other: 'Float' },
+        'Bool',
+      ) { |one, other| one == other }
+
+      function(
+        'bool_eq',
+        { one: 'Bool', other: 'Bool' },
+        'Bool',
+      ) { |one, other| one == other }
     end
   end
 end
