@@ -1,37 +1,21 @@
-require 'jade/frontend/type_checking/result'
-require 'jade/frontend/type_checking/env'
 require 'jade/frontend/type_checking/definition'
+require 'jade/frontend/type_checking/env'
+require 'jade/frontend/type_checking/error'
+require 'jade/frontend/type_checking/expected'
+require 'jade/frontend/type_checking/generalization'
+require 'jade/frontend/type_checking/inference'
+require 'jade/frontend/type_checking/instantiation'
+require 'jade/frontend/type_checking/result'
+require 'jade/frontend/type_checking/scheme'
+require 'jade/frontend/type_checking/state'
 require 'jade/frontend/type_checking/substitution'
 require 'jade/frontend/type_checking/unification'
-require 'jade/frontend/type_checking/scheme'
-require 'jade/frontend/type_checking/generalization'
-require 'jade/frontend/type_checking/instantiation'
-require 'jade/frontend/type_checking/inference'
-require 'jade/frontend/type_checking/error'
 
 module Jade
   module Frontend
     module TypeChecking
       extend Inference::Helpers
       extend self
-
-      Expected = Data.define(:type, :authoritative) do
-        def check?
-          authoritative == true
-        end
-
-        def self.check(type)
-          self[type, true]
-        end
-
-        def self.infer(type)
-          self[type, false]
-        end
-
-        def rigid_vars
-          check? ? type.unbound_vars : []
-        end
-      end
 
       def check(entry, registry)
         Env
