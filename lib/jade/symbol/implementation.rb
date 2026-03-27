@@ -4,7 +4,10 @@ module Jade
       :module_name,
       :interface,
       :type,
+      :type_params,
+      :constraints,
       :functions,
+      :deps,
       :decl_span
     ) do
       include Base

@@ -42,6 +42,37 @@ module Jade
           .tap { Runtime.register(qualified_fn_name, &block) }
       end
 
+      def interface(name, type_param, functions, default: {})
+        functions
+          .map { |k, v| Symbol.parse(v).then { to_interface_function(name, k, it) }.with(module_name:) }
+          .then { Symbol.interface(name, Symbol.parse(type_param), it, default, nil) }
+          .with(module_name:)
+          .then { store(it); it.functions.each { |fn| store(fn) } }
+      end
+
+      def implementation(interface_name, type, functions)
+        interface = symbols
+          .find { it.is_a?(Symbol::Interface) && it.name == interface_name } ||
+          @imports
+            .first
+            .symbols
+            .find { it.is_a?(Symbol::Interface) && it.name == interface_name }
+
+        Symbol
+          .implementation(
+            interface.to_ref,
+            Symbol.type_ref(module_name, type),
+            [],
+            [],
+            functions
+              .transform_values { Symbol.value_ref(module_name, it) }
+              .merge(interface.default),
+            [],
+            nil,
+          )
+          .then { store(it) }
+      end
+
       def symbols
         @symbols || []
       end
@@ -75,10 +106,16 @@ module Jade
         @default_imports || {}
       end
 
+      def default_implementation(params:, body:)
+        Symbol::StdlibImplementation[params, body]
+      end
+
       private
 
       def exposes
-        @symbols.map { it.to_ref }
+        @symbols
+          .reject { it.is_a?(Symbol::Implementation) }
+          .map { it.to_ref }
       end
 
       def resolve_imports(entry)
@@ -100,9 +137,29 @@ module Jade
       end
 
       def load_env(entry, registry)
-        Frontend::TypeChecking::Env
+        Frontend::TypeChecking::Loader
           .load(entry, registry.add_module(entry))
           .then { entry.with(env: it) }
+      end
+
+      def interface_to_ref(interface)
+        case interface
+        in 'Eq'
+          'Basics'
+        end
+          .then { Symbol.type_ref(it, interface.to_s) }
+      end
+
+      def to_interface_function(interface_name, fn_name, fn)
+        fn => Symbol::FunctionType(params:, return_type:)
+
+        Symbol.interface_function(
+          fn_name,
+          interface_to_ref(interface_name),
+          params,
+          return_type,
+          nil,
+        )
       end
     end
   end

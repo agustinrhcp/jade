@@ -7,7 +7,8 @@ module Jade
     include SymbolFactory
 
     describe '.from_symbol' do
-      subject { described_class.from_symbol(symbol, registry, Frontend::TypeChecking::VarGen.new) }
+      let(:result) { described_class.from_symbol(symbol, registry, Frontend::TypeChecking::VarGen.new) }
+      subject { result[0] }
 
       let(:registry) do
         Stdlib
@@ -193,6 +194,49 @@ module Jade
         it 'reuses the same type var for both arguments' do
           left, right = subject.args
           expect(left).to eql(right)
+        end
+      end
+
+      describe 'interface function: eq(a, a) -> Bool constrained by Eq' do
+        let(:interface_sym) do
+          Symbol::Interface.new(
+            module_name: '__Iface__',
+            name: 'Eq',
+            type_param: var_sym('a'),
+            functions: [],
+            default: nil,
+            decl_span: nil,
+          )
+        end
+
+        let(:symbol) do
+          Symbol::InterfaceFunction.new(
+            module_name: '__Test__',
+            name: 'eq',
+            interface: Symbol::TypeRef['__Iface__', 'Eq'],
+            params: [var_sym('a'), var_sym('a')],
+            return_type: type_sym('Basics', 'Bool'),
+            decl_span: nil,
+          )
+        end
+
+        let(:entry) { Registry.entry('__Test__').define(symbol) }
+
+        let(:registry) do
+          Stdlib
+            .load(Registry.new)
+            .add_module(Registry.entry('__Iface__').define(interface_sym))
+            .add_module(entry)
+        end
+
+        it { is_expected.to be_a(Type::Function) }
+        its(:args) { is_expected.to have(2).items }
+
+        describe 'constraints' do
+          subject { result[1] }
+
+          it { is_expected.to have(1).item }
+          its(:first) { is_expected.to be_a(Type::Constraint).and have_attributes(interface: '__Iface__.Eq') }
         end
       end
 

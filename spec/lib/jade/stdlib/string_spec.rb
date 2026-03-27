@@ -1,12 +1,17 @@
 require 'spec_helper'
 
-require 'jade/stdlib/string'
+require 'jade'
 
 module Jade
   module Stdlib
     describe String do
       describe 'its symbols' do
-        subject { described_class.symbols.map(&:name) }
+        subject do
+          described_class
+            .symbols
+            .reject { it.is_a?(Symbol::Implementation) }
+            .map(&:name)
+        end
 
         it { is_expected.to include('String') }
         it { is_expected.to include('is_empty') }
