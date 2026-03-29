@@ -1,12 +1,12 @@
 require 'jade/frontend/type_checking/definition'
 require 'jade/frontend/type_checking/env'
+require 'jade/frontend/type_checking/loader'
 require 'jade/frontend/type_checking/error'
 require 'jade/frontend/type_checking/expected'
 require 'jade/frontend/type_checking/generalization'
 require 'jade/frontend/type_checking/inference'
 require 'jade/frontend/type_checking/instantiation'
 require 'jade/frontend/type_checking/result'
-require 'jade/frontend/type_checking/scheme'
 require 'jade/frontend/type_checking/state'
 require 'jade/frontend/type_checking/substitution'
 require 'jade/frontend/type_checking/unification'
@@ -18,7 +18,7 @@ module Jade
       extend self
 
       def check(entry, registry)
-        Env
+        Loader
           .load(entry, registry)
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
           .first

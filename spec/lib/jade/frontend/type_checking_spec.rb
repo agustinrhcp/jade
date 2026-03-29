@@ -23,7 +23,7 @@ module Jade
           .and_then { Frontend.run_up_to_semantic_analysis(it) }
           # TODO: Make this prettier
           .and_then do |entry, registry|
-            env = TypeChecking::Env.load(entry, registry)
+            env = TypeChecking::Loader.load(entry, registry)
             state = TypeChecking::State.init(env)
             check_state, result = TypeChecking.check_node(
               entry.ast,

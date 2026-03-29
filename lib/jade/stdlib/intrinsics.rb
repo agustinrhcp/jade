@@ -1,6 +1,8 @@
 require 'jade/runtime'
 require 'jade/symbol'
 
+require 'jade/frontend/type_checking/loader'
+
 module Jade
   module Stdlib
     module Intrinsics
@@ -100,7 +102,7 @@ module Jade
       end
 
       def load_env(entry, registry)
-        Frontend::TypeChecking::Env
+        Frontend::TypeChecking::Loader
           .load(entry, registry.add_module(entry))
           .then { entry.with(env: it) }
       end
