@@ -1,9 +1,9 @@
 module Jade
   module Frontend
     module TypeChecking
-      Result = Data.define(:type) do
-        def self.init(type)
-          new(type)
+      Result = Data.define(:type, :constraints) do
+        def self.init(type, constraints = [])
+          new(type, constraints)
         end
 
         def apply(substitution)

@@ -16,7 +16,7 @@ module Jade
             Instantiation.instantiate(scheme, var_gen)
           end
 
-          def generalize(env, type, constraints)
+          def generalize(env, type, constraints = [])
             Generalization.generalize(env, type, constraints)
           end
 

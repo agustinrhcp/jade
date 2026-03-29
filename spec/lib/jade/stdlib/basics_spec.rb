@@ -9,8 +9,8 @@ module Jade
         subject do
           described_class
             .symbols
-            .map(&:name)
             .reject { it.is_a?(Symbol::Implementation) }
+            .map(&:name)
         end
 
         it { is_expected.to include('Int') }
