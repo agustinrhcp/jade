@@ -21,6 +21,8 @@ module Jade
         Loader
           .load(entry, registry)
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
+          .then { Generalizer.generalize(it.first.env) }
+          .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
           .first
           .to_result
           .map { entry.with(env: it) }
