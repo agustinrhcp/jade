@@ -1,15 +1,15 @@
 require 'jade/frontend/type_checking/definition'
 require 'jade/frontend/type_checking/env'
-require 'jade/frontend/type_checking/loader'
 require 'jade/frontend/type_checking/error'
 require 'jade/frontend/type_checking/expected'
-require 'jade/frontend/type_checking/generalization'
 require 'jade/frontend/type_checking/inference'
-require 'jade/frontend/type_checking/instantiation'
+require 'jade/frontend/type_checking/loader'
 require 'jade/frontend/type_checking/result'
 require 'jade/frontend/type_checking/state'
 require 'jade/frontend/type_checking/substitution'
 require 'jade/frontend/type_checking/unification'
+
+require 'jade/frontend/type_checking/generalizer'
 
 module Jade
   module Frontend
@@ -57,30 +57,6 @@ module Jade
         in AST::VariableReference then Inference::VariableReference
         end
           .infer(node, registry, state, expected_type)
-      end
-
-      private
-
-      class VarGen
-        def initialize
-          @next_id = 1
-        end
-
-        def fresh_id
-          "t#{@next_id}"
-            .tap { @next_id += 1 }
-        end
-
-        def fresh(name = nil)
-          fresh_id
-            .then { Type.var(it, name) }
-        end
-
-        def next(name)
-          "#{name}#{@next_id}"
-            .tap { @next_id += 1 }
-            .then { Type.var(it, name) }
-        end
       end
     end
   end

@@ -1,3 +1,6 @@
+require 'jade/frontend/type_checking/generalization'
+require 'jade/frontend/type_checking/instantiation'
+
 module Jade
   module Frontend
     module TypeChecking

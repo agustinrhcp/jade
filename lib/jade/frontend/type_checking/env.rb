@@ -1,5 +1,6 @@
-require 'jade/frontend/type_checking/scheme'
 require 'jade/frontend/type_checking/placeholder'
+require 'jade/frontend/type_checking/scheme'
+require 'jade/frontend/type_checking/var_gen'
 
 module Jade
   module Frontend
