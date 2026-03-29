@@ -27,13 +27,14 @@ module Jade
               .then { Definition.struct(sym.qualified_name, type_params, it) }
 
           in Symbol::Union
-            type = Type.from_symbol(sym, registry, var_gen)
+            type = Type.from_symbol(sym, registry, var_gen).first
 
             sym
               .variants
               .map do |variant|
                 Type
                   .from_symbol(variant, registry, var_gen)
+                  .first
                   .then { Definition.constructor(variant.qualified_name, sym.qualified_name, it.args) }
               end
               .then { Definition.type(sym.qualified_name, type.args, it) }

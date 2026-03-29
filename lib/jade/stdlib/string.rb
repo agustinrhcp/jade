@@ -11,6 +11,8 @@ module Jade
 
       union :String
 
+      implementation('Eq', 'String', '(==)' => 'str_eq')
+
       function(
         :is_empty,
         { str: 'String'},
@@ -67,6 +69,12 @@ module Jade
       ) { |list, with| list.join(with) }
 
       default_importing('String')
+
+      function(
+        'str_eq',
+        { one: 'String', other: 'String' },
+        'Bool',
+      ) { |one, other| one == other }
     end
   end
 end

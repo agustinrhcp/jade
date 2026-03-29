@@ -22,13 +22,12 @@ module Jade
             in Symbol::Function
               Type
                 .from_symbol(sym, registry, e.var_gen)
-                .then { [it, []] }
                 .then { Placeholder[*it] }
 
             else
               Type
                 .from_symbol(sym, registry, e.var_gen)
-                .then { Inference::Helpers.generalize(e, it) }
+                .then { Inference::Helpers.generalize(e, *it) }
             end
               .then { e.bind(sym.qualified_name, it) }
           end
@@ -36,7 +35,8 @@ module Jade
 
         def load_imported_bindings(env, entry, registry)
           entry.imports.reduce(env) do |e, import_entry|
-            import_entry.qualified_symbols
+            import_entry
+              .qualified_symbols
               .select { it.is_a?(Symbol::ValueRef) }
               .reduce(e) do |e2, sym|
                 next e2 if e2.bindings[sym.qualified_name]

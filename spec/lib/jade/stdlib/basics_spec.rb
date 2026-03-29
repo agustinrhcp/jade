@@ -1,12 +1,17 @@
 require 'spec_helper'
 
-require 'jade/stdlib/basics'
+require 'jade'
 
 module Jade
   module Stdlib
     describe Basics do
       describe 'its symbols' do
-        subject { described_class.symbols.map(&:name) }
+        subject do
+          described_class
+            .symbols
+            .map(&:name)
+            .reject { it.is_a?(Symbol::Implementation) }
+        end
 
         it { is_expected.to include('Int') }
         it { is_expected.to include('Float') }
@@ -15,6 +20,8 @@ module Jade
         it { is_expected.to include('(-)') }
         it { is_expected.to include('(*)') }
         it { is_expected.to include('(/)') }
+        it { is_expected.to include('(||)') }
+        it { is_expected.to include('(&&)') }
       end
 
       describe 'its registered functions' do
