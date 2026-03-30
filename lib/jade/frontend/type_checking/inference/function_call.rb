@@ -10,6 +10,7 @@ module Jade
             node => AST::FunctionCall(callee:, args:)
 
             callee_state, callee_result = check(callee, registry, state, Expected.infer(state.fresh))
+              .then { |st, rs| [st, rs.attach_origin(node)] }
 
             args_state, args_acc = args
               .reduce([callee_state, Result.accumulator]) do |(state_acc, acc), arg|

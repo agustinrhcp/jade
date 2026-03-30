@@ -1,3 +1,4 @@
+require 'jade/frontend/type_checking/constraints'
 require 'jade/frontend/type_checking/definition'
 require 'jade/frontend/type_checking/env'
 require 'jade/frontend/type_checking/error'

@@ -16,14 +16,23 @@ module Jade
             .then { with(type: it) }
         end
 
+        def attach_origin(node)
+          constraints
+            .map { it.with(origin: it.origin || node )}
+            .then { with(constraints: it) }
+        end
+
         def self.accumulator
-          ResultAcc[[]]
+          ResultAcc[[], []]
         end
       end
 
-      ResultAcc = Data.define(:types) do
+      ResultAcc = Data.define(:types, :constraints) do
         def add(result)
-          with(types: types + [result.type])
+          with(
+            types: types + [result.type],
+            constraints: constraints + result.constraints,
+          )
         end
       end
     end

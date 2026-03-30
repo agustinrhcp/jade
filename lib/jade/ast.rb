@@ -46,7 +46,7 @@ module Jade
     define(:InfixApplication, :left, :operator, :right)
     define(:InfixOperator, :value)
 
-    define(:FunctionCall, :callee, :args, :infix)
+    define(:FunctionCall, :callee, :args, :infix, :dictionaries)
     define(:MemberAccess, :target, :name)
     define(:QualifiedAccess, :target, :name)
     define(:RecordAccess, :target, :name)
@@ -231,12 +231,13 @@ module Jade
 
     def function_call
       ->(callee, lparen, args, rparen) do
-        FunctionCall[
-          callee,
-          args,
-          nil,
-          lparen.range.begin..rparen.range.end,
-        ]
+        FunctionCall.new(
+          callee:,
+          args:,
+          infix: false,
+          dictionaries: [],
+          range: lparen.range.begin..rparen.range.end,
+        )
       end
     end
 
