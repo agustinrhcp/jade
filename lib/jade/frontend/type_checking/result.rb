@@ -8,6 +8,7 @@ module Jade
 
         def apply(substitution)
           with(type: substitution.apply(type))
+            .with(constraints: constraints.map { substitution.apply(it) })
         end
 
         def map(&block)

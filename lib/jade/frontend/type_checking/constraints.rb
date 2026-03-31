@@ -29,19 +29,19 @@ module Jade
           end
         end
 
-        def attach_dictionary(constraint, impl)
-          constraint.origin.dictionaries.concat([impl])
+        def attach_dictionary(constraint)
+          constraint.origin.dictionaries.concat([constraint])
         end
 
         # Finalizer: Ok([]) | Err(UnresolvedConstraint | MissingImplementation)
         def solve_at_finalize(constraint, registry, entry_name)
           lookup(constraint, registry, entry_name)
-            .and_then { |impl| attach_dictionary(constraint, impl); Ok[[]] }
+            .map { |impl| attach_dictionary(constraint, impl); [] }
         end
 
         def solve_at_call_site(constraint, registry, entry_name)
           lookup(constraint, registry, entry_name)
-            .and_then { |impl| attach_dictionary(constraint, impl); Ok[[]] }
+            .map { attach_dictionary(constraint); [] }
             .on_err(Error::UnresolvedConstraint) { Ok[[]] }
             .on_err(Error::MissingImplementation) { |e| Ok[[e]] }
             .with_default([])

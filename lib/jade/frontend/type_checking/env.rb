@@ -39,7 +39,7 @@ module Jade
                 .then { Instantiation.instantiate(it, var_gen) }
             end
 
-          Result.init(type)
+          Result.init(type, constraints)
         end
 
         def lookup_def(key)

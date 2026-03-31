@@ -1074,5 +1074,33 @@ module Jade
 
       it { is_expected.to have(1).item }
     end
+
+    describe 'eq constraint' do
+      subject { super().expressions.last}
+
+      let(:text) do
+        <<~JADE
+          1 == 2
+          False == True
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionCall) }
+
+      context 'without implementation' do
+        let(:text) do
+          <<~JADE
+            def test() -> Bool
+              { salute: "Hola" } == { salute: "Hei" }
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Jade::Frontend::TypeChecking::Error::MissingImplementation) }
+      end
+    end
   end
 end

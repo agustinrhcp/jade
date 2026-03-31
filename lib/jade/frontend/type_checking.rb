@@ -24,9 +24,26 @@ module Jade
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
           .then { Generalizer.generalize(it.first.env) }
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
-          .first
-          .to_result
+          .then { finalize(*it, registry) }
           .map { entry.with(env: it) }
+      end
+
+      def finalize(state, result, registry)
+        state.env => { bindings:, entry_name: }
+
+        errors = bindings
+          .select do |k,v|
+            # filter locals
+            b_entry_name = k.split('.')[0..-2].join(',')
+            b_entry_name == entry_name
+          end
+          .values
+          .flat_map(&:constraints)
+          .flat_map { Constraint.solve_at_finalize(it, registry, entry_name) }
+
+        state
+          .with(errors: state.errors + errors)
+          .to_result
       end
 
       def check_repl(node, registry, env = Env.new)

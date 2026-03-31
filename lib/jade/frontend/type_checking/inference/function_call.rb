@@ -32,6 +32,14 @@ module Jade
               expected.type,
               &type_error(state, node)
             )
+            .then do |st, rs|
+              # TODO: This is only for concrete constraints.
+              rs
+                .constraints
+                .flat_map { Constraints.solve_at_call_site(it, registry, st.env.entry_name) }
+                .then { st.add_errors(it) }
+                .then { [it, rs] }
+            end
           end
 
           private

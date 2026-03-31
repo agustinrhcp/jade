@@ -22,7 +22,8 @@ module Jade
                     #   So the placeholder vars don't appear on
                     #   the env free_vars
                     e.with(bindings: e.bindings.except(k)),
-                    e.substitution.apply(type)
+                    e.substitution.apply(type),
+                    unbound_cs,
                   )
                   .then { e.bind(k, it) }
               else
