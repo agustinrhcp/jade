@@ -39,7 +39,7 @@ module Jade
           end
           .values
           .flat_map(&:constraints)
-          .flat_map { Constraint.solve_at_finalize(it, registry, entry_name) }
+          .flat_map { Constraints.solve_at_finalize(it, registry, entry_name) }
 
         state
           .with(errors: state.errors + errors)

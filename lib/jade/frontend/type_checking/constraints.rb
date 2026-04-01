@@ -4,7 +4,6 @@ module Jade
       module Constraints
         extend self
 
-        # Ok(impl) | Err(UnresolvedConstraint) | Err(MissingImplementation)
         def lookup(constraint, registry, entry_name)
           case constraint.type
           in Type::Var
@@ -33,10 +32,12 @@ module Jade
           constraint.origin.dictionaries.concat([constraint])
         end
 
-        # Finalizer: Ok([]) | Err(UnresolvedConstraint | MissingImplementation)
         def solve_at_finalize(constraint, registry, entry_name)
           lookup(constraint, registry, entry_name)
             .map { |impl| attach_dictionary(constraint, impl); [] }
+            .on_err(Error::UnresolvedConstraint) { Ok[[]] }
+            .on_err { Ok[[it]] }
+            .with_default([])
         end
 
         def solve_at_call_site(constraint, registry, entry_name)

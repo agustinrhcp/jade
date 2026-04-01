@@ -18,10 +18,10 @@ module Jade
 
                 Generalization.
                   generalize(
-                    # Remove the current placeholder from the bindings.
-                    #   So the placeholder vars don't appear on
-                    #   the env free_vars
-                    e.with(bindings: e.bindings.except(k)),
+                    # Remove the current placeholder and all Scheme bindings (local
+                    # params/variables) so they don't pollute free_vars during
+                    # generalization. Only other Placeholders contribute free_vars.
+                    e.with(bindings: e.bindings.except(k).select { |_, v| v.is_a?(Placeholder) }),
                     e.substitution.apply(type),
                     unbound_cs,
                   )
