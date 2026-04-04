@@ -2,6 +2,8 @@ require 'jade/symbol/base'
 require 'jade/symbol/parser'
 
 require 'jade/symbol/anonymous_record'
+require 'jade/symbol/constructor'
+require 'jade/symbol/derived_function'
 require 'jade/symbol/function'
 require 'jade/symbol/function_type'
 require 'jade/symbol/implementation'
@@ -19,7 +21,6 @@ require 'jade/symbol/type_ref'
 require 'jade/symbol/union'
 require 'jade/symbol/value_ref'
 require 'jade/symbol/variable'
-require 'jade/symbol/constructor'
 
 module Jade
   module Symbol

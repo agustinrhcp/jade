@@ -57,6 +57,16 @@ module Jade
               .values
               .map { lookup(constraint.with(type: it), registry, entry_name) }
               .then { sequence(it) }
+
+          in Type::Application(args:)
+            args
+              .map { lookup(constraint.with(type: it), registry, entry_name) }
+              .then { sequence(it) }
+
+          else
+            Error::MissingImplementation
+              .new(entry_name, constraint.origin.range, constraint:)
+              .then { Err[it] }
           end
         end
 

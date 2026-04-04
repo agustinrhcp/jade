@@ -1096,11 +1096,7 @@ module Jade
           JADE
         end
 
-        it('is derived') { is_expected.to be_a(AST::Declaration) }
-        # subject { frontend => Err(errors); errors }
-
-        # it { is_expected.to have(1).item }
-        # its([0]) { is_expected.to be_a(Jade::Frontend::TypeChecking::Error::MissingImplementation) }
+        it('is derived') { is_expected.to be_a(AST::FunctionDeclaration) }
       end
     end
   end

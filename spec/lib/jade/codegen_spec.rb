@@ -370,12 +370,14 @@ module Jade
         let(:text) do
           <<~JADE
             def test() -> Bool
-              { salute: "Hola" } == { salute: "Hei" }
+              { salute: "Hola", n: 1 } == { salute: "Hei", n: 2 }
             end
           JADE
         end
 
-        it('is derived') { is_expected.to eq("PEPE") }
+        it('is derived') { is_expected.to include("Jade::Runtime.intr('String.str_eq').call(one[:salute], other[:salute]) && Jade::Runtime.intr('Basics.int_eq').call(one[:n], other[:n])") }
+        it { is_expected.to start_with "def test; ->() { ->(one, other) { " }
+        it { is_expected.to end_with ".call(Data.define(:n, :salute)[1, \"Hola\"], Data.define(:n, :salute)[2, \"Hei\"]) }; end" }
       end
     end
   end

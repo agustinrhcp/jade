@@ -32,8 +32,8 @@ module Jade
             .then { "#{symbol.interop_module_name}, :#{symbol.name}, #{it}" }
             .then { "Jade::Runtime.guard(#{it})" }
 
-        in Symbol::StdlibFunction(codegen:)
-          codegen
+        in Symbol::StdlibFunction | Symbol::DerivedFunction
+          callee.symbol.codegen
 
         in Symbol::Variable(name:)
           name
@@ -49,40 +49,54 @@ module Jade
 
         in Symbol::StdlibImplementation => symbol
           dispatch = dictionaries
-            .reduce({}) { |acc, cons| acc.merge constraint_to_dispatch(cons, registry) }
+            .reduce({}) { |acc, cons| acc.merge constraint_to_dispatch(cons, registry, callee) }
 
           generate_stdlib_implementation(callee, registry, dispatch)
 
         in Symbol::InterfaceFunction
           dispatch = dictionaries
-            .reduce({}) { |acc, cons| acc.merge constraint_to_dispatch(cons, registry) }
-             
-          dispatch[callee.symbol.name]
-            .then { callee.with(symbol: it) }
+            .reduce({}) { |acc, cons| acc.merge constraint_to_dispatch(cons, registry, callee) }
+
+          sym = dispatch.fetch(callee.symbol.name) do
+            case callee.symbol.name
+            when "(==)" then Symbol::DerivedFunction["->(one, other) { one == other }"]
+            when "(!=)" then Symbol::DerivedFunction["->(one, other) { one != other }"]
+            end
+          end
+
+          callee.with(symbol: sym)
             .then { generate_callee(it, registry, dictionaries) }
         end
       end
 
-      def constraint_to_dispatch(constraint, registry)
+      def constraint_to_dispatch(constraint, registry, callee)
         case constraint.type
         in Type::AnonymousRecord(fields:)
-          pepe = fields
+          eq_calls = fields
             .map do |(k, v)|
-              field_dispatch = constraint_to_dispatch(
-                constraint.with(type: v),
-                registry,
-              )
-              "#{generate_callee(field_dispatch['(==)'], registry, nil)}.call(one[:#{k}], other[:#{k}])"
+              field_sym = constraint_to_dispatch(constraint.with(type: v), registry, callee)["(==)"]
+              field_code = generate_callee(callee.with(symbol: field_sym), registry, [])
+              "#{field_code}.call(one[:#{k}], other[:#{k}])"
             end
             .join(' && ')
-            .then { { "==" => "->(one, other) { #{it} } " } }
 
-          byebug
-          pepe
+          {
+            "(==)" => Symbol::DerivedFunction["->(one, other) { #{eq_calls} }"],
+            "(!=)" => Symbol::DerivedFunction["->(one, other) { !(#{eq_calls}) }"],
+          }
+
         in Type::Application(constructor: { name: })
-          [constraint.interface, name]
-            .then { registry.implementations[it] }
-            .functions
+          impl = registry.implementations[[constraint.interface, name]]
+
+          if impl
+            impl.functions
+
+          else
+            {
+              "(==)" => Symbol::DerivedFunction["->(one, other) { one == other }"],
+              "(!=)" => Symbol::DerivedFunction["->(one, other) { one != other }"],
+            }
+          end
         end
       end
 
@@ -108,7 +122,7 @@ module Jade
         in [:impl, impl]
           dispatch[impl]
             .then { callee.with(symbol: it) }
-            .then { generate_callee(it, registry, dispatch) }
+            .then { generate_callee(it, registry, []) }
 
         in [:fn, name]
           *mod_parts, fn_name = name.split('.')
