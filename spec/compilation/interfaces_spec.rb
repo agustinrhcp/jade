@@ -101,5 +101,29 @@ module Jade
         expect(InterfaceTest.bool_eq.call(true, true)).to be true
       end
     end
+
+    context 'deriving equality' do
+      let(:source) do
+        <<~JADE
+          module InterfaceTest exposing (just_eq, nothing_eq)
+
+          def nothing_eq() -> Bool
+            Nothing() == Nothing()
+          end
+
+          def just_eq(a: Int, b: Int) -> Bool
+            Just(a) == Just(b)
+          end
+        JADE
+      end
+
+      it 'works' do
+        test_compiler.require('interface_test', source)
+
+        expect(InterfaceTest.nothing_eq.call()).to be true
+        expect(InterfaceTest.just_eq.call(1, 2)).to be false
+        expect(InterfaceTest.just_eq.call(1, 1)).to be true
+      end
+    end
   end
 end

@@ -365,6 +365,18 @@ module Jade
 
         it { is_expected.to eql "->(one, other) { Jade::Runtime.intr('Basics.not').call(Jade::Runtime.intr('Basics.int_eq').call(one, other)) }.call(1, 2)" }
       end
+
+      context 'without implementation' do
+        let(:text) do
+          <<~JADE
+            def test() -> Bool
+              { salute: "Hola" } == { salute: "Hei" }
+            end
+          JADE
+        end
+
+        it('is derived') { is_expected.to eq("PEPE") }
+      end
     end
   end
 end

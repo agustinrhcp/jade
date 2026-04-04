@@ -65,6 +65,20 @@ module Jade
 
       def constraint_to_dispatch(constraint, registry)
         case constraint.type
+        in Type::AnonymousRecord(fields:)
+          pepe = fields
+            .map do |(k, v)|
+              field_dispatch = constraint_to_dispatch(
+                constraint.with(type: v),
+                registry,
+              )
+              "#{generate_callee(field_dispatch['(==)'], registry, nil)}.call(one[:#{k}], other[:#{k}])"
+            end
+            .join(' && ')
+            .then { { "==" => "->(one, other) { #{it} } " } }
+
+          byebug
+          pepe
         in Type::Application(constructor: { name: })
           [constraint.interface, name]
             .then { registry.implementations[it] }
