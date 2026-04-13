@@ -129,7 +129,7 @@ module Jade
 
         in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
           AST::ImportDeclaration | AST::Literal | AST::RecordAccessSugar | AST::InteropImportDeclaration |
-          AST::StructDeclaration
+          AST::StructDeclaration | AST::Implementation
 
           node
         end

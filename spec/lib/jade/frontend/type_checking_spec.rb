@@ -667,6 +667,28 @@ module Jade
           its(:errors) { is_expected.to be_empty }
         end
       end
+
+      describe 'constraint propagation from !=' do
+        let(:text) do
+          <<~JADE
+            def neq(a: a, b: a) -> Bool
+              a != b
+            end
+          JADE
+        end
+
+        its(:errors) { is_expected.to be_empty }
+
+        context 'the function binding' do
+          subject { super().env.bindings['__Test__.neq'] }
+
+          it 'has an Eq constraint' do
+            is_expected.to have_attributes(
+              constraints: include(having_attributes(interface: 'Basics.Eq', type: be_a(Type::Var)))
+            )
+          end
+        end
+      end
     end
   end
 end

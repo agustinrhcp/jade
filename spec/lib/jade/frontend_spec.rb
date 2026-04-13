@@ -1075,6 +1075,78 @@ module Jade
       it { is_expected.to have(1).item }
     end
 
+    describe 'implementing constraint' do
+      let(:text) do
+        <<~JADE
+          type Pepe = Pepe(Int)
+
+          implements Eq(Pepe) with
+            (==) : eq_pepe
+
+          def eq_pepe(one: Pepe, other: Pepe) -> Bool
+            True
+          end
+        JADE
+      end
+
+      subject { super().expressions[1] }
+
+      it { is_expected.to be_a(AST::Implementation) }
+    end
+
+    describe 'orphan implementation' do
+      let(:text) do
+        <<~JADE
+          implements Eq(Int) with
+            (==) : int_eq_override
+
+          def int_eq_override(one: Int, other: Int) -> Bool
+            True
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::OrphanImplementation) }
+    end
+
+    describe 'implementation with unknown function' do
+      let(:text) do
+        <<~JADE
+          type Pepe = Pepe(Int)
+
+          implements Eq(Pepe) with
+            eq : eq_pepe
+
+          def eq_pepe(one: Pepe, other: Pepe) -> Bool
+            True
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::UnknownImplementationFunction) }
+    end
+
+    describe 'implementation with missing function' do
+      let(:text) do
+        <<~JADE
+          type Pepe = Pepe(Int)
+
+          implements Eq(Pepe) with
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::MissingImplementationFunction) }
+    end
+
     describe 'eq constraint' do
       subject { super().expressions.last}
 
