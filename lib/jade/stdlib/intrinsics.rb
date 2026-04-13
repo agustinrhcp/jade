@@ -27,18 +27,21 @@ module Jade
         end
       end
 
-      def function(name, params, ret, &block)
+      def function(name, params, ret, constraints: [], body: nil, &block)
         qualified_fn_name = "#{module_name}.#{name}"
+
+        codegen = body || "Jade::Runtime.intr('#{qualified_fn_name}')"
 
         Symbol
           .stdlib_function(
             name.to_s,
             params.transform_values { Symbol.parse(it) },
             Symbol.parse(ret),
-            "Jade::Runtime.intr('#{qualified_fn_name}')",
+            codegen,
+            constraints:,
           )
           .with(module_name:)
-          .then { store(it )}
+          .then { store(it) }
           .tap { Runtime.register(qualified_fn_name, &block) }
       end
 

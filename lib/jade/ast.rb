@@ -67,6 +67,9 @@ module Jade
     define(:InteropModule, :name)
     define(:InteropFunction, :name, :type)
 
+    define(:Implementation, :interface, :constructor, :functions)
+    define(:ImplementationFunction, :name, :fn)
+
     module Pattern
       extend self
       extend Nodes
@@ -532,6 +535,33 @@ module Jade
           type_params,
           record_type,
           struct_token.range.begin..record_type.range.end,
+        ]
+      end
+    end
+
+    def implementation
+      ->((implements_token, interface, constructor, functions)) do
+        range_end = functions.last&.range&.end || constructor.range.end
+        Implementation[
+          interface.value,
+          constructor.value,
+          functions,
+          implements_token.range.begin..range_end,
+        ]
+      end
+    end
+
+    def implementation_function
+      ->((name, fn)) do
+        canonical_name = case name.type
+                         in :identifier then name.value
+                         else "(#{name.value})"
+                         end
+
+        ImplementationFunction[
+          canonical_name,
+          fn.value,
+          name.range.begin..fn.range.end,
         ]
       end
     end

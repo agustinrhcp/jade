@@ -33,6 +33,11 @@ module Jade
               &type_error(state, node)
             )
             .then do |st, rs|
+              # dictionaries is a mutable array in the function call node,
+              # if we don't skipt constraints on the first pass, we end up adding
+              # double dispatch code.
+              next [st, rs] if st.skip_constraints
+
               # TODO: This is only for concrete constraints. Unresolved ones (type
               # vars like Eq(a)) bubble up in rs.constraints. Inside an impl body,
               # these should eventually become impl-level deps rather than being

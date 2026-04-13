@@ -101,8 +101,8 @@ module Jade
       FunctionType[params, return_type]
     end
 
-    def stdlib_function(name, params, return_type, codegen)
-      StdlibFunction[nil, name, params, return_type, codegen]
+    def stdlib_function(name, params, return_type, codegen, constraints: [])
+      StdlibFunction[nil, name, params, return_type, codegen, constraints]
     end
 
     def predeclared_interop_function(name)
