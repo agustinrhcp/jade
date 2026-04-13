@@ -21,7 +21,7 @@ module Jade
       def check(entry, registry)
         Loader
           .load(entry, registry)
-          .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
+          .then { check_node(entry.ast, registry, State.init(it, skip_constraints: true), Expected.infer(it.fresh)) }
           .then { Generalizer.generalize(it.first.env) }
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
           .then { finalize(*it, registry) }
@@ -66,6 +66,7 @@ module Jade
         in AST::FunctionDeclaration then Inference::FunctionDeclaration
         in AST::Grouping then Inference::Grouping
         in AST::IfThenElse then Inference::IfThenElse
+        in AST::Implementation then Inference::Implementation
         in AST::ImportDeclaration then Inference::ImportDeclaration
         in AST::InteropImportDeclaration then Inference::InteropImportDeclaration
         in AST::Lambda then Inference::Lambda

@@ -12,6 +12,7 @@ require 'jade/frontend/semantic_analysis/function_declaration'
 require 'jade/frontend/semantic_analysis/function_call'
 require 'jade/frontend/semantic_analysis/type_declaration'
 require 'jade/frontend/semantic_analysis/interop_import_declaration'
+require 'jade/frontend/semantic_analysis/implementation'
 require 'jade/frontend/semantic_analysis/struct_declaration'
 require 'jade/frontend/semantic_analysis/if_then_else'
 require 'jade/frontend/semantic_analysis/qualified_access'
@@ -68,6 +69,7 @@ module Jade
         in AST::FunctionDeclaration       then FunctionDeclaration.analyze(ast, registry, scope, entry)
         in AST::FunctionCall              then FunctionCall.analyze(ast, registry, scope, entry)
         in AST::TypeDeclaration           then TypeDeclaration.analyze(ast, registry, scope, entry)
+        in AST::Implementation            then Implementation.analyze(ast, registry, scope, entry)
         in AST::StructDeclaration         then StructDeclaration.analyze(ast, registry, scope, entry)
         in AST::IfThenElse                then IfThenElse.analyze(ast, registry, scope, entry)
         in AST::QualifiedAccess           then QualifiedAccess.analyze(ast, registry, scope, entry)

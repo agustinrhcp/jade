@@ -102,6 +102,52 @@ module Jade
       end
     end
 
+    context 'orphan implementation' do
+      let(:source) do
+        <<~JADE
+          module InterfaceTest exposing (int_eq_override)
+
+          implements Eq(Int) with
+            (==) : int_eq_override
+
+          def int_eq_override(one: Int, other: Int) -> Bool
+            one == other
+          end
+        JADE
+      end
+
+      it 'reports an orphan implementation error' do
+        expect { test_compiler.require('interface_test', source) }
+          .to raise_error(RuntimeError, /only the owner of the interface or the type/)
+      end
+    end
+
+    context 'implementation with wrong signature' do
+      let(:source) do
+        <<~JADE
+          module InterfaceTest exposing (pepe_eq)
+
+          type Pepe = Pepe(Int)
+
+          implements Eq(Pepe) with
+            (==) : eq_pepe
+
+          def eq_pepe(one: Int, other: Int) -> Bool
+            one == other
+          end
+
+          def pepe_eq(a: Pepe, b: Pepe) -> Bool
+            a == b
+          end
+        JADE
+      end
+
+      it 'reports a type mismatch error' do
+        expect { test_compiler.require('interface_test', source) }
+          .to raise_error(RuntimeError, /Implementation of Basics\.Eq\.\(==\)/)
+      end
+    end
+
     context 'deriving equality' do
       let(:source) do
         <<~JADE
@@ -189,6 +235,44 @@ module Jade
         test_compiler.require('interface_test', source)
 
         expect(InterfaceTest.eq.call()).to be true
+      end
+    end
+
+
+    context 'equality implementation for structs' do
+      let(:source) do
+        <<~JADE
+          module InterfaceTest exposing (new_person, eq_person)
+
+          struct Person = { id: Int, name: String }
+
+          implements Eq(Person) with
+            (==) : eq
+
+          def eq(one: Person, other: Person) -> Bool
+            one.id == other.id
+          end
+
+          def new_person(id: Int, name: String) -> Person
+            Person(id, name)
+          end
+
+          def eq_person(one: Person, other: Person) -> Bool
+            one == other
+          end
+        JADE
+      end
+
+      it 'works' do
+        test_compiler.require('interface_test', source)
+
+        person_1 = InterfaceTest.new_person.call(1, "Pepe")
+        person_2 = InterfaceTest.new_person.call(2, "Pepe")
+        person_3 = InterfaceTest.new_person.call(1, "Lala")
+
+        expect(InterfaceTest.eq_person.call(person_1, person_3)).to be true
+        expect(InterfaceTest.eq_person.call(person_2, person_3)).to be false
+        expect(InterfaceTest.eq_person.call(person_1, person_2)).to be false
       end
     end
   end

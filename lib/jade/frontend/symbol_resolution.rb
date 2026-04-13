@@ -9,6 +9,7 @@ require 'jade/frontend/symbol_resolution/function_call'
 require 'jade/frontend/symbol_resolution/function_declaration'
 require 'jade/frontend/symbol_resolution/grouping'
 require 'jade/frontend/symbol_resolution/if_then_else'
+require 'jade/frontend/symbol_resolution/implementation'
 require 'jade/frontend/symbol_resolution/import_declaration'
 require 'jade/frontend/symbol_resolution/interop_import_declaration'
 require 'jade/frontend/symbol_resolution/lambda'
@@ -77,6 +78,7 @@ module Jade
       def resolve_node(node, registry, current_entry)
         case node
         in AST::Module then Module
+        in AST::Implementation then Implementation
         in AST::ImportDeclaration then ImportDeclaration
         in AST::InteropImportDeclaration then InteropImportDeclaration
         in AST::Literal then Literal

@@ -5,6 +5,7 @@ require 'jade/interop/lowering'
 
 require 'jade/frontend/forward_declaration/body'
 require 'jade/frontend/forward_declaration/function_declaration'
+require 'jade/frontend/forward_declaration/implementation'
 require 'jade/frontend/forward_declaration/import_declaration'
 require 'jade/frontend/forward_declaration/interop_import_declaration'
 require 'jade/frontend/forward_declaration/module'
@@ -52,6 +53,7 @@ module Jade
         case node
         in AST::Body then Body
         in AST::FunctionDeclaration then FunctionDeclaration
+        in AST::Implementation then Implementation
         in AST::ImportDeclaration then ImportDeclaration
         in AST::InteropImportDeclaration then InteropImportDeclaration
         in AST::Module then Module

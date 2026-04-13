@@ -12,21 +12,23 @@ module Jade
       interface(
         'Eq',
         'a',
-        {
-          '(==)' => 'a, a -> Bool',
-          '(!=)' => 'a, a -> Bool',
-         },
-         default: {
-           '(!=)' => default_implementation(
-             params: ['one', 'other'],
-             body: [:call, [:fn, 'Basics.not'], [[:call, [:impl, '(==)'], ['one', 'other']]]]
-           )
-         }
-       )
+        { '(==)' => 'a, a -> Bool' },
+      )
 
-      implementation('Eq', 'Int', '(==)' => 'int_eq')
+      implementation('Eq', 'Int',   '(==)' => 'int_eq')
       implementation('Eq', 'Float', '(==)' => 'float_eq')
-      implementation('Eq', 'Bool', '(==)' =>  'bool_eq')
+      implementation('Eq', 'Bool',  '(==)' => 'bool_eq')
+
+      function(
+        '(!=)',
+        { one: 'a', other: 'a' },
+        'Bool',
+        constraints: [['Basics.Eq', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['one', 'other'],
+          body: [:!, [:call, [:impl_arg, 0, '(==)'], [[:var, 'one'], [:var, 'other']]]],
+        ),
+      )
 
       function(
         '(+)',

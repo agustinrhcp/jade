@@ -1042,5 +1042,21 @@ module Jade
 
       it { is_expected.to be_a(AST::InfixApplication) }
     end
+
+    xdescribe 'interface' do
+    end
+
+    describe 'implements' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          implements Eq(Pepe) with
+            (==) : eq_pepe
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Implementation) }
+    end
   end
 end

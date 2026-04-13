@@ -25,7 +25,7 @@ module Jade
         registry.get(module_name).path
           .then { "require_relative '#{it}'" }
 
-      in AST::InteropImportDeclaration
+      in AST::InteropImportDeclaration | AST::Implementation
         ""
 
       in AST::Body(expressions:)
