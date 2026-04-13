@@ -129,12 +129,6 @@ module Jade
                   body: [:case, subject, cases]
                 )
 
-              neq_fn = Symbol::DerivedFunction
-                .new(
-                  params: ["one", "other"],
-                  body: [:!, [:case, subject, cases]]
-                )
-
               if type_vars.empty? && constraints.empty?
                 Symbol::Implementation.new(
                    module_name: nil,
@@ -142,7 +136,7 @@ module Jade
                    type: constraint.type,
                    type_params: [],
                    constraints: [],
-                   functions: { '(==)' => eq_fn, '(!=)' => neq_fn },
+                   functions: { '(==)' => eq_fn },
                    deps: [],
                    decl_span: nil,
                 )
@@ -153,7 +147,7 @@ module Jade
                   type: constraint.type,
                   type_params: type_vars.map { Type.var(it) },
                   constraints:,
-                  functions: { '(==)' => eq_fn, '(!=)' => neq_fn },
+                  functions: { '(==)' => eq_fn },
                 )
               end
             end
@@ -212,8 +206,7 @@ module Jade
               }
 
               body = comparisons.empty? ? true : comparisons.reduce { |a, b| [:and, a, b] }
-              eq_fn  = Symbol::DerivedFunction.new(params: ['one', 'other'], body:)
-              neq_fn = Symbol::DerivedFunction.new(params: ['one', 'other'], body: [:!, body])
+              eq_fn = Symbol::DerivedFunction.new(params: ['one', 'other'], body:)
 
               Symbol::Implementation.new(
                 module_name: nil,
@@ -221,7 +214,7 @@ module Jade
                 type: constraint.type,
                 type_params: [],
                 constraints: [],
-                functions: { '(==)' => eq_fn, '(!=)' => neq_fn },
+                functions: { '(==)' => eq_fn },
                 deps:,
                 decl_span: nil,
               )

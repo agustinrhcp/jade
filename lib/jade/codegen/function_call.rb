@@ -30,6 +30,11 @@ module Jade
             .then { "#{symbol.interop_module_name}, :#{symbol.name}, #{it}" }
             .then { "Jade::Runtime.guard(#{it})" }
 
+        in Symbol::StdlibFunction => symbol if symbol.constraints.any?
+          dictionaries
+            .map { |impl| generate_impl_dispatch(impl, registry) }
+            .then { generate_impl_fn(symbol.codegen, it, {}, registry) }
+
         in Symbol::StdlibFunction
           callee.symbol.codegen
 
@@ -88,6 +93,9 @@ module Jade
 
         in Symbol::ValueRef
           registry.lookup(fn).then { generate_impl_fn(it, dep_dispatches, sibling_fns, registry) }
+
+        in Symbol::Function => fn
+          "#{to_qualified(fn.module_name)}.#{fn.name}"
         end
       end
 

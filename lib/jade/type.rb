@@ -96,7 +96,7 @@ module Jade
           .constructor(symbol.qualified_name)
           .then { [it.apply(union_vars), union_cs, union_map] }
 
-      in Symbol::Function | Symbol::StdlibFunction
+      in Symbol::Function
         args, arg_cs, local_map = symbol
           .params
           .values
@@ -107,6 +107,23 @@ module Jade
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
           .then { |(t, c, _)| [Type.function(args, t), c + arg_cs] }
+          .then { it + [var_map] }
+
+      in Symbol::StdlibFunction
+        args, arg_cs, local_map = symbol
+          .params
+          .values
+          .reduce([[], [], {}]) do |(types, cs, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
+          end
+
+        extra_cs = symbol.constraints.map { |iface, var_name|
+          Type.constraint(iface, local_map.fetch(var_name), nil)
+        }
+
+        from_symbol_r(symbol.return_type, registry, var_gen, local_map)
+          .then { |(t, c, _)| [Type.function(args, t), c + arg_cs + extra_cs] }
           .then { it + [var_map] }
 
       in Symbol::FunctionType | Symbol::InteropFunction

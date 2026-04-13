@@ -1,9 +1,9 @@
 module Jade
   module Frontend
     module TypeChecking
-      State = Data.define(:env, :errors) do
-        def self.init(env)
-          new(env, [])
+      State = Data.define(:env, :errors, :skip_constraints) do
+        def self.init(env, skip_constraints: false)
+          new(env, [], skip_constraints)
         end
 
         def unify_result(result, right, rigid_vars = [], &block)
