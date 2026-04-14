@@ -1194,5 +1194,44 @@ module Jade
         end
       end
     end
+
+    describe 'implementation with inline lambda' do
+      let(:text) do
+        <<~JADE
+          type Pepe = Pepe(Int)
+
+          implements Eq(Pepe) with
+            (==) : (one, other) -> { one == other }
+        JADE
+      end
+
+      let(:registry) { frontend => Ok([_, r]); r }
+
+      subject { frontend => Ok([node, _]); node.expressions[1] }
+
+      it { is_expected.to be_a(AST::Implementation) }
+
+      it 'has the impl symbol registered in the entry' do
+        expect(registry.get('__Test__').implementations).to have_key(
+          ['Basics.Eq', '__Test__.Pepe']
+        )
+      end
+
+      it 'registers a stub function for the lambda' do
+        expect(registry.get('__Test__').defined_values.keys).to include(
+          match(/__impl_Eq_Pepe/)
+        )
+      end
+
+      context 'the (==) call inside the lambda' do
+        subject { super().functions[0].fn.body.expressions[0] }
+
+        it { is_expected.to be_a(AST::FunctionCall) }
+
+        it 'has dictionaries attached after type checking' do
+          expect(subject.dictionaries).not_to be_empty
+        end
+      end
+    end
   end
 end

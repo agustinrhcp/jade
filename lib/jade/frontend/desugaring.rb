@@ -136,15 +136,23 @@ module Jade
               )
             end
 
+        in AST::Implementation(functions:)
+          functions
+            .map { desugar(it) }
+            .then { node.with(functions: it) }
+
+        in AST::ImplementationFunction(fn:)
+          node.with(fn: desugar(fn))
+
         in AST::Literal | AST::VariableReference | AST::ConstructorReference |
           AST::TypeDeclaration | AST::ImportDeclaration | AST::Pattern::Constructor |
           AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard |
-          AST::Pattern::Record | AST::InteropImportDeclaration | AST::StructDeclaration |
-          AST::Implementation
+          AST::Pattern::Record | AST::InteropImportDeclaration | AST::StructDeclaration
 
           node
         end
       end
+
     end
   end
 end
