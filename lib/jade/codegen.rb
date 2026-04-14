@@ -4,11 +4,13 @@ require 'jade/codegen/emitter'
 
 require 'jade/codegen/function_declaration'
 require 'jade/codegen/function_call'
+require 'jade/codegen/implementation'
 
 module Jade
   module Codegen
     extend self
     extend Emitter
+    extend Helpers
 
     def generate_entry(entry, registry)
       generate(entry.ast, registry)
@@ -25,8 +27,11 @@ module Jade
         registry.get(module_name).path
           .then { "require_relative '#{it}'" }
 
-      in AST::InteropImportDeclaration | AST::Implementation
+      in AST::InteropImportDeclaration
         ""
+
+      in AST::Implementation
+        Implementation.generate(node, registry)
 
       in AST::Body(expressions:)
         generate_many(expressions, registry, "; ")
