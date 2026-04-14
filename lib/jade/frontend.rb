@@ -16,9 +16,9 @@ module Jade
 
     def run_entry(initial, registry)
       initial
+        .then { FixityFixer.fix_entry(it) }
+        .then { Desugaring.desugar_entry(it) }
         .then { ForwardDeclaration.declare_entry(it, registry) }
-        .map { FixityFixer.fix_entry(it) }
-        .map { Desugaring.desugar_entry(it) }
         .and_then { SymbolResolution.resolve_entry(it, registry.update_module(it)) }
         .and_then { SemanticAnalysis.analyze(it, registry.update_module(it)) }
         .and_then { TypeChecking.check(it, registry.update_module(it)) }
@@ -61,11 +61,9 @@ module Jade
     def run_up_to_semantic_analysis(ast)
       registry, current_entry = entry_with_basics(ast)
 
-      ForwardDeclaration
-        .declare(ast, registry, current_entry)
-        # TODO: [Frontend:HandleErrors]
-        .map { |entry| FixityFixer.fix(ast).then { [it, entry] } }
-        .map { |enh_ast, entry| Desugaring.desugar(enh_ast).then { [it, entry] } }
+      FixityFixer.fix(ast)
+        .then { Desugaring.desugar(it) }
+        .then { |enh_ast| ForwardDeclaration.declare(enh_ast, registry, current_entry).map { [enh_ast, it] } }
         .and_then do |enh_ast, entry|
           SymbolResolution
             .resolve(enh_ast, registry.update_module(entry), entry)

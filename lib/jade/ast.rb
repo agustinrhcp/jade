@@ -67,7 +67,7 @@ module Jade
     define(:InteropModule, :name)
     define(:InteropFunction, :name, :type)
 
-    define(:Implementation, :interface, :constructor, :functions)
+    define(:Implementation, :interface, :applied_type, :functions)
     define(:ImplementationFunction, :name, :fn)
 
     module Pattern
@@ -540,11 +540,11 @@ module Jade
     end
 
     def implementation
-      ->((implements_token, interface, constructor, functions)) do
-        range_end = functions.last&.range&.end || constructor.range.end
+      ->((implements_token, interface, applied_type, functions)) do
+        range_end = functions.last&.range&.end || applied_type.range.end
         Implementation[
           interface.value,
-          constructor.value,
+          applied_type,
           functions,
           implements_token.range.begin..range_end,
         ]
@@ -560,7 +560,7 @@ module Jade
 
         ImplementationFunction[
           canonical_name,
-          fn.value,
+          fn,
           name.range.begin..fn.range.end,
         ]
       end

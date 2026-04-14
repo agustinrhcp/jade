@@ -107,6 +107,14 @@ module Jade
         in AST::Lambda(body:)
           node.with(body: fix(body))
 
+        in AST::ImplementationFunction(fn:)
+          node.with(fn: fix(fn))
+
+        in AST::Implementation(functions:)
+          functions
+            .map { fix(it) }
+            .then { node.with(functions: it) }
+
         in AST::Grouping(expression:)
           node.with(expression: fix(expression))
 
@@ -129,7 +137,7 @@ module Jade
 
         in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
           AST::ImportDeclaration | AST::Literal | AST::RecordAccessSugar | AST::InteropImportDeclaration |
-          AST::StructDeclaration | AST::Implementation
+          AST::StructDeclaration
 
           node
         end
