@@ -239,6 +239,39 @@ module Jade
     end
 
 
+    context 'equality implementation for structs with inline lambda' do
+      let(:source) do
+        <<~JADE
+          module InterfaceTest exposing (new_person, eq_person)
+
+          struct Person = { id: Int, name: String }
+
+          implements Eq(Person) with
+            (==) : (one, other) -> { one.id == other.id }
+
+          def new_person(id: Int, name: String) -> Person
+            Person(id, name)
+          end
+
+          def eq_person(one: Person, other: Person) -> Bool
+            one == other
+          end
+        JADE
+      end
+
+      it 'works' do
+        test_compiler.require('interface_test', source)
+
+        person_1 = InterfaceTest.new_person.call(1, "Pepe")
+        person_2 = InterfaceTest.new_person.call(2, "Pepe")
+        person_3 = InterfaceTest.new_person.call(1, "Lala")
+
+        expect(InterfaceTest.eq_person.call(person_1, person_3)).to be true
+        expect(InterfaceTest.eq_person.call(person_2, person_3)).to be false
+        expect(InterfaceTest.eq_person.call(person_1, person_2)).to be false
+      end
+    end
+
     context 'equality implementation for structs' do
       let(:source) do
         <<~JADE

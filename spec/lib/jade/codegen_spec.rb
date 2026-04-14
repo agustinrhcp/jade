@@ -420,6 +420,57 @@ module Jade
           it { is_expected.to end_with ".call(Data.define(:n, :salute)[1, \"Hola\"], Data.define(:n, :salute)[2, \"Hei\"]) }; end" }
         end
       end
+
+      describe 'implementation' do
+        context 'with an inline lambda' do
+          let(:text) do
+            <<~JADE
+              type Pepe = Pepe(Int)
+
+              implements Eq(Pepe) with
+                (==): (pepe, other_pepe) -> { True }
+            JADE
+          end
+
+          it 'generates a def wrapping the lambda' do
+            is_expected.to include("def __impl_Eq_Pepe_x28x3dx3dx29__; ->(pepe, other_pepe) { true }; end")
+          end
+        end
+
+        context 'with an inline lambda that dispatches to another interface' do
+          let(:text) do
+            <<~JADE
+              struct Person = { id: Int, name: String }
+
+              implements Eq(Person) with
+                (==) : (one, other) -> { one.id == other.id }
+            JADE
+          end
+
+          it 'generates a def with inlined call site dispatch' do
+            is_expected.to include("def __impl_Eq_Person_x28x3dx3dx29__; ->(one, other) { Jade::Runtime.intr('Basics.int_eq').call(one.id, other.id) }; end")
+          end
+        end
+
+        context 'with a function reference' do
+          let(:text) do
+            <<~JADE
+              type Pepe = Pepe(Int)
+
+              implements Eq(Pepe) with
+                (==) : eq_pepe
+
+              def eq_pepe(one: Pepe, other: Pepe) -> Bool
+                True
+              end
+            JADE
+          end
+
+          it 'does not generate a def for the implementation' do
+            is_expected.not_to include("def __impl_Eq_Pepe")
+          end
+        end
+      end
     end
   end
 end

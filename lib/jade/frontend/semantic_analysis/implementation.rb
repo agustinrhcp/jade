@@ -5,17 +5,19 @@ module Jade
         extend self
 
         def analyze(node, registry, scope, entry)
-          node => AST::Implementation(interface:, constructor:, functions:)
+          node => AST::Implementation(interface:, applied_type:, functions:)
+
+          type_name = applied_type.constructor.type
 
           owns_interface = entry.defined_types.key?(interface)
-          owns_type      = entry.defined_types.key?(constructor)
+          owns_type      = entry.defined_types.key?(type_name)
 
           unless owns_interface || owns_type
             Error::OrphanImplementation
               .new(
                 entry.name, node.range,
                 interface: entry.lookup_type(interface).qualified_name,
-                type:      entry.lookup_type(constructor).qualified_name,
+                type:      entry.lookup_type(type_name).qualified_name,
               )
               .then { return Result[scope, [it]] }
           end

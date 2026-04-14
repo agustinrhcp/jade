@@ -8,7 +8,7 @@ module Jade
 
           def infer(node, registry, state, _)
             node => AST::VariableReference(symbol:)
-        
+
             case symbol
             in Symbol::Variable
               symbol.name

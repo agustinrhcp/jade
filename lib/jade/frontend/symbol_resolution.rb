@@ -10,6 +10,7 @@ require 'jade/frontend/symbol_resolution/function_declaration'
 require 'jade/frontend/symbol_resolution/grouping'
 require 'jade/frontend/symbol_resolution/if_then_else'
 require 'jade/frontend/symbol_resolution/implementation'
+require 'jade/frontend/symbol_resolution/implementation_function'
 require 'jade/frontend/symbol_resolution/import_declaration'
 require 'jade/frontend/symbol_resolution/interop_import_declaration'
 require 'jade/frontend/symbol_resolution/lambda'
@@ -42,15 +43,10 @@ module Jade
         end
 
         def self.sequence(results)
-          nodes  = []
-          errors = []
-
-          results.each do |result|
-            nodes << result.node
-            errors.concat(result.errors)
-          end
-
-          Result[nodes, errors]
+          Result[
+            results.map(&:node),
+            results.flat_map(&:errors),
+          ]
         end
 
         def add_errors(errors_)
@@ -79,6 +75,7 @@ module Jade
         case node
         in AST::Module then Module
         in AST::Implementation then Implementation
+        in AST::ImplementationFunction then ImplementationFunction
         in AST::ImportDeclaration then ImportDeclaration
         in AST::InteropImportDeclaration then InteropImportDeclaration
         in AST::Literal then Literal

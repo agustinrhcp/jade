@@ -27,12 +27,11 @@ module Jade
 
             functions
               .reduce(state) do |st, impl_fn|
-                impl_fn => AST::ImplementationFunction(name:, fn: fn_name)
+                impl_fn => AST::ImplementationFunction(name:)
 
                 iface_fn = interface_sym
                   .functions
                   .find { |f| f.name == name }
-                # next st unless iface_fn
 
                 # Instantiate the interface function with fresh vars
                 iface_fn_type, iface_fn_constraints =
@@ -47,22 +46,54 @@ module Jade
                 st_after_bind = st.unify(t_var, concrete_type) { nil }
                 expected_type = st_after_bind.env.substitution.apply(iface_fn_type)
 
-                # Look up the declared function's type
-                fn_qname = "#{st.env.entry_name}.#{fn_name}"
-                st_after_bind.env.lookup(fn_qname) => { type: declared_type }
-
-              st_after_bind.unify(declared_type, expected_type) do |e|
-                Error::ImplementationTypeMismatch.new(
-                  st.env.entry_name,
-                  node.range,
-                  expected: e.expected,
-                  actual:   e.actual,
-                  interface: interface_qname,
-                  fn_name:   name,
+                infer_fn(
+                  impl_fn,
+                  registry,
+                  st_after_bind,
+                  Expected.check(expected_type),
+                  interface_qname,
                 )
               end
+              .then { [it, Result.init(Type.unit)] }
+          end
+
+          private
+
+          def infer_fn(impl_fn, registry, state, expected, interface_qname)
+            impl_fn => AST::ImplementationFunction(name:, fn:)
+
+            case fn
+            in AST::Lambda
+              check(fn, registry, state, expected).first
+
+            in AST::VariableReference
+              fn_qname = "#{state.env.entry_name}.#{fn.name}"
+              state.env.lookup(fn_qname) => { type: declared_type }
+
+              state.unify(
+                declared_type,
+                expected.type,
+                &mismatch_error(
+                  state.env.entry_name,
+                  impl_fn,
+                  interface_qname,
+                  name
+                )
+              )
             end
-            .then { [it, Result.init(Type.unit)] }
+          end
+
+          def mismatch_error(entry_name, impl_fn, interface_qname, fn_name)
+            ->(e) do
+              Error::ImplementationTypeMismatch.new(
+                entry_name,
+                impl_fn.range,
+                expected: e.expected,
+                actual:   e.actual,
+                interface: interface_qname,
+                fn_name:,
+              )
+            end
           end
         end
       end

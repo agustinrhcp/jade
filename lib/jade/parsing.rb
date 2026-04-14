@@ -402,7 +402,7 @@ module Jade
         type(:implements) >>
           type(:constant) >>
           type(:lparen).skip >>
-          type(:constant) >>
+          type_application >>
           type(:rparen).skip >>
           type(:with).skip >>
           (at_least_one(implementation_function, separated_by: type(:comma).skip) | none.map { [] })
@@ -415,7 +415,7 @@ module Jade
       (
         (type(:identifier) | (type(:lparen).skip >> operator >> type(:rparen).skip)) >>
         type(:colon).skip >>
-        type(:identifier)
+        (lambda | variable_reference)
       )
         .map(&AST.implementation_function)
     end

@@ -3,19 +3,24 @@ module Jade
     module SymbolResolution
       module Implementation
         extend self
+        extend Helper
 
-        def resolve(node, _registry, current_entry)
-          node => AST::Implementation(interface:, constructor:)
+        def resolve(node, registry, current_entry)
+          node => AST::Implementation(interface:, applied_type:, functions:)
 
           interface_ref = current_entry.lookup_type(interface).to_ref
-          type_ref      = current_entry.lookup_type(constructor).to_ref
+          type_ref      = current_entry.lookup_type(applied_type.constructor.type).to_ref
 
-          current_entry
+          impl_symbol = current_entry
             .implementations[[
               interface_ref.qualified_name,
               type_ref.qualified_name,
             ]]
-            .then { Result[node.with(symbol: it), []] }
+
+          functions
+            .map { resolve_node(it, registry, current_entry) }
+            .then { Result.sequence(it) }
+            .map { node.with(symbol: impl_symbol, functions: it) }
         end
       end
     end

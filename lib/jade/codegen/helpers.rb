@@ -25,6 +25,11 @@ module Jade
         Codegen.generate(node, registry)
       end
 
+      def impl_synthetic_name(interface, type_name, fn_name)
+        sanitized = fn_name.gsub(/[^a-zA-Z0-9_]/) { |c| "x#{c.ord.to_s(16)}" }
+        "__impl_#{interface}_#{type_name}_#{sanitized}__"
+      end
+
     def lower_to_ruby(value)
       case value
       in String

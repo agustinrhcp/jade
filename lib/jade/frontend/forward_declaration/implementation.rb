@@ -10,20 +10,22 @@ module Jade
         end
 
         def deep(node, entry, _registry)
-          node => AST::Implementation(interface:, constructor:, functions:)
+          node => AST::Implementation(interface:, applied_type:, functions:)
 
           interface_ref = entry.lookup_type(interface).to_ref
-          type_ref = entry.lookup_type(constructor).to_ref
+          type_ref      = figure_out_type(entry, applied_type).constructor
+          type_name     = applied_type.constructor.type
 
-          fn_map = functions
-            .to_h do
-              it => AST::ImplementationFunction(name:, fn:)
-              [name, Symbol.value_ref(entry.name, fn)]
+          entry_with_fns, fn_map = functions
+            .reduce([entry, {}]) do |(acc_entry, acc_map), impl_fn|
+              ImplementationFunction
+                .declare(impl_fn, acc_entry, interface, type_name)
+                .then { |e, ref| [e, acc_map.merge(impl_fn.name => ref)] }
             end
 
           Symbol
             .implementation(interface_ref, type_ref, [], [], fn_map, [], node.range)
-            .then { entry.define(it) }
+            .then { entry_with_fns.define(it) }
             .then { Result[it, []] }
         end
       end
