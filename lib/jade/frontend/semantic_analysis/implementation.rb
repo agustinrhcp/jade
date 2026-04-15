@@ -5,49 +5,87 @@ module Jade
         extend self
 
         def analyze(node, registry, scope, entry)
-          node => AST::Implementation(interface:, applied_type:, functions:)
+          node => AST::Implementation(interface:, applied_type:, extends:, functions:)
 
-          type_name = applied_type.constructor.type
+          type_name  = applied_type.constructor.type
+          make_error = ->(klass, **kw) { klass.new(entry.name, node.range, **kw) }
 
-          owns_interface = entry.defined_types.key?(interface)
-          owns_type      = entry.defined_types.key?(type_name)
-
-          unless owns_interface || owns_type
-            Error::OrphanImplementation
-              .new(
-                entry.name, node.range,
-                interface: entry.lookup_type(interface).qualified_name,
-                type:      entry.lookup_type(type_name).qualified_name,
-              )
-              .then { return Result[scope, [it]] }
+          unless entry.defined_types.key?(interface) || entry.defined_types.key?(type_name)
+            make_error.(
+              Error::OrphanImplementation,
+              interface: entry.lookup_type(interface).qname,
+              type:      entry.lookup_type(type_name).qname,
+            ).then { return Result[scope, [it]] }
           end
 
-          interface_ref = entry.lookup_type(interface).to_ref
-          iface_sym     = registry.lookup(interface_ref)
-          iface_qname   = interface_ref.qualified_name
+          iface_sym = entry
+            .lookup_type(interface)
+            .to_ref
+            .then { registry.lookup(it) }
 
-          impl_names  = functions.map(&:name).to_set
-          iface_names = iface_sym.functions.map(&:name).to_set
+          type_sym = entry
+            .lookup_type(type_name)
 
-          unknown = impl_names.difference(iface_names)
+          extends_errors = extends
+            .flat_map do |iface_name|
+              ext_sym = entry.lookup_type(iface_name)
+              next [] if entry.implementations.key?([ext_sym.qname, type_sym.qname])
 
-          errors =
-            if unknown.any?
-              unknown
-                .map do
-                  Error::UnknownImplementationFunction
-                    .new(entry.name, node.range, interface: iface_qname, fn_name: it)
-                end
-            else
-              iface_names
-                .difference(impl_names)
-                .map do
-                  Error::MissingImplementationFunction
-                    .new(entry.name, node.range, interface: iface_qname, fn_name: it)
-                end
+              make_error
+                .(
+                  Error::MissingExtendsImplementation,
+                  interface:   ext_sym.qname,
+                  type:        type_sym.qname,
+                  required_by: iface_sym.qname,
+                )
+                .then { [it] }
             end
 
-          Result[scope, errors]
+          cycle_errors =
+            if extends_errors.empty? && cycle_in_extends?(iface_sym.qname, type_sym.qname, entry)
+              make_error
+                .(Error::CircularExtends, interface: iface_sym.qname, type: type_sym.qname)
+                .then { [it] }
+            else
+              []
+            end
+
+          Result[scope, fn_name_errors(functions, iface_sym, &make_error) + extends_errors + cycle_errors]
+        end
+
+        private
+
+        def fn_name_errors(functions, iface_sym, &make_error)
+          impl_names  = functions.map(&:name).to_set
+          iface_names = iface_sym.functions.map(&:name).to_set
+          unknown     = impl_names.difference(iface_names)
+
+          if unknown.any?
+            unknown.map { make_error.(Error::UnknownImplementationFunction, interface: iface_sym.qname, fn_name: it) }
+          else
+            iface_names
+              .difference(impl_names)
+              .map { make_error.(Error::MissingImplementationFunction, interface: iface_sym.qname, fn_name: it) }
+          end
+        end
+
+        def cycle_in_extends?(interface_qname, type_qname, entry, visited: Set.new)
+          key = [interface_qname, type_qname]
+          return true if visited.include?(key)
+
+          impl = entry.implementations[key]
+          return false unless impl&.extends&.any?
+
+          impl
+            .extends
+            .any? do
+              cycle_in_extends?(
+                it.qualified_name,
+                type_qname,
+                entry,
+                visited: visited | [key],
+              )
+            end
         end
       end
     end

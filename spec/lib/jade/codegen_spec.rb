@@ -472,5 +472,33 @@ module Jade
         end
       end
     end
+
+    describe 'comparable constraint' do
+      let(:lt_dict) { "[{ \"compare\" => Jade::Runtime.intr('Basics.int_compare') }]" }
+
+      context '(<)' do
+        let(:text) { "1 < 2" }
+
+        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Basics::LT() then true; in _ then false; end } }.call(#{lt_dict}).call(1, 2)" }
+      end
+
+      context '(>)' do
+        let(:text) { "1 > 2" }
+
+        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Basics::GT() then true; in _ then false; end } }.call(#{lt_dict}).call(1, 2)" }
+      end
+
+      context '(<=)' do
+        let(:text) { "1 <= 2" }
+
+        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Basics::GT() then false; in _ then true; end } }.call(#{lt_dict}).call(1, 2)" }
+      end
+
+      context '(>=)' do
+        let(:text) { "1 >= 2" }
+
+        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Basics::LT() then false; in _ then true; end } }.call(#{lt_dict}).call(1, 2)" }
+      end
+    end
   end
 end

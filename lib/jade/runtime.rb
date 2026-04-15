@@ -14,6 +14,12 @@ module Tuple
   end
 end
 
+module Basics
+  GT = Data.define()
+  EQ = Data.define()
+  LT = Data.define()
+end
+
 module Jade
 
   module Runtime

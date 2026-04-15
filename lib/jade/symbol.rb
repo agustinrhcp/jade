@@ -136,7 +136,8 @@ module Jade
       constraints,
       functions,
       deps,
-      span
+      span,
+      extends: []
     )
       Implementation[
         nil,
@@ -146,6 +147,7 @@ module Jade
         constraints,
         functions,
         deps,
+        extends,
         span,
       ]
     end

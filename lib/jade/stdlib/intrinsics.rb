@@ -9,6 +9,20 @@ module Jade
           .then { load_env(it, registry) }
       end
 
+      def variant(name, of:)
+        parent = symbols.find { it.is_a?(Symbol::Union) && it.name == of.to_s }
+
+        Symbol::Constructor
+          .new(
+            module_name:,
+            name:        name.to_s,
+            args:        [],
+            parent:      parent.to_ref,
+            decl_span:   nil,
+          )
+          .tap { store(it) }
+      end
+
       def union(name, *type_params, constructor: false)
         union_symbol = Symbol
           .union(name.to_s, type_params.map { Symbol.var(it, nil) }, [], nil)
@@ -147,7 +161,7 @@ module Jade
 
       def interface_to_ref(interface)
         case interface
-        in 'Eq'
+        in 'Eq' | 'Comparable'
           'Basics'
         end
           .then { Symbol.type_ref(it, interface.to_s) }

@@ -67,7 +67,7 @@ module Jade
     define(:InteropModule, :name)
     define(:InteropFunction, :name, :type)
 
-    define(:Implementation, :interface, :applied_type, :functions)
+    define(:Implementation, :interface, :applied_type, :extends, :functions)
     define(:ImplementationFunction, :name, :fn)
 
     module Pattern
@@ -540,11 +540,12 @@ module Jade
     end
 
     def implementation
-      ->((implements_token, interface, applied_type, functions)) do
+      ->((implements_token, interface, applied_type, extends, functions)) do
         range_end = functions.last&.range&.end || applied_type.range.end
         Implementation[
           interface.value,
           applied_type,
+          extends.map(&:value),
           functions,
           implements_token.range.begin..range_end,
         ]
