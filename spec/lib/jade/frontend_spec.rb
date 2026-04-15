@@ -1147,6 +1147,102 @@ module Jade
       its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::MissingImplementationFunction) }
     end
 
+    describe 'extends a non-existent interface' do
+      let(:text) do
+        <<~JADE
+          type Pepe = Pepe(Int)
+
+          implements Eq(Pepe) extends GhostInterface with
+            (==) : eq_pepe
+
+          def eq_pepe(one: Pepe, other: Pepe) -> Bool
+            True
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::ForwardDeclaration::Error::UnknownExtendsInterface) }
+    end
+
+    describe 'extends an interface not implemented for the type' do
+      let(:text) do
+        <<~JADE
+          type Pepe = Pepe(Int)
+
+          implements Eq(Pepe) extends Comparable with
+            (==) : eq_pepe
+
+          def eq_pepe(one: Pepe, other: Pepe) -> Bool
+            True
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::MissingExtendsImplementation) }
+    end
+
+    describe 'extends with multiple, one missing' do
+      let(:text) do
+        <<~JADE
+          type Pepe = Pepe(Int)
+
+          implements Eq(Pepe) with
+            (==) : eq_pepe
+
+          implements Comparable(Pepe) extends Eq, GhostInterface with
+            compare : compare_pepe
+
+          def eq_pepe(one: Pepe, other: Pepe) -> Bool
+            True
+          end
+
+          def compare_pepe(one: Pepe, other: Pepe) -> Ordering
+            LT
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::ForwardDeclaration::Error::UnknownExtendsInterface) }
+    end
+
+    describe 'recursive extends' do
+      let(:text) do
+        <<~JADE
+          type Pepe = Pepe(Int)
+
+          implements Eq(Pepe) extends Comparable with
+            (==) : eq_pepe
+
+          implements Comparable(Pepe) extends Eq with
+            compare : compare_pepe
+
+          def eq_pepe(one: Pepe, other: Pepe) -> Bool
+            True
+          end
+
+          def compare_pepe(one: Pepe, other: Pepe) -> Ordering
+            LT
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.not_to be_empty }
+      it 'reports CircularExtends for both' do
+        expect(subject).to all(be_a(Frontend::SemanticAnalysis::Error::CircularExtends))
+      end
+    end
+
     describe 'eq constraint' do
       subject { super().expressions.last}
 

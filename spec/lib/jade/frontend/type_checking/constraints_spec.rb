@@ -15,6 +15,7 @@ module Jade
             constraints: [],
             functions: {},
             deps: [],
+            extends: [],
             decl_span: nil,
           )
         end

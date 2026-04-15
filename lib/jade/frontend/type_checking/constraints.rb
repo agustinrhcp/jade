@@ -13,9 +13,24 @@ module Jade
               .then { return Err[it] }
           end
 
-          impl = lookup(constraint, registry)
+          if impl = lookup(constraint, registry)
+            impl
+              .extends
+              .map do |iface_ref|
+                Type
+                  .constraint(
+                    iface_ref.qualified_name,
+                    constraint.type,
+                    constraint.origin,
+                  )
+                .then { resolve(it, registry, entry_name) } => Ok[resolved]
 
-          return Ok[impl] if impl
+                resolved
+              end
+              .then { impl.deps + it }
+              .then { impl.with(deps: it) }
+              .then { return Ok[it] }
+          end
 
           if Deriving.derivable?(constraint.interface)
             Deriving

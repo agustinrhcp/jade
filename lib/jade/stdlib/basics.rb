@@ -9,6 +9,11 @@ module Jade
       union :Float
       union :Bool
 
+      union :Ordering
+      variant :GT, of: :Ordering
+      variant :EQ, of: :Ordering
+      variant :LT, of: :Ordering
+
       interface(
         'Eq',
         'a',
@@ -18,6 +23,15 @@ module Jade
       implementation('Eq', 'Int',   '(==)' => 'int_eq')
       implementation('Eq', 'Float', '(==)' => 'float_eq')
       implementation('Eq', 'Bool',  '(==)' => 'bool_eq')
+
+      interface(
+        'Comparable',
+        'a',
+        { 'compare' => 'a, a -> Ordering' },
+      )
+
+      implementation('Comparable', 'Int',   'compare' => 'int_compare')
+      implementation('Comparable', 'Float', 'compare' => 'float_compare')
 
       function(
         '(!=)',
@@ -67,28 +81,72 @@ module Jade
       ) { not it }
 
       function(
-        '(<=)',
-        { a: 'Int', b: 'Int' },
+        '(<)',
+        { a: 'a', b: 'a' },
         'Bool',
-      ) { |a, b| a <= b }
-
-      function(
-        '(>=)',
-        { a: 'Int', b: 'Int' },
-        'Bool',
-      ) { |a, b| a >= b }
+        constraints: [['Basics.Comparable', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['a', 'b'],
+          body: [:case,
+            [:call, [:impl_arg, 0, 'compare'], [[:var, 'a'], [:var, 'b']]],
+            [
+              [[:constructor, 'Basics.LT', []], [true]],
+              [[:_], [false]],
+            ],
+          ],
+        ),
+      )
 
       function(
         '(>)',
-        { a: 'Int', b: 'Int' },
+        { a: 'a', b: 'a' },
         'Bool',
-      ) { |a, b| a > b }
+        constraints: [['Basics.Comparable', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['a', 'b'],
+          body: [:case,
+            [:call, [:impl_arg, 0, 'compare'], [[:var, 'a'], [:var, 'b']]],
+            [
+              [[:constructor, 'Basics.GT', []], [true]],
+              [[:_], [false]],
+            ],
+          ],
+        ),
+      )
 
       function(
-        '(<)',
-        { a: 'Int', b: 'Int' },
+        '(<=)',
+        { a: 'a', b: 'a' },
         'Bool',
-      ) { |a, b| a < b }
+        constraints: [['Basics.Comparable', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['a', 'b'],
+          body: [:case,
+            [:call, [:impl_arg, 0, 'compare'], [[:var, 'a'], [:var, 'b']]],
+            [
+              [[:constructor, 'Basics.GT', []], [false]],
+              [[:_], [true]],
+            ],
+          ],
+        ),
+      )
+
+      function(
+        '(>=)',
+        { a: 'a', b: 'a' },
+        'Bool',
+        constraints: [['Basics.Comparable', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['a', 'b'],
+          body: [:case,
+            [:call, [:impl_arg, 0, 'compare'], [[:var, 'a'], [:var, 'b']]],
+            [
+              [[:constructor, 'Basics.LT', []], [false]],
+              [[:_], [true]],
+            ],
+          ],
+        ),
+      )
 
       function(
         '(&&)',
@@ -121,6 +179,18 @@ module Jade
         { one: 'Bool', other: 'Bool' },
         'Bool',
       ) { |one, other| one == other }
+
+      function(
+        'int_compare',
+        { a: 'Int', b: 'Int' },
+        'Ordering',
+      ) { |a, b| a < b ? ::Basics::LT[] : a > b ? ::Basics::GT[] : ::Basics::EQ[] }
+
+      function(
+        'float_compare',
+        { a: 'Float', b: 'Float' },
+        'Ordering',
+      ) { |a, b| a < b ? ::Basics::LT[] : a > b ? ::Basics::GT[] : ::Basics::EQ[] }
     end
   end
 end

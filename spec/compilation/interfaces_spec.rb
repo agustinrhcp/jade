@@ -308,5 +308,66 @@ module Jade
         expect(InterfaceTest.eq_person.call(person_1, person_2)).to be false
       end
     end
+
+    context 'comparable implementation for structs' do
+      let(:source) do
+        <<~JADE
+          module InterfaceTest exposing (new_score, lt, gt, lte, gte)
+
+          struct Score = { value: Int }
+
+          implements Eq(Score) with
+            (==) : score_eq
+
+          implements Comparable(Score) extends Eq with
+            compare : score_compare
+
+          def score_eq(one: Score, other: Score) -> Bool
+            one.value == other.value
+          end
+
+          def score_compare(one: Score, other: Score) -> Ordering
+            compare(one.value, other.value)
+          end
+
+          def new_score(value: Int) -> Score
+            Score(value)
+          end
+
+          def lt(a: Score, b: Score) -> Bool
+            a < b
+          end
+
+          def gt(a: Score, b: Score) -> Bool
+            a > b
+          end
+
+          def lte(a: Score, b: Score) -> Bool
+            a <= b
+          end
+
+          def gte(a: Score, b: Score) -> Bool
+            a >= b
+          end
+        JADE
+      end
+
+      it 'works' do
+        test_compiler.require('interface_test', source)
+
+        low  = InterfaceTest.new_score.call(1)
+        high = InterfaceTest.new_score.call(5)
+        same = InterfaceTest.new_score.call(1)
+
+        expect(InterfaceTest.lt.call(low, high)).to  be true
+        expect(InterfaceTest.lt.call(high, low)).to  be false
+        expect(InterfaceTest.gt.call(high, low)).to  be true
+        expect(InterfaceTest.gt.call(low, high)).to  be false
+        expect(InterfaceTest.lte.call(low, same)).to be true
+        expect(InterfaceTest.lte.call(high, low)).to be false
+        expect(InterfaceTest.gte.call(low, same)).to be true
+        expect(InterfaceTest.gte.call(low, high)).to be false
+      end
+    end
   end
 end
