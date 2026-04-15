@@ -50,6 +50,7 @@ module Jade
                     constraints: deps,
                     functions: impl.functions,
                     deps: resolved_deps,
+                    extends: [],
                     decl_span: nil,
                   )
 
@@ -138,6 +139,7 @@ module Jade
                    constraints: [],
                    functions: { '(==)' => eq_fn },
                    deps: [],
+                   extends: [],
                    decl_span: nil,
                 )
 
@@ -216,6 +218,7 @@ module Jade
                 constraints: [],
                 functions: { '(==)' => eq_fn },
                 deps:,
+                extends: [],
                 decl_span: nil,
               )
             end

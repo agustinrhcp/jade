@@ -404,6 +404,8 @@ module Jade
           type(:lparen).skip >>
           type_application >>
           type(:rparen).skip >>
+          (type(:extends).skip >> at_least_one(constant, separated_by: type(:comma).skip) | none.map { [] })
+            .map { [it] } >>
           type(:with).skip >>
           (at_least_one(implementation_function, separated_by: type(:comma).skip) | none.map { [] })
             .map { [it] }

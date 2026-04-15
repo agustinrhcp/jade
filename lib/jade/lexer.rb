@@ -27,6 +27,7 @@ module Jade
       'struct',
       'interface',
       'implements',
+      'extends',
     ].freeze
 
     SYMBOLS = {
