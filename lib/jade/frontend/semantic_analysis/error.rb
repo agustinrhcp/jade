@@ -13,6 +13,7 @@ require 'jade/frontend/semantic_analysis/error/type_args_mismatch'
 require 'jade/frontend/semantic_analysis/error/unbound_type_variable'
 require 'jade/frontend/semantic_analysis/error/undefined_variable'
 require 'jade/frontend/semantic_analysis/error/unknown_implementation_function'
+require 'jade/frontend/semantic_analysis/error/type_param_required'
 
 module Jade
   module Frontend

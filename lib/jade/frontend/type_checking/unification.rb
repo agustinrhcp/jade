@@ -19,17 +19,29 @@ module Jade
         def unify(type1, type2, env, ctx = Context.empty)
           case [type1, type2]
           in [Type::Application, Type::Application]
-            unify(type1.constructor, type2.constructor, env, ctx)
-              .map_error { UnificationError.new(type1,type2) }
-              .and_then do |cons|
-                unify_many(type1.args, type2.args, env, ctx)
-                  .map_error do |final_sub|
-                    UnificationError.new(
-                      final_sub.apply(type1),
-                      final_sub.apply(type2),
-                    )
-                  end
-              end
+            case [type1.constructor, type2.constructor]
+            in [Type::Var, _] if type1.args.length < type2.args.length
+              unify_partial(type1, type2, env, ctx)
+                .map_error { UnificationError.new(type1, type2) }
+
+            in [_, Type::Var] if type2.args.length < type1.args.length
+              unify_partial(type2, type1, env, ctx)
+                .map_error { UnificationError.new(type1, type2) }
+
+            else
+              unify(type1.constructor, type2.constructor, env, ctx)
+                .map_error { UnificationError.new(type1, type2) }
+                .and_then do |cons|
+                  unify_many(type1.args.map { cons.apply(it) }, type2.args.map { cons.apply(it) }, env, ctx)
+                    .map_both { cons.compose(it) }
+                    .map_error do |final_sub|
+                      UnificationError.new(
+                        final_sub.apply(type1),
+                        final_sub.apply(type2),
+                      )
+                    end
+                end
+            end
 
           in [Type::Var, _]
             if (ctx.rigid?(type1) || ctx.rigid?(type2)) && type1 != type2
@@ -49,7 +61,8 @@ module Jade
 
             unify_many(type1.args, type2.args, env, ctx)
               .then do |args_r|
-                unify(type1.return_type, type2.return_type, env, ctx)
+                args_sub = substitution_of(args_r)
+                unify(args_sub.apply(type1.return_type), args_sub.apply(type2.return_type), env, ctx)
                   .on_err { args_r.and_then { Err[it] } }
                   .and_then { |sub| args_r.map_both { it.compose(sub) } }
               end
@@ -136,6 +149,24 @@ module Jade
 
         private
 
+        def substitution_of(result)
+          case result
+          in Ok(sub) then sub
+          in Err(sub) then sub
+          end
+        end
+
+        def unify_partial(var_side, concrete_side, env, ctx)
+          head, *tail = concrete_side.args
+          partial_c   = tail.empty? ? concrete_side.constructor : Type::PartialApplication[concrete_side.constructor, tail]
+
+          unify(var_side.constructor, partial_c, env, ctx)
+            .and_then do |cons|
+              unify_many(var_side.args.map { cons.apply(it) }, [cons.apply(head)], env, ctx)
+                .map_both { cons.compose(it) }
+            end
+        end
+
         def unify_shared_fields(type1, type2, env, ctx)
           shared_fields = type1.field_names & type2.field_names
           fields1 = type1.fields
@@ -143,12 +174,7 @@ module Jade
 
           shared_fields
             .reduce(Ok[Substitution.new]) do |subs_r, key|
-              sub = case subs_r
-              in Ok(sub)
-                sub
-              in Err(sub)
-                sub
-              end
+              sub = substitution_of(subs_r)
 
               case unify(fields1[key], fields2[key], env, ctx)
               in Err
@@ -163,16 +189,14 @@ module Jade
           types1
             .zip(types2)
             .reduce(Ok[Substitution.new]) do |subs_r, args|
-              sub = case subs_r
-              in Ok(sub)
-                sub
-              in Err(sub)
-                sub
-              end
+              args_r = args
+                .map { substitution_of(subs_r).apply(it) }
+                .then { unify(*it, env, ctx) }
 
-              case unify(*args.map { sub.apply(it) }, env, ctx)
+              case args_r
               in Err
                 next subs_r.and_then { Err[it] }
+
               in Ok(arg_sub)
                 subs_r.map_both { it.compose(arg_sub) }
               end

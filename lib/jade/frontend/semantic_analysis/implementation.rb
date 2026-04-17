@@ -50,10 +50,41 @@ module Jade
               []
             end
 
-          Result[scope, fn_name_errors(functions, iface_sym, &make_error) + extends_errors + cycle_errors]
+          type_param_errors =
+            case [parameterized_interface?(iface_sym), type_sym]
+            in [true, { type_params: [] }]
+              make_error
+                .(Error::TypeParamRequired, interface: iface_sym.qname, type: type_sym.qname)
+                .then { [it] }
+            else
+              []
+            end
+
+          Result[
+            scope,
+            fn_name_errors(functions, iface_sym, &make_error) +
+              extends_errors +
+              cycle_errors +
+              type_param_errors,
+          ]
         end
 
         private
+
+        def parameterized_interface?(iface_sym)
+          iface_sym.functions.any? { contains_partial_application?(it) }
+        end
+
+        def contains_partial_application?(sym)
+          case sym
+          in Symbol::PartialApplication
+            true
+          in { params:, return_type: }
+            params.any? { contains_partial_application?(it) } || contains_partial_application?(return_type)
+          else
+            false
+          end
+        end
 
         def fn_name_errors(functions, iface_sym, &make_error)
           impl_names  = functions.map(&:name).to_set

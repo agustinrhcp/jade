@@ -179,6 +179,33 @@ module Jade
         end
       end
 
+      describe 'type application with var constructor: f(a)' do
+        let(:symbol) do
+          Symbol::PartialApplication.new(
+            constructor: var_sym('f'),
+            args: [var_sym('a')],
+            span: nil,
+          )
+        end
+
+        let(:entry) { Registry.entry('__Test__') }
+
+        it { is_expected.to be_a(Type::Application) }
+        its(:constructor) { is_expected.to be_a(Type::Var).and have_attributes(name: 'f') }
+        its(:args) { is_expected.to have(1).item }
+
+        it 'arg is a type var' do
+          expect(subject.args.first).to be_a(Type::Var).and have_attributes(name: 'a')
+        end
+
+        context 'via Symbol.parse' do
+          let(:symbol) { Symbol.parse('f(a)') }
+
+          it { is_expected.to be_a(Type::Application) }
+          its(:constructor) { is_expected.to be_a(Type::Var).and have_attributes(name: 'f') }
+        end
+      end
+
       describe 'type application with repeated vars: Result(a, a)' do
         let(:symbol) do
           type_sym('Result', 'Result')

@@ -48,6 +48,12 @@ module Jade
       ) { |list, fn| list.map(&fn) }
 
       function(
+        :and_then,
+        { list: 'List(a)', fn: 'a -> List(b)' },
+        'List(b)',
+      ) { |list, fn| list.flat_map(&fn) }
+
+      function(
         :indexed_map,
         { list: 'List(a)', fn: 'Int, a -> b' },
         'List(b)',
@@ -64,6 +70,9 @@ module Jade
         { list: 'List(a)', fn: 'a -> Bool' },
         'List(a)',
       ) { |list, fn| list.filter(&fn) }
+
+      implementation('Mappable', 'List', 'map' => 'map')
+      implementation('Chainable', 'List', 'and_then' => 'and_then')
 
       default_importing('List')
     end

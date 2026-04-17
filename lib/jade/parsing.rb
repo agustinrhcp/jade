@@ -49,7 +49,7 @@ module Jade
     end
 
     def statement
-      variable_binding | expression
+      bind | variable_binding | expression
     end
 
     def declaration
@@ -339,6 +339,14 @@ module Jade
       ).map(&AST.function_declaration_param)
     end
 
+    def bind
+      (
+        identifier >>
+          type(:bind) >>
+          (expression).map_error(&:commit)
+      ).map(&AST.bind)
+    end
+
     def variable_binding
       (
         identifier >>
@@ -374,7 +382,7 @@ module Jade
     end
 
     def interop_import_declaration
-      (type(:uses) >> interop_module_name >> type(:with) >> interop_functions)
+      (type(:uses) >> interop_module_name >> type(:with) >> interop_functions >> type(:end).skip)
         .map(&AST.interop_import_declaration)
     end
 
@@ -408,7 +416,8 @@ module Jade
             .map { [it] } >>
           type(:with).skip >>
           (at_least_one(implementation_function, separated_by: type(:comma).skip) | none.map { [] })
-            .map { [it] }
+            .map { [it] } >>
+          type(:end).skip
       )
         .map(&AST.implementation)
     end

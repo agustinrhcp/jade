@@ -14,9 +14,7 @@ module Jade
           node.with(body: desugar(body))
 
         in AST::Body(expressions:)
-          expressions
-            .map { desugar(it) }
-            .then { node.with(expressions: it) }
+          node.with(expressions: desugar_expressions(expressions))
 
         in AST::InfixApplication(left:, right:, operator:)
           case operator
@@ -150,6 +148,37 @@ module Jade
           AST::Pattern::Record | AST::InteropImportDeclaration | AST::StructDeclaration
 
           node
+        end
+      end
+
+      private
+
+      def desugar_expressions(expressions)
+        case expressions
+        in [AST::Bind(name:, expression: expr), *rest]
+          AST::Lambda[
+            [AST::LambdaParam[name, nil]],
+            AST::Body[rest, nil],
+            nil,
+          ]
+            .then { [expr, it] }
+            .map { desugar(it) }
+            .then do
+              AST::FunctionCall.new(
+                callee:       AST::VariableReference['and_then', nil],
+                args:         it,
+                infix:        false,
+                dictionaries: [],
+                range:        nil,
+              )
+            end
+            .then { [it] }
+
+        in [expr, *rest]
+          [desugar(expr)] + desugar_expressions(rest)
+
+        in []
+          []
         end
       end
 
