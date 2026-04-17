@@ -17,6 +17,7 @@ require 'jade/symbol/stdlib_function'
 require 'jade/symbol/stdlib_implementation'
 require 'jade/symbol/struct'
 require 'jade/symbol/type_application'
+require 'jade/symbol/partial_application'
 require 'jade/symbol/type_param'
 require 'jade/symbol/type_ref'
 require 'jade/symbol/union'
@@ -115,6 +116,10 @@ module Jade
 
     def type_application(constructor, args, span)
       TypeApplication[constructor, args, span]
+    end
+
+    def partial_application(constructor, args, span)
+      PartialApplication[constructor, args, span]
     end
 
     def predeclared_struct(name, type_params, span)

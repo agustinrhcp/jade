@@ -3,6 +3,7 @@ require 'jade/type/base'
 require 'jade/type/constraint'
 require 'jade/type/anonymous_record'
 require 'jade/type/application'
+require 'jade/type/partial_application'
 require 'jade/type/constructor'
 require 'jade/type/function'
 require 'jade/type/unit'
@@ -208,20 +209,29 @@ module Jade
           end
           .then { |t, cs, map| [Type.anonymous_record(t, row), cs, map] }
 
-      in Symbol::TypeApplication(constructor:, args:)
-        union_type, union_cs, union_vars =
+      in Symbol::PartialApplication(constructor:, args:)
+        constructor_type, union_cs, union_vars =
           from_symbol_r(constructor, registry, var_gen, var_map)
 
-        args, args_cs, args_map = symbol
-          .args
+        arg_types, args_cs, args_map = args
           .reduce([[], [], union_vars]) do |(types, cs, local_map), sym|
             from_symbol_r(sym, registry, var_gen, local_map)
               .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
-        Type
-          .constructor(symbol.constructor.qualified_name)
-          .then { [it.apply(args), union_cs + args_cs, args_map] }
+        [Type::Application[constructor_type, arg_types], union_cs + args_cs, args_map]
+
+      in Symbol::TypeApplication(constructor:, args:)
+        constructor_type, union_cs, union_vars =
+          from_symbol_r(constructor, registry, var_gen, var_map)
+
+        arg_types, args_cs, args_map = args
+          .reduce([[], [], union_vars]) do |(types, cs, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
+          end
+
+        [Type.constructor(constructor.qualified_name).apply(arg_types), union_cs + args_cs, args_map]
       end
     end
   end

@@ -101,6 +101,20 @@ module Jade
       end
     end 
 
+    context 'bind' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          result <- foo
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Bind) }
+      its(:name) { is_expected.to eql "result" }
+      its(:expression) { is_expected.to be_a(AST::VariableReference) }
+    end
+
     context 'a function declaration' do
       include_context "single expression body"
 
@@ -991,6 +1005,7 @@ module Jade
       let(:text) do
         <<~JADE
           uses Jade::Date with today: Int
+          end
         JADE
       end
 
@@ -1011,6 +1026,7 @@ module Jade
             uses Jade::Date with
               today: Int,
               today_plus_days: Int -> Int
+            end
           JADE
         end
 
@@ -1053,6 +1069,7 @@ module Jade
         <<~JADE
           implements Eq(Pepe) with
             (==) : eq_pepe
+          end
         JADE
       end
 

@@ -33,6 +33,18 @@ module Jade
       implementation('Comparable', 'Int',   'compare' => 'int_compare')
       implementation('Comparable', 'Float', 'compare' => 'float_compare')
 
+      interface(
+        'Mappable',
+        'f',
+        { 'map' => 'f(a), (a -> b) -> f(b)' },
+      )
+
+      interface(
+        'Chainable',
+        'f',
+        { 'and_then' => 'f(a), (a -> f(b)) -> f(b)' },
+      )
+
       function(
         '(!=)',
         { one: 'a', other: 'a' },

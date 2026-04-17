@@ -9,8 +9,10 @@ module Jade
         def bind(scope, symbol, entry)
           name = symbol.name
           if scope.lookup(name)
-            Error::ShadowingError.new(entry.name, symbol.decl_span, name:)
+            Error::ShadowingError
+              .new(entry.name, symbol.decl_span, name:)
               .then { Result[scope, [it]] }
+
           else
             Result[scope.bind(name, symbol), []]
           end
@@ -19,8 +21,10 @@ module Jade
         def lookup(scope, name, entry, span)
           if scope.lookup(name)
             Result[scope, []]
+
           else
-            Error::UndefinedVariable.new(entry.name, span, var_ref: name)
+            Error::UndefinedVariable
+              .new(entry.name, span, var_ref: name)
               .then { Result[scope, [it]] }
           end
         end
@@ -50,13 +54,16 @@ module Jade
               .then { collect_vars(it, registry) }
 
           in Symbol::Constructor(args:)
-            args.flat_map { collect_vars(it, registry) }
+            args
+              .flat_map { collect_vars(it, registry) }
 
           in Symbol::Variable
             [symbol]
 
-          in Symbol::TypeApplication(args:)
-            args.flat_map { collect_vars(it, registry) }
+          in Symbol::TypeApplication | Symbol::PartialApplication
+            symbol
+              .args
+              .flat_map { collect_vars(it, registry) }
 
           in Symbol::RecordType(row_var:)
             row_var.nil? ? [] : [row_var]
@@ -82,6 +89,9 @@ module Jade
 
           in Symbol::Variable
             []
+
+          in Symbol::PartialApplication(constructor:, args:)
+            args.flat_map { validate_type_symbol(it, registry) }
 
           in Symbol::TypeApplication(constructor:, args:)
             constructor_symbol = registry.lookup(constructor)

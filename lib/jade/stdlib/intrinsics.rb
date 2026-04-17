@@ -68,22 +68,22 @@ module Jade
       end
 
       def implementation(interface_name, type, functions)
-        interface = symbols
-          .find { it.is_a?(Symbol::Interface) && it.name == interface_name } ||
-          @imports
-            .first
-            .symbols
-            .find { it.is_a?(Symbol::Interface) && it.name == interface_name }
+        interface = [symbols, *imports.filter_map { |mod| mod.symbols if mod.respond_to?(:symbols) }]
+          .flatten
+          .find { it.is_a?(Symbol::Interface) && it.name == interface_name }
+
+        interface_ref = interface ? interface.to_ref : interface_to_ref(interface_name)
+        default       = interface ? interface.default : {}
 
         Symbol
           .implementation(
-            interface.to_ref,
+            interface_ref,
             Symbol.type_ref(module_name, type),
             [],
             [],
             functions
               .transform_values { Symbol.value_ref(module_name, it) }
-              .merge(interface.default),
+              .merge(default),
             [],
             nil,
           )
@@ -161,7 +161,7 @@ module Jade
 
       def interface_to_ref(interface)
         case interface
-        in 'Eq' | 'Comparable'
+        in 'Eq' | 'Comparable' | 'Mappable' | 'Chainable'
           'Basics'
         end
           .then { Symbol.type_ref(it, interface.to_s) }
