@@ -35,6 +35,26 @@ module Jade
             end
           end
 
+          context 'with a var constructor application: f(a)' do
+            let(:f) { Type.var('f', 'f') }
+            let(:a) { Type.var('a', 'a') }
+            let(:f_of_a) { Type::Application[f, [a]] }
+
+            it 'resolves the constructor when f is substituted' do
+              subs = Substitution.new.bind(f.id, Type.constructor('Maybe.Maybe'))
+              expect(subs.apply(f_of_a))
+                .to eql Type::Application[Type.constructor('Maybe.Maybe'), [a]]
+            end
+
+            it 'includes the constructor var in unbound_vars' do
+              expect(f_of_a.unbound_vars).to include(f)
+            end
+
+            it 'includes the arg var in unbound_vars' do
+              expect(f_of_a.unbound_vars).to include(a)
+            end
+          end
+
           describe 'applying substitution to open record' do
             let(:open_record) { Type.parse "{ a | id: Int }" }
             let(:substitution) { Substitution.new.bind('a', Type.parse('{ name: String, id: Int }')) }

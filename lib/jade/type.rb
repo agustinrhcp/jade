@@ -209,19 +209,22 @@ module Jade
           .then { |t, cs, map| [Type.anonymous_record(t, row), cs, map] }
 
       in Symbol::TypeApplication(constructor:, args:)
-        union_type, union_cs, union_vars =
+        constructor_type, union_cs, union_vars =
           from_symbol_r(constructor, registry, var_gen, var_map)
 
-        args, args_cs, args_map = symbol
+        arg_types, args_cs, args_map = symbol
           .args
           .reduce([[], [], union_vars]) do |(types, cs, local_map), sym|
             from_symbol_r(sym, registry, var_gen, local_map)
               .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
-        Type
-          .constructor(symbol.constructor.qualified_name)
-          .then { [it.apply(args), union_cs + args_cs, args_map] }
+        case constructor
+        in Symbol::Variable
+          [Type::Application[constructor_type, arg_types], union_cs + args_cs, args_map]
+        else
+          [Type.constructor(constructor.qualified_name).apply(arg_types), union_cs + args_cs, args_map]
+        end
       end
     end
   end

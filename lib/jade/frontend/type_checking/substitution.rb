@@ -38,6 +38,7 @@ module Jade
 
           in Type::Application(args:)
             type
+              .with(constructor: apply(type.constructor))
               .with(args: args.map { apply(it) })
 
           in Type::AnonymousRecord(fields:, row_var:)

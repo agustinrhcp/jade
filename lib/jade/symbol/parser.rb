@@ -19,9 +19,14 @@ module Jade
       def to_symbol(node)
         case node
         in AST::TypeApplication(constructor:, args:)
+          constructor_sym = begin
+            Symbol.type_ref(*qualify(constructor.type))
+          rescue NoMatchingPatternError
+            Symbol.var(constructor.type, nil)
+          end
           Symbol
             .type_application(
-              Symbol.type_ref(*qualify(constructor.type)),
+              constructor_sym,
               args.map(&method(:to_symbol)),
               nil
             )
