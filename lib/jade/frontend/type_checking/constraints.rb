@@ -67,6 +67,7 @@ module Jade
         def lookup(constraint, registry)
           key = case constraint.type
                 in Type::Application(constructor:) then constructor.name
+                in Type::Constructor(name:) then name
                 else constraint.type.to_s
                 end
           impl = registry.implementations[[constraint.interface, key]]

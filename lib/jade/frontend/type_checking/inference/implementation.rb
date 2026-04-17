@@ -42,8 +42,17 @@ module Jade
                   .find { |c| c.interface == interface_qname }
                   .type
 
+                # For HKT interfaces, t_var is used as a constructor (e.g. f(a)),
+                # so bind it to the bare constructor rather than the full application.
+                binding_type =
+                  if constructor_var_in?(iface_fn_type, t_var.id) && concrete_type.is_a?(Type::Application)
+                    concrete_type.constructor
+                  else
+                    concrete_type
+                  end
+
                 # Bind the interface type var to the concrete type
-                st_after_bind = st.unify(t_var, concrete_type) { nil }
+                st_after_bind = st.unify(t_var, binding_type) { nil }
                 expected_type = st_after_bind.env.substitution.apply(iface_fn_type)
 
                 infer_fn(
@@ -80,6 +89,19 @@ module Jade
                   name
                 )
               )
+            end
+          end
+
+          def constructor_var_in?(type, var_id)
+            case type
+            in Type::Application(constructor: Type::Var(id:)) if id == var_id
+              true
+            in Type::Application(constructor:, args:)
+              constructor_var_in?(constructor, var_id) || args.any? { constructor_var_in?(it, var_id) }
+            in Type::Function(args:, return_type:)
+              args.any? { constructor_var_in?(it, var_id) } || constructor_var_in?(return_type, var_id)
+            else
+              false
             end
           end
 

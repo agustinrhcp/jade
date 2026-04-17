@@ -52,6 +52,14 @@ module Jade
             of Nothing then Nothing()
             end
           end
+
+          implements Mappable(Maybe(a)) with
+            map: map
+          end
+
+          implements Chainable(Maybe(a)) with
+            and_then: and_then
+          end
         JADE
       end
     end
