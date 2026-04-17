@@ -6,7 +6,7 @@ module Jade
       end
 
       def type_atom
-        type_var | type_application | type_tuple | grouped(lazy { type_function })
+        type_application | type_var | type_tuple | grouped(lazy { type_function })
       end
 
       def type_tuple
@@ -64,13 +64,8 @@ module Jade
 
       def type_application
         (
-          type_name >> (
-            (
-              type(:lparen) >>
-              sequence(lazy { type_expression }, separated_by: type(:comma).skip).map { [it] } >>
-              type(:rparen)
-            ) | none.map { [nil, [], nil] }
-          )
+          (type_name >> (type_application_args| none.map { [[], nil] })) |
+          (type_var  >> type_application_args)
         ).map(&AST.type_application)
       end
 
@@ -84,6 +79,14 @@ module Jade
         type(:lparen).skip >>
           sequence(type_expression, separated_by: type(:comma).skip).map { [it] } >>
           type(:rparen).skip
+      end
+
+      private
+
+      def type_application_args
+        type(:lparen).skip >>
+          sequence(lazy { type_expression }, separated_by: type(:comma).skip).map { [it] } >>
+          type(:rparen)
       end
     end
   end

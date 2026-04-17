@@ -40,6 +40,7 @@ module Jade
         uses Jade::TestDate with
           internal_today: Int,
           internal_today_plus_n_days: Int -> Int
+        end
 
         def today() -> Int
           internal_today()
@@ -76,6 +77,7 @@ module Jade
 
           uses Jade::TestBetterDate with
             internal_today: { year: Int, month: Int, day: Int }
+          end
 
           def today() -> { year: Int, month: Int, day: Int }
             internal_today()
@@ -98,6 +100,7 @@ module Jade
 
             uses Jade::TestBetterDate with
               internal_today: a
+            end
 
             def today() -> a
               internal_today()
@@ -120,6 +123,7 @@ module Jade
 
             uses Jade::TestBetterDate with
               internal_today: Date
+            end
 
             def today() -> Date
               internal_today()
@@ -140,6 +144,7 @@ module Jade
 
             uses Jade::TestBetterDate with
               internal_today: Maybe({ year: Int, month: Int, day: Int })
+            end
 
             def today() -> Maybe({ year: Int, month: Int, day: Int })
               internal_today()
@@ -179,6 +184,7 @@ module Jade
 
           uses Jade::Stdlib::Date with
             today_: { year: Int, month: Int, day: Int }
+          end
 
           def today() -> Date
             today_() |> Date

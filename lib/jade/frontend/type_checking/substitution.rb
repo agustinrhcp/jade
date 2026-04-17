@@ -36,9 +36,17 @@ module Jade
               apply(mapping)
             end
 
+          in Type::PartialApplication(constructor:, args:)
+            type.with(constructor: apply(constructor), args: args.map { apply(it) })
+
           in Type::Application(args:)
-            type
-              .with(args: args.map { apply(it) })
+            case apply(type.constructor)
+            in Type::PartialApplication(constructor:, args: tail_args)
+              Type::Application[constructor, args.map { apply(it) } + tail_args]
+
+            in constructor
+              type.with(constructor:, args: args.map { apply(it) })
+            end
 
           in Type::AnonymousRecord(fields:, row_var:)
             applied_fields = fields.transform_values { apply(it) }

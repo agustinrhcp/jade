@@ -14,7 +14,7 @@ module Jade
       end
 
       def unbound_vars
-        args.flat_map(&:unbound_vars)
+        constructor.unbound_vars + args.flat_map(&:unbound_vars)
       end
     end
   end

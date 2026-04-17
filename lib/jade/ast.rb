@@ -16,6 +16,7 @@ module Jade
     define(:RecordAccessSugar, :field_key)
 
     define(:VariableBinding, :name, :expression)
+    define(:Bind, :name, :expression)
     define(:VariableReference, :name)
     define(:ConstructorReference, :name)
 
@@ -110,10 +111,18 @@ module Jade
     end
 
     def variable_binding
-      ->(tokens) do
-        tokens => [identifier, _assignment, expression_node]
-
+      ->((identifier, _assignment, expression_node)) do
         VariableBinding[
+          identifier.value,
+          expression_node,
+          identifier.range.begin..expression_node.range.end,
+        ]
+      end
+    end
+
+    def bind
+      ->((identifier, _bind, expression_node)) do
+        Bind[
           identifier.value,
           expression_node,
           identifier.range.begin..expression_node.range.end,
@@ -210,7 +219,7 @@ module Jade
     end
 
     def type_application
-      ->((constructor, _lparen, args, rparen)) do
+      ->((constructor, args, rparen)) do
         TypeApplication[constructor, args, constructor.range.begin..(rparen || constructor).range.end]
       end
     end

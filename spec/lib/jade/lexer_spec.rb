@@ -71,6 +71,20 @@ module Jade
       its([2]) { is_expected.to be_token.of_type(:int).with('42') }
     end
 
+    context 'bind' do
+      let(:text) do
+        <<~JADE
+          some_var <- foo
+        JADE
+      end
+
+      it { is_expected.to have(3).item.and all(be_a(Token)) }
+
+      its([0]) { is_expected.to be_token.of_type(:identifier).with('some_var') }
+      its([1]) { is_expected.to be_token.of_type(:bind) }
+      its([2]) { is_expected.to be_token.of_type(:identifier).with('foo') }
+    end
+
     context 'variables' do
       let(:text) do
         <<~JADE

@@ -64,6 +64,7 @@ module Jade
 
       '|>' => :pipe_forward,
       '<|' => :pipe_backward,
+      '<-' => :bind,
 
       '_' => :wildcard, # also used as placeholder
       '::' => :coloncolon,

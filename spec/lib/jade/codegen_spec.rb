@@ -266,6 +266,7 @@ module Jade
       let(:text) do
         <<~JADE
           uses Jade::Date with today: Int
+          end
 
           def real_today() -> Int
             today()
@@ -429,6 +430,7 @@ module Jade
 
               implements Eq(Pepe) with
                 (==): (pepe, other_pepe) -> { True }
+              end
             JADE
           end
 
@@ -444,6 +446,7 @@ module Jade
 
               implements Eq(Person) with
                 (==) : (one, other) -> { one.id == other.id }
+              end
             JADE
           end
 
@@ -459,6 +462,7 @@ module Jade
 
               implements Eq(Pepe) with
                 (==) : eq_pepe
+              end
 
               def eq_pepe(one: Pepe, other: Pepe) -> Bool
                 True
