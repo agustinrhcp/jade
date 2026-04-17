@@ -101,6 +101,20 @@ module Jade
       end
     end 
 
+    context 'bind' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          result <- foo
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::Bind) }
+      its(:name) { is_expected.to eql "result" }
+      its(:expression) { is_expected.to be_a(AST::VariableReference) }
+    end
+
     context 'a function declaration' do
       include_context "single expression body"
 

@@ -49,7 +49,7 @@ module Jade
     end
 
     def statement
-      variable_binding | expression
+      bind | variable_binding | expression
     end
 
     def declaration
@@ -337,6 +337,14 @@ module Jade
       (
         identifier >> type(:colon).skip >> type_expression
       ).map(&AST.function_declaration_param)
+    end
+
+    def bind
+      (
+        identifier >>
+          type(:bind) >>
+          (expression).map_error(&:commit)
+      ).map(&AST.bind)
     end
 
     def variable_binding
