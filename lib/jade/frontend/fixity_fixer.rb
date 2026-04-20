@@ -135,6 +135,9 @@ module Jade
         in AST::Tuple(items:)
           items.map { fix(it) }.then { node.with(items: it) }
 
+        in AST::Bind(expression:)
+          node.with(expression: fix(expression))
+
         in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
           AST::ImportDeclaration | AST::Literal | AST::RecordAccessSugar | AST::InteropImportDeclaration |
           AST::StructDeclaration

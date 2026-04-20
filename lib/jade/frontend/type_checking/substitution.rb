@@ -37,9 +37,18 @@ module Jade
             end
 
           in Type::Application(args:)
-            type
-              .with(constructor: apply(type.constructor))
-              .with(args: args.map { apply(it) })
+            new_constructor = apply(type.constructor)
+            new_args = args.map { apply(it) }
+
+            # Beta-reduce: Application[Application[Constructor, tail], head_args]
+            # → Application[Constructor, head_args + tail]
+            # This handles partial type constructor application for HKT (e.g. Result(_, e)).
+            case new_constructor
+            in Type::Application(constructor: Type::Constructor => inner_c, args: tail_args)
+              Type::Application[inner_c, new_args + tail_args]
+            else
+              type.with(constructor: new_constructor).with(args: new_args)
+            end
 
           in Type::AnonymousRecord(fields:, row_var:)
             applied_fields = fields.transform_values { apply(it) }

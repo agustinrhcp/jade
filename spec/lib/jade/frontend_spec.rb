@@ -1082,6 +1082,7 @@ module Jade
 
           implements Eq(Pepe) with
             (==) : eq_pepe
+          end
 
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
@@ -1099,6 +1100,7 @@ module Jade
         <<~JADE
           implements Eq(Int) with
             (==) : int_eq_override
+          end
 
           def int_eq_override(one: Int, other: Int) -> Bool
             True
@@ -1119,6 +1121,7 @@ module Jade
 
           implements Eq(Pepe) with
             eq : eq_pepe
+          end
 
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
@@ -1138,6 +1141,7 @@ module Jade
           type Pepe = Pepe(Int)
 
           implements Eq(Pepe) with
+          end
         JADE
       end
 
@@ -1154,6 +1158,7 @@ module Jade
 
           implements Eq(Pepe) extends GhostInterface with
             (==) : eq_pepe
+          end
 
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
@@ -1174,6 +1179,7 @@ module Jade
 
           implements Eq(Pepe) extends Comparable with
             (==) : eq_pepe
+          end
 
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
@@ -1194,9 +1200,11 @@ module Jade
 
           implements Eq(Pepe) with
             (==) : eq_pepe
+          end
 
           implements Comparable(Pepe) extends Eq, GhostInterface with
             compare : compare_pepe
+          end
 
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
@@ -1221,9 +1229,11 @@ module Jade
 
           implements Eq(Pepe) extends Comparable with
             (==) : eq_pepe
+          end
 
           implements Comparable(Pepe) extends Eq with
             compare : compare_pepe
+          end
 
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
@@ -1298,6 +1308,7 @@ module Jade
 
           implements Eq(Pepe) with
             (==) : (one, other) -> { one == other }
+          end
         JADE
       end
 

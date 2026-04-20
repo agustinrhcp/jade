@@ -1067,6 +1067,7 @@ module Jade
         <<~JADE
           implements Eq(Pepe) with
             (==) : eq_pepe
+          end
         JADE
       end
 

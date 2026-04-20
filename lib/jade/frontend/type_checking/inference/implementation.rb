@@ -42,11 +42,14 @@ module Jade
                   .find { |c| c.interface == interface_qname }
                   .type
 
-                # For HKT interfaces, t_var is used as a constructor (e.g. f(a)),
-                # so bind it to the bare constructor rather than the full application.
+                # For HKT interfaces, t_var is used as a constructor (e.g. f(a)).
+                # Bind it to a partial constructor Application[Constructor, tail_args]
+                # so that f(a) beta-reduces to the correct full application.
+                # For 1-param types (Maybe): tail = [] → Application[Constructor, []]
+                # For 2-param types (Result): tail = [e] → Application[Constructor, [e]]
                 binding_type =
                   if constructor_var_in?(iface_fn_type, t_var.id) && concrete_type.is_a?(Type::Application)
-                    concrete_type.constructor
+                    Type::Application[concrete_type.constructor, concrete_type.args[1..]]
                   else
                     concrete_type
                   end

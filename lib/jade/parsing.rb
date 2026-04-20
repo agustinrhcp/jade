@@ -416,7 +416,8 @@ module Jade
             .map { [it] } >>
           type(:with).skip >>
           (at_least_one(implementation_function, separated_by: type(:comma).skip) | none.map { [] })
-            .map { [it] }
+            .map { [it] } >>
+          type(:end).skip
       )
         .map(&AST.implementation)
     end

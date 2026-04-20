@@ -19,17 +19,46 @@ module Jade
         def unify(type1, type2, env, ctx = Context.empty)
           case [type1, type2]
           in [Type::Application, Type::Application]
-            unify(type1.constructor, type2.constructor, env, ctx)
-              .map_error { UnificationError.new(type1,type2) }
-              .and_then do |cons|
-                unify_many(type1.args, type2.args, env, ctx)
-                  .map_error do |final_sub|
-                    UnificationError.new(
-                      final_sub.apply(type1),
-                      final_sub.apply(type2),
-                    )
-                  end
-              end
+            # HKT partial application: f(a) unified against Result(Int, String)
+            # binds f → Application[Constructor, [String]] and a → Int.
+            if type1.constructor.is_a?(Type::Var) && type1.args.length < type2.args.length
+              head = type2.args[0...type1.args.length]
+              tail = type2.args[type1.args.length..]
+              partial_c = tail.empty? ? type2.constructor : Type::Application[type2.constructor, tail]
+
+              unify(type1.constructor, partial_c, env, ctx)
+                .map_error { UnificationError.new(type1, type2) }
+                .and_then do |cons|
+                  unify_many(type1.args.map { cons.apply(it) }, head.map { cons.apply(it) }, env, ctx)
+                    .map_both { cons.compose(it) }
+                end
+
+            elsif type2.constructor.is_a?(Type::Var) && type2.args.length < type1.args.length
+              head = type1.args[0...type2.args.length]
+              tail = type1.args[type2.args.length..]
+              partial_c = tail.empty? ? type1.constructor : Type::Application[type1.constructor, tail]
+
+              unify(type2.constructor, partial_c, env, ctx)
+                .map_error { UnificationError.new(type1, type2) }
+                .and_then do |cons|
+                  unify_many(head.map { cons.apply(it) }, type2.args.map { cons.apply(it) }, env, ctx)
+                    .map_both { cons.compose(it) }
+                end
+
+            else
+              unify(type1.constructor, type2.constructor, env, ctx)
+                .map_error { UnificationError.new(type1, type2) }
+                .and_then do |cons|
+                  unify_many(type1.args.map { cons.apply(it) }, type2.args.map { cons.apply(it) }, env, ctx)
+                    .map_both { cons.compose(it) }
+                    .map_error do |final_sub|
+                      UnificationError.new(
+                        final_sub.apply(type1),
+                        final_sub.apply(type2),
+                      )
+                    end
+                end
+            end
 
           in [Type::Var, _]
             if (ctx.rigid?(type1) || ctx.rigid?(type2)) && type1 != type2
@@ -49,7 +78,11 @@ module Jade
 
             unify_many(type1.args, type2.args, env, ctx)
               .then do |args_r|
-                unify(type1.return_type, type2.return_type, env, ctx)
+                args_sub = case args_r
+                in Ok(sub) then sub
+                in Err(sub) then sub
+                end
+                unify(args_sub.apply(type1.return_type), args_sub.apply(type2.return_type), env, ctx)
                   .on_err { args_r.and_then { Err[it] } }
                   .and_then { |sub| args_r.map_both { it.compose(sub) } }
               end

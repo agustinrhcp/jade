@@ -429,6 +429,7 @@ module Jade
 
               implements Eq(Pepe) with
                 (==): (pepe, other_pepe) -> { True }
+              end
             JADE
           end
 
@@ -444,6 +445,7 @@ module Jade
 
               implements Eq(Person) with
                 (==) : (one, other) -> { one.id == other.id }
+              end
             JADE
           end
 
@@ -459,6 +461,7 @@ module Jade
 
               implements Eq(Pepe) with
                 (==) : eq_pepe
+              end
 
               def eq_pepe(one: Pepe, other: Pepe) -> Bool
                 True

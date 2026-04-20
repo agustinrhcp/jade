@@ -155,7 +155,7 @@ module Jade
 
       def desugar_expressions(expressions)
         case expressions
-        in [AST::Bind[name, expr], *rest]
+        in [AST::Bind(name:, expression: expr), *rest]
           continuation = AST::Lambda[
             [AST::LambdaParam[name, nil]],
             AST::Body[rest, nil],
