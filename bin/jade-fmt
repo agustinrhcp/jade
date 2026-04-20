@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
+
+require 'result'
+require 'jade/source'
+require 'jade/lexer'
+require 'jade/ast'
+require 'jade/parsing'
+require 'jade/formatter'
+
+def usage
+  puts "Usage: jade-fmt [file]"
+  puts "       jade-fmt -i [file]   (in-place)"
+  puts "       echo 'code' | jade-fmt"
+  exit 1
+end
+
+inplace = ARGV.delete('-i')
+file = ARGV.first
+
+source_text =
+  if file
+    File.read(file)
+  elsif !$stdin.tty?
+    $stdin.read
+  else
+    usage
+  end
+
+source = Jade::Source.new(file, source_text)
+tokens = Jade::Lexer.tokenize(source)
+
+case Jade::Parsing.parse(tokens)
+in Ok(ast)
+  formatted = Jade::Formatter.format(ast)
+
+  if inplace && file
+    File.write(file, formatted + "\n")
+    $stderr.puts "Formatted #{file}"
+  else
+    puts formatted
+  end
+
+in Err(error)
+  $stderr.puts "Parse error: #{error.message}"
+  exit 1
+end
