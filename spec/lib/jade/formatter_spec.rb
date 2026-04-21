@@ -577,6 +577,72 @@ module Jade
       end
     end
 
+    context 'bind' do
+      let(:text) do
+        <<~JADE.strip
+          def chain(m: Maybe(Int)) -> Maybe(Int)
+            x <- m
+            Just(x)
+          end
+        JADE
+      end
+
+      it do
+        is_expected.to eql <<~JADE.strip
+          def chain(m: Maybe(Int)) -> Maybe(Int)
+            x <- m
+            Just(x)
+          end
+        JADE
+      end
+    end
+
+    context 'implementation' do
+      context 'simple' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            implements Chainable(Maybe(a)) with
+              and_then: and_then_maybe
+            end
+          JADE
+        end
+
+        it { is_expected.to include "implements Chainable(Maybe(a)) with" }
+        it { is_expected.to include "and_then: and_then_maybe" }
+        it { is_expected.to include "end" }
+      end
+
+      context 'with extends' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            implements Chainable(Maybe(a)) extends Functor with
+              and_then: and_then_maybe
+            end
+          JADE
+        end
+
+        it { is_expected.to include "implements Chainable(Maybe(a)) extends Functor with" }
+      end
+
+      context 'lambda function' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            implements Chainable(Maybe(a)) with
+              and_then: (m) -> { m }
+            end
+          JADE
+        end
+
+        it { is_expected.to include "and_then: (m) -> { m }" }
+      end
+    end
+
     context 'idempotency — formatting twice yields the same result' do
       let(:text) do
         <<~JADE.strip
