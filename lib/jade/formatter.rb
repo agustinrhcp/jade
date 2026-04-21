@@ -91,6 +91,27 @@ module Jade
         "#{name} = #{format(expression)}"
           .then(&and_indent(indent))
 
+      in AST::Bind(name:, expression:)
+        "#{name} <- #{format(expression)}"
+          .then(&and_indent(indent))
+
+      in AST::Implementation(interface:, applied_type:, extends:, functions:)
+        extends_str = extends.empty? ? "" : " extends #{extends.join(', ')}"
+        fns_str     = functions
+          .map { format(it, indent: indent + 1) }
+          .join(",\n")
+
+        [
+          "implements #{interface}(#{format_type(applied_type)})#{extends_str} with".then(&and_indent(indent)),
+          fns_str,
+          "end".then(&and_indent(indent)),
+        ]
+          .join("\n")
+
+      in AST::ImplementationFunction(name:, fn:)
+        "#{name}: #{format(fn)}"
+          .then(&and_indent(indent))
+
       # Expressions
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)
