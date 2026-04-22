@@ -87,12 +87,12 @@ module Jade
 
       # Variable binding (let-style)
 
-      in AST::VariableBinding(name:, expression:)
-        "#{name} = #{format(expression)}"
+      in AST::Assign(pattern:, expression:)
+        "#{format_pattern(pattern)} = #{format(expression)}"
           .then(&and_indent(indent))
 
-      in AST::Bind(name:, expression:)
-        "#{name} <- #{format(expression)}"
+      in AST::Bind(pattern:, expression:)
+        "#{format_pattern(pattern)} <- #{format(expression)}"
           .then(&and_indent(indent))
 
       in AST::Implementation(interface:, applied_type:, extends:, functions:)
@@ -154,7 +154,7 @@ module Jade
       in AST::Lambda(params:, body:)
         params_str =
           params
-            .map(&:name)
+            .map { format_pattern(it) }
             .join(', ')
 
         "(#{params_str}) -> { #{format(body)} }"

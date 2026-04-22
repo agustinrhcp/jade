@@ -21,9 +21,19 @@ module Jade
             params_state = params
               .zip(params_types)
               .reduce(pre_state) do |acc, (p, t)|
-                Scheme
-                  .mono(pre_state.env.substitution.apply(t))
-                  .then { acc.bind(p.name, it) }
+                case p
+                in AST::Pattern::Binding(name:)
+                  pre_state.env.substitution.apply(t)
+                    .then { acc.bind(name, Scheme.mono(it)) }
+
+                in AST::Pattern::Wildcard
+                  acc
+
+                else
+                  pre_state.env.substitution.apply(t)
+                    .then { Pattern.infer(p, registry, acc, Expected.check(it)) }
+                    .first
+                end
               end
 
             body_state, body_result = check(
@@ -33,11 +43,25 @@ module Jade
               Expected.infer(params_state.fresh),
             )
 
+            exhaustiveness_state = params
+              .zip(params_types)
+              .reduce(body_state) do |acc, (p, t)|
+                case p
+                in AST::Pattern::Binding | AST::Pattern::Wildcard
+                  acc
+                else
+                  concrete_t = body_state.env.substitution.apply(t)
+                  PatternAnalysis::Exhaustiveness
+                    .assert([p], p.range, acc.env, registry, concrete_t)
+                    .then { acc.add_errors(it) }
+                end
+              end
+
             Type
               .function(params_types, body_result.type)
               .then { Result.init(it) }
-              .apply(body_state.env.substitution)
-              .then { body_state.unify_result(it, expected.type) }
+              .apply(exhaustiveness_state.env.substitution)
+              .then { exhaustiveness_state.unify_result(it, expected.type) }
           end
         end
       end

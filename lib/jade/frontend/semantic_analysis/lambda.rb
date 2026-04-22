@@ -10,7 +10,7 @@ module Jade
 
           params
             .reduce(Result[scope, []]) do |acc, param|
-              bind(acc.scope, Symbol.param(param.name, param.range), entry)
+              analyze_node(param, registry, acc.scope, entry)
                 .add_errors(acc.errors)
             end
             .then do

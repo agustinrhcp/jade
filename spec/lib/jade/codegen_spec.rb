@@ -215,6 +215,28 @@ module Jade
       end
 
       it { is_expected.to eql "->(a, b) { Jade::Runtime.intr('Basics.(+)').call(a, b) }" }
+
+      context 'with a constructor pattern param' do
+        let(:text) do
+          <<~JADE
+            type Box(a) = Box(a)
+
+            fn = (Box(x)) -> { x }
+          JADE
+        end
+
+        it { is_expected.to include "->(__p0__) { __p0__ => __Test__::Box(x); x }" }
+      end
+
+      context 'with a wildcard param' do
+        let(:text) do
+          <<~JADE
+            (_) -> { 42 }
+          JADE
+        end
+
+        it { is_expected.to eql "->(_) { 42 }" }
+      end
     end
 
     describe 'infix and groupings' do

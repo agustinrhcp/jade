@@ -25,6 +25,10 @@ module Jade
         Codegen.generate(node, registry)
       end
 
+      def param_synthetic_name(index)
+        "__p#{index}__"
+      end
+
       def impl_synthetic_name(interface, type_name, fn_name)
         sanitized = fn_name.gsub(/[^a-zA-Z0-9_]/) { |c| "x#{c.ord.to_s(16)}" }
         "__impl_#{interface}_#{type_name}_#{sanitized}__"
