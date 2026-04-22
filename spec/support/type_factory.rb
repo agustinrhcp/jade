@@ -3,6 +3,10 @@ require 'jade/type'
 module Jade
   module TypeFactory
     refine Type.singleton_class do
+      def never
+        Type.constructor('Basics.Never').apply([])
+      end
+
       def maybe(inner)
         Type.constructor('Maybe.Maybe').apply([inner])
       end

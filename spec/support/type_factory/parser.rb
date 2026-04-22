@@ -99,6 +99,7 @@ module Jade
             in 'Int' then 'Basics.Int'
             in 'String' then 'String.String'
             in 'Maybe' then 'Maybe.Maybe'
+            in 'Never' then 'Basics.Never'
             else
               constructor
             end
