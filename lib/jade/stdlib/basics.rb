@@ -5,6 +5,7 @@ module Jade
     module Basics
       extend Intrinsics
 
+      union :Never
       union :Int
       union :Float
       union :Bool

@@ -44,9 +44,10 @@ module Jade
             return rows.empty? ? Matrix[[[]], types] : Matrix.empty
           end
 
-         return Matrix.wildcard(types) if rows.empty?
-
           type = types.first
+
+          return Matrix.empty if never?(type)
+          return Matrix.wildcard(types) if rows.empty?
 
           if infinite?(type) || type_var?(type)
             matrix = default
@@ -184,6 +185,15 @@ module Jade
         end
 
         private
+
+        def never?(type)
+          case type
+          in Type::Application(constructor: Type::Constructor(name: 'Basics.Never'))
+            true
+          else
+            false
+          end
+        end
 
         def type_var?(type)
           type.is_a?(Type::Var)

@@ -129,7 +129,43 @@ module Jade
               it { is_expected.to be_empty }
             end
 
-            context 'with a type var' do
+            context 'with Never as a type argument (Result(Int, Never))' do
+            let(:env) do
+              super()
+                .define('Maybe.Maybe', TypeChecking::TypeDef[
+                  'Maybe.Maybe',
+                  [Type.var('a')],
+                  [
+                    TypeChecking::ConstructorDef['Maybe.Just', 'Maybe.Maybe', [Type.var('a')]],
+                    TypeChecking::ConstructorDef['Maybe.Nothing', 'Maybe.Maybe', []],
+                  ],
+                ])
+                .define('Result.Result', TypeChecking::TypeDef[
+                  'Result.Result',
+                  [Type.var('a', 'a'), Type.var('e', 'e')],
+                  [
+                    TypeChecking::ConstructorDef['Result.Ok', 'Result.Result', [Type.var('a', 'a')]],
+                    TypeChecking::ConstructorDef['Result.Error', 'Result.Result', [Type.var('e', 'e')]],
+                  ],
+                ])
+                .define('Basics.Never', TypeChecking::TypeDef['Basics.Never', [], []])
+            end
+
+            let(:result_int_never) { Type.constructor('Result.Result').apply([Type.int, Type.never]) }
+
+            let(:matrix) do
+              described_class[
+                [[Constructor['Result.Ok', [Wildcard[]]]]],
+                [result_int_never],
+              ]
+            end
+
+            it 'is exhaustive with only Ok — Error(Never) is impossible' do
+              is_expected.to be_empty
+            end
+          end
+
+          context 'with a type var' do
               let(:matrix) do
                 described_class[
                   [[
