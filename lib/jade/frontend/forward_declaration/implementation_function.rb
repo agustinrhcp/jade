@@ -5,17 +5,19 @@ module Jade
     module ForwardDeclaration
       module ImplementationFunction
         extend self
+        extend Codegen::Helpers
 
         def declare(impl_fn, entry, interface, type_name)
           impl_fn => AST::ImplementationFunction(name: fn_name, fn:)
 
           case fn
           in AST::Lambda(params: lambda_params)
-            synth_name = Codegen::Helpers
-              .impl_synthetic_name(interface, type_name, fn_name)
+            synth_name = impl_synthetic_name(interface, type_name, fn_name)
 
             stub_params, stub_return = [
-              lambda_params.to_h { |p| [p.name, Symbol.var(p.name, nil)] },
+              lambda_params
+                .zip(0..)
+                .to_h { |_, i| [param_synthetic_name(i), Symbol.var(param_synthetic_name(i), nil)] },
               Symbol.var("r", nil),
             ]
 

@@ -10,8 +10,15 @@ module Jade
 
           symbol = Symbol::Lambda[params.size]
 
-          resolve_node(body, registry, current_entry)
-            .map { node.with(body: it, symbol:) }
+          resolve_node(body, registry, current_entry) => {
+            node: body_resolved, errors: body_errors,
+          }
+
+          params
+            .map { resolve_node(it, registry, current_entry) }
+            .then { Result.sequence(it) }
+            .map { node.with(params: it, body: body_resolved, symbol:) }
+            .add_errors(body_errors)
         end
       end
     end

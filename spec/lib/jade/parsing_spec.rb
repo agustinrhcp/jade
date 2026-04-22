@@ -70,9 +70,37 @@ module Jade
         JADE
       end
 
-      it { is_expected.to be_a(AST::Node).and be_a(AST::VariableBinding) }
-      its(:name) { is_expected.to eql "forty_two" }
+      it { is_expected.to be_a(AST::Node).and be_a(AST::Assign) }
+      its(:pattern) { is_expected.to be_a(AST::Pattern::Binding).and have_attributes(name: "forty_two") }
       its(:expression) { is_expected.to be_a(AST::Literal) }
+
+      context 'tuple pattern' do
+        let(:text) { "(a, b) = pair" }
+
+        it { is_expected.to be_a(AST::Assign) }
+        its(:pattern) { is_expected.to be_a(AST::Pattern::Tuple) }
+      end
+
+      context 'wildcard pattern' do
+        let(:text) { "_ = side_effect()" }
+
+        it { is_expected.to be_a(AST::Assign) }
+        its(:pattern) { is_expected.to be_a(AST::Pattern::Wildcard) }
+      end
+
+      context 'constructor pattern' do
+        let(:text) { "Just(x) = maybe" }
+
+        it { is_expected.to be_a(AST::Assign) }
+        its(:pattern) { is_expected.to be_a(AST::Pattern::Constructor) }
+      end
+
+      context 'record pattern' do
+        let(:text) { "{ name: n } = person" }
+
+        it { is_expected.to be_a(AST::Assign) }
+        its(:pattern) { is_expected.to be_a(AST::Pattern::Record) }
+      end
 
       context 'when it is incomplete' do
         let(:text) do
@@ -111,7 +139,7 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::Bind) }
-      its(:name) { is_expected.to eql "result" }
+      its(:pattern) { is_expected.to be_a(AST::Pattern::Binding).and have_attributes(name: "result") }
       its(:expression) { is_expected.to be_a(AST::VariableReference) }
     end
 
@@ -415,6 +443,18 @@ module Jade
         its([1]) { is_expected.to be_a(AST::VariantDeclaration).and have_attributes(name: 'Nothing', args: []) }
       end
 
+      context 'followed by a constructor expression on the next line' do
+        let(:text) do
+          <<~JADE
+            type Maybe(a) = Just(a) | Nothing
+
+            (Just(1))
+          JADE
+        end
+
+        pending 'ambiguous: parser greedily reads (Just(1)) as args of Nothing'
+      end
+
       context 'a single variant' do
         let(:text) do
           <<~JADE
@@ -634,8 +674,35 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::Lambda) }
-      its(:params) { is_expected.to have(2).items.and all(be_a(AST::LambdaParam)) }
+      its(:params) { is_expected.to have(2).items.and all(be_a(AST::Pattern::Binding)) }
       its(:body) { is_expected.to be_a(AST::Body) }
+
+      context 'with constructor pattern param' do
+        let(:text) do
+          <<~JADE
+            (Just(x)) -> { x }
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::Lambda) }
+        its(:params) { is_expected.to have(1).item }
+        it 'has a constructor pattern param' do
+          expect(subject.params.first).to be_a(AST::Pattern::Constructor)
+        end
+      end
+
+      context 'with wildcard param' do
+        let(:text) do
+          <<~JADE
+            (_) -> { 42 }
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::Lambda) }
+        it 'has a wildcard pattern param' do
+          expect(subject.params.first).to be_a(AST::Pattern::Wildcard)
+        end
+      end
     end
 
     context 'grouping' do

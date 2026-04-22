@@ -70,14 +70,16 @@ module Jade
             .with(if_branch: desugar(if_branch))
             .with(else_branch: desugar(else_branch))
 
-        in AST::VariableBinding(expression:)
-          node.with(expression: desugar(expression))
+        in AST::Assign(pattern:, expression:)
+          node.with(pattern: desugar(pattern), expression: desugar(expression))
 
         in AST::Grouping(expression:)
           node.with(expression: desugar(expression))
 
-        in AST::Lambda(body:)
-          node.with(body: desugar(body))
+        in AST::Lambda(params:, body:)
+          node
+            .with(params: params.map { desugar(it) })
+            .with(body: desugar(body))
 
         in AST::List(items:)
           node
@@ -96,7 +98,7 @@ module Jade
           AST::VariableReference['x', nil]
             .then { AST::MemberAccess[it, AST::VariableReference[field_key, nil], range] }
             .then { AST::Body[[it], nil] }
-            .then { AST::Lambda[[AST::LambdaParam['x', nil]], it, range] }
+            .then { AST::Lambda[[AST::Pattern::Binding['x', nil]], it, range] }
 
         in AST::RecordUpdateSugar(field_key:, range:)
           value_reference = AST::VariableReference['value', nil]
@@ -106,7 +108,10 @@ module Jade
             .then { AST::Body[[it], nil] }
             .then do |body|
               AST::Lambda[
-                [AST::LambdaParam['x', nil], AST::LambdaParam[value_reference.name, nil]],
+                [
+                  AST::Pattern::Binding['x', nil],
+                  AST::Pattern::Binding[value_reference.name, nil],
+                ],
                 body,
                 range,
               ]
@@ -155,9 +160,9 @@ module Jade
 
       def desugar_expressions(expressions)
         case expressions
-        in [AST::Bind(name:, expression: expr), *rest]
+        in [AST::Bind(pattern:, expression: expr), *rest]
           AST::Lambda[
-            [AST::LambdaParam[name, nil]],
+            [pattern],
             AST::Body[rest, nil],
             nil,
           ]

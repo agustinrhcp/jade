@@ -70,7 +70,7 @@ module Jade
             .then { shunting_yard(it) }
             .then { unflatten(it) }
 
-        in AST::VariableBinding(expression:)
+        in AST::Assign(expression:)
           node.with(expression: fix(expression))
 
         in AST::FunctionDeclaration(body:)

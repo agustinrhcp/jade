@@ -201,6 +201,9 @@ module Jade
 
         def infinite?(type)
           case type
+          in Type::Function
+            true
+
           in Type::Application(constructor:)
             case constructor
             in Type::Constructor(name: 'Basics.Int') then true

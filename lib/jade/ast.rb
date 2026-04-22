@@ -15,8 +15,8 @@ module Jade
     define(:RecordUpdateSugar, :field_key)
     define(:RecordAccessSugar, :field_key)
 
-    define(:VariableBinding, :name, :expression)
-    define(:Bind, :name, :expression)
+    define(:Assign, :pattern, :expression)
+    define(:Bind, :pattern, :expression)
     define(:VariableReference, :name)
     define(:ConstructorReference, :name)
 
@@ -40,7 +40,6 @@ module Jade
     define(:ExposeTypeExpand, :name)
 
     define(:Lambda, :params, :body)
-    define(:LambdaParam, :name)
 
     define(:Grouping, :expression)
     define(:Tuple, :items)
@@ -110,22 +109,22 @@ module Jade
       end
     end
 
-    def variable_binding
-      ->((identifier, _assignment, expression_node)) do
-        VariableBinding[
-          identifier.value,
+    def assign
+      ->((pattern_node, _assignment, expression_node)) do
+        Assign[
+          pattern_node,
           expression_node,
-          identifier.range.begin..expression_node.range.end,
+          pattern_node.range.begin..expression_node.range.end,
         ]
       end
     end
 
     def bind
-      ->((identifier, _bind, expression_node)) do
+      ->((pattern_node, _bind, expression_node)) do
         Bind[
-          identifier.value,
+          pattern_node,
           expression_node,
-          identifier.range.begin..expression_node.range.end,
+          pattern_node.range.begin..expression_node.range.end,
         ]
       end
     end
@@ -421,12 +420,6 @@ module Jade
           body,
           lparen_token.range.begin..rbrace_token.range.end,
         ]
-      end
-    end
-
-    def lambda_param
-      ->(identifier) do
-        LambdaParam[identifier.value, identifier.range]
       end
     end
 

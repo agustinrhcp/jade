@@ -66,7 +66,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to be_a(AST::Node).and be_a(AST::VariableBinding) }
+      it { is_expected.to be_a(AST::Node).and be_a(AST::Assign) }
 
       context 'but shadows' do
         let(:text) do
@@ -80,6 +80,167 @@ module Jade
 
         it { is_expected.to have(1).item }
         its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::ShadowingError) }
+      end
+    end
+
+    context 'pattern assignment' do
+      context 'tuple pattern' do
+        let(:text) do
+          <<~JADE
+            (a, b) = (1, 2)
+            a
+          JADE
+        end
+
+        subject { frontend => Ok([node, _]); node }
+
+        it { is_expected.to be_a(AST::Body) }
+        its(:expressions) { is_expected.to have(2).items }
+      end
+
+      context 'constructor pattern (single constructor, exhaustive)' do
+        let(:text) do
+          <<~JADE
+            type Box(a) = Box(a)
+
+            Box(x) = Box(1)
+            x
+          JADE
+        end
+
+        subject { frontend => Ok([node, _]); node }
+
+        it { is_expected.to be_a(AST::Body) }
+      end
+
+      context 'wildcard pattern' do
+        let(:text) do
+          <<~JADE
+            _ = 42
+          JADE
+        end
+
+        include_context "single expression body"
+
+        it { is_expected.to be_a(AST::Assign) }
+      end
+
+      context 'record pattern' do
+        let(:text) do
+          <<~JADE
+            { name: n } = { name: "Pepe" }
+            n
+          JADE
+        end
+
+        subject { frontend => Ok([node, _]); node }
+
+        it { is_expected.to be_a(AST::Body) }
+      end
+
+      context 'non-exhaustive constructor pattern' do
+        let(:text) do
+          <<~JADE
+            type Maybe(a) = Just(a) | Nothing
+
+            Just(x) = Just(1)
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
+      end
+    end
+
+    context 'pattern bind (<-)' do
+      context 'with a constructor pattern (single constructor, exhaustive)' do
+        let(:text) do
+          <<~JADE
+            type Box(a) = Box(a)
+
+            fn = (b) -> {
+              Box(x) <- b
+              x
+            }
+          JADE
+        end
+
+        subject { frontend => Ok([node, _]); node }
+
+        it { is_expected.to be_a(AST::Body) }
+      end
+
+      context 'with a wildcard pattern' do
+        let(:text) do
+          <<~JADE
+            fn = (b) -> {
+              _ <- b
+              42
+            }
+          JADE
+        end
+
+        subject { frontend => Ok([node, _]); node }
+
+        it { is_expected.to be_a(AST::Body) }
+      end
+
+      context 'with a record pattern' do
+        let(:text) do
+          <<~JADE
+            fn = (b) -> {
+              { name: n } <- b
+              n
+            }
+          JADE
+        end
+
+        subject { frontend => Ok([node, _]); node }
+
+        it { is_expected.to be_a(AST::Body) }
+      end
+    end
+
+    context 'pattern lambda params' do
+      context 'with a record pattern' do
+        let(:text) do
+          <<~JADE
+            fn = ({ name: n }) -> { n }
+          JADE
+        end
+
+        subject { frontend => Ok([node, _]); node }
+
+        it { is_expected.to be_a(AST::Body) }
+      end
+
+      context 'with a tuple pattern' do
+        let(:text) do
+          <<~JADE
+            fn = ((a, b)) -> { a + b }
+          JADE
+        end
+
+        subject { frontend => Ok([node, _]); node }
+
+        it { is_expected.to be_a(AST::Body) }
+      end
+
+      context 'with a non-exhaustive constructor pattern' do
+        let(:text) do
+          <<~JADE
+            type Maybe(a) = Just(a) | Nothing
+
+            fn = (Just(x)) -> { x }
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
       end
     end
 
@@ -232,7 +393,7 @@ module Jade
       it { is_expected.to be_a(AST::FunctionDeclaration) }
     end
 
-    xcontext 'a duped function declaration' do
+    context 'a duped function declaration' do
       let(:text) do
         <<~JADE
           def add(a: Int, b: Int) -> Int

@@ -28,7 +28,7 @@ require 'jade/frontend/symbol_resolution/record_literal'
 require 'jade/frontend/symbol_resolution/record_update'
 require 'jade/frontend/symbol_resolution/struct_declaration'
 require 'jade/frontend/symbol_resolution/type_declaration'
-require 'jade/frontend/symbol_resolution/variable_binding'
+require 'jade/frontend/symbol_resolution/assign'
 require 'jade/frontend/symbol_resolution/variable_reference'
 require 'jade/frontend/symbol_resolution/variant_declaration'
 
@@ -79,7 +79,7 @@ module Jade
         in AST::ImportDeclaration then ImportDeclaration
         in AST::InteropImportDeclaration then InteropImportDeclaration
         in AST::Literal then Literal
-        in AST::VariableBinding then VariableBinding
+        in AST::Assign then Assign
         in AST::Body then Body
         in AST::VariableReference then VariableReference
         in AST::ConstructorReference then ConstructorReference

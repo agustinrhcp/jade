@@ -49,7 +49,7 @@ module Jade
     end
 
     def statement
-      bind | variable_binding | expression
+      bind | assign | expression
     end
 
     def declaration
@@ -87,17 +87,13 @@ module Jade
     def lambda
       (
         type(:lparen) >>
-          (sequence(lambda_param, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
+          (sequence(assignment_pattern, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
           type(:rparen).skip >>
           type(:arrow).skip >>
           type(:lbrace).skip >>
           body >>
           type(:rbrace)
       ).map(&AST.lambda)
-    end
-
-    def lambda_param
-      identifier.map(&AST.lambda_param)
     end
 
     def if_then_else
@@ -177,7 +173,7 @@ module Jade
     end
 
     def body
-      sequence(lazy { expression }).map(&AST.body)
+      sequence(lazy { statement }).map(&AST.body)
     end
 
     def operator
@@ -341,18 +337,22 @@ module Jade
 
     def bind
       (
-        identifier >>
+        assignment_pattern >>
           type(:bind) >>
           (expression).map_error(&:commit)
       ).map(&AST.bind)
     end
 
-    def variable_binding
+    def assign
       (
-        identifier >>
+        assignment_pattern >>
           type(:assign) >>
           (expression).map_error(&:commit)
-      ).map(&AST.variable_binding)
+      ).map(&AST.assign)
+    end
+
+    def assignment_pattern
+      wildcard_pattern | constructor_pattern | tuple_pattern | record_pattern | binding_pattern
     end
 
     # Records

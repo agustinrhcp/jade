@@ -556,6 +556,42 @@ module Jade
 
         its(:type) { is_expected.to be_a(Type::Function) }
         its(:type) { is_expected.to eql Type.parse('Int, Int -> Int')}
+
+        context 'with constructor pattern param (single constructor)' do
+          let(:text) do
+            <<~JADE
+              type Box(a) = Box(a)
+
+              fn = (Box(x)) -> { x }
+            JADE
+          end
+
+          its(:type) { is_expected.to be_a(Type::Function) }
+          its(:errors) { is_expected.to be_empty }
+        end
+
+        context 'with wildcard param' do
+          let(:text) do
+            <<~JADE
+              (_) -> { 42 }
+            JADE
+          end
+
+          its(:type) { is_expected.to be_a(Type::Function) }
+          its(:errors) { is_expected.to be_empty }
+        end
+
+        context 'with non-exhaustive constructor pattern param' do
+          let(:text) do
+            <<~JADE
+              type Maybe(a) = Just(a) | Nothing
+
+              fn = (Just(x)) -> { x }
+            JADE
+          end
+
+          its(:errors) { is_expected.to include(be_a(TypeChecking::Error::MissingPatterns)) }
+        end
       end
 
       describe'struct def and reference' do

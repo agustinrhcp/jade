@@ -4,7 +4,7 @@ require 'jade/frontend/semantic_analysis/helper'
 require 'jade/frontend/semantic_analysis/module_node'
 require 'jade/frontend/semantic_analysis/import_declaration'
 require 'jade/frontend/semantic_analysis/literal'
-require 'jade/frontend/semantic_analysis/variable_binding'
+require 'jade/frontend/semantic_analysis/assign'
 require 'jade/frontend/semantic_analysis/variable_reference'
 require 'jade/frontend/semantic_analysis/constructor_reference'
 require 'jade/frontend/semantic_analysis/body'
@@ -58,36 +58,37 @@ module Jade
 
       def analyze_node(ast, registry, scope, entry)
         case ast
-        in AST::Module                    then ModuleNode.analyze(ast, registry, scope, entry)
-        in AST::ImportDeclaration         then ImportDeclaration.analyze(ast, registry, scope, entry)
-        in AST::InteropImportDeclaration  then InteropImportDeclaration.analyze(ast, registry, scope, entry)
-        in AST::Literal                   then Literal.analyze(ast, registry, scope, entry)
-        in AST::VariableBinding           then VariableBinding.analyze(ast, registry, scope, entry)
-        in AST::VariableReference         then VariableReference.analyze(ast, registry, scope, entry)
-        in AST::ConstructorReference      then ConstructorReference.analyze(ast, registry, scope, entry)
-        in AST::Body                      then Body.analyze(ast, registry, scope, entry)
-        in AST::FunctionDeclaration       then FunctionDeclaration.analyze(ast, registry, scope, entry)
-        in AST::FunctionCall              then FunctionCall.analyze(ast, registry, scope, entry)
-        in AST::TypeDeclaration           then TypeDeclaration.analyze(ast, registry, scope, entry)
-        in AST::Implementation            then Implementation.analyze(ast, registry, scope, entry)
-        in AST::StructDeclaration         then StructDeclaration.analyze(ast, registry, scope, entry)
-        in AST::IfThenElse                then IfThenElse.analyze(ast, registry, scope, entry)
-        in AST::QualifiedAccess           then QualifiedAccess.analyze(ast, registry, scope, entry)
-        in AST::RecordAccess              then RecordAccess.analyze(ast, registry, scope, entry)
-        in AST::CaseOf                    then CaseOf.analyze(ast, registry, scope, entry)
-        in AST::CaseOfBranch              then CaseOfBranch.analyze(ast, registry, scope, entry)
-        in AST::Pattern::Wildcard         then PatternWildcard.analyze(ast, registry, scope, entry)
-        in AST::Pattern::Literal          then PatternLiteral.analyze(ast, registry, scope, entry)
-        in AST::Pattern::Binding          then PatternBinding.analyze(ast, registry, scope, entry)
-        in AST::Pattern::Constructor      then PatternConstructor.analyze(ast, registry, scope, entry)
-        in AST::Pattern::Record           then PatternRecord.analyze(ast, registry, scope, entry)
-        in AST::Lambda                    then Lambda.analyze(ast, registry, scope, entry)
-        in AST::Grouping                  then Grouping.analyze(ast, registry, scope, entry)
-        in AST::List                      then List.analyze(ast, registry, scope, entry)
-        in AST::RecordLiteral             then RecordLiteral.analyze(ast, registry, scope, entry)
-        in AST::RecordUpdate              then RecordUpdate.analyze(ast, registry, scope, entry)
-        in AST::RecordField               then RecordField.analyze(ast, registry, scope, entry)
+        in AST::Module                    then ModuleNode
+        in AST::ImportDeclaration         then ImportDeclaration
+        in AST::InteropImportDeclaration  then InteropImportDeclaration
+        in AST::Literal                   then Literal
+        in AST::Assign                    then Assign
+        in AST::VariableReference         then VariableReference
+        in AST::ConstructorReference      then ConstructorReference
+        in AST::Body                      then Body
+        in AST::FunctionDeclaration       then FunctionDeclaration
+        in AST::FunctionCall              then FunctionCall
+        in AST::TypeDeclaration           then TypeDeclaration
+        in AST::Implementation            then Implementation
+        in AST::StructDeclaration         then StructDeclaration
+        in AST::IfThenElse                then IfThenElse
+        in AST::QualifiedAccess           then QualifiedAccess
+        in AST::RecordAccess              then RecordAccess
+        in AST::CaseOf                    then CaseOf
+        in AST::CaseOfBranch              then CaseOfBranch
+        in AST::Pattern::Wildcard         then PatternWildcard
+        in AST::Pattern::Literal          then PatternLiteral
+        in AST::Pattern::Binding          then PatternBinding
+        in AST::Pattern::Constructor      then PatternConstructor
+        in AST::Pattern::Record           then PatternRecord
+        in AST::Lambda                    then Lambda
+        in AST::Grouping                  then Grouping
+        in AST::List                      then List
+        in AST::RecordLiteral             then RecordLiteral
+        in AST::RecordUpdate              then RecordUpdate
+        in AST::RecordField               then RecordField
         end
+          .analyze(ast, registry, scope, entry)
       end
 
       Result = Data.define(:scope, :errors) do

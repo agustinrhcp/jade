@@ -10,8 +10,8 @@ module Jade
         in AST::VariableReference(name:)
           prefix + "Var(#{name})"
 
-        in AST::VariableBinding(name:, expression:)
-          prefix + "VarBound(#{name} = " + print(expression, indent) + ")"
+        in AST::Assign(pattern:, expression:)
+          prefix + "VarBound(#{pattern} = " + print(expression, indent) + ")"
 
         in AST::Literal(value:)
           case value

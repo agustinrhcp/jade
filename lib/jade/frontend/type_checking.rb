@@ -80,7 +80,7 @@ module Jade
         in AST::RecordLiteral then Inference::RecordLiteral
         in AST::RecordUpdate then Inference::RecordUpdate
         in AST::TypeDeclaration then Inference::TypeDeclaration
-        in AST::VariableBinding then Inference::VariableBinding
+        in AST::Assign then Inference::Assign
         in AST::VariableReference then Inference::VariableReference
         end
           .infer(node, registry, state, expected_type)

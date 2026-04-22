@@ -52,8 +52,15 @@ module Jade
           name
         end
 
-      in AST::VariableBinding(name:, expression:)
-        "#{name} = #{generate(expression, registry)}"
+      in AST::Assign(pattern:, expression:)
+        case pattern
+        in AST::Pattern::Binding(name:)
+          "#{name} = #{generate(expression, registry)}"
+        in AST::Pattern::Wildcard
+          generate(expression, registry)
+        else
+          "#{generate(expression, registry)} => #{generate(pattern, registry)}"
+        end
 
       in AST::Literal(value:)
         emit(value)
@@ -133,7 +140,14 @@ module Jade
           .then { "#{to_qualified(sym.qualified_name)}#{it}" }
 
       in AST::Lambda(params:, body:)
-        "->(#{params.map(&:name).join(', ')}) { #{generate(body, registry)} }"
+        param_strs = params.zip(0..).map { |p, i| param_name(p, i) }
+
+        destructures = params
+          .zip(0..)
+          .filter_map { |p, i| "#{param_synthetic_name(i)} => #{generate(p, registry)}; " unless simple_pattern?(p) }
+          .join
+
+        "->(#{param_strs.join(', ')}) { #{destructures}#{generate(body, registry)} }"
 
       in AST::Grouping(expression:)
         "(#{generate(expression, registry)})"
@@ -160,6 +174,19 @@ module Jade
     end
 
     private
+
+    def param_name(pattern, index = 0)
+      case pattern
+      in AST::Pattern::Binding(name:) then name
+      in AST::Pattern::Wildcard then '_'
+      else
+         param_synthetic_name(index)
+      end
+    end
+
+    def simple_pattern?(pattern)
+      pattern.is_a?(AST::Pattern::Binding) || pattern.is_a?(AST::Pattern::Wildcard)
+    end
 
     def generate_many(nodes, registry, sep = ", ")
       nodes.map do
