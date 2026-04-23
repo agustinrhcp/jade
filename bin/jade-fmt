@@ -8,6 +8,7 @@ require 'jade/lexer'
 require 'jade/ast'
 require 'jade/parsing'
 require 'jade/formatter'
+require 'jade/frontend/comment_attacher'
 
 def usage
   puts "Usage: jade-fmt [file]"
@@ -32,7 +33,8 @@ source = Jade::Source.new(file, source_text)
 tokens = Jade::Lexer.tokenize(source)
 
 case Jade::Parsing.parse(tokens)
-in Ok(ast)
+in Ok([ast, comments])
+  ast = Jade::Frontend::CommentAttacher.attach(ast, comments, source)
   formatted = Jade::Formatter.format(ast)
 
   if inplace && file

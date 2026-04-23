@@ -20,7 +20,7 @@ module Jade
         Lexer
           .tokenize(source)
           .then { Parsing.parse(it) }
-          .and_then { Frontend.run_up_to_semantic_analysis(it) }
+          .and_then { |(ast, _)| Frontend.run_up_to_semantic_analysis(ast) }
           # TODO: Make this prettier
           .and_then do |entry, registry|
             env = TypeChecking::Loader.load(entry, registry)

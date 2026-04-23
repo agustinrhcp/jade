@@ -63,7 +63,9 @@ module Jade
     def load_(source, registry, entry: false)
       source
         .then { Lexer.tokenize(it) }
-        .then { Parsing.parse(it) } => Ok(ast)
+        .then { Parsing.parse(it) } => Ok([ast, comments])
+
+      ast = Frontend::CommentAttacher.attach(ast, comments, source)
 
       Registry
         .entry(source.to_module_name)

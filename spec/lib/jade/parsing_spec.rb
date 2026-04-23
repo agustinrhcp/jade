@@ -11,7 +11,7 @@ module Jade
     end
 
     let(:parse) { Lexer.tokenize(source).then { Parsing.parse(it) } }
-    subject { parse => Ok(node); node }
+    subject { parse => Ok([node, _]); node }
 
     context 'literals' do
       include_context "single expression body"

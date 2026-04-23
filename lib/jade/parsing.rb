@@ -23,9 +23,11 @@ module Jade
     end
 
     def parse(tokens, parser = program)
+      comments = tokens.select { it.type == :comment }
+
       parser
         .call(State.new(tokens.reject { it.type == :comment }))
-        .map(&:first)
+        .map { [it.first, comments] }
         .map_error(&:first)
     end
 
