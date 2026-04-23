@@ -17,7 +17,7 @@ module Jade
       Lexer
         .tokenize(source)
         .then { Parsing.parse(it) }
-        .and_then { Frontend.run(it) }
+        .and_then { |(ast, _)| Frontend.run(ast) }
     end
 
     subject { frontend => Ok([node, _]); node }
@@ -427,7 +427,7 @@ module Jade
         Lexer
           .tokenize(source)
           .then { Parsing.parse(it) }
-          .and_then  { Frontend.run(it) }
+          .and_then { |(ast, _)| Frontend.run(ast) }
       end
 
       it { is_expected.to be_a(AST::Node).and be_a(AST::Body) }

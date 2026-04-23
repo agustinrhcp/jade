@@ -16,7 +16,7 @@ module Jade
       Lexer
         .tokenize(source)
         .then { Parsing.parse(it) }
-        .and_then  { Frontend.run(it) }
+        .and_then { |(ast, _)| Frontend.run(ast) }
         .map  { Codegen.generate(*it) }
     end
 

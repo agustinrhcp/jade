@@ -3,6 +3,7 @@ require 'jade/symbol'
 require 'jade/type'
 require 'jade/stdlib'
 
+require 'jade/frontend/comment_attacher'
 require 'jade/frontend/forward_declaration'
 require 'jade/frontend/semantic_analysis'
 require 'jade/frontend/symbol_resolution'

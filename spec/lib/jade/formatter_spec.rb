@@ -4,6 +4,7 @@ require 'jade/ast'
 require 'jade/parsing'
 require 'jade/lexer'
 require 'jade/formatter'
+require 'jade/frontend/comment_attacher'
 
 module Jade
   describe Formatter do
@@ -12,7 +13,7 @@ module Jade
     subject do
       Lexer.tokenize(source)
         .then { Parsing.parse(it) }
-        .map { Formatter.format(it) } => Ok(result)
+        .map { |(ast, comments)| Formatter.format(ast, comments:, source:) } => Ok(result)
 
       result
     end
@@ -657,13 +658,102 @@ module Jade
       it 'produces stable output' do
         first_pass = subject
 
+        second_source = Source.new(uri: 'test', text: first_pass)
         second_pass =
-          Lexer.tokenize(Source.new(uri: 'test', text: first_pass))
+          Lexer.tokenize(second_source)
             .then { Parsing.parse(it) }
-            .map { Formatter.format(it) }
+            .map { |(ast, comments)| Formatter.format(ast, comments:, source: second_source) }
             .then { it => Ok(r); r }
 
         expect(second_pass).to eql first_pass
+      end
+    end
+
+    context 'comments' do
+      context 'leading comment on an expression' do
+        let(:text) { "# answer\n42" }
+        it { is_expected.to eql "# answer\n42" }
+      end
+
+      context 'trailing comment on an expression' do
+        let(:text) { "42 # answer" }
+        it { is_expected.to eql "42 # answer" }
+      end
+
+      context 'leading comment on a function declaration' do
+        let(:text) do
+          <<~JADE.strip
+            # Adds two integers.
+            def add(a: Int, b: Int) -> Int
+              a + b
+            end
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            # Adds two integers.
+            def add(a: Int, b: Int) -> Int
+              a + b
+            end
+          JADE
+        end
+      end
+
+      context 'trailing comment on a variable binding' do
+        let(:text) { "x = 1 # init\nx" }
+        it { is_expected.to eql "x = 1 # init\nx" }
+      end
+
+      context 'multiple leading comments' do
+        let(:text) { "# first\n# second\n42" }
+        it { is_expected.to eql "# first\n# second\n42" }
+      end
+
+      context 'leading comment inside a function body' do
+        let(:text) do
+          <<~JADE.strip
+            def foo(x: Int) -> Int
+              y = x + 1
+              # result
+              y
+            end
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            def foo(x: Int) -> Int
+              y = x + 1
+              # result
+              y
+            end
+          JADE
+        end
+      end
+
+      context 'leading comment inside a case branch' do
+        let(:text) do
+          <<~JADE.strip
+            case x
+            of True then
+              # yes
+              1
+            of False then 0
+            end
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            case x
+            of True then
+              # yes
+              1
+            of False then 0
+            end
+          JADE
+        end
       end
     end
   end
