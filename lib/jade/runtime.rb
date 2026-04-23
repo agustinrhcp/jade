@@ -38,6 +38,7 @@ module Jade
       require "jade/stdlib/string"
       require "jade/stdlib/list"
       require "jade/stdlib/tuple"
+      require "jade/stdlib/task"
     end
 
     def intr(name)

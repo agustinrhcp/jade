@@ -29,6 +29,9 @@ module Jade
 
       def lower_symbol(symbol, registry)
         case symbol
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef('Basics', 'Never'))
+          Result.good('never')
+
         in Symbol::TypeApplication(constructor: Symbol::TypeRef('Basics', 'Int'))
           Result.good('int')
 
@@ -56,6 +59,13 @@ module Jade
         in Symbol::TypeApplication(constructor: Symbol::TypeRef['List', 'List'], args:)
           # TODO: Is malformed, it will fail later
           Result.good('list')
+
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef['Task', 'Task'], args: [ok_arg, err_arg])
+          ok  = lower_symbol(ok_arg,  registry)
+          err = lower_symbol(err_arg, registry)
+          Result
+            .good(['task', ok.lowered_type, err.lowered_type])
+            .errored(ok.errors + err.errors)
 
         in Symbol::RecordType(fields:)
           fields

@@ -117,10 +117,15 @@ end
 [head, *tail]   = list
 ```
 
-**Monadic bind with `<-`** (in Maybe/Result context):
+**Monadic bind with `<-`** works with any `Chainable` type (`Task`, `Maybe`, `Result`, etc.):
 ```jade
-name <- Maybe.map(user, .name)
+def fetch_sum() -> Task(Int, String)
+  one <- get_one()
+  two <- get_two()
+  Task.succeed(one + two)
+end
 ```
+Each `<-` line unwraps the value from the container. If any step fails or is `Nothing`, the rest of the chain is skipped.
 
 ### Lambdas
 
@@ -183,17 +188,40 @@ import List
 
 ### Interop with Ruby
 
+Jade has no side effects — all interaction with the outside world goes through `uses` blocks. Every port must return a `Task`, making side effects explicit in the type system.
+
 ```jade
 uses Time with
-  now: () -> Int
+  now: Task(Int, Never)
 end
 
-def current_time() -> Int
-  Time.now()
+def current_time() -> Task(Int, Never)
+  now()
 end
 ```
 
-Jade checks return values at the interop boundary — if Ruby returns the wrong type, you’ll get a runtime error instead of silent corruption.
+On the Ruby side, implement ports using `Jade::Task.ok` or `Jade::Task.error`:
+
+```ruby
+module Time
+  extend self
+
+  def now
+    Jade::Task.ok { ::Time.now.to_i }
+  end
+end
+```
+
+Tasks are lazy — no Ruby code runs until `.run` is called on the returned value:
+
+```ruby
+Jade.require(‘my_module’)
+
+task = MyModule.current_time.call   # nothing runs yet
+result = task.run                   # => Result::Ok[1234567890]
+```
+
+Jade guards values at the interop boundary — if Ruby returns the wrong type, you get a `Guard::Error` rather than silent corruption. For `Task`, the inner value is guarded lazily when `.run` is called.
 
 ---
 
@@ -202,11 +230,12 @@ Jade checks return values at the interop boundary — if Ruby returns the wrong 
 | Module | Contents |
 |--------|----------|
 | `Maybe` | `Just(a)` / `Nothing`, `map`, `and_then`, `with_default` |
-| `Result` | `Ok(a)` / `Err(e)`, `map`, `and_then`, `map_error` |
+| `Result` | `Ok(a)` / `Err(e)`, `map`, `and_then`, `map_error`, `on_error`, `sequence` |
 | `List` | `map`, `filter`, `fold`, `zip`, `sort`, `length`, `range`, and more |
 | `String` | `length`, `reverse`, `split`, `trim`, `to_int`, `contains`, and more |
 | `Char` | `to_code`, `from_code`, `is_digit`, `is_alpha`, `is_alpha_num`, `is_upper`, `is_lower` |
 | `Tuple` | `first`, `second`, `map_first`, `map_second` |
+| `Task` | `succeed`, `fail`, `map`, `and_then`, `on_error`, `sequence` |
 | `Basics` | `Eq`, `Comparable`, `Appendable`, `Mappable`, `Chainable`, `Ordering` |
 
 ---
@@ -252,8 +281,6 @@ See the [`examples/`](examples/) directory:
 - **`jade fmt`** — formatter CLI entrypoint (formatter exists internally)
 
 ### Interop and Runtime
-- **Tasks** — interop calls should return `Task` since they interact with the world and can fail
-- **`Jade::Interop.ok` / `.error` / `.always`** — helpers for wrapping Ruby return values
 - **Decoding Ruby / JSON values** — a decoder layer for safely converting untyped Ruby or JSON data into typed Jade values
 
 ### Infrastructure

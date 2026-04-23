@@ -32,10 +32,11 @@ module Jade
 
         def expected_to_ruby_class(expected)
           case expected
-          in 'int' then 'Integer'
-          in 'string' then 'String'
-          in 'float' then 'Float'
-          in 'bool' then 'true or false'
+          in 'int'        then 'Integer'
+          in 'string'     then 'String'
+          in 'float'      then 'Float'
+          in 'bool'       then 'true or false'
+          in 'Jade::Task' then 'Jade::Task'
           end
         end
       end
