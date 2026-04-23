@@ -287,16 +287,16 @@ module Jade
     describe 'using an interop import' do
       let(:text) do
         <<~JADE
-          uses Jade::Date with today: Int
+          uses Jade::Date with today: Task(Int, Never)
           end
 
-          def real_today() -> Int
+          def real_today() -> Task(Int, Never)
             today()
           end
         JADE
       end
 
-      it { is_expected.to include "Jade::Runtime.guard(Jade::Date, :today, \"int\").call()" }
+      it { is_expected.to include "Jade::Runtime.guard(Jade::Date, :today, [\"task\", \"int\", \"never\"]).call()" }
     end
 
     describe 'struct declaration' do

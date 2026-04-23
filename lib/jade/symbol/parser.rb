@@ -41,7 +41,7 @@ module Jade
         in 'Int' | 'Float' | 'Bool' | 'Ordering'
           'Basics'
 
-        in 'String' | 'Maybe' | 'List' | 'Char'
+        in 'String' | 'Maybe' | 'List' | 'Result' | 'Task' | 'Char'
           type
 
         in 'Tuple2' | 'Tuple3' | 'Tuple4'

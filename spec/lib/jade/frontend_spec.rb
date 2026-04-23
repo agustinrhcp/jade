@@ -986,7 +986,7 @@ module Jade
 
       let(:text) do
         <<~JADE
-          uses Jade::Date with today: Int
+          uses Jade::Date with today: Task(Int, Never)
           end
         JADE
       end
@@ -997,8 +997,8 @@ module Jade
         let(:text) do
           <<~JADE
             uses Jade::Date with
-              today: Int,
-              today_plus_n_days: Int -> Int
+              today: Task(Int, Never),
+              today_plus_n_days: Int -> Task(Int, Never)
             end
           JADE
         end
@@ -1013,10 +1013,10 @@ module Jade
 
       let(:text) do
         <<~JADE
-          uses Jade::Date with today: Int
+          uses Jade::Date with today: Task(Int, Never)
           end
 
-          def real_today() -> Int
+          def real_today() -> Task(Int, Never)
             today()
           end
         JADE
@@ -1070,7 +1070,7 @@ module Jade
         let(:text) do
           <<~JADE
             uses Jade::Date with
-              today: Maybe
+              today: Task(Maybe, Never)
             end
           JADE
         end

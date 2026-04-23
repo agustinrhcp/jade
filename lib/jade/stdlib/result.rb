@@ -24,7 +24,7 @@ module Jade
 
       def code
         <<~JADE
-          module Result exposing(Result(..), map, and_then, with_default, to_maybe, from_maybe, map_error, sequence)
+          module Result exposing(Result(..), map, and_then, with_default, to_maybe, from_maybe, map_error, on_error, sequence)
 
           type Result(value, error) = Ok(value) | Err(error)
 
@@ -80,6 +80,13 @@ module Jade
               value <- result
               Ok(list ++ [value])
             })
+          end
+
+          def on_error(result: Result(a, e), fn: e -> Result(a, f)) -> Result(a, f)
+            case result
+            of Err(error) then error |> fn
+            of Ok(_) then result
+            end
           end
 
           implements Mappable(Result(a, e)) with

@@ -43,6 +43,36 @@ module Jade
       test_compiler.require('pepe', pepe_source)
     end
 
+    context 'on_error' do
+      let(:on_error_source) do
+        <<~JADE
+          module OnError exposing (recover, passthrough)
+
+          def recover(r: Result(Int, String)) -> Result(Int, String)
+            Result.on_error(r, (e) -> { Ok(0) })
+          end
+
+          def passthrough(r: Result(Int, String)) -> Result(Int, String)
+            Result.on_error(r, (e) -> { Err(e ++ "!") })
+          end
+        JADE
+      end
+
+      before { test_compiler.require('on_error', on_error_source) }
+
+      it 'passes through Ok unchanged' do
+        expect(OnError.recover.call(Result::Ok[42])).to eql Result::Ok[42]
+      end
+
+      it 'recovers from Err with a new Ok' do
+        expect(OnError.recover.call(Result::Err["oops"])).to eql Result::Ok[0]
+      end
+
+      it 'can remap the error' do
+        expect(OnError.passthrough.call(Result::Err["oops"])).to eql Result::Err["oops!"]
+      end
+    end
+
     it 'works' do
       expect(Pepe.int_to_r.call(1)).to eql Result::Ok[1]
       expect(Pepe.int_to_r.call(2)).to eql Result::Ok[3]

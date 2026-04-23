@@ -10,7 +10,8 @@ module Jade
             node => AST::List(items:)
 
             if items.empty?
-              Result.init(Type.list.apply([state.fresh]))
+              Type.list.apply([state.fresh])
+                .then { Result.init(it) }
                 .then { return state.unify_result(it, expected.type, expected.rigid_vars) }
             end
 

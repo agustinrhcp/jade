@@ -7,6 +7,20 @@ module Jade
 
       def guard(ruby_value, jades_expected)
         case [ruby_value, jades_expected]
+        in [Jade::Task, ['task', ok_type, err_type]]
+          Jade::Task[-> do
+            case ruby_value.run
+            in ::Result::Ok[val] then ::Result::Ok[guard(val, ok_type)]
+            in ::Result::Err[err] then ::Result::Err[guard(err, err_type)]
+            end
+          end]
+
+        in [_, ['task', _, _]]
+          fail Error.new(:wrong_type, 'Jade::Task', ruby_value)
+
+        in [_, 'never']
+          ruby_value
+
         in [Integer, 'int']
           ruby_value
 
