@@ -10,7 +10,7 @@ module Jade
       Source.new(uri: 'test', text:)
     end
 
-    let(:parse) { Lexer.tokenize(source).then { Parsing.parse(it) } }
+    let(:parse) { Lexer.tokenize(source).then { Parsing.parse(it, entry: source.uri) } }
     subject { parse => Ok([node, _]); node }
 
     context 'literals' do
@@ -1141,6 +1141,101 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::Implementation) }
+    end
+  end
+
+  describe 'parse errors' do
+    let(:source) { Source.new(uri: 'test', text:) }
+    subject(:result) { Lexer.tokenize(source).then { Parsing.parse(it, entry: source.uri) } }
+
+    shared_examples 'a committed parse error' do
+      it 'returns Err' do
+        expect(result).to be_error
+      end
+
+      it 'returns a Parsing::Error' do
+        result => Err(err)
+        expect(err).to be_a(Parsing::Error)
+      end
+    end
+
+    context 'function declaration without -> and return type' do
+      let(:text) do
+        <<~JADE
+          def pepe
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected lparen') }
+    end
+
+    context 'function declaration without return type after ->' do
+      let(:text) do
+        <<~JADE
+          def pepe() ->
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected lbrace') }
+    end
+
+    context 'incomplete type declaration' do
+      let(:text) do
+        <<~JADE
+          type Foo =
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it { result => Err(err); expect(err.message).to eq('While parsing type declaration: Unexpected end of input, expected constant') }
+    end
+
+    context 'incomplete struct declaration' do
+      let(:text) do
+        <<~JADE
+          struct Bar =
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it { result => Err(err); expect(err.message).to eq('While parsing struct declaration: Unexpected end of input, expected lbrace') }
+    end
+
+    context 'incomplete implementation' do
+      let(:text) do
+        <<~JADE
+          implements Eq(
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it { result => Err(err); expect(err.message).to eq('While parsing implementation: Unexpected end of input, expected identifier') }
+    end
+
+    context 'bad declaration mid-file does not silently truncate' do
+      let(:text) do
+        <<~JADE
+          x = 1
+          def broken
+          end
+          y = 2
+        JADE
+      end
+
+      it 'returns Err rather than a partial Ok body' do
+        expect(result).to be_error
+      end
+
+      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected lparen') }
     end
   end
 end

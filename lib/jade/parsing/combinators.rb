@@ -26,6 +26,7 @@ module Jade
         P.new do |state|
           oks = []
           current = state
+          committed_err = nil
 
           loop do
             break if current.eof?
@@ -35,12 +36,12 @@ module Jade
               oks << value
               current = next_state
             in Err([err, err_state])
-              current = err_state
+              committed_err = Err[[err, err_state]] if err.committed?
               break
             end
           end
 
-          Ok[[oks, current]]
+          committed_err || Ok[[oks, current]]
         end
       end
 
@@ -48,9 +49,10 @@ module Jade
         P.new do |state|
           if state.eof?
             Err[[
-              EOFError.new(
+              Parsing::EOFError.new(
+                entry:    state.entry,
+                span:     nil,
                 expected: type,
-                position: state.position,
               ),
               state,
             ]]
@@ -60,10 +62,11 @@ module Jade
 
           else
             Err[[
-              UnexpectedTokenError.new(
-                actual: state.current,
+              Parsing::UnexpectedTokenError.new(
+                entry:    state.entry,
+                span:     state.current.range,
+                actual:   state.current,
                 expected: type,
-                position: state.position,
               ),
               state,
             ]]
@@ -77,8 +80,8 @@ module Jade
         end
       end
 
-      State = Data.define(:tokens, :position, :context_stack) do
-        def initialize(tokens:, position: 0, context_stack: [])
+      State = Data.define(:tokens, :position, :entry, :context_stack) do
+        def initialize(tokens:, entry:, position: 0, context_stack: [])
           super
         end
 
@@ -150,50 +153,12 @@ module Jade
           self.map { |_| :skip }
         end
 
-        def many
-          Parser.many(self)
-        end
-      end
-
-      class Error
-        def initialize(position:, actual:, expected:, committed: false)
-          @position = position
-          @actual = actual
-          @expected = expected
-          @committed = committed
-        end
-
-        def committed?
-          @committed
-        end
-
         def commit
-          @committed = true
-          self
+          map_error(&:commit)
         end
 
-        protected
-
-        attr_reader :actual, :expected
-      end
-
-      class EOFError < Error
-        def initialize(position:, actual: nil, expected:, committed: false)
-          super
-        end
-
-        def message
-          "Unexpected end of input, expected #{expected}"
-        end
-      end
-
-      class UnexpectedTokenError < Error
-        def initialize(position:, actual:, expected:, committed: false)
-          super
-        end
-
-        def message
-          "Unexpected end token #{actual}, #{expected}"
+        def context(name)
+          map_error { |err| err.with_context(name) }
         end
       end
     end

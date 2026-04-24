@@ -12,7 +12,7 @@ module Jade
 
     subject do
       Lexer.tokenize(source)
-        .then { Parsing.parse(it) }
+        .then { Parsing.parse(it, entry: source.uri) }
         .map { |(ast, comments)| Formatter.format(ast, comments:, source:) } => Ok(result)
 
       result
@@ -661,7 +661,7 @@ module Jade
         second_source = Source.new(uri: 'test', text: first_pass)
         second_pass =
           Lexer.tokenize(second_source)
-            .then { Parsing.parse(it) }
+            .then { Parsing.parse(it, entry: second_source.uri) }
             .map { |(ast, comments)| Formatter.format(ast, comments:, source: second_source) }
             .then { it => Ok(r); r }
 

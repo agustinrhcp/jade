@@ -61,9 +61,9 @@ module Jade
     end
 
     def load_(source, registry, entry: false)
-      source
-        .then { Lexer.tokenize(it) }
-        .then { Parsing.parse(it) } => Ok([ast, comments])
+      Lexer.tokenize(source)
+        .then { Parsing.parse(it, entry: source.uri) }
+        .on_err { |err| raise "Parse error: #{err.message}" } => Ok([ast, comments])
 
       ast = Frontend::CommentAttacher.attach(ast, comments, source)
 

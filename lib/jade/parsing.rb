@@ -1,7 +1,9 @@
 require 'result'
+
 require 'jade/parsing/combinators'
-require 'jade/parsing/type'
+require 'jade/parsing/error'
 require 'jade/parsing/token'
+require 'jade/parsing/type'
 
 module Jade
   module Parsing
@@ -22,11 +24,11 @@ module Jade
       end
     end
 
-    def parse(tokens, parser = program)
+    def parse(tokens, entry:, parser: program)
       comments = tokens.select { it.type == :comment }
 
       parser
-        .call(State.new(tokens.reject { it.type == :comment }))
+        .call(State.new(tokens: tokens.reject { it.type == :comment }, entry:))
         .map { [it.first, comments] }
         .map_error(&:first)
     end
@@ -38,7 +40,7 @@ module Jade
           module_name >>
           exposing >>
           program_body
-        ).map_error(&:commit)
+        ).commit
       ).map(&AST.module_)
     end
 
@@ -223,10 +225,13 @@ module Jade
     def import_declaration
       (
         type(:import) >>
-        module_name >>
-        ((type(:as).skip >> constant).map(&AST.expose_as) | none.map { [nil] }) >>
-        (exposing | none.map { [[]] })
+          (
+            module_name >>
+            ((type(:as).skip >> constant).map(&AST.expose_as) | none.map { [nil] }) >>
+            (exposing | none.map { [[]] })
+          ).commit
       ).map(&AST.import_declaration)
+       .context("import declaration")
     end
 
     def exposing
@@ -279,18 +284,22 @@ module Jade
             type_expression >>
             sequence(statement).map(&AST.body) >>
             type(:end)
-          ).map_error(&:commit)
+          ).commit
       ).map(&AST.function_declaration)
+       .context("function declaration")
     end
 
     def type_declaration
       (
         type(:type) >>
-          constant >>
-          (type_params | none.map { [[]] }) >>
-          type(:assign).skip >>
-          sequence(variant_declaration, separated_by: type(:pipe).skip).map { [it] }
+          (
+            constant >>
+            (type_params | none.map { [[]] }) >>
+            type(:assign).skip >>
+            sequence(variant_declaration, separated_by: type(:pipe).skip).map { [it] }
+          ).commit
       ).map(&AST.type_declaration)
+       .context("type declaration")
     end
 
     def record_declaration
@@ -341,7 +350,7 @@ module Jade
       (
         assignment_pattern >>
           type(:bind) >>
-          (expression).map_error(&:commit)
+          expression.commit
       ).map(&AST.bind)
     end
 
@@ -349,7 +358,7 @@ module Jade
       (
         assignment_pattern >>
           type(:assign) >>
-          (expression).map_error(&:commit)
+          expression.commit
       ).map(&AST.assign)
     end
 
@@ -384,8 +393,12 @@ module Jade
     end
 
     def interop_import_declaration
-      (type(:uses) >> interop_module_name >> type(:with) >> interop_functions >> type(:end).skip)
-        .map(&AST.interop_import_declaration)
+      (
+        type(:uses) >>
+          (interop_module_name >> type(:with) >> interop_functions >> type(:end).skip)
+            .commit
+      ).map(&AST.interop_import_declaration)
+       .context("interop import declaration")
     end
 
     def interop_namespace_sep
@@ -410,18 +423,20 @@ module Jade
     def implementation
       (
         type(:implements) >>
-          type(:constant) >>
-          type(:lparen).skip >>
-          type_application >>
-          type(:rparen).skip >>
-          (type(:extends).skip >> at_least_one(constant, separated_by: type(:comma).skip) | none.map { [] })
-            .map { [it] } >>
-          type(:with).skip >>
-          (at_least_one(implementation_function, separated_by: type(:comma).skip) | none.map { [] })
-            .map { [it] } >>
-          type(:end).skip
-      )
-        .map(&AST.implementation)
+          (
+            type(:constant) >>
+            type(:lparen).skip >>
+            type_application >>
+            type(:rparen).skip >>
+            (type(:extends).skip >> at_least_one(constant, separated_by: type(:comma).skip) | none.map { [] })
+              .map { [it] } >>
+            type(:with).skip >>
+            (at_least_one(implementation_function, separated_by: type(:comma).skip) | none.map { [] })
+              .map { [it] } >>
+            type(:end).skip
+          ).commit
+      ).map(&AST.implementation)
+       .context("implementation")
     end
 
     def implementation_function
@@ -436,11 +451,14 @@ module Jade
     def struct_declaration
       (
         type(:struct) >>
-          constant >>
-          (type_params | none.map { [[]] }) >>
-          type(:assign).skip >> type_record
-          
+          (
+            constant >>
+            (type_params | none.map { [[]] }) >>
+            type(:assign).skip >>
+            type_record
+          ).commit
       ).map(&AST.struct_declaration)
+       .context("struct declaration")
     end
 
     def int
@@ -459,7 +477,7 @@ module Jade
       (
         type(:quote) >>
           (type(:string_chunk) >> type(:quote))
-            .map_error(&:commit)
+            .commit
       )
         .map(&AST.string_literal)
     end
