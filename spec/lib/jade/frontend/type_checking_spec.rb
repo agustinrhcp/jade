@@ -19,7 +19,7 @@ module Jade
       let(:type_check) do
         Lexer
           .tokenize(source)
-          .then { Parsing.parse(it) }
+          .then { Parsing.parse(it, entry: source.uri) }
           .and_then { |(ast, _)| Frontend.run_up_to_semantic_analysis(ast) }
           # TODO: Make this prettier
           .and_then do |entry, registry|

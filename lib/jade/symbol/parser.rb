@@ -8,7 +8,7 @@ module Jade
 
       def parse(tokens)
         type_expression
-          .call(State.new(tokens))
+          .call(State.new(tokens:, entry: 'symbol'))
           .map(&:first) => Ok(node)
 
         to_symbol(node)

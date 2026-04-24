@@ -15,7 +15,7 @@ module Jade
     let(:generation) do
       Lexer
         .tokenize(source)
-        .then { Parsing.parse(it) }
+        .then { Parsing.parse(it, entry: source.uri) }
         .and_then { |(ast, _)| Frontend.run(ast) }
         .map  { Codegen.generate(*it) }
     end

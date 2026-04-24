@@ -10,7 +10,7 @@ module Jade
 
       def parse(tokens)
         parser
-          .call(State.new(tokens))
+          .call(State.new(tokens:, entry: 'type_factory'))
           .map(&:first) => Ok(type)
 
         type

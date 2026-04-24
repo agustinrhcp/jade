@@ -16,7 +16,7 @@ module Jade
     let(:frontend) do
       Lexer
         .tokenize(source)
-        .then { Parsing.parse(it) }
+        .then { Parsing.parse(it, entry: source.uri) }
         .and_then { |(ast, _)| Frontend.run(ast) }
     end
 
@@ -426,7 +426,7 @@ module Jade
       let(:frontend) do
         Lexer
           .tokenize(source)
-          .then { Parsing.parse(it) }
+          .then { Parsing.parse(it, entry: source.uri) }
           .and_then { |(ast, _)| Frontend.run(ast) }
       end
 
