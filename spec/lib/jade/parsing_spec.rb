@@ -102,6 +102,33 @@ module Jade
         its(:pattern) { is_expected.to be_a(AST::Pattern::Record) }
       end
 
+      context 'empty list pattern' do
+        let(:text) { "[] = list" }
+
+        it { is_expected.to be_a(AST::Assign) }
+        its(:pattern) { is_expected.to be_a(AST::Pattern::List) }
+        it('has no patterns') { expect(subject.pattern.patterns).to be_empty }
+        it('has no rest') { expect(subject.pattern.rest).to be_nil }
+      end
+
+      context 'list pattern with head and tail' do
+        let(:text) { "[x | xs] = list" }
+
+        it { is_expected.to be_a(AST::Assign) }
+        its(:pattern) { is_expected.to be_a(AST::Pattern::List) }
+        it('has one head pattern') { expect(subject.pattern.patterns).to have(1).item }
+        it('has a rest binding') { expect(subject.pattern.rest).to be_a(AST::Pattern::Binding) }
+      end
+
+      context 'list pattern with multiple heads and tail' do
+        let(:text) { "[a, b | rest] = list" }
+
+        it { is_expected.to be_a(AST::Assign) }
+        its(:pattern) { is_expected.to be_a(AST::Pattern::List) }
+        it('has two head patterns') { expect(subject.pattern.patterns).to have(2).items }
+        it('has a rest binding') { expect(subject.pattern.rest).to be_a(AST::Pattern::Binding) }
+      end
+
       context 'when it is incomplete' do
         let(:text) do
           <<~JADE

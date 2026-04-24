@@ -134,10 +134,23 @@ module Jade
             .then do
               AST::Pattern::Constructor.new(
                 constructor: it,
-                patterns:,
+                patterns: patterns.map { desugar(it) },
                 range: node.range,
               )
             end
+
+        in AST::Pattern::Constructor(patterns:)
+          node.with(patterns: patterns.map { desugar(it) })
+
+        in AST::Pattern::Record(fields:)
+          fields
+            .map { it.with(pattern: desugar(it.pattern)) }
+            .then { node.with(fields: it) }
+
+        in AST::Pattern::List(patterns:, rest:)
+          node
+            .with(patterns: patterns.map { desugar(it) })
+            .with(rest: rest && desugar(rest))
 
         in AST::Implementation(functions:)
           functions
@@ -148,9 +161,9 @@ module Jade
           node.with(fn: desugar(fn))
 
         in AST::Literal | AST::CharLiteral | AST::VariableReference | AST::ConstructorReference |
-          AST::TypeDeclaration | AST::ImportDeclaration | AST::Pattern::Constructor |
+          AST::TypeDeclaration | AST::ImportDeclaration |
           AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard |
-          AST::Pattern::Record | AST::InteropImportDeclaration | AST::StructDeclaration |
+          AST::InteropImportDeclaration | AST::StructDeclaration |
           AST::QualifiedAccess
 
           node

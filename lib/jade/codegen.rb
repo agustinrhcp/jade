@@ -142,6 +142,18 @@ module Jade
       in AST::Pattern::RecordField(name:, pattern:)
           "#{name}: #{generate(pattern, registry)}"
 
+      in AST::Pattern::List(patterns:, rest:)
+        rest_part =
+          case rest
+          in AST::Pattern::Binding(name:) then ["*#{name}"]
+          in AST::Pattern::Wildcard then ["*"]
+          in nil then []
+          end
+
+        (patterns.map { generate(it, registry) } + rest_part)
+          .join(', ')
+          .then { "[#{it}]" }
+
       in AST::Pattern::Constructor(symbol:, patterns:)
         sym = registry.lookup(symbol)
 

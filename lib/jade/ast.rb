@@ -83,6 +83,7 @@ module Jade
       define(:Record, :fields)
       define(:RecordField, :name, :pattern)
       define(:Tuple, :patterns)
+      define(:List, :patterns, :rest)
     end
 
     def string_literal
@@ -395,6 +396,12 @@ module Jade
     def tuple_pattern
       ->((lparen_token, first, rest, rparen_token)) do
         Pattern::Tuple[[first, *rest], lparen_token.range.begin..rparen_token.range.end]
+      end
+    end
+
+    def list_pattern
+      ->((lbrack, (patterns, tail), rbrack)) do
+        Pattern::List[patterns, tail, lbrack.range.begin..rbrack.range.end]
       end
     end
 

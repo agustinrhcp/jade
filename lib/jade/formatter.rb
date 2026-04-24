@@ -441,6 +441,17 @@ module Jade
             .join(', ')
 
         "(#{patterns_str})"
+
+      in AST::Pattern::List(patterns:, rest:)
+        heads = patterns.map { format_pattern(it) }.join(', ')
+        tail =
+          case rest
+          in AST::Pattern::Binding(name:) then " | #{name}"
+          in AST::Pattern::Wildcard then " | _"
+          in nil then ""
+          end
+
+        "[#{heads}#{tail}]"
       end
     end
 

@@ -22,6 +22,7 @@ require 'jade/frontend/symbol_resolution/qualified_access'
 require 'jade/frontend/symbol_resolution/module'
 require 'jade/frontend/symbol_resolution/pattern/binding'
 require 'jade/frontend/symbol_resolution/pattern/constructor'
+require 'jade/frontend/symbol_resolution/pattern/list'
 require 'jade/frontend/symbol_resolution/pattern/literal'
 require 'jade/frontend/symbol_resolution/pattern/record'
 require 'jade/frontend/symbol_resolution/pattern/wildcard'
@@ -98,6 +99,7 @@ module Jade
         in AST::Pattern::Wildcard then Pattern::Wildcard
         in AST::Pattern::Constructor then Pattern::Constructor
         in AST::Pattern::Record then Pattern::Record
+        in AST::Pattern::List then Pattern::List
         in AST::MemberAccess then MemberAccess
         in AST::QualifiedAccess then QualifiedAccess
         in AST::Lambda then Lambda

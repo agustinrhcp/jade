@@ -39,7 +39,7 @@ module Jade
           with(rows: rows + other.rows)
         end
 
-        def missing_patterns(env)
+        def missing_patterns(env, seen_recursive_types = Set.new)
           if types.empty?
             return rows.empty? ? Matrix[[[]], types] : Matrix.empty
           end
@@ -49,21 +49,22 @@ module Jade
           return Matrix.empty if never?(type)
           return Matrix.wildcard(types) if rows.empty?
 
-          if infinite?(type) || type_var?(type)
+          if infinite?(type) || type_var?(type) || seen_recursive_types.include?(type)
             matrix = default
-              .missing_patterns(env)
+              .missing_patterns(env, seen_recursive_types)
 
             matrix
               .map { [Wildcard[]] + it }
 
           elsif expandable?(type, env)
-            expand(env).missing_patterns(env)
+            expand(env).missing_patterns(env, seen_recursive_types)
 
           else
+            new_seen = seen_recursive_types | Set[type]
             constructors_of(type, env)
               .reduce(Matrix.empty.with(types:)) do |acc, constructor|
                 missing = specialize(constructor)
-                  .missing_patterns(env)
+                  .missing_patterns(env, new_seen)
 
                 missing
                   .map do |row|
@@ -127,6 +128,12 @@ module Jade
           in Type::Application(constructor: Type::Constructor(name: /^Tuple\.Tuple([2-9])$/ => name))
             n = name[-1].to_i
             [TypeChecking::Definition.constructor(name, name, Array.new(n) { env.fresh })]
+
+          in Type::Application(constructor: Type::Constructor(name: 'List.List'), args: [elem_type])
+            [
+              TypeChecking::ConstructorDef['List.Nil',  'List.List', []],
+              TypeChecking::ConstructorDef['List.Cons', 'List.List', [elem_type, type]],
+            ]
 
           else
             type_def = env.lookup_def(type.constructor.name)
@@ -209,7 +216,6 @@ module Jade
             in Type::Constructor(name: 'Basics.Int') then true
             in Type::Constructor(name: 'Basics.Float') then true
             in Type::Constructor(name: 'String.String') then true
-            in Type::Constructor(name: 'List.List') then true
             else
               false
             end

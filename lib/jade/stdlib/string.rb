@@ -8,6 +8,8 @@ module Jade
       import Basics
       import Maybe
       import List
+      import Char
+      import Tuple
 
       union :String
 
@@ -46,6 +48,32 @@ module Jade
         { str: 'String'},
         'String',
       ) { it.reverse }
+
+      function(
+        :uncons,
+        { str: 'String' },
+        'Maybe(Tuple2(Char, String))',
+      ) do |str|
+        str.empty? ? ::Maybe::Nothing[] : ::Maybe::Just[::Tuple::Tuple2[str[0], str[1..]]]
+      end
+
+      function(
+        :cons,
+        { head: 'Char', tail: 'String' },
+        'String',
+      ) { |head, tail| head + tail }
+
+      function(
+        :from_char,
+        { char: 'Char' },
+        'String',
+      ) { |char| char }
+
+      function(
+        :map,
+        { str: 'String', fn: 'Char -> Char' },
+        'String',
+      ) { |str, fn| str.chars.map(&fn).join }
 
       function(
         :repeat,

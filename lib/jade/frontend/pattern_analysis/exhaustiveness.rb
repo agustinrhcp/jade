@@ -40,6 +40,14 @@ module Jade
               patterns.map { node_to_matrix_pattern(it) },
             ]
 
+          in AST::Pattern::List(patterns:, rest:)
+            # Rewrite [x, y | xs] / [x, y] into nested Cons/Nil constructors
+            tail = rest ? Wildcard[] : Constructor['List.Nil', []]
+            patterns
+              .map { node_to_matrix_pattern(it) }
+              .reverse
+              .reduce(tail) { |acc, head| Constructor['List.Cons', [head, acc]] }
+
           in AST::Pattern::Binding | AST::Pattern::Wildcard
             Wildcard[]
 

@@ -40,7 +40,7 @@ module Jade
           def check_exhaustiveness(node, state, registry, result)
             node => AST::CaseOf(branches:)
             PatternAnalysis::Exhaustiveness
-              .assert(branches.map(&:pattern), node.range, state.env, registry, result.type)
+              .assert(branches.map(&:pattern), node.range, state.env, registry, result.apply(state.env.substitution).type)
               .then { state.add_errors(it) }
           end
 

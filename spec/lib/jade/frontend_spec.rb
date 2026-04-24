@@ -201,6 +201,38 @@ module Jade
 
         it { is_expected.to be_a(AST::Body) }
       end
+
+      context 'with an empty list pattern (non-exhaustive)' do
+        let(:text) do
+          <<~JADE
+            fn = (b) -> {
+              [] <- b
+              []
+            }
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
+      end
+
+      context 'with a list head/tail pattern (non-exhaustive)' do
+        let(:text) do
+          <<~JADE
+            fn = (b) -> {
+              [x | xs] <- b
+              x
+            }
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
+      end
     end
 
     context 'pattern lambda params' do
@@ -234,6 +266,19 @@ module Jade
             type Maybe(a) = Just(a) | Nothing
 
             fn = (Just(x)) -> { x }
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
+      end
+
+      context 'with a list pattern (non-exhaustive)' do
+        let(:text) do
+          <<~JADE
+            fn = ([x | xs]) -> { x }
           JADE
         end
 
@@ -1266,6 +1311,57 @@ module Jade
       subject { expect(frontend).to be_error; frontend => Err(errors); errors }
 
       it { is_expected.to have(1).item }
+    end
+
+    context 'list pattern exhaustiveness' do
+      context 'with [] and [x | xs] (exhaustive)' do
+        let(:text) do
+          <<~JADE
+            fn = (list) -> {
+              case list
+              of [] then 0
+              of [x | xs] then x
+              end
+            }
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::Body) }
+      end
+
+      context 'with only [] (non-exhaustive)' do
+        let(:text) do
+          <<~JADE
+            fn = (list) -> {
+              case list
+              of [] then 0
+              end
+            }
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
+      end
+
+      context 'with only [x | xs] (non-exhaustive)' do
+        let(:text) do
+          <<~JADE
+            fn = (list) -> {
+              case list
+              of [x | xs] then x
+              end
+            }
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
+      end
     end
 
     describe 'implementing constraint' do
