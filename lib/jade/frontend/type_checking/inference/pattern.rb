@@ -11,7 +11,10 @@ module Jade
             in AST::Pattern::Record(fields:, symbol:)
               fields_state, fields_result = fields
                 .reduce([state, Result.accumulator]) do |(state_acc, result_acc), field|
-                  st, rs = infer(field.pattern, registry, state_acc, Expected.infer(state_acc.fresh))
+                  st, rs = Expected
+                    .infer(state_acc.fresh)
+                    .then { infer(field.pattern, registry, state_acc, it) }
+
                   [st, result_acc.add(rs)]
                 end
 
@@ -21,7 +24,10 @@ module Jade
                 .to_h
                 .then { Type.anonymous_record(it, state.fresh) }
                 .then { Result.init(it) }
-                .then { fields_state.unify_result(it, expected.type, &type_error(state, pattern)) }
+                .then do
+                  fields_state
+                    .unify_result(it, expected.type, &type_error(state, pattern))
+                end
 
             in AST::Pattern::Literal(literal:)
               new_state, literal_result = check(literal, registry, state, expected)
@@ -37,6 +43,36 @@ module Jade
                 .bind(name, generalize(state.env, expected.type, []))
                 .then { it.unify_result(Result.init(it.fresh), expected.type) }
 
+            in AST::Pattern::List(patterns:, rest:)
+              elem_type = state.fresh
+              list_type = Type.list.apply([elem_type])
+
+              heads_state = patterns
+                .reduce(state) do |acc, pat|
+                  infer(pat, registry, acc, Expected.check(elem_type)).first
+                end
+
+              after_rest_state =
+                case rest
+                in AST::Pattern::Binding(name:)
+                  generalize(heads_state.env, list_type, [])
+                    .then { heads_state.bind(name, it) }
+
+                in AST::Pattern::Wildcard | nil
+                  heads_state
+                end
+
+              Result
+                .init(list_type)
+                .then do
+                  after_rest_state
+                    .unify_result(
+                      it,
+                      expected.type,
+                      &type_error(after_rest_state, pattern)
+                    )
+                end
+
             in AST::Pattern::Constructor(symbol:, patterns:)
               state.env.lookup(symbol.qualified_name) => { type: constructor_type }
 
@@ -44,7 +80,10 @@ module Jade
                 .args
                 .zip(patterns)
                 .reduce([state, Result.accumulator]) do |(acc_state, acc_result), (inner_expected, pat)|
-                  new_state, result = infer(pat, registry, acc_state, Expected.check(inner_expected))
+                  new_state, result = Expected
+                    .check(inner_expected)
+                    .then { infer(pat, registry, acc_state, it) }
+
                   [new_state, acc_result.add(result)]
                 end
 

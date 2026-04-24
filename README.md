@@ -104,18 +104,21 @@ end
 ```jade
 def sum(list: List(Int)) -> Int
   case list
-  of []       then 0
-  of [x, *xs] then x + sum(xs)
+  of [] then 0
+  of [x | xs] then x + sum(xs)
   end
 end
 ```
+
+The rest of a list pattern (after `|`) must be a name (`xs`) or wildcard (`_`).
 
 **Destructuring with `=`:**
 ```jade
 { name:, age: } = person
 (first, second) = pair
-[head, *tail]   = list
 ```
+
+(For lists, use `case` — the exhaustiveness checker will flag a partial `=` binding.)
 
 **Monadic bind with `<-`** works with any `Chainable` type (`Task`, `Maybe`, `Result`, etc.):
 ```jade
@@ -232,7 +235,7 @@ Jade guards values at the interop boundary — if Ruby returns the wrong type, y
 | `Maybe` | `Just(a)` / `Nothing`, `map`, `and_then`, `with_default` |
 | `Result` | `Ok(a)` / `Err(e)`, `map`, `and_then`, `map_error`, `on_error`, `sequence` |
 | `List` | `map`, `filter`, `fold`, `zip`, `sort`, `length`, `range`, and more |
-| `String` | `length`, `reverse`, `split`, `trim`, `to_int`, `contains`, and more |
+| `String` | `length`, `reverse`, `split`, `trim`, `to_int`, `contains`, `uncons`, `cons`, `from_char`, `map`, and more |
 | `Char` | `to_code`, `from_code`, `is_digit`, `is_alpha`, `is_alpha_num`, `is_upper`, `is_lower` |
 | `Tuple` | `first`, `second`, `map_first`, `map_second` |
 | `Task` | `succeed`, `fail`, `map`, `and_then`, `on_error`, `sequence` |
@@ -269,7 +272,6 @@ See the [`examples/`](examples/) directory:
 - **No-arg functions as constants** — `def pi() -> Float` should be callable as `pi`, not `pi()`
 - **No-arg constructors as constants** — `Nothing` instead of `Nothing()`
 - **Holes for currying** — `map(_, double)` as sugar for `(list) -> { map(list, double) }`
-- **List pattern matching** — pattern matching on list literals in `case` expressions
 
 ### Type System
 - **Unresolved constraint error messages** — constraint propagation works but error messages need improvement

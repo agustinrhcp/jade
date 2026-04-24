@@ -15,6 +15,7 @@ require 'jade/frontend/semantic_analysis/error/undefined_variable'
 require 'jade/frontend/semantic_analysis/error/unknown_implementation_function'
 require 'jade/frontend/semantic_analysis/error/type_param_required'
 require 'jade/frontend/semantic_analysis/error/non_task_port'
+require 'jade/frontend/semantic_analysis/error/invalid_list_rest_pattern'
 
 module Jade
   module Frontend

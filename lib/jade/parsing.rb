@@ -126,7 +126,7 @@ module Jade
     end
 
     def pattern
-      wildcard_pattern | literal_pattern | binding_pattern | constructor_pattern | tuple_pattern | record_pattern
+      wildcard_pattern | list_pattern | literal_pattern | binding_pattern | constructor_pattern | tuple_pattern | record_pattern
     end
 
     def tuple_pattern
@@ -333,6 +333,19 @@ module Jade
       string | char | int | bool | float | list
     end
 
+    def list_pattern
+      (
+        type(:lbrack) >>
+        (
+          (
+            sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } >>
+            (type(:pipe).skip >> lazy { pattern } | none)
+          ) | none.map { [[], nil] }
+        ).map { [it] } >>
+        type(:rbrack)
+      ).map(&AST.list_pattern)
+    end
+
     def list
       (type(:lbrack) >>
         (sequence(lazy { expression }, separated_by: type(:comma).skip).map { [it] } |
@@ -375,7 +388,7 @@ module Jade
     end
 
     def assignment_pattern
-      wildcard_pattern | constructor_pattern | tuple_pattern | record_pattern | binding_pattern
+      wildcard_pattern | constructor_pattern | tuple_pattern | record_pattern | list_pattern | binding_pattern
     end
 
     # Records

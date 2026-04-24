@@ -62,5 +62,45 @@ module Jade
         expect(PatternBind.get_name_direct.call({ name: 'Bob', age: 25 })).to eql 'Bob'
       end
     end
+
+    context 'list pattern in case' do
+      let(:source) do
+        <<~JADE
+          module PatternBind exposing (sum_list)
+
+          def sum_list(list: List(Int)) -> Int
+            case list
+            of [] then 0
+            of [x | xs] then x + sum_list(xs)
+            end
+          end
+        JADE
+      end
+
+      it 'matches empty and non-empty lists' do
+        expect(PatternBind.sum_list.call([])).to eql 0
+        expect(PatternBind.sum_list.call([1, 2, 3])).to eql 6
+      end
+    end
+
+    context 'list pattern in lambda param' do
+      let(:source) do
+        <<~JADE
+          module PatternBind exposing (first_or_zero)
+
+          def first_or_zero(list: List(Int)) -> Int
+            case list
+            of [] then 0
+            of [x | _] then x
+            end
+          end
+        JADE
+      end
+
+      it 'extracts the first element' do
+        expect(PatternBind.first_or_zero.call([])).to eql 0
+        expect(PatternBind.first_or_zero.call([42, 1, 2])).to eql 42
+      end
+    end
   end
 end
