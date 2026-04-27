@@ -111,6 +111,12 @@ module Jade
           (tokens << tok(:quote, scanner))
             .concat(tokenize_string(scanner))
 
+        when scanner.scan(/\A'.'/)
+          tokens << Token.new(:char, scanner.matched[1], range(scanner))
+
+        when scanner.scan(/\A'[^']*'/)
+          fail "Invalid char literal #{scanner.matched.inspect}: must be a single character"
+
         else
           fail "FAILED TO SCAN at pos #{scanner.pos}, Next chars: #{scanner.rest[0, 20].inspect}"
         end

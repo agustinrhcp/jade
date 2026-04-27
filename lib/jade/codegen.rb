@@ -65,6 +65,9 @@ module Jade
       in AST::Literal(value:)
         emit(value)
 
+      in AST::CharLiteral(value:)
+        emit(value)
+
       in AST::FunctionDeclaration
         FunctionDeclaration.generate(node, registry)
 

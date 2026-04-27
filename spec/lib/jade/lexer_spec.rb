@@ -55,6 +55,21 @@ module Jade
           its([1]) { is_expected.to be_token.of_type(:string_chunk).with('Hello').at(1...6) }
         end
       end
+
+      describe 'tokenizing a char' do
+        let(:text) { "'a'" }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_token.of_type(:char).with('a').at(0...3) }
+
+        context 'when it contains multiple characters' do
+          let(:text) { "'aa'" }
+
+          it 'raises' do
+            expect { subject }.to raise_error(/Invalid char literal/)
+          end
+        end
+      end
     end
 
     context 'assignment' do
