@@ -122,7 +122,7 @@ module Jade
             AST::ConstructorReference["Tuple.Tuple#{items.size}", node.range],
             items.map { desugar(it) },
             false,
-            nil,
+            [],
             node.range,
           ]
 

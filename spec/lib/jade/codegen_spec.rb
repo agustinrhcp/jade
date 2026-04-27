@@ -86,7 +86,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "def add; ->(a, b) { Jade::Runtime.intr('Basics.(+)').call(a, b) }; end; __Test__.add.call(1, 2)" }
+      it { is_expected.to eql "def add; ->(a, b) { Jade::Runtime.intr('Basics.int_add').call(a, b) }; end; __Test__.add.call(1, 2)" }
     end
 
     context 'type def' do
@@ -214,7 +214,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "->(a, b) { Jade::Runtime.intr('Basics.(+)').call(a, b) }" }
+      it { is_expected.to eql "->(a, b) { Jade::Runtime.impl_for(\"Basics.Numeric\", a)[\"(+)\"].call(a, b) }" }
 
       context 'with a constructor pattern param' do
         let(:text) do
@@ -250,7 +250,7 @@ module Jade
 
       subject { super().gsub('Jade::Runtime.intr', '') }
 
-      it { is_expected.to eql "('Basics.(+)').call(('Basics.(*)').call(1, 2), ('Basics.(*)').call(3, 4))" }
+      it { is_expected.to eql "('Basics.int_add').call(('Basics.int_mul').call(1, 2), ('Basics.int_mul').call(3, 4))" }
 
       context 'with grouping' do
         let(:text) do
@@ -260,7 +260,7 @@ module Jade
         end
 
 
-        it { is_expected.to eql "('Basics.(*)').call(('Basics.(*)').call(1, (('Basics.(+)').call(2, 3))), 4)" }
+        it { is_expected.to eql "('Basics.int_mul').call(('Basics.int_mul').call(1, (('Basics.int_add').call(2, 3))), 4)" }
       end
     end
 
@@ -366,7 +366,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "record_w_fn = Data.define(:some_fn)[->(n) { Jade::Runtime.intr('Basics.(+)').call(n, 2) }]; record_w_fn.some_fn.call(1)" }
+      it { is_expected.to eql "record_w_fn = Data.define(:some_fn)[->(n) { Jade::Runtime.intr('Basics.int_add').call(n, 2) }]; record_w_fn.some_fn.call(1)" }
     end
 
     describe 'eq constraint' do

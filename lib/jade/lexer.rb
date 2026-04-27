@@ -59,7 +59,7 @@ module Jade
       '>'  => :gt,
       '>=' => :gte,
 
-      '++' => :concat,
+      '++' => :plusplus,
       '='  => :assign,
 
       '|>' => :pipe_forward,

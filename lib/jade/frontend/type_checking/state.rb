@@ -20,7 +20,10 @@ module Jade
             with(env: env.composose_substitution(sub))
 
           in Err(error)
-            with(errors: errors + [block.call(error)])
+            with(
+              env: env.composose_substitution(error.partial_sub),
+              errors: errors + [block.call(error)],
+            )
           end
         end
 

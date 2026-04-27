@@ -12,4 +12,13 @@ require 'jade/stdlib'
 
 module Jade
   extend self
+
+  def setup(&block)
+    @compiler = Compiler.new(&block)
+  end
+
+  def require(path)
+    @compiler ||= Compiler.new
+    @compiler.require(path)
+  end
 end

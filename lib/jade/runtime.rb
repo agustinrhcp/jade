@@ -27,6 +27,7 @@ module Jade
     extend Interop::Runtime
 
     INTRINSICS = {}
+    IMPLEMENTATIONS = {}
     @booted = false
 
     def boot!
@@ -46,6 +47,17 @@ module Jade
 
     def register(name, &block)
       INTRINSICS[name] = block
+    end
+
+    def register_impl(interface_name, ruby_class, functions)
+      IMPLEMENTATIONS[[interface_name, ruby_class]] = functions
+    end
+
+    def impl_for(interface_name, value)
+      boot!
+      IMPLEMENTATIONS[[interface_name, value.class]]
+        .then { it || fail("No implementation of #{interface_name} for #{value.class}") }
+        .transform_values { |v| v.is_a?(::String) ? intr(v) : v }
     end
   end
 end

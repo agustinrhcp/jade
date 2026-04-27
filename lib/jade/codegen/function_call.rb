@@ -7,23 +7,22 @@ module Jade
       def generate(node, registry)
         node => AST::FunctionCall(callee:, args:, dictionaries:)
 
-        args_code = generate_many(args, registry)
-
-        "#{generate_callee(callee, registry, dictionaries)}.call(#{args_code})"
+        generate_many(args, registry)
+          .then do
+            "#{generate_callee(callee, args, registry, dictionaries)}.call(#{it})"
+          end
       end
 
       private
 
-      def generate_callee(callee, registry, dictionaries)
-        if callee in AST::ConstructorReference | AST::RecordAccess
-          return generate_node(callee, registry) 
-        end
+      def generate_callee(callee, args, registry, dictionaries)
+        return generate_node(callee, registry) if callee in AST::ConstructorReference | AST::RecordAccess
 
         case callee.symbol
         in Symbol::ValueRef
           registry
             .lookup(callee.symbol)
-            .then { generate_callee(callee.with(symbol: it), registry, dictionaries) }
+            .then { generate_callee(callee.with(symbol: it), args, registry, dictionaries) }
 
         in Symbol::InteropFunction => symbol
           lower_to_ruby(symbol.expected_type)
@@ -51,16 +50,18 @@ module Jade
           to_qualified(module_name + "." + name) + ".method(:[])"
 
         in Symbol::StdlibImplementation => symbol
-          dispatch = dictionaries
+          dictionaries
             .reduce({}) { |acc, impl| acc.merge generate_impl_dispatch(impl, registry) }
+            .then { generate_stdlib_implementation(symbol, registry, it) }
 
-          generate_stdlib_implementation(symbol, registry, dispatch)
-
-        in Symbol::InterfaceFunction
-          dispatch = dictionaries
+        in Symbol::InterfaceFunction => symbol if dictionaries.any?
+          dictionaries
             .reduce({}) { |acc, impl| acc.merge generate_impl_dispatch(impl, registry) }
+            .then { it[symbol.name] }
 
-          dispatch[callee.symbol.name]
+        in Symbol::InterfaceFunction => symbol
+          first_arg = generate_node(args.first, registry)
+          "Jade::Runtime.impl_for(#{symbol.interface.qualified_name.inspect}, #{first_arg})[#{symbol.name.inspect}]"
         end
       end
 

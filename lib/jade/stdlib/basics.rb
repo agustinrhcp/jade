@@ -10,6 +10,10 @@ module Jade
       union :Float
       union :Bool
 
+      native_type :Int,   Integer
+      native_type :Float, ::Float
+      native_type :Bool,  TrueClass, FalseClass
+
       union :Ordering
       variant :GT, of: :Ordering
       variant :EQ, of: :Ordering
@@ -35,6 +39,21 @@ module Jade
       implementation('Comparable', 'Float', 'compare' => 'float_compare')
 
       interface(
+        'Numeric',
+        'a',
+        { '(+)' => 'a, a -> a', '(-)' => 'a, a -> a', '(*)' => 'a, a -> a', '(/)' => 'a, a -> a' }
+      )
+
+      implementation('Numeric', 'Int',   '(+)' => 'int_add', '(-)' => 'int_sub', '(*)' => 'int_mul', '(/)' => 'int_div')
+      implementation('Numeric', 'Float', '(+)' => 'float_add', '(-)' => 'float_sub', '(*)' => 'float_mul', '(/)' => 'float_div')
+
+      interface(
+        'Appendable',
+        'a',
+        { '(++)' => 'a, a -> a' },
+      )
+
+      interface(
         'Mappable',
         'f',
         { 'map' => 'f(a), (a -> b) -> f(b)' },
@@ -57,29 +76,15 @@ module Jade
         ),
       )
 
-      function(
-        '(+)',
-        { a: 'Int', b: 'Int' },
-        'Int',
-      ) { |a, b| a + b }
+      function('int_add',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a + b }
+      function('int_sub',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a - b }
+      function('int_mul',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a * b }
+      function('int_div',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a / b }
 
-      function(
-        '(-)',
-        { a: 'Int', b: 'Int' },
-        'Int',
-      ) { |a, b| a - b }
-
-      function(
-        '(*)',
-        { a: 'Int', b: 'Int' },
-        'Int',
-      ) { |a, b| a * b }
-
-      function(
-        '(/)',
-        { a: 'Int', b: 'Int' },
-        'Int',
-      ) { |a, b| a / b }
+      function('float_add', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a + b }
+      function('float_sub', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a - b }
+      function('float_mul', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a * b }
+      function('float_div', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a / b }
 
       function(
         'identity',
@@ -204,6 +209,7 @@ module Jade
         { a: 'Float', b: 'Float' },
         'Ordering',
       ) { |a, b| a < b ? ::Basics::LT[] : a > b ? ::Basics::GT[] : ::Basics::EQ[] }
+
     end
   end
 end

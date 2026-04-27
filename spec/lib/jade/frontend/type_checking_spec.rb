@@ -555,7 +555,7 @@ module Jade
         end
 
         its(:type) { is_expected.to be_a(Type::Function) }
-        its(:type) { is_expected.to eql Type.parse('Int, Int -> Int')}
+        its(:type) { is_expected.to satisfy { |t| t.args.first == t.return_type } }
 
         context 'with constructor pattern param (single constructor)' do
           let(:text) do

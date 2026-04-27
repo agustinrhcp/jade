@@ -44,6 +44,8 @@ module Jade
             end
 
           in [Type::Var, _]
+            return Ok[Substitution.new] if type1 == type2
+
             if (ctx.rigid?(type1) || ctx.rigid?(type2)) && type1 != type2
               return Err[UnificationError.new(type1, type2)]
             end
@@ -70,6 +72,7 @@ module Jade
                 UnificationError.new(
                   final_sub.apply(type1),
                   final_sub.apply(type2),
+                  final_sub,
                 )
               end
 
@@ -204,11 +207,12 @@ module Jade
         end
 
         class UnificationError
-          attr_reader :expected, :actual
+          attr_reader :expected, :actual, :partial_sub
 
-          def initialize(actual, expected)
+          def initialize(actual, expected, partial_sub = nil)
             @actual = actual
             @expected = expected
+            @partial_sub = partial_sub || Substitution.new
           end
 
           def flip

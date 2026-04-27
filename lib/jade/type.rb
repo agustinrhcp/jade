@@ -129,16 +129,16 @@ module Jade
 
       in Symbol::FunctionType | Symbol::InteropFunction
         # Same as function and stdlib but without keyed params.
+        # Use var_map (not {}) so inline function type vars share the outer scope's bindings.
         args, arg_cs, local_map = symbol
           .params
-          .reduce([[], [], {}]) do |(types, cs, local_map), sym|
+          .reduce([[], [], var_map]) do |(types, cs, local_map), sym|
             from_symbol_r(sym, registry, var_gen, local_map)
               .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
-          .then { |(t, c, _)| [Type.function(args, t), c] }
-          .then { it + [var_map] }
+          .then { |(t, c, updated_map)| [Type.function(args, t), c, updated_map] }
 
       in Symbol::InterfaceFunction
         # Same as function and stdlib but without keyed params.

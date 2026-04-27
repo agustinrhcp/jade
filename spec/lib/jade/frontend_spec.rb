@@ -182,9 +182,9 @@ module Jade
           JADE
         end
 
-        subject { frontend => Ok([node, _]); node }
+        subject { frontend => Err(errors); errors }
 
-        it { is_expected.to be_a(AST::Body) }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingImplementation) }
       end
 
       context 'with a record pattern' do
@@ -1460,8 +1460,34 @@ module Jade
             JADE
           end
 
-          # TODO: Derive records.
           it('is derived') { is_expected.to be_a(AST::FunctionDeclaration) }
+        end
+      end
+    end
+
+    describe 'lambda passed to higher-order function with constrained type' do
+      let(:text) do
+        <<~JADE
+          def sum(list: List(Int)) -> Int
+            List.fold(list, 0, (acc, x) -> { acc + x })
+          end
+        JADE
+      end
+
+      context 'the (+) call inside the lambda' do
+        subject do
+          frontend => Ok([node, _])
+          node
+            .expressions.last
+            .body.expressions.last
+            .args[2]
+            .body.expressions.last
+        end
+
+        it { is_expected.to be_a(AST::FunctionCall) }
+
+        it 'has dictionaries attached after type checking' do
+          expect(subject.dictionaries).not_to be_empty
         end
       end
     end

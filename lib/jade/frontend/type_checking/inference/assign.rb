@@ -25,9 +25,26 @@ module Jade
               Expected.check(expr_result.type),
             )
 
+            final_state =
+              case pattern
+              in AST::Pattern::Binding(name:)
+                pattern_state
+                  .env
+                  .substitution
+                  .then do |sub|
+                    pattern_state.bind(name, generalize(
+                      expr_state.env,
+                      sub.apply(expr_result.type),
+                      expr_result.constraints.map { sub.apply(it) },
+                    ))
+                  end
+              else
+                pattern_state
+              end
+
             PatternAnalysis::Exhaustiveness
-              .assert([pattern], pattern.range, pattern_state.env, registry, expr_result.type)
-              .then { pattern_state.add_errors(it) }
+              .assert([pattern], pattern.range, final_state.env, registry, expr_result.type)
+              .then { final_state.add_errors(it) }
               .unify_result(expr_result, expected.type)
           end
         end

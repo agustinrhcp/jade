@@ -11,7 +11,23 @@ module Jade
 
       union :String
 
+      native_type :String, ::String
+
       implementation('Eq', 'String', '(==)' => 'str_eq')
+      implementation('Appendable', 'String', '(++)' => 'str_append')
+      implementation('Comparable', 'String', 'compare' => 'str_compare')
+
+      function(
+        'str_compare',
+        { a: 'String', b: 'String' },
+        'Ordering',
+      ) { |a, b| a < b ? ::Basics::LT[] : a > b ? ::Basics::GT[] : ::Basics::EQ[] }
+
+      function(
+        'str_append',
+        { a: 'String', b: 'String' },
+        'String',
+      ) { |a, b| a + b }
 
       function(
         :is_empty,
@@ -75,6 +91,7 @@ module Jade
         { one: 'String', other: 'String' },
         'Bool',
       ) { |one, other| one == other }
+
     end
   end
 end
