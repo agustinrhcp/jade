@@ -59,6 +59,7 @@ module Jade
     define(:TypeFunction, :params, :return_type)
     define(:TypeRecord, :fields, :row_var)
     define(:TypeTuple, :items)
+    define(:TypeUnit)
 
     define(:IfThenElse, :condition, :if_branch, :else_branch)
     define(:CaseOf, :expression, :branches)
@@ -225,7 +226,12 @@ module Jade
 
     def type_function
       ->((params, return_type)) do
-        TypeFunction[params, return_type, params.first.range.begin..return_type.range.end]
+        case params
+        in [TypeUnit => unit]
+          TypeFunction[[], return_type, unit.range.begin..return_type.range.end]
+        else
+          TypeFunction[params, return_type, params.first.range.begin..return_type.range.end]
+        end
       end
     end
 

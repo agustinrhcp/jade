@@ -56,10 +56,17 @@ module Jade
       end
 
       def type_function
-        (sequence(type_atom, separated_by: type(:comma).skip).map { [it] } >>
+        (
+          (unit | sequence(type_atom, separated_by: type(:comma).skip).map { [it] }) >>
           type(:arrow).skip >>
           type_atom
         ).map(&AST.type_function)
+      end
+
+      def unit
+        (type(:lparen) >> type(:rparen)).map { |lparen, rparen|
+          [[AST::TypeUnit[lparen.range.begin..rparen.range.end]]]
+        }
       end
 
       def type_application

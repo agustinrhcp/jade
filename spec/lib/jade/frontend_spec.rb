@@ -374,6 +374,34 @@ module Jade
       end
     end
 
+    context 'a function declaration with a thunk parameter' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          def run(f: () -> Int) -> Int
+            f()
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+      describe 'the registry' do
+        subject { frontend => Ok([_, registry]); registry }
+
+        it 'stores f as a FunctionType with empty params' do
+          symbol = subject.lookup(Symbol.value_ref('__Test__', 'run'))
+
+          expect(symbol).to be_a(Symbol::Function)
+          f_type = symbol.params['f']
+          expect(f_type).to be_a(Symbol::FunctionType)
+          expect(f_type.params).to be_empty
+          expect(f_type.return_type).to be_an_int_symbol
+        end
+      end
+    end
+
     context 'a function declaration with a type var' do
       let(:text) do
         <<~JADE

@@ -32,10 +32,9 @@ source_text =
 source = Jade::Source.new(file, source_text)
 tokens = Jade::Lexer.tokenize(source)
 
-case Jade::Parsing.parse(tokens)
+case Jade::Parsing.parse(tokens, entry: file || 'stdin')
 in Ok([ast, comments])
-  ast = Jade::Frontend::CommentAttacher.attach(ast, comments, source)
-  formatted = Jade::Formatter.format(ast)
+  formatted = Jade::Formatter.format(ast, comments:, source:)
 
   if inplace && file
     File.write(file, formatted + "\n")
