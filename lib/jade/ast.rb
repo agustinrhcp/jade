@@ -7,6 +7,7 @@ module Jade
     extend Nodes
 
     define(:Literal, :value)
+    define(:CharLiteral, :value)
     define(:List, :items)
     define(:RecordLiteral, :fields)
     define(:RecordField, :key, :value)
@@ -91,18 +92,17 @@ module Jade
       end
     end
 
+    def char_literal
+      ->(token) { CharLiteral[token.value, token.range] }
+    end
+
     def literal
       ->(token) do
         value =
           case token.type
-          in :int
-            token.value.to_i
-
-          in :float
-            token.value.to_f
-
-          in :bool
-            token.value == 'True' ? true : false
+          in :int   then token.value.to_i
+          in :float then token.value.to_f
+          in :bool  then token.value == 'True'
           end
 
         Literal[value, token.range]

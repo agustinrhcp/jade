@@ -71,7 +71,7 @@ module Jade
         in AST::InteropImportDeclaration then Inference::InteropImportDeclaration
         in AST::Lambda then Inference::Lambda
         in AST::List then Inference::List
-        in AST::Literal then Inference::Literal
+        in AST::Literal | AST::CharLiteral then Inference::Literal
         in AST::Module then Inference::Module
         in AST::QualifiedAccess then Inference::QualifiedAccess
         in AST::RecordAccess then Inference::RecordAccess

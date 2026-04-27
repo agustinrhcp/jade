@@ -320,7 +320,7 @@ module Jade
     end
 
     def literal
-      string | int | bool | float | list
+      string | char | int | bool | float | list
     end
 
     def list
@@ -471,6 +471,10 @@ module Jade
 
     def bool
       type(:bool).map(&AST.literal)
+    end
+
+    def char
+      type(:char).map(&AST.char_literal)
     end
 
     def string

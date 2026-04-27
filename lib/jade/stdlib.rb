@@ -3,15 +3,16 @@ require 'jade/stdlib/maybe'
 require 'jade/stdlib/list'
 require 'jade/stdlib/tuple'
 require 'jade/stdlib/string'
+require 'jade/stdlib/char'
 require 'jade/stdlib/result'
 
 module Jade
   module Stdlib
     extend self
 
-    INTRINSICS = %w[Basics String List Tuple].freeze
+    INTRINSICS = %w[Basics String List Tuple Char].freeze
     COMPILED = %w[Maybe Result].freeze
-    STDLIBS = [Stdlib::Basics, Stdlib::Maybe, Stdlib::List, Stdlib::Tuple, Stdlib::String, Stdlib::Result]
+    STDLIBS = [Stdlib::Basics, Stdlib::Maybe, Stdlib::List, Stdlib::Tuple, Stdlib::String, Stdlib::Char, Stdlib::Result]
 
     def load(registry)
       registry

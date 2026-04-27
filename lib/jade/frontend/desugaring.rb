@@ -147,7 +147,7 @@ module Jade
         in AST::ImplementationFunction(fn:)
           node.with(fn: desugar(fn))
 
-        in AST::Literal | AST::VariableReference | AST::ConstructorReference |
+        in AST::Literal | AST::CharLiteral | AST::VariableReference | AST::ConstructorReference |
           AST::TypeDeclaration | AST::ImportDeclaration | AST::Pattern::Constructor |
           AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard |
           AST::Pattern::Record | AST::InteropImportDeclaration | AST::StructDeclaration

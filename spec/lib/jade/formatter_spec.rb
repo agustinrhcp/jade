@@ -43,6 +43,11 @@ module Jade
         let(:text) { '"hello"' }
         it { is_expected.to eql '"hello"' }
       end
+
+      context 'char' do
+        let(:text) { "'a'" }
+        it { is_expected.to eql "'a'" }
+      end
     end
 
     context 'variable binding and reference' do

@@ -7,7 +7,11 @@ module Jade
           extend self
 
           def infer(node, registry, state, _)
-            node => AST::Literal(symbol:)
+            symbol =
+              case node
+              in AST::Literal | AST::CharLiteral
+                node.symbol
+              end
 
             type_from_symbol(symbol, registry, state.env.var_gen)
               .then { [state, Result.init(*it)] }

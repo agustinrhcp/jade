@@ -260,6 +260,10 @@ module Jade
         name
           .then(&and_indent(indent))
 
+      in AST::CharLiteral(value:)
+        "'#{value}'"
+          .then(&and_indent(indent))
+
       in AST::Literal(value:)
         case value
         in Integer | Float  then value.to_s

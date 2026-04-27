@@ -16,6 +16,7 @@ require 'jade/frontend/symbol_resolution/interop_import_declaration'
 require 'jade/frontend/symbol_resolution/lambda'
 require 'jade/frontend/symbol_resolution/list'
 require 'jade/frontend/symbol_resolution/literal'
+require 'jade/frontend/symbol_resolution/char_literal'
 require 'jade/frontend/symbol_resolution/member_access'
 require 'jade/frontend/symbol_resolution/module'
 require 'jade/frontend/symbol_resolution/pattern/binding'
@@ -79,6 +80,7 @@ module Jade
         in AST::ImportDeclaration then ImportDeclaration
         in AST::InteropImportDeclaration then InteropImportDeclaration
         in AST::Literal then Literal
+        in AST::CharLiteral then CharLiteral
         in AST::Assign then Assign
         in AST::Body then Body
         in AST::VariableReference then VariableReference
