@@ -274,6 +274,38 @@ module Jade
         end
       end
 
+      context 'nested case as branch body' do
+        let(:text) do
+          <<~JADE.strip
+            def clamp(value: Int, min: Int, max: Int) -> Int
+              case value < min
+              of True then min
+              of False then
+                case value > max
+                of True then max
+                of False then value
+                end
+              end
+            end
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            def clamp(value: Int, min: Int, max: Int) -> Int
+              case value < min
+              of True then min
+              of False then
+                case value > max
+                of True then max
+                of False then value
+                end
+              end
+            end
+          JADE
+        end
+      end
+
       context 'literal pattern' do
         let(:text) do
           <<~JADE.strip
@@ -363,7 +395,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to include "type Color = Red | Green | Blue" }
+        it { is_expected.to include "type Color\n  = Red\n  | Green\n  | Blue" }
       end
 
       context 'variant with args' do
@@ -375,7 +407,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to include "type Shape = Circle(Int) | Rect(Int, Int)" }
+        it { is_expected.to include "type Shape\n  = Circle(Int)\n  | Rect(Int, Int)" }
       end
 
       context 'with type params' do
@@ -387,7 +419,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to include "type Maybe(a) = Just(a) | Nothing" }
+        it { is_expected.to include "type Maybe(a)\n  = Just(a)\n  | Nothing" }
       end
     end
 
@@ -514,6 +546,24 @@ module Jade
         end
 
         it { is_expected.to include "def wrap(x: Int) -> Maybe(Int)" }
+      end
+
+      context 'thunk type' do
+        let(:text) do
+          <<~JADE.strip
+            def run(f: () -> Int) -> Int
+              f()
+            end
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            def run(f: () -> Int) -> Int
+              f()
+            end
+          JADE
+        end
       end
 
       context 'function type (single param)' do

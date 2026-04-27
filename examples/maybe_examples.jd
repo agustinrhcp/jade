@@ -1,0 +1,16 @@
+module MaybeExamples exposing (safe_divide, find_first, pipeline)
+
+def safe_divide(a: Int, b: Int) -> Maybe(Int)
+  case b == 0
+  of True then Nothing()
+  of False then Just(a / b)
+  end
+end
+
+def find_first(list: List(Int), predicate: Int -> Bool) -> Maybe(Int)
+  List.filter(list, predicate) |> List.head
+end
+
+def pipeline(value: Int) -> Maybe(Int)
+  safe_divide(100, value) |> Maybe.map((result) -> { result + 1 }) |> Maybe.and_then((n) -> { safe_divide(n, 2) })
+end

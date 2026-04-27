@@ -272,6 +272,31 @@ module Jade
       end
     end
 
+    context 'thunk type' do
+      include_context "single expression body"
+
+      let(:text) do
+        <<~JADE
+          def run(f: () -> Int) -> Int
+            f()
+          end
+        JADE
+      end
+
+      it { is_expected.to be_a(AST::FunctionDeclaration) }
+
+      describe 'its param type' do
+        subject { super().params.first => AST::FunctionDeclarationParam(type:); type }
+
+        it { is_expected.to be_a(AST::TypeFunction) }
+
+        describe 'the type function' do
+          its(:params) { is_expected.to be_empty }
+          its(:return_type) { is_expected.to be_a(AST::TypeApplication) }
+        end
+      end
+    end
+
     context 'tuple type' do
       context 'as a parameter type' do
         include_context "single expression body"

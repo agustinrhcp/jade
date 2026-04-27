@@ -1,0 +1,15 @@
+module Interop exposing (current_time_ms, env_var)
+
+uses Time with
+  now :  -> Int
+
+uses ENV with
+  fetch : String -> Maybe(String)
+
+def current_time_ms() -> Int
+  Time.now()
+end
+
+def env_var(key: String) -> Maybe(String)
+  ENV.fetch(key)
+end
