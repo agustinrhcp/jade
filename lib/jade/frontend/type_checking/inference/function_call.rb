@@ -38,15 +38,14 @@ module Jade
               # double dispatch code.
               next [st, rs] if st.skip_constraints
 
-              # TODO: This is only for concrete constraints. Unresolved ones (type
-              # vars like Eq(a)) bubble up in rs.constraints. Inside an impl body,
-              # these should eventually become impl-level deps rather than being
-              # left for finalize to drop.
-              rs
-                .constraints
-                .flat_map { Constraints.solve_at_call_site(it, registry, st.env.entry_name) }
-                .then { st.add_errors(it) }
-                .then { [it, rs] }
+              (rs.constraints + args_acc.constraints)
+                .map { st.env.substitution.apply(it) }
+                .partition { it.type.is_a?(Type::Var) }
+                .then { |propagated, solvable|
+                  solvable
+                    .flat_map { Constraints.solve_at_call_site(it, registry, st.env.entry_name) }
+                    .then { [st.add_errors(it), rs.with(constraints: propagated)] }
+                }
             end
           end
 

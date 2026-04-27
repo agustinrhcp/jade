@@ -59,7 +59,7 @@ module Jade
 
             Type
               .function(params_types, body_result.type)
-              .then { Result.init(it) }
+              .then { Result.init(it, body_result.constraints) }
               .apply(exhaustiveness_state.env.substitution)
               .then { exhaustiveness_state.unify_result(it, expected.type) }
           end

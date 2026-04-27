@@ -34,6 +34,18 @@ module Jade
       ) { |list| list.empty? }
 
       function(
+        :head,
+        { list: 'List(a)' },
+        'Maybe(a)',
+      ) { |list| list.empty? ? ::Maybe::Nothing[] : ::Maybe::Just[list.first] }
+
+      function(
+        :tail,
+        { list: 'List(a)' },
+        'List(a)',
+      ) { |list| list.drop(1) }
+
+      function(
         :length,
         { list: 'List(a)' },
         'Int',
@@ -71,8 +83,15 @@ module Jade
         'List(a)',
       ) { |list, fn| list.filter(&fn) }
 
+      implementation('Appendable', 'List', '(++)' => 'list_append')
       implementation('Mappable', 'List', 'map' => 'map')
       implementation('Chainable', 'List', 'and_then' => 'and_then')
+
+      function(
+        'list_append',
+        { a: 'List(a)', b: 'List(a)' },
+        'List(a)',
+      ) { |a, b| a + b }
 
       default_importing('List')
     end

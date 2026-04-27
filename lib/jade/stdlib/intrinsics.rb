@@ -67,6 +67,24 @@ module Jade
           .then { store(it); it.functions.each { |fn| store(fn) } }
       end
 
+      # Declares that a Jade type is backed by one or more native Ruby classes.
+      # This auto-registers runtime dispatch for every implementation declared
+      # after this call, so there's no need for manual Runtime.register_impl calls.
+      #
+      # Future direction: literals should eventually be wrapped in Jade's own
+      # Data.define types (e.g. Int[value: 42]) and only unwrapped at interop
+      # boundaries. That would make native_type unnecessary — implementation
+      # declarations would cover both compile-time and runtime dispatch on their
+      # own. It also opens up richer type definitions like:
+      #   Int   = InternalInt | Overflow
+      #   Float = InternalFloat | NaN | Infinity | NegInfinity
+      # See Char for a preview of this direction: it's a distinct type from
+      # String even though it's still backed by a Ruby String at runtime.
+      def native_type(jade_type_name, *ruby_classes)
+        @native_types ||= {}
+        @native_types[jade_type_name.to_s] = ruby_classes
+      end
+
       def implementation(interface_name, type, functions)
         interface = [symbols, *imports.filter_map { |mod| mod.symbols if mod.respond_to?(:symbols) }]
           .flatten
@@ -88,6 +106,12 @@ module Jade
             nil,
           )
           .then { store(it) }
+
+        if (ruby_classes = @native_types&.[](type))
+          qualified_iface = "#{interface_to_ref(interface_name).module_name}.#{interface_name}"
+          qualified_fns   = functions.transform_values { "#{module_name}.#{it}" }
+          ruby_classes.each { Runtime.register_impl(qualified_iface, it, qualified_fns) }
+        end
       end
 
       def symbols
@@ -161,7 +185,7 @@ module Jade
 
       def interface_to_ref(interface)
         case interface
-        in 'Eq' | 'Comparable' | 'Mappable' | 'Chainable'
+        in 'Eq' | 'Comparable' | 'Appendable' | 'Mappable' | 'Chainable' | 'Numeric'
           'Basics'
         end
           .then { Symbol.type_ref(it, interface.to_s) }

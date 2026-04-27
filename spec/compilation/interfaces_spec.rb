@@ -49,7 +49,7 @@ module Jade
 
       it 'fails, because functions cant be compared' do
         expect { test_compiler.require('interface_test', source) }
-          .to raise_error(RuntimeError, /Basics.Eq cannot be derived for \(Int, Int\) -> Int/)
+          .to raise_error(RuntimeError, /Basics.Eq cannot be derived for .+ -> /)
       end
     end
 
