@@ -53,13 +53,20 @@ module Jade
 
       in AST::TypeDeclaration(name:, type_params:, variants:)
         params_str = type_params.empty? ? "" : "(#{type_params.map(&:name).join(', ')})"
-        variants_str =
-          variants
-            .map { format_node(it) }
-            .join(" | ")
+        header = "type #{name}#{params_str}"
 
-        "type #{name}#{params_str} = #{variants_str}"
-          .then(&and_indent(indent))
+        if variants.size == 1
+          "#{header} = #{format_node(variants.first)}"
+            .then(&and_indent(indent))
+        else
+          inner = INDENT * (indent + 1)
+          variants_str = variants
+            .map { format_node(it) }
+            .map.with_index { |v, i| "#{inner}#{i == 0 ? '=' : '|'} #{v}" }
+            .join("\n")
+
+          "#{and_indent(indent).call(header)}\n#{variants_str}"
+        end
 
       in AST::VariantDeclaration(name:, args:)
         if args.nil? || args.empty?
@@ -82,7 +89,7 @@ module Jade
       in AST::ImportDeclaration(module_name:, as:, exposing:)
         parts = ["import #{module_name}"]
         parts << "as #{as.as}" if as
-        parts << format_exposing(exposing) if exposing && !exposing.is_a?(AST::ExposeNone)
+        parts << format_exposing(exposing) unless exposing in AST::ExposeNone | nil
 
         parts
           .join(' ')
@@ -155,9 +162,15 @@ module Jade
       in AST::CaseOfBranch(pattern:, body:)
         pat_str = format_pattern(pattern)
 
+        block_expr = case body.expressions.first
+                     in AST::CaseOf | AST::IfThenElse then true
+                     else false
+                     end
+
         single_expr = body.expressions.length == 1 &&
           body.leading_comments.empty? &&
-          body.expressions.first.leading_comments.empty?
+          body.expressions.first.leading_comments.empty? &&
+          !block_expr
 
         if single_expr
           "of #{pat_str} then #{format_node(body.expressions.first)}"
@@ -320,9 +333,13 @@ module Jade
 
       in AST::TypeFunction(params:, return_type:)
         params_str =
-          params
-            .map { format_type(it) }
-            .join(', ')
+          if params.empty?
+            "()"
+          else
+            params
+              .map { format_type(it) }
+              .join(', ')
+          end
 
         "#{params_str} -> #{format_type(return_type)}"
 
