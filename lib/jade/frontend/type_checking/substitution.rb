@@ -18,7 +18,7 @@ module Jade
           in Type::Function(args:, return_type:)
             type
               .with(args: args.map { apply(it) })
-              .with(return_type: apply(return_type) )
+              .with(return_type: apply(return_type))
 
           in Type::Constructor
             type
@@ -52,7 +52,7 @@ module Jade
             applied_fields = fields.transform_values { apply(it) }
 
             return type.with(fields: applied_fields) if type.closed?
-  
+
             case apply(row_var)
             in Type::AnonymousRecord(fields: extra_fields, row_var: new_row_var)
               Type.anonymous_record(applied_fields.merge(extra_fields), new_row_var)

@@ -11,7 +11,7 @@ module Jade
       end
 
       def imports
-        [Basics, Maybe]
+        [Basics, Maybe, List]
       end
 
       def default_imports
@@ -24,7 +24,7 @@ module Jade
 
       def code
         <<~JADE
-          module Result exposing(Result(..), map, and_then, with_default, to_maybe, from_maybe, map_error)
+          module Result exposing(Result(..), map, and_then, with_default, to_maybe, from_maybe, map_error, sequence)
 
           type Result(value, error) = Ok(value) | Err(error)
 
@@ -33,7 +33,7 @@ module Jade
             of Ok(something) then
               something |> fn |> Ok
 
-            of Err(_) then result
+            of Err(error) then Err(error)
             end
           end
 
@@ -42,7 +42,7 @@ module Jade
             of Ok(something) then
               something |> fn
 
-            of Err(_) then result
+            of Err(error) then Err(error)
             end
           end
 
@@ -70,8 +70,16 @@ module Jade
           def map_error(result: Result(a, e), fn: e -> x) -> Result(a, x)
             case result
             of Err(error) then error |> fn |> Err
-            of _ then result
+            of Ok(something) then Ok(something)
             end
+          end
+
+          def sequence(results: List(Result(a, e))) -> Result(List(a), e)
+            List.fold(results, Ok([]), (acc, result) -> {
+              list <- acc
+              value <- result
+              Ok(list ++ [value])
+            })
           end
 
           implements Mappable(Result(a, e)) with

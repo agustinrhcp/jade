@@ -18,6 +18,7 @@ require 'jade/frontend/symbol_resolution/list'
 require 'jade/frontend/symbol_resolution/literal'
 require 'jade/frontend/symbol_resolution/char_literal'
 require 'jade/frontend/symbol_resolution/member_access'
+require 'jade/frontend/symbol_resolution/qualified_access'
 require 'jade/frontend/symbol_resolution/module'
 require 'jade/frontend/symbol_resolution/pattern/binding'
 require 'jade/frontend/symbol_resolution/pattern/constructor'
@@ -98,6 +99,7 @@ module Jade
         in AST::Pattern::Constructor then Pattern::Constructor
         in AST::Pattern::Record then Pattern::Record
         in AST::MemberAccess then MemberAccess
+        in AST::QualifiedAccess then QualifiedAccess
         in AST::Lambda then Lambda
         in AST::List then List
         in AST::Grouping then Grouping

@@ -326,7 +326,7 @@ module Jade
 
     def list
       (type(:lbrack) >>
-        (sequence(lazy { expression }, separated_by: type(:comma).skip)).map { [it] } >>
+        (sequence(lazy { expression }, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
         type(:rbrack)
       ).map(&AST.list)
     end

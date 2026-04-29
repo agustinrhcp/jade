@@ -136,6 +136,19 @@ module Jade
           its(:type) { is_expected.to eql Type.unit }
           its(:errors) { is_expected.to be_empty }
         end
+
+        context 'with Ok([]) and Result(List(Int), String) return type' do
+          let(:text) do
+            <<~JADE
+              def example() -> Result(List(Int), String)
+                Ok([])
+              end
+            JADE
+          end
+
+          its(:type) { is_expected.to eql Type.unit }
+          its(:errors) { is_expected.to be_empty }
+        end
       end
 
       context 'a variable binding' do

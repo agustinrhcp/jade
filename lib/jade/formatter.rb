@@ -91,7 +91,7 @@ module Jade
           fields_str = fields
             .map { |k, v| "#{k}: #{format_type(v)}".then(&and_indent(indent + 1)) }
             .join(",\n")
-          "#{and_indent(indent).call("#{header} {")}\n#{fields_str},\n#{INDENT * indent}}#{row_str}"
+          "#{and_indent(indent).call("#{header} {")}\n#{fields_str}\n#{INDENT * indent}}#{row_str}"
         else
           "#{header} #{format_type(record_type)}".then(&and_indent(indent))
         end
@@ -262,7 +262,7 @@ module Jade
           fields_str = fields
             .map { "#{it.key}: #{format_node(it.value)}".then(&and_indent(indent + 1)) }
             .join(",\n")
-          "#{INDENT * indent}{\n#{fields_str},\n#{INDENT * indent}}"
+          "#{INDENT * indent}{\n#{fields_str}\n#{INDENT * indent}}"
         else
           "{ #{fields.map { "#{it.key}: #{format_node(it.value)}" }.join(', ')} }"
             .then(&and_indent(indent))
@@ -273,7 +273,7 @@ module Jade
           fields_str = fields
             .map { "#{it.key}: #{format_node(it.value)}".then(&and_indent(indent + 1)) }
             .join(",\n")
-          "#{INDENT * indent}{ #{format_node(base)} |\n#{fields_str},\n#{INDENT * indent}}"
+          "#{INDENT * indent}{ #{format_node(base)} |\n#{fields_str}\n#{INDENT * indent}}"
         else
           "{ #{format_node(base)} | #{fields.map { "#{it.key}: #{format_node(it.value)}" }.join(', ')} }"
             .then(&and_indent(indent))
