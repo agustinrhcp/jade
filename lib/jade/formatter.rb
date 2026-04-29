@@ -16,11 +16,11 @@ module Jade
 
       case node
       in AST::Module(name:, exposing:, body:)
-        body
-          .expressions
-          .map { format_node(it, indent:) }
-          .then { ["module #{name} #{format_exposing(exposing)}"] + it }
-          .join("\n\n")
+        chunks = body.expressions
+          .chunk_while { |a, b| (a in AST::ImportDeclaration) && (b in AST::ImportDeclaration) }
+          .map { |group| group.map { format_node(it, indent:) }.join("\n") }
+
+        (["module #{name} #{format_exposing(exposing)}"] + chunks).join("\n\n")
 
       in AST::Body(expressions:, dangling_comments:)
         if expressions.empty? && !dangling_comments.empty?
@@ -82,9 +82,19 @@ module Jade
 
       in AST::StructDeclaration(name:, type_params:, record_type:)
         params_str = type_params.empty? ? "" : "(#{type_params.map(&:name).join(', ')})"
+        header     = "struct #{name}#{params_str} ="
 
-        "struct #{name}#{params_str} = #{format_type(record_type)}"
-          .then(&and_indent(indent))
+        record_type => AST::TypeRecord(fields:, row_var:)
+
+        if fields.size > 1
+          row_str    = row_var ? " | #{row_var}" : ""
+          fields_str = fields
+            .map { |k, v| "#{k}: #{format_type(v)}".then(&and_indent(indent + 1)) }
+            .join(",\n")
+          "#{and_indent(indent).call("#{header} {")}\n#{fields_str},\n#{INDENT * indent}}#{row_str}"
+        else
+          "#{header} #{format_type(record_type)}".then(&and_indent(indent))
+        end
 
       in AST::ImportDeclaration(module_name:, as:, exposing:)
         parts = ["import #{module_name}"]
@@ -248,22 +258,26 @@ module Jade
           .then(&and_indent(indent))
 
       in AST::RecordLiteral(fields:)
-        fields_str =
-          fields
-            .map { "#{it.key}: #{format_node(it.value)}" }
-            .join(', ')
-
-        "{ #{fields_str} }"
-          .then(&and_indent(indent))
+        if fields.size > 1
+          fields_str = fields
+            .map { "#{it.key}: #{format_node(it.value)}".then(&and_indent(indent + 1)) }
+            .join(",\n")
+          "#{INDENT * indent}{\n#{fields_str},\n#{INDENT * indent}}"
+        else
+          "{ #{fields.map { "#{it.key}: #{format_node(it.value)}" }.join(', ')} }"
+            .then(&and_indent(indent))
+        end
 
       in AST::RecordUpdate(base:, fields:)
-        fields_str =
-          fields
-            .map { "#{it.key}: #{format_node(it.value)}" }
-            .join(', ')
-
-        "{ #{format_node(base)} | #{fields_str} }"
-          .then(&and_indent(indent))
+        if fields.size > 1
+          fields_str = fields
+            .map { "#{it.key}: #{format_node(it.value)}".then(&and_indent(indent + 1)) }
+            .join(",\n")
+          "#{INDENT * indent}{ #{format_node(base)} |\n#{fields_str},\n#{INDENT * indent}}"
+        else
+          "{ #{format_node(base)} | #{fields.map { "#{it.key}: #{format_node(it.value)}" }.join(', ')} }"
+            .then(&and_indent(indent))
+        end
 
       in AST::VariableReference(name:)
         name
