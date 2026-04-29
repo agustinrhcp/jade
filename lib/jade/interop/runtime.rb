@@ -10,6 +10,16 @@ module Jade
             .then { Interop::Guard.guard(it, expected_jade_type) }
         end
       end
+
+      def coerce(value)
+        case value
+        when Hash
+          kw = value.transform_keys(&:to_sym)
+          Data.define(*kw.keys).new(**kw)
+        else
+          value
+        end
+      end
     end
   end
 end

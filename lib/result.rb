@@ -58,6 +58,14 @@ Ok = Data.define(:ok) do
   end
 end
 
+module Results
+  def self.sequence(results)
+    results.reduce(Ok[[]]) do |acc, r|
+      acc.and_then { |list| r.map { list + [it] } }
+    end
+  end
+end
+
 Err = Data.define(:err) do
   private :err
 

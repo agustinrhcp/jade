@@ -1543,6 +1543,70 @@ module Jade
         )
       end
 
+    describe 'type not found' do
+      subject { frontend => Err(errors); errors }
+
+      context 'in a function param' do
+        let(:text) do
+          <<~JADE
+            def foo(x: Nope) -> Int
+              x
+            end
+          JADE
+        end
+
+        its([0]) { is_expected.to be_a(Frontend::ForwardDeclaration::Error::TypeNotFound) }
+        its([0]) { is_expected.to have_attributes(message: "Type `Nope` is not defined") }
+      end
+
+      context 'in a function return type' do
+        let(:text) do
+          <<~JADE
+            def foo() -> Nope
+              1
+            end
+          JADE
+        end
+
+        its([0]) { is_expected.to be_a(Frontend::ForwardDeclaration::Error::TypeNotFound) }
+        its([0]) { is_expected.to have_attributes(message: "Type `Nope` is not defined") }
+      end
+
+      context 'in a type declaration variant arg' do
+        let(:text) do
+          <<~JADE
+            type Foo = Bar(Nope)
+          JADE
+        end
+
+        its([0]) { is_expected.to be_a(Frontend::ForwardDeclaration::Error::TypeNotFound) }
+        its([0]) { is_expected.to have_attributes(message: "Type `Nope` is not defined") }
+      end
+
+      context 'in a struct field' do
+        let(:text) do
+          <<~JADE
+            struct Foo = { x: Nope }
+          JADE
+        end
+
+        its([0]) { is_expected.to be_a(Frontend::ForwardDeclaration::Error::TypeNotFound) }
+        its([0]) { is_expected.to have_attributes(message: "Type `Nope` is not defined") }
+      end
+
+      context 'in an implementation applied type' do
+        let(:text) do
+          <<~JADE
+            implements Eq(Nope) with
+              (==): (a, b) -> { True }
+            end
+          JADE
+        end
+
+        its([0]) { is_expected.to be_a(Frontend::ForwardDeclaration::Error::TypeNotFound) }
+      end
+    end
+
       it 'registers a stub function for the lambda' do
         expect(registry.get('__Test__').defined_values.keys).to include(
           match(/__impl_Eq_Pepe/)

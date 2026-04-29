@@ -17,20 +17,14 @@ module Jade
         def deep(node, entry, _)
           node => AST::FunctionDeclaration(name:, params:, return_type:)
 
-          params_types = params
-            .map do |param|
-              param => { type: }
-
-              [param.name, figure_out_type(entry, type)]
-            end
-            .to_h
-
-          return_type_type = figure_out_type(entry, return_type)
-
-          Symbol
-            .function(name, params_types, return_type_type)
-            .then { entry.define(it) }
-            .then { Result[it, []] }
+          params
+            .map { |param| param.type.then { figure_out_type(entry, it) }.map { [param.name, it] } }
+            .then { Results.sequence(it) }
+            .map(&:to_h)
+            .and_then { |params_types| figure_out_type(entry, return_type).map { [params_types, it] } }
+            .map { |params_types, return_type_type| Symbol.function(name, params_types, return_type_type) }
+            .map { entry.define(it) }
+            .then { to_declaration_result(entry, it) }
         end
       end
     end

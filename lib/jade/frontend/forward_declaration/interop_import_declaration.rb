@@ -22,10 +22,15 @@ module Jade
 
           functions
             .reduce([entry, []]) do |(acc, errors), fn|
-              figure_out_type(entry, fn.type)
-                .then { wrap_in_fn_type(it) }
-                .then { fn_type_to_interop(mod_name, fn, it, entry, registry) }
-                .then { |(sym, interop_errors)| [acc.define(sym), errors + interop_errors] }
+              case figure_out_type(entry, fn.type)
+              in Err[e]
+                [acc, errors + [e]]
+
+              in Ok[type_sym]
+                wrap_in_fn_type(type_sym)
+                  .then { fn_type_to_interop(mod_name, fn, it, entry, registry) }
+                  .then { |(sym, interop_errors)| [acc.define(sym), errors + interop_errors] }
+              end
             end
             .then { Result[*it] }
         end
@@ -43,7 +48,7 @@ module Jade
 
         def fn_type_to_interop(interop_mod_name, function_node, symbol, entry, registry)
           Interop::Lowering
-            .lower_symbol(symbol.return_type, registry) => { lowered_type:, errors: }
+            .lower_symbol(symbol.return_type, registry, entry) => { lowered_type:, errors: }
 
           lifted_errors = errors.map do
             Error::TypeNotLowerable.new(entry, function_node.range, message: it.message)
