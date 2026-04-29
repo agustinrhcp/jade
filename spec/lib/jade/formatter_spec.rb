@@ -112,8 +112,15 @@ module Jade
     end
 
     context 'record literal' do
-      let(:text) { '{ name: "Alice", age: 30 }' }
-      it { is_expected.to eql '{ name: "Alice", age: 30 }' }
+      context 'single field' do
+        let(:text) { '{ name: "Alice" }' }
+        it { is_expected.to eql '{ name: "Alice" }' }
+      end
+
+      context 'multiple fields' do
+        let(:text) { '{ name: "Alice", age: 30 }' }
+        it { is_expected.to eql "{\n  name: \"Alice\",\n  age: 30,\n}" }
+      end
     end
 
     context 'record update' do
@@ -433,7 +440,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to include "struct Point = { x: Int, y: Int }" }
+        it { is_expected.to include "struct Point = {\n  x: Int,\n  y: Int,\n}" }
       end
 
       context 'with type param' do
