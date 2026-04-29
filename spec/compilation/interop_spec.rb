@@ -117,6 +117,46 @@ module Jade
         end
       end
 
+      context 'when expecting a named struct' do
+        module TestStructDate
+          extend self
+
+          require 'date'
+
+          TODAY = ::Date.new(2026, 1, 31).freeze
+
+          def internal_today
+            Jade::Task.ok { { year: TODAY.year, month: TODAY.month, day: TODAY.day } }
+          end
+        end
+
+        let(:with_interop_source) do
+          <<~JADE
+            module WithInterop exposing(today)
+
+            struct Date = { year: Int, month: Int, day: Int }
+
+            uses Jade::TestStructDate with
+              internal_today: Task(Date, Never)
+            end
+
+            def today() -> Task(Date, Never)
+              internal_today()
+            end
+          JADE
+        end
+
+        it 'coerces the hash into a struct' do
+          test_compiler.require('with_interop', with_interop_source)
+          result = WithInterop.today.call().run
+          expect(result).to be_a(Result::Ok)
+          date = result._1
+          expect(date.year).to eql 2026
+          expect(date.month).to eql 1
+          expect(date.day).to eql 31
+        end
+      end
+
       context 'when expecting a non literal constructor' do
         let(:with_interop_source) do
           <<~JADE

@@ -161,7 +161,7 @@ module Jade
 
       def desugar_expressions(expressions)
         case expressions
-        in [AST::Bind(pattern:, expression: expr), *rest]
+        in [AST::Bind(pattern:, expression: expr, range: bind_range), *rest]
           AST::Lambda[
             [pattern],
             AST::Body[rest, nil],
@@ -175,7 +175,7 @@ module Jade
                 args:         it,
                 infix:        false,
                 dictionaries: [],
-                range:        nil,
+                range:        bind_range,
               )
             end
             .then { [it] }

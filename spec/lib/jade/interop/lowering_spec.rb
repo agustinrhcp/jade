@@ -6,11 +6,10 @@ module Jade
   describe Interop::Lowering do
     include SymbolFactory
 
-    let(:registry) do
-      Stdlib.load(Registry.new)
-    end
+    let(:registry) { Stdlib.load(Registry.new) }
+    let(:entry)    { Entry.empty('Test') }
 
-    subject { described_class.lower_symbol(symbol, registry).lowered_type }
+    subject { described_class.lower_symbol(symbol, registry, entry).lowered_type }
 
     context 'an Int' do
       let(:symbol) { type_sym('Basics', 'Int') }
@@ -62,6 +61,37 @@ module Jade
       end
 
       it { is_expected.to eql ['maybe', ['list', 'int']] }
+    end
+
+    context 'a named struct resolved via entry (module not yet in registry)' do
+      let(:struct) do
+        Symbol::Struct.new(
+          module_name: 'MyModule',
+          name:        'Point',
+          type_params: [],
+          record_type: Symbol::RecordType.new(
+            { 'x' => type_sym('Basics', 'Int'), 'y' => type_sym('Basics', 'Int') },
+            nil
+          ),
+          decl_span: nil,
+        )
+      end
+
+      let(:entry)  { Entry.empty('MyModule').define(struct) }
+      let(:symbol) { type_sym('MyModule', 'Point') }
+
+      subject { described_class.lower_symbol(symbol, registry, entry).lowered_type }
+
+      it { is_expected.to eql({ 'x' => 'int', 'y' => 'int' }) }
+    end
+
+    context 'a union type (cannot be lowered)' do
+      let(:entry)  { Entry.empty('MyModule') }
+      let(:symbol) { type_sym('MyModule', 'Color') }
+
+      subject { described_class.lower_symbol(symbol, registry, entry).errors.map(&:message) }
+
+      it { is_expected.to include('Union (Color) cannot be lowered for interop') }
     end
   end
 end

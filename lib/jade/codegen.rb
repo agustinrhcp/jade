@@ -32,8 +32,8 @@ module Jade
           .then { relative_require(it, depth) }
           .then { "require_relative '#{it}'" }
 
-      in AST::InteropImportDeclaration
-        ""
+      in AST::InteropImportDeclaration(module: mod)
+        "begin; require '#{mod.name.gsub('::', '/').downcase}'; rescue LoadError; end"
 
       in AST::Implementation
         Implementation.generate(node, registry)

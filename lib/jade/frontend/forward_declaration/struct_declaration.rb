@@ -20,20 +20,21 @@ module Jade
 
           symbol = entry.lookup_type(name)
 
-          record_type_symbol = figure_out_type(entry, record_type)
+          figure_out_type(entry, record_type)
+            .map do |record_type_symbol|
+              constructor_fn_symbol = Symbol.constructor(
+                name,
+                record_type_symbol.fields.values,
+                symbol.to_ref,
+                nil,
+              )
 
-          constructor_fn_symbol = Symbol.constructor(
-            name,
-            record_type_symbol.fields.values,
-            symbol.to_ref,
-            nil,
-          )
-
-          record_type_symbol
-            .then { symbol.with(record_type: it) }
-            .then { entry.define(it) }
-            .then { it.define(constructor_fn_symbol) }
-            .then { Result[it, []] }
+              record_type_symbol
+                .then { symbol.with(record_type: it) }
+                .then { entry.define(it) }
+                .then { it.define(constructor_fn_symbol) }
+            end
+            .then { to_declaration_result(entry, it) }
         end
       end
     end

@@ -11,52 +11,72 @@ module Jade
         end
 
         def figure_out_type(entry, node)
-          # TODO: Fail if type not found
-
           case node
           in AST::TypeVar(type:)
-            Symbol.var(type, node.range)
+            Ok[Symbol.var(type, node.range)]
 
           in AST::TypeName(type:)
-            entry
-              .lookup_type(type)
-              .then { Symbol.type_application(it.to_ref, []) }
+            require_type(entry, type, node.range)
+              .map { Symbol.type_application(it.to_ref, []) }
 
           in AST::TypeApplication(constructor:, args:)
-            constructor_sym =
+            constructor_r =
               case constructor
               in AST::TypeName
-                entry.lookup_type(constructor.type)
+                require_type(entry, constructor.type, constructor.range)
 
               in AST::QualifiedTypeName(path:)
                 *module_parts, type_name = path
-                entry.lookup_qualified_type(
-                  module_parts.join('.'), type_name
-                )
+                require_qualified_type(entry, module_parts.join('.'), type_name, constructor.range)
               end
 
             args
               .map { figure_out_type(entry, it) }
-              .then { Symbol.type_application(constructor_sym.to_ref, it, node.range) }
+              .then { Results.sequence(it) }
+              .and_then { |resolved_args| constructor_r.map { Symbol.type_application(it.to_ref, resolved_args, node.range) } }
 
           in AST::TypeFunction(params:, return_type:)
             params
               .map { figure_out_type(entry, it) }
-              .then { Symbol.function_type(it, figure_out_type(entry, return_type)) }
+              .then { Results.sequence(it) }
+              .and_then { |resolved_params| figure_out_type(entry, return_type).map { Symbol.function_type(resolved_params, it) } }
 
           in AST::TypeTuple(items:)
             type_name = Stdlib::Tuple.constructor_by_arity(items.length)
 
             items
               .map { figure_out_type(entry, it) }
-              .then { Symbol.type_application(Symbol.type_ref(*type_name.split('.')), it, node.range) }
+              .then { Results.sequence(it) }
+              .map { Symbol.type_application(Symbol.type_ref(*type_name.split('.')), it, node.range) }
 
           in AST::TypeRecord(fields:, row_var:)
             row = row_var&.then { |row| Symbol.var(row.name, row.range) }
 
             fields
-              .transform_values { figure_out_type(entry, it) }
-              .then { Symbol.record_type(it, row) }
+              .map { |k, v| figure_out_type(entry, v).map { [k, it] } }
+              .then { Results.sequence(it) }
+              .map { Symbol.record_type(it.to_h, row) }
+          end
+        end
+
+        private
+
+        def require_type(entry, name, span)
+          entry.lookup_type(name)
+            &.then { Ok[it] } ||
+            Err[Error::TypeNotFound.new(entry.name, span, name:)]
+        end
+
+        def require_qualified_type(entry, module_path, type_name, span)
+          entry.lookup_qualified_type(module_path, type_name)
+            &.then { Ok[it] } ||
+            Err[Error::TypeNotFound.new(entry.name, span, name: "#{module_path}.#{type_name}")]
+        end
+
+        def to_declaration_result(entry, r)
+          case r
+          in Ok[sym] then Result[sym, []]
+          in Err[e]  then Result[entry, [e]]
           end
         end
       end

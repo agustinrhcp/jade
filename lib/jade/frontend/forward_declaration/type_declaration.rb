@@ -22,18 +22,19 @@ module Jade
 
           symbol = entry.lookup_type(name)
 
-          variant_symbols = variants
+          variants
             .map do |var|
-              var
-                .args
-                .map { |arg| figure_out_type(entry, arg) }
-                .then { Symbol.constructor(var.name, it, symbol.to_ref, var.range) }
+              var.args.map { figure_out_type(entry, it) }
+                .then { Results.sequence(it) }
+                .map { Symbol.constructor(var.name, it, symbol.to_ref, var.range) }
             end
-
-          variant_symbols
-            .reduce(entry) { |acc_entry, sym| acc_entry.define(sym) }
-            .then { it.define(symbol.with(variants: variant_symbols.map(&:to_ref))) }
-            .then { Result[it, []] }
+            .then { Results.sequence(it) }
+            .map do |variant_symbols|
+              variant_symbols
+                .reduce(entry) { |acc_entry, sym| acc_entry.define(sym) }
+                .then { it.define(symbol.with(variants: variant_symbols.map(&:to_ref))) }
+            end
+            .then { to_declaration_result(entry, it) }
         end
       end
     end

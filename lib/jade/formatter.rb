@@ -203,8 +203,20 @@ module Jade
           .then(&and_indent(indent))
 
       in AST::InfixApplication(left:, operator:, right:)
-        "#{format_node(left)} #{operator.value} #{format_node(right)}"
-          .then(&and_indent(indent))
+        if operator.value == '|>'
+          chain = collect_pipe_chain(node)
+          if chain.length > 2
+            indent_str = INDENT * indent
+            ([format_node(chain.first, indent:)] + chain[1..].map { "#{indent_str}|> #{format_node(it)}" })
+              .join("\n")
+          else
+            "#{format_node(left)} |> #{format_node(right)}"
+              .then(&and_indent(indent))
+          end
+        else
+          "#{format_node(left)} #{operator.value} #{format_node(right)}"
+            .then(&and_indent(indent))
+        end
 
       in AST::FunctionCall(callee:, args:)
         args_str =
@@ -301,6 +313,15 @@ module Jade
           .then(&and_indent(indent))
       end
         .then { leading + it + trailing }
+    end
+
+    def collect_pipe_chain(node)
+      case node
+      in AST::InfixApplication(left:, operator: AST::InfixOperator(value: '|>'), right:)
+        collect_pipe_chain(left) + [right]
+      else
+        [node]
+      end
     end
 
     def and_indent(indent)

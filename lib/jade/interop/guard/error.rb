@@ -37,6 +37,9 @@ module Jade
           in 'float'      then 'Float'
           in 'bool'       then 'true or false'
           in 'Jade::Task' then 'Jade::Task'
+          in Hash
+            fields = expected.map { |k, v| "#{k}: #{expected_to_ruby_class(v)}" }.join(', ')
+            "{ #{fields} }"
           end
         end
       end
