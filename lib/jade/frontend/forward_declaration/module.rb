@@ -35,7 +35,7 @@ module Jade
             entry
               .values
               .merge(entry.types)
-              .reduce(entry) { |acc, (name, sym)| acc.expose(sym) }
+              .reduce(entry) { |acc, (name, sym)| acc.expose(sym.to_ref) }
               .then { Result[it, []] }
 
           in AST::ExposeNone

@@ -1,3 +1,5 @@
+require 'jade/parsing'
+
 module Jade
   module Symbol
     module Parser

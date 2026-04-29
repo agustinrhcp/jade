@@ -61,7 +61,7 @@ module Jade
           else
             # TODO: exposes is a list, not a hash. I could however
             #   make it into a hash
-            case registry.get(module_name).exposed_value(name.name)
+            case registry.get(import.module_name).exposed_value(name.name)
             in nil
               Error::ValueNotExposed
                 .new(current_entry.name, name.range, module_name:, name: name.name)
