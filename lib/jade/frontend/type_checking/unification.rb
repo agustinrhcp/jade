@@ -9,10 +9,9 @@ module Jade
             new([])
           end
 
-          def rigid?(var)
-            rigid_vars
-              .find { var.id == it.id }
-              .then { !it.nil? }
+          def rigid?(type)
+            rigid_ids = rigid_vars.map(&:id).to_set
+            type.unbound_vars.any? { rigid_ids.include?(it.id) }
           end
         end
 
@@ -49,6 +48,8 @@ module Jade
             if (ctx.rigid?(type1) || ctx.rigid?(type2)) && type1 != type2
               return Err[UnificationError.new(type1, type2)]
             end
+
+            return Err[UnificationError.new(type1, type2)] if occurs_in?(type1, type2)
 
             Ok[Substitution.new.bind(type1.id, type2)]
 
@@ -151,6 +152,32 @@ module Jade
         end
 
         private
+
+        def occurs_in?(var, type)
+          case type
+          in Type::Var(id:)
+            var.id == id
+
+          in Type::Application(args:)
+            occurs_in?(var, type.constructor) || args.any? { occurs_in?(var, it) }
+
+          in Type::Function(args:, return_type:)
+            args.any? { occurs_in?(var, it) } || occurs_in?(var, return_type)
+
+          in Type::PartialApplication(constructor:, args:)
+            occurs_in?(var, constructor) || args.any? { occurs_in?(var, it) }
+
+          in Type::Constraint(type: inner)
+            occurs_in?(var, inner)
+
+          in Type::AnonymousRecord(fields:, row_var:)
+            fields.values.any? { occurs_in?(var, it) } ||
+              (row_var ? occurs_in?(var, row_var) : false)
+
+          in Type::Constructor | Type::TypeUnit
+            false
+          end
+        end
 
         def substitution_of(result)
           case result
