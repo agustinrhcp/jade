@@ -111,7 +111,7 @@ module Jade
             .map { format_node(it).then(&and_indent(indent + 1)) }
             .join("\n")
 
-        "uses #{interop_module.name} with\n#{funcs_str}"
+        "uses #{interop_module.name} with\n#{funcs_str}\nend"
           .then(&and_indent(indent))
 
       in AST::InteropFunction(name:, type:)

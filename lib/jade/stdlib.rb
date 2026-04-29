@@ -37,9 +37,10 @@ module Jade
     def requires(name)
       return "" if COMPILED.include?(name)
 
+      prefix = '../' * name.count('.')
       COMPILED
         .map(&:downcase)
-        .map { "require_relative '#{it}'; "}
+        .map { "require_relative '#{prefix}#{it}'; "}
         .join("")
     end
 

@@ -22,6 +22,8 @@ require 'result'
 
 Dir[File.join(File.dirname(__FILE__), 'support/**/*.rb')].sort.each { |f| require f }
 
+$stderr = File.open(File::NULL, 'w')
+
 RSpec.configure do |config|
   config.include RSpec::CollectionMatchers
   # rspec-expectations config goes here. You can use an alternate

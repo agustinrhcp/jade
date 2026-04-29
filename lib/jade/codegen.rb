@@ -18,13 +18,18 @@ module Jade
         .then { entry.with(generated: it) }
     end
 
-    def generate(node, registry)
+    def generate(node, registry, depth: 0)
       case node
       in AST::Module(name:, body:)
-        "require 'jade/runtime'; #{Stdlib.requires(name)}module #{name}; extend self; #{generate(body, registry)}; end"
+        qualified = to_qualified(name)
+        body_str  = generate(body, registry, depth: name.count('.'))
+        namespace = namespace_setup(name)
+        "require 'jade/runtime'; #{Stdlib.requires(name)}#{namespace}module #{qualified}; extend self; #{body_str}; end"
 
       in AST::ImportDeclaration(module_name:)
-        registry.get(module_name).path
+        registry
+          .get(module_name).path
+          .then { relative_require(it, depth) }
           .then { "require_relative '#{it}'" }
 
       in AST::InteropImportDeclaration
@@ -34,7 +39,9 @@ module Jade
         Implementation.generate(node, registry)
 
       in AST::Body(expressions:)
-        generate_many(expressions, registry, "; ")
+        expressions
+          .map { generate(it, registry, depth:) }
+          .join("; ")
 
       in AST::VariableReference(symbol:, name:)
         symbol = symbol.is_a?(Symbol::ValueRef) ? registry.lookup(symbol) : symbol
@@ -197,6 +204,23 @@ module Jade
 
         generate(it, registry)
       end.join(sep)
+    end
+
+    def relative_require(import_path, current_depth)
+      prefix = '../' * current_depth
+      "#{prefix}#{import_path}"
+    end
+
+    def namespace_setup(name)
+      first, *rest = name.split('.')
+
+      rest
+        .reduce([[], first]) do |(paths, prev), part|
+          [paths + [prev], "#{prev}::#{part}"]
+        end
+        .first
+        .map { "module #{it}; end; " }
+        .join
     end
 
     def to_qualified(module_name)
