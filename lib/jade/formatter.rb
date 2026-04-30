@@ -29,8 +29,9 @@ module Jade
             .join("\n")
         else
           expressions
-            .map { format_node(it, indent:) }
-            .join("\n")
+            .chunk_while { |a, b| binding?(a) == binding?(b) }
+            .map { |group| group.map { format_node(it, indent:) }.join("\n") }
+            .join("\n\n")
         end
 
       # Declarations
@@ -313,6 +314,10 @@ module Jade
           .then(&and_indent(indent))
       end
         .then { leading + it + trailing }
+    end
+
+    def binding?(node)
+      node.is_a?(AST::Assign) || node.is_a?(AST::Bind)
     end
 
     def collect_pipe_chain(node)

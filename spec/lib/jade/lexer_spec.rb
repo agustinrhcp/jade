@@ -54,6 +54,36 @@ module Jade
           its([0]) { is_expected.to be_token.of_type(:quote).with('"').at(0...1) }
           its([1]) { is_expected.to be_token.of_type(:string_chunk).with('Hello').at(1...6) }
         end
+
+        context 'with escape sequences' do
+          context '\n' do
+            let(:text) { '"Hello\nWorld"' }
+
+            it { is_expected.to have(3).item.and all(be_a(Token)) }
+            its([1]) { is_expected.to be_token.of_type(:string_chunk).with("Hello\nWorld") }
+          end
+
+          context '\t' do
+            let(:text) { '"col1\tcol2"' }
+
+            it { is_expected.to have(3).item.and all(be_a(Token)) }
+            its([1]) { is_expected.to be_token.of_type(:string_chunk).with("col1\tcol2") }
+          end
+
+          context '\\' do
+            let(:text) { '"back\\\\slash"' }
+
+            it { is_expected.to have(3).item.and all(be_a(Token)) }
+            its([1]) { is_expected.to be_token.of_type(:string_chunk).with('back\\slash') }
+          end
+
+          context '\"' do
+            let(:text) { '"say \\"hi\\""' }
+
+            it { is_expected.to have(3).item.and all(be_a(Token)) }
+            its([1]) { is_expected.to be_token.of_type(:string_chunk).with('say "hi"') }
+          end
+        end
       end
 
       describe 'tokenizing a char' do

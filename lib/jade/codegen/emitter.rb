@@ -18,7 +18,7 @@ module Jade
           ir.to_s
 
         in String
-          "\"#{ir}\""
+          ir.inspect
 
         in [:case, subject, branches]
           branches

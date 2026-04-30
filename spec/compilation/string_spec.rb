@@ -71,4 +71,48 @@ module Jade
       end
     end
   end
+
+  describe 'string escape sequences' do
+    include_context 'with test compiler'
+
+    let(:source) do
+      <<~'JADE'
+        module Escape exposing (newline, tab, backslash, quote)
+
+        def newline() -> String
+          "Hello\nWorld"
+        end
+
+        def tab() -> String
+          "col1\tcol2"
+        end
+
+        def backslash() -> String
+          "back\\slash"
+        end
+
+        def quote() -> String
+          "say \"hi\""
+        end
+      JADE
+    end
+
+    before { test_compiler.require('escape', source) }
+
+    it 'resolves \\n to a newline character' do
+      expect(Escape.newline.call).to eql "Hello\nWorld"
+    end
+
+    it 'resolves \\t to a tab character' do
+      expect(Escape.tab.call).to eql "col1\tcol2"
+    end
+
+    it 'resolves \\\\ to a backslash' do
+      expect(Escape.backslash.call).to eql 'back\slash'
+    end
+
+    it 'resolves \\" to a double quote' do
+      expect(Escape.quote.call).to eql 'say "hi"'
+    end
+  end
 end
