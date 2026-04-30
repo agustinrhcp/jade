@@ -1,4 +1,5 @@
 require 'jade/interop/runtime'
+require 'jade/decode'
 
 module Tuple
   Tuple2 = Data.define(:_1, :_2) do
@@ -39,6 +40,7 @@ module Jade
       require "jade/stdlib/list"
       require "jade/stdlib/tuple"
       require "jade/stdlib/task"
+      require "jade/stdlib/decode"
     end
 
     def intr(name)

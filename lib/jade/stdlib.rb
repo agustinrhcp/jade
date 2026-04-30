@@ -6,14 +6,22 @@ require 'jade/stdlib/tuple'
 require 'jade/stdlib/string'
 require 'jade/stdlib/result'
 require 'jade/stdlib/task'
+require 'jade/stdlib/decode'
 
 module Jade
   module Stdlib
     extend self
 
-    INTRINSICS = %w[Basics String List Tuple Char Task].freeze
+    INTRINSICS = %w[Basics String List Tuple Char Task Decode].freeze
     COMPILED = %w[Maybe Result].freeze
-    STDLIBS = [Stdlib::Basics, Stdlib::Maybe, Stdlib::List, Stdlib::Char, Stdlib::Tuple, Stdlib::String, Stdlib::Result, Stdlib::Task]
+    STDLIBS = [
+      Stdlib::Basics, Stdlib::Maybe, Stdlib::List, Stdlib::Char,
+      Stdlib::Tuple, Stdlib::String, Stdlib::Result, Stdlib::Task,
+      Stdlib::Decode,
+    ]
+    # Loaded into the registry but not auto-imported into user modules.
+    # Users must `import Decode` explicitly.
+    EXTENSIONS = [Stdlib::Decode]
 
     def load(registry)
       registry
@@ -54,10 +62,14 @@ module Jade
       PRIVATE_CONSTRUCTORS.include?(name)
     end
 
+    def is_stdlib?(entry)
+      is_intrinsic?(entry) || COMPILED.include?(entry.name)
+    end
+
     private
 
     def add_imports(entry)
-      STDLIBS
+      (STDLIBS - EXTENSIONS)
         .reduce(entry) do |acc, stdlib|
           ImportEntry[stdlib.entry.name, stdlib.entry.name, stdlib.default_imports, stdlib.entry.exposes]
             .then { acc.import(it) }
@@ -70,10 +82,6 @@ module Jade
           stdlib.generate_entry(acc)
           registry.add_module(stdlib.entry)
         end
-    end
-
-    def is_stdlib?(entry)
-      is_intrinsic?(entry) || COMPILED.include?(entry.name)
     end
   end
 end

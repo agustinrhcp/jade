@@ -18,6 +18,9 @@ module Jade
         in [_, ['task', _, _]]
           fail Error.new(:wrong_type, 'Jade::Task', ruby_value)
 
+        in [_, 'decode_value']
+          ::Decode::Value[ruby_value]
+
         in [_, 'never']
           ruby_value
 

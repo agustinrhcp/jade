@@ -49,6 +49,9 @@ module Jade
         in 'Tuple2' | 'Tuple3' | 'Tuple4'
           'Tuple'
 
+        in 'Decoder' | 'Decodable' | 'DecodeError' | 'Value'
+          'Decode'
+
         end
           .then { [it, type] }
       end

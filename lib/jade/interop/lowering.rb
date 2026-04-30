@@ -60,6 +60,9 @@ module Jade
           # TODO: Is malformed, it will fail later
           Result.good('list')
 
+        in Symbol::TypeApplication(constructor: Symbol::TypeRef['Decode', 'Value'], args: [])
+          Result.good('decode_value')
+
         in Symbol::TypeApplication(constructor: Symbol::TypeRef['Task', 'Task'], args: [ok_arg, err_arg])
           ok  = lower_symbol(ok_arg,  registry, entry)
           err = lower_symbol(err_arg, registry, entry)

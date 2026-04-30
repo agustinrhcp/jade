@@ -90,7 +90,8 @@ module Jade
         add_implementation(symbol)
 
       in Symbol::Function | Symbol::StdlibFunction |
-        Symbol::Constructor | Symbol::InteropFunction | Symbol::InterfaceFunction 
+        Symbol::Constructor | Symbol::Variant |
+        Symbol::InteropFunction | Symbol::InterfaceFunction
         add_defined_value(symbol)
       end
     end
