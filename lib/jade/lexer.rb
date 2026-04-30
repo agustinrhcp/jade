@@ -129,25 +129,32 @@ module Jade
 
     def tokenize_string(scanner)
       tokens = []
+      value = +''
       chunk_start = scanner.pos
 
       until scanner.eos?
         case
         when scanner.scan(/\n/)
-          tokens << string_chunk_tok(scanner, chunk_start)
+          tokens << Token.new(:string_chunk, value, chunk_start...(scanner.pos - 1))
           return tokens
 
         when scanner.scan(/\A"/)
-          tokens << string_chunk_tok(scanner, chunk_start)
+          tokens << Token.new(:string_chunk, value, chunk_start...(scanner.pos - 1))
           tokens << tok(:quote, scanner)
           return tokens
 
+        when scanner.scan(/\A\\n/)  then value << "\n"
+        when scanner.scan(/\A\\t/)  then value << "\t"
+        when scanner.scan(/\A\\r/)  then value << "\r"
+        when scanner.scan(/\A\\"/)  then value << '"'
+        when scanner.scan(/\A\\\\/) then value << '\\'
+
         else
-          scanner.getch
+          value << scanner.getch
         end
       end
 
-      tokens << string_chunk_tok(scanner, chunk_start)
+      tokens << Token.new(:string_chunk, value, chunk_start...scanner.pos)
       tokens
     end
 

@@ -58,7 +58,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "x = 42\nx" }
+      it { is_expected.to eql "x = 42\n\nx" }
     end
 
     context 'infix application' do
@@ -367,6 +367,7 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def compute(x: Int) -> Int
               y = x + 1
+
               y * 2
             end
           JADE
@@ -654,7 +655,31 @@ module Jade
         is_expected.to eql <<~JADE.strip
           def chain(m: Maybe(Int)) -> Maybe(Int)
             x <- m
+
             Just(x)
+          end
+        JADE
+      end
+    end
+
+    context 'bindings separated from return expression' do
+      let(:text) do
+        <<~JADE.strip
+          def example(m: Maybe(Int)) -> Maybe(Int)
+            a <- m
+            b <- m
+            a + b
+          end
+        JADE
+      end
+
+      it 'adds a blank line between bindings and the return expression' do
+        is_expected.to eql <<~JADE.strip
+          def example(m: Maybe(Int)) -> Maybe(Int)
+            a <- m
+            b <- m
+
+            a + b
           end
         JADE
       end
@@ -764,7 +789,7 @@ module Jade
 
       context 'trailing comment on a variable binding' do
         let(:text) { "x = 1 # init\nx" }
-        it { is_expected.to eql "x = 1 # init\nx" }
+        it { is_expected.to eql "x = 1 # init\n\nx" }
       end
 
       context 'multiple leading comments' do
@@ -787,6 +812,7 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def foo(x: Int) -> Int
               y = x + 1
+
               # result
               y
             end

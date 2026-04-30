@@ -196,8 +196,17 @@ module Jade
         end
     end
 
+    def negative_literal
+      (type(:minus) >> (int | float)).map do |(minus_tok, lit_node)|
+        lit_node.with(
+          value: -lit_node.value,
+          range: minus_tok.range.begin..lit_node.range.end,
+        )
+      end
+    end
+
     def atom
-      variable_reference | literal | constructor_reference | tuple | grouping | record_literal |
+      variable_reference | negative_literal | literal | constructor_reference | tuple | grouping | record_literal |
        record_update_sugar | record_access_sugar | record_update
     end
 

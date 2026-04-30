@@ -48,6 +48,27 @@ module Jade
         end
       end
 
+      context 'negative integer literal' do
+        let(:math_source) do
+          <<~JADE
+            module Math exposing (neg_int, neg_float)
+
+            def neg_int() -> Int
+              -1
+            end
+
+            def neg_float() -> Float
+              -3.14
+            end
+          JADE
+        end
+
+        it 'returns negative numbers' do
+          expect(Math.neg_int.call).to eql(-1)
+          expect(Math.neg_float.call).to eql(-3.14)
+        end
+      end
+
       context 'ruby keyword' do
         let(:math_source) do
           <<~JADE
