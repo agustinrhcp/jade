@@ -43,6 +43,19 @@ module Jade
         end]
       end
 
+      function('map_error', { task: 'Task(a, e)', fn: 'e -> f' }, 'Task(a, f)') do |task, fn|
+        Jade::Task[-> do
+          case task.run
+          in ::Result::Ok => ok   then ok
+          in ::Result::Err[error] then ::Result::Err[fn.call(error)]
+          end
+        end]
+      end
+
+      function('from_result', { result: 'Result(a, e)' }, 'Task(a, e)') do |result|
+        Jade::Task[-> { result }]
+      end
+
       function('sequence', { tasks: 'List(Task(a, e))' }, 'Task(List(a), e)') do |tasks|
         Jade::Task[-> do
           tasks.reduce(::Result::Ok[[]]) do |acc, task|

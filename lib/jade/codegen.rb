@@ -27,10 +27,14 @@ module Jade
         "require 'jade/runtime'; #{Stdlib.requires(name)}#{namespace}module #{qualified}; extend self; #{body_str}; end"
 
       in AST::ImportDeclaration(module_name:)
-        registry
-          .get(module_name).path
-          .then { relative_require(it, depth) }
-          .then { "require_relative '#{it}'" }
+        entry = registry.get(module_name)
+        if Stdlib.is_stdlib?(entry)
+          ""
+        else
+          entry.path
+            .then { relative_require(it, depth) }
+            .then { "require_relative '#{it}'" }
+        end
 
       in AST::InteropImportDeclaration(module: mod)
         "begin; require '#{mod.name.gsub('::', '/').downcase}'; rescue LoadError; end"

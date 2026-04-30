@@ -28,6 +28,14 @@ module Jade
         @entry ||= fail("entry not generated yet.")
       end
 
+      # Compiled modules declare interfaces and impls in their Jade source,
+      # not via the Intrinsics DSL. The lookup that scans `imports` for
+      # Interface symbols (intrinsics.rb#implementation) never finds anything
+      # here, but exposing an empty list keeps the call site uniform.
+      def symbols
+        []
+      end
+
       def resolve_imports(entry)
         imports
           .reduce(entry) do |acc, stdlib|

@@ -16,6 +16,8 @@ module Jade
         end
 
         def unify(type1, type2, env, ctx = Context.empty)
+          return Ok[Substitution.new] if never?(type1) || never?(type2)
+
           case [type1, type2]
           in [Type::Application, Type::Application]
             case [type1.constructor, type2.constructor]
@@ -152,6 +154,15 @@ module Jade
         end
 
         private
+
+        def never?(type)
+          case type
+          in Type::Application(constructor: Type::Constructor(name: 'Basics.Never'))
+            true
+          else
+            false
+          end
+        end
 
         def occurs_in?(var, type)
           case type

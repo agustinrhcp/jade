@@ -21,6 +21,7 @@ require 'jade/symbol/partial_application'
 require 'jade/symbol/type_param'
 require 'jade/symbol/type_ref'
 require 'jade/symbol/union'
+require 'jade/symbol/variant'
 require 'jade/symbol/value_ref'
 require 'jade/symbol/variable'
 

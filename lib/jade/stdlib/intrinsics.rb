@@ -9,18 +9,37 @@ module Jade
           .then { load_env(it, registry) }
       end
 
-      def variant(name, of:)
-        parent = symbols.find { it.is_a?(Symbol::Union) && it.name == of.to_s }
+      def variant(name, of:, args: [])
+        parent = @symbols
+          &.find { it.is_a?(Symbol::Union) && it.name == of.to_s }
 
-        Symbol::Constructor
-          .new(
-            module_name:,
-            name:        name.to_s,
-            args:        [],
-            parent:      parent.to_ref,
-            decl_span:   nil,
-          )
-          .tap { store(it) }
+        union_ref = Symbol.type_ref(module_name, of.to_s)
+        parsed_args = args.map { Symbol.parse(it) }
+
+        variant_sym = Symbol::Variant.new(
+          module_name:,
+          name:        name.to_s,
+          args:        parsed_args,
+          union:       union_ref,
+          decl_span:   nil,
+        )
+
+        constructor_sym = Symbol::Constructor.new(
+          module_name:,
+          name:        name.to_s,
+          args:        parsed_args,
+          parent:      union_ref,
+          decl_span:   nil,
+        )
+
+        store(variant_sym)
+        store(constructor_sym)
+
+        if parent
+          parent
+            .with(variants: parent.variants + [variant_sym.to_ref])
+            .then { @symbols[@symbols.index(parent)] = it }
+        end
       end
 
       def union(name, *type_params, constructor: false)
@@ -86,17 +105,20 @@ module Jade
       end
 
       def implementation(interface_name, type, functions)
-        interface = [symbols, *imports.filter_map { |mod| mod.symbols if mod.respond_to?(:symbols) }]
+        interface = imports
+          .map(&:symbols)
+          .then { [symbols, *it] }
           .flatten
           .find { it.is_a?(Symbol::Interface) && it.name == interface_name }
 
         interface_ref = interface ? interface.to_ref : interface_to_ref(interface_name)
-        default       = interface ? interface.default : {}
+        default = interface ? interface.default : {}
+        type_ref = qualified_type_ref(type)
 
         Symbol
           .implementation(
             interface_ref,
-            Symbol.type_ref(module_name, type),
+            type_ref,
             [],
             [],
             functions
@@ -111,6 +133,16 @@ module Jade
           qualified_iface = "#{interface_to_ref(interface_name).module_name}.#{interface_name}"
           qualified_fns   = functions.transform_values { "#{module_name}.#{it}" }
           ruby_classes.each { Runtime.register_impl(qualified_iface, it, qualified_fns) }
+        end
+      end
+
+      def qualified_type_ref(type)
+        if type.include?('.')
+          *mod_parts, name = type.split('.')
+          Symbol.type_ref(mod_parts.join('.'), name)
+
+        else
+          Symbol.type_ref(module_name, type)
         end
       end
 
@@ -187,6 +219,9 @@ module Jade
         case interface
         in 'Eq' | 'Comparable' | 'Appendable' | 'Mappable' | 'Chainable' | 'Numeric'
           'Basics'
+
+        in 'Decodable'
+          'Decode'
         end
           .then { Symbol.type_ref(it, interface.to_s) }
       end

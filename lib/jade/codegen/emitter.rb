@@ -41,6 +41,12 @@ module Jade
         in [:impl_arg, index, fn]
           "impl_arg[#{index}]['#{fn}']"
 
+        in [:stdlib_fn, name]
+          "Jade::Runtime.intr(#{name.inspect})"
+
+        in [:raw, code]
+          code
+
         in [:list, exprs]
           exprs
             .map { emit(it) }

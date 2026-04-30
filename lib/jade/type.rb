@@ -119,13 +119,13 @@ module Jade
               .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
           end
 
+        ret_type, ret_cs, local_map = from_symbol_r(symbol.return_type, registry, var_gen, local_map)
+
         extra_cs = symbol.constraints.map { |iface, var_name|
           Type.constraint(iface, local_map.fetch(var_name), nil)
         }
 
-        from_symbol_r(symbol.return_type, registry, var_gen, local_map)
-          .then { |(t, c, _)| [Type.function(args, t), c + arg_cs + extra_cs] }
-          .then { it + [var_map] }
+        [Type.function(args, ret_type), ret_cs + arg_cs + extra_cs, var_map]
 
       in Symbol::FunctionType | Symbol::InteropFunction
         # Same as function and stdlib but without keyed params.
