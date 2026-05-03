@@ -1,4 +1,5 @@
 require 'jade/interop/guard'
+require 'jade/interop/error'
 
 module Jade
   module Interop
@@ -11,13 +12,20 @@ module Jade
         end
       end
 
-      def coerce(value)
-        case value
-        when Hash
-          kw = value.transform_keys(&:to_sym)
-          Data.define(*kw.keys).new(**kw)
-        else
-          value
+      def task_call(interop_module_name, function_name, ok_type, err_type)
+        ->(*args) do
+          interop_module_name
+            .send(function_name)
+            .then do |port|
+              port.is_a?(Jade::TaskDef) ||
+                fail(Interop::PortNotRegistered.new(interop_module_name, function_name))
+
+              Jade::Task::Guarded.new(
+                Jade::Task::Dispatch.new(port, args),
+                ok_type,
+                err_type,
+              )
+            end
         end
       end
     end

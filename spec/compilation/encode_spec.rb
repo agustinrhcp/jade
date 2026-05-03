@@ -186,9 +186,8 @@ module Jade
 
       it 'encodes and decodes back to the same struct' do
         person = Data.define(:name, :age).new(name: 'Pepe', age: 30)
-        result = RoundTrip.roundtrip_person.call(person)
-        expect(result).to be_a(Result::Ok)
-        expect(result._1).to have_attributes(name: 'Pepe', age: 30)
+        expect(RoundTrip.roundtrip_person.call(person))
+          .to be_ok(have_attributes(name: 'Pepe', age: 30))
       end
     end
 

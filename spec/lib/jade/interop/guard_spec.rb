@@ -48,7 +48,7 @@ module Jade
       context 'expecting a maybe' do
         let(:bridge_type) { ['maybe', 'bool'] }
 
-        it { is_expected.to be_a(Maybe::Nothing) }
+        it { is_expected.to be_nothing }
       end
     end
 

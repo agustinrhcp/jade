@@ -102,18 +102,15 @@ module Jade
     before { test_compiler.require('use', source) }
 
     it 'today() returns a Task that resolves to a Date struct' do
-      result = Use.today.call.run
-      expect(result).to be_a(Result::Ok)
-      d = result._1
-      expect(d.year).to be_a(Integer)
-      expect(d.day).to be_a(Integer)
-      expect(d.month.class.name).to start_with('Jade::Calendar::')
+      expect(Use.today.call.run).to be_ok(
+        have_attributes(year: kind_of(Integer), day: kind_of(Integer))
+      )
     end
 
     it 'builds a Date from year, Month, day' do
       d = Use.build.call(2026, Calendar::Mar[], 15)
       expect(d.year).to eql 2026
-      expect(d.month).to eql Calendar::Mar[]
+      expect(d.month).to be_mar
       expect(d.day).to eql 15
     end
 
@@ -124,7 +121,7 @@ module Jade
 
     it 'extracts the month' do
       d = Use.build.call(2026, Calendar::May[], 4)
-      expect(Use.month_of.call(d)).to eql Calendar::May[]
+      expect(Use.month_of.call(d)).to be_may
     end
 
     it 'extracts the day' do
@@ -176,12 +173,12 @@ module Jade
 
     it 'computes weekday for a known date (2026-05-04 is a Monday)' do
       d = Use.build.call(2026, Calendar::May[], 4)
-      expect(Use.weekday_of.call(d)).to eql Calendar::Mon[]
+      expect(Use.weekday_of.call(d)).to be_mon
     end
 
     it 'computes weekday for a known date (2026-05-03 is a Sunday)' do
       d = Use.build.call(2026, Calendar::May[], 3)
-      expect(Use.weekday_of.call(d)).to eql Calendar::Sun[]
+      expect(Use.weekday_of.call(d)).to be_sun
     end
 
     it 'pattern-matches Weekday variants' do
@@ -200,15 +197,13 @@ module Jade
     end
 
     it 'parses an ISO 8601 string into a Date' do
-      result = Use.parse_iso.call('2026-05-04')
-      expect(result).to be_a(Result::Ok)
-      expect(result._1.year).to eql 2026
-      expect(result._1.month).to eql Calendar::May[]
-      expect(result._1.day).to eql 4
+      expect(Use.parse_iso.call('2026-05-04')).to be_ok(
+        have_attributes(year: 2026, month: be_may, day: 4)
+      )
     end
 
     it 'returns Err for an invalid ISO string' do
-      expect(Use.parse_iso.call('not-a-date')).to be_a(Result::Err)
+      expect(Use.parse_iso.call('not-a-date')).to be_err
     end
 
     it 'add(Days) advances the date' do
@@ -286,14 +281,12 @@ module Jade
       end
 
       it 'decodes a Date from an ISO 8601 string' do
-        result = Json.date_from_json.call('"2026-05-04"')
-        expect(result).to be_a(Result::Ok)
-        expect(result._1).to have_attributes(year: 2026, day: 4)
+        expect(Json.date_from_json.call('"2026-05-04"'))
+          .to be_ok(have_attributes(year: 2026, day: 4))
       end
 
       it 'fails decoding an invalid ISO date' do
-        result = Json.date_from_json.call('"not-a-date"')
-        expect(result).to be_a(Result::Err)
+        expect(Json.date_from_json.call('"not-a-date"')).to be_err
       end
     end
   end

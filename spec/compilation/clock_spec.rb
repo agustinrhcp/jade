@@ -119,7 +119,7 @@ module Jade
 
     it 'now() returns a Task that resolves to an Instant after the epoch' do
       result = Use.now.call.run
-      expect(result).to be_a(Result::Ok)
+      expect(result).to be_ok
       expect(Use.since_epoch_ms.call(result._1)).to be > 0
     end
 
@@ -218,31 +218,30 @@ module Jade
 
       it 'parses an ISO 8601 UTC string' do
         result = Use.parse_iso.call('1970-01-01T00:00:00Z')
-        expect(result).to be_a(Result::Ok)
+        expect(result).to be_ok
         expect(Use.since_epoch_ms.call(result._1)).to eql 0
       end
 
       it 'parses with a space separator (PostgreSQL style)' do
         result = Use.parse_iso.call('2023-11-14 22:13:20Z')
-        expect(result).to be_a(Result::Ok)
+        expect(result).to be_ok
         expect(Use.since_epoch_ms.call(result._1)).to eql 1_700_000_000_000
       end
 
       it 'parses sub-second precision' do
         result = Use.parse_iso.call('2023-11-14T22:13:20.123Z')
-        expect(result).to be_a(Result::Ok)
+        expect(result).to be_ok
         expect(Use.since_epoch_ms.call(result._1)).to eql 1_700_000_000_123
       end
 
       it 'returns Err for an invalid timestamp' do
-        expect(Use.parse_iso.call('not-a-time')).to be_a(Result::Err)
+        expect(Use.parse_iso.call('not-a-time')).to be_err
       end
 
       it 'projects an Instant onto a Calendar Date' do
         d = Use.to_date.call(Use.at_ms.call(1_700_000_000_000))
-        expect(d.year).to eql 2023
-        expect(d.month).to eql Calendar::Nov[]
-        expect(d.day).to eql 14
+        expect(d).to have_attributes(year: 2023, day: 14)
+        expect(d.month).to be_nov
       end
     end
 
@@ -305,12 +304,12 @@ module Jade
 
       it 'decodes an Instant from ISO 8601' do
         result = Json.instant_from_json.call('"2023-11-14T22:13:20Z"')
-        expect(result).to be_a(Result::Ok)
+        expect(result).to be_ok
         expect(Use.since_epoch_ms.call(result._1)).to eql 1_700_000_000_000
       end
 
       it 'fails decoding an invalid Instant' do
-        expect(Json.instant_from_json.call('"nope"')).to be_a(Result::Err)
+        expect(Json.instant_from_json.call('"nope"')).to be_err
       end
 
       it 'encodes a Duration as Int milliseconds' do
@@ -320,7 +319,7 @@ module Jade
 
       it 'decodes a Duration from Int milliseconds' do
         result = Json.duration_from_json.call('5000')
-        expect(result).to be_a(Result::Ok)
+        expect(result).to be_ok
         expect(result._1).to eql Json.make_duration.call(5000)
       end
     end

@@ -37,7 +37,7 @@ module Jade
     end
 
     it 'roundtrips through code point' do
-      expect(Pepe.roundtrip.call('z')).to eql Maybe::Just['z']
+      expect(Pepe.roundtrip.call('z')).to be_just('z')
     end
 
     it 'parses a char literal' do
