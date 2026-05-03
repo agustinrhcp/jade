@@ -1,15 +1,17 @@
 module Interop exposing (current_time_ms, env_var)
 
 uses Time with
-  now :  -> Int
-
-uses ENV with
-  fetch : String -> Maybe(String)
-
-def current_time_ms() -> Int
-  Time.now()
+  now: Task(Int, Never)
 end
 
-def env_var(key: String) -> Maybe(String)
-  ENV.fetch(key)
+uses ENV with
+  fetch: String -> Task(Maybe(String), Never)
+end
+
+def current_time_ms() -> Task(Int, Never)
+  now()
+end
+
+def env_var(key: String) -> Task(Maybe(String), Never)
+  fetch(key)
 end
