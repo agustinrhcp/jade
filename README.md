@@ -145,6 +145,29 @@ result = numbers
   |> List.map((x) -> { x * 2 })
 ```
 
+### Placeholders (currying)
+
+A `_` in a function-call argument position curries the call. Each `_` becomes a
+nested unary lambda parameter, in left-to-right order. Non-`_` arguments are
+captured by the lambda:
+
+```jade
+add5  = add(_, 5)         -- Int -> Int
+incr  = add(1, _)         -- Int -> Int
+mkPair = Pair(_, _)       -- a -> b -> Pair(a, b)
+```
+
+Useful for applicative-style pipelines:
+
+```jade
+Decode.succeed(Person(_, _, _))
+  |> Decode.required("name", Decode.string())
+  |> Decode.required("age", Decode.int())
+```
+
+`_` is only valid as a direct argument inside a call — not as a bare expression
+or operator operand.
+
 ### String and List Concatenation
 
 `++` works on both `String` and `List` via the `Appendable` interface:
@@ -271,7 +294,6 @@ See the [`examples/`](examples/) directory:
 - **Ranges** — `1..10`, `1...10`
 - **No-arg functions as constants** — `def pi() -> Float` should be callable as `pi`, not `pi()`
 - **No-arg constructors as constants** — `Nothing` instead of `Nothing()`
-- **Holes for currying** — `map(_, double)` as sugar for `(list) -> { map(list, double) }`
 
 ### Type System
 - **Unresolved constraint error messages** — constraint propagation works but error messages need improvement

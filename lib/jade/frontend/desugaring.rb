@@ -1,3 +1,5 @@
+require 'jade/frontend/desugaring/placeholder'
+
 module Jade
   module Frontend
     module Desugaring
@@ -45,6 +47,7 @@ module Jade
           node
             .with(callee: desugar(callee))
             .with(args: args.map { desugar(it) })
+            .then { Placeholder.lift(it) }
 
         in AST::FunctionDeclaration(body:)
           node
@@ -164,7 +167,7 @@ module Jade
           AST::TypeDeclaration | AST::ImportDeclaration |
           AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard |
           AST::InteropImportDeclaration | AST::StructDeclaration |
-          AST::QualifiedAccess
+          AST::QualifiedAccess | AST::Placeholder
 
           node
         end

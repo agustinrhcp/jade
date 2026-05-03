@@ -472,6 +472,28 @@ module Jade
         it { is_expected.to be_a(AST::FunctionCall) }
         its(:callee) { is_expected.to be_a(AST::ConstructorReference).and have_attributes(name: 'Nothing') }
       end
+
+      context 'with a placeholder argument' do
+        let(:text) do
+          <<~JADE
+            add(_, 1)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::FunctionCall) }
+        its(:args) { is_expected.to match [an_instance_of(AST::Placeholder), an_instance_of(AST::Literal)] }
+      end
+
+      context 'with all placeholder arguments' do
+        let(:text) do
+          <<~JADE
+            Person(_, _)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::FunctionCall) }
+        its(:args) { is_expected.to have(2).items.and all(be_a(AST::Placeholder)) }
+      end
     end
 
     context 'type def' do
