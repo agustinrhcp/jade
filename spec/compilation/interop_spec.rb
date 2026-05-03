@@ -9,28 +9,24 @@ module Jade
     include_context 'with test compiler'
 
     module TestDate
-      extend self
+      extend Jade::Tasks::Module
 
       require 'date'
 
       TODAY = ::Date.new(2026, 1, 31).freeze
 
-      def internal_today
-        Jade::Task.ok { to_i(TODAY) }
-      end
-
-      def internal_today_plus_n_days(n)
-        Jade::Task.ok { (TODAY + n).then { to_i(it) } }
-      end
-
-      private
-
-      def to_i(date)
-        string_date = date.year.to_s +
+      def self.to_i(date)
+        (date.year.to_s +
           date.month.to_s.rjust(2, '0') +
-          date.day.to_s.rjust(2, '0')
+          date.day.to_s.rjust(2, '0')).to_i
+      end
 
-        string_date.to_i
+      task :internal_today do |t|
+        t.ok(to_i(TODAY))
+      end
+
+      task :internal_today_plus_n_days do |t, n|
+        t.ok(to_i(TODAY + n))
       end
     end
 
@@ -61,14 +57,14 @@ module Jade
 
     context 'more elaborate date' do
       module TestBetterDate
-        extend self
+        extend Jade::Tasks::Module
 
         require 'date'
 
         TODAY = ::Date.new(2026, 1, 31).freeze
 
-        def internal_today
-          Jade::Task.ok { { year: TODAY.year, month: TODAY.month, day: TODAY.day } }
+        task :internal_today do |t|
+          t.ok({ year: TODAY.year, month: TODAY.month, day: TODAY.day })
         end
       end
 
@@ -119,14 +115,14 @@ module Jade
 
       context 'when expecting a named struct' do
         module TestStructDate
-          extend self
+          extend Jade::Tasks::Module
 
           require 'date'
 
           TODAY = ::Date.new(2026, 1, 31).freeze
 
-          def internal_today
-            Jade::Task.ok { { year: TODAY.year, month: TODAY.month, day: TODAY.day } }
+          task :internal_today do |t|
+            t.ok({ year: TODAY.year, month: TODAY.month, day: TODAY.day })
           end
         end
 
@@ -182,14 +178,14 @@ module Jade
 
       context 'when expecting a Maybe value' do
         module TestMaybeDate
-          extend self
+          extend Jade::Tasks::Module
 
           require 'date'
 
           TODAY = ::Date.new(2026, 1, 31).freeze
 
-          def internal_today
-            Jade::Task.ok { { year: TODAY.year, month: TODAY.month, day: TODAY.day } }
+          task :internal_today do |t|
+            t.ok({ year: TODAY.year, month: TODAY.month, day: TODAY.day })
           end
         end
 
@@ -239,10 +235,10 @@ module Jade
 
     context 'task that errors' do
       module TestFallible
-        extend self
+        extend Jade::Tasks::Module
 
-        def fetch_data
-          Jade::Task.error { "not found" }
+        task :fetch_data do |t|
+          t.err("not found")
         end
       end
 
@@ -266,7 +262,7 @@ module Jade
       end
     end
 
-    context 'task where the port returns a non-Task value' do
+    context 'task where the port is not registered as a Task' do
       module TestBadPort
         extend self
 
@@ -289,19 +285,19 @@ module Jade
         JADE
       end
 
-      it 'raises a guard error immediately when called' do
+      it 'raises immediately when called' do
         test_compiler.require('with_interop', with_interop_source)
         expect { WithInterop.fetch.call() }
-          .to raise_error(Jade::Interop::Guard::Error, /Expected Jade::Task/)
+          .to raise_error(RuntimeError, /to return a Jade::TaskDef/)
       end
     end
 
     context 'task where the inner value does not match the declared type' do
       module TestWrongInner
-        extend self
+        extend Jade::Tasks::Module
 
-        def fetch_number
-          Jade::Task.ok { "oops, a string" }
+        task :fetch_number do |t|
+          t.ok("oops, a string")
         end
       end
 
@@ -329,11 +325,11 @@ module Jade
 
     context 'chaining port tasks with <-' do
       module TestArithmetic
-        extend self
+        extend Jade::Tasks::Module
 
-        def get_one = Jade::Task.ok { 1 }
-        def get_two = Jade::Task.ok { 2 }
-        def get_error = Jade::Task.error { "port failed" }
+        task :get_one   do |t| t.ok(1) end
+        task :get_two   do |t| t.ok(2) end
+        task :get_error do |t| t.err("port failed") end
       end
 
       let(:with_interop_source) do
@@ -381,12 +377,12 @@ module Jade
         require 'date'
 
         module Date
-          extend self
+          extend Jade::Tasks::Module
 
           TODAY = ::Date.new(2026, 2, 5).freeze
 
-          def today_
-            Jade::Task.ok { { year: TODAY.year, month: TODAY.month, day: TODAY.day } }
+          task :today_ do |t|
+            t.ok({ year: TODAY.year, month: TODAY.month, day: TODAY.day })
           end
         end
       end

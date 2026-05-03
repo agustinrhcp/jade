@@ -54,6 +54,17 @@ module Jade
         symbol = symbol.is_a?(Symbol::ValueRef) ? registry.lookup(symbol) : symbol
 
         case symbol
+        in Symbol::InteropFunction if symbol.expected_type.is_a?(Array) && symbol.expected_type[0] == 'task'
+          ok_type, err_type = symbol.expected_type[1], symbol.expected_type[2]
+          [
+            symbol.interop_module_name,
+            ":#{symbol.name}",
+            lower_to_ruby(ok_type),
+            lower_to_ruby(err_type),
+          ]
+            .join(', ')
+            .then { "Jade::Runtime.task_call(#{it})" }
+
         in Symbol::InteropFunction
           lower_to_ruby(symbol.expected_type)
             .then { "#{symbol.interop_module_name}, :#{symbol.name}, #{it}" }

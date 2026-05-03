@@ -445,10 +445,10 @@ module Jade
 
     context 'decoding a Value from a port' do
       module TestBodyParser
-        extend self
+        extend Jade::Tasks::Module
 
-        def get_body
-          Jade::Task.ok { { name: 'Pepe', age: 30 } }
+        task :get_body do |t|
+          t.ok({ name: 'Pepe', age: 30 })
         end
       end
 

@@ -296,7 +296,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to include "Jade::Runtime.guard(Jade::Date, :today, [\"task\", \"int\", \"never\"]).call()" }
+      it { is_expected.to include "Jade::Runtime.task_call(Jade::Date, :today, \"int\", \"never\").call()" }
     end
 
     describe 'struct declaration' do

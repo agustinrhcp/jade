@@ -24,6 +24,17 @@ module Jade
             .lookup(callee.symbol)
             .then { generate_callee(callee.with(symbol: it), args, registry, dictionaries) }
 
+        in Symbol::InteropFunction => symbol if task_return?(symbol.expected_type)
+          ok_type, err_type = symbol.expected_type[1], symbol.expected_type[2]
+          [
+            symbol.interop_module_name,
+            ":#{symbol.name}",
+            lower_to_ruby(ok_type),
+            lower_to_ruby(err_type),
+          ]
+            .join(', ')
+            .then { "Jade::Runtime.task_call(#{it})" }
+
         in Symbol::InteropFunction => symbol
           lower_to_ruby(symbol.expected_type)
             .then { "#{symbol.interop_module_name}, :#{symbol.name}, #{it}" }
@@ -139,6 +150,10 @@ module Jade
 
       def emit(ir, registry)
         Emitter.emit(ir)
+      end
+
+      def task_return?(expected_type)
+        expected_type.is_a?(Array) && expected_type[0] == 'task'
       end
     end
   end
