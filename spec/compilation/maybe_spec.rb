@@ -39,9 +39,9 @@ module Jade
       expect(Pepe.sum_maybe.call(Maybe::Nothing[], 1)).to eql 0
       expect(Pepe.sum_maybe.call(Maybe::Just[10], 1)).to eql 11
 
-      expect(Pepe.and_then_test.call(Maybe::Nothing[])).to eql Maybe::Nothing[]
-      expect(Pepe.and_then_test.call(Maybe::Just[2])).to eql Maybe::Nothing[]
-      expect(Pepe.and_then_test.call(Maybe::Just[1])).to eql Maybe::Just['ONE']
+      expect(Pepe.and_then_test.call(Maybe::Nothing[])).to be_nothing
+      expect(Pepe.and_then_test.call(Maybe::Just[2])).to be_nothing
+      expect(Pepe.and_then_test.call(Maybe::Just[1])).to be_just('ONE')
     end
 
     context 'without type arguments' do

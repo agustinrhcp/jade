@@ -21,8 +21,8 @@ module Jade
     end
 
     it 'works' do
-      expect(Pepe.str_to_int.call('1')).to eql Maybe::Just[1]
-      expect(Pepe.str_to_int.call('pepe')).to eql Maybe::Nothing[]
+      expect(Pepe.str_to_int.call('1')).to be_just(1)
+      expect(Pepe.str_to_int.call('pepe')).to be_nothing
     end
   end
 
@@ -60,8 +60,8 @@ module Jade
     before { test_compiler.require('strs', source) }
 
     it 'uncons returns head char' do
-      expect(Strs.first_char.call('abc')).to eql Maybe::Just['a']
-      expect(Strs.first_char.call('')).to eql Maybe::Nothing[]
+      expect(Strs.first_char.call('abc')).to be_just('a')
+      expect(Strs.first_char.call('')).to be_nothing
     end
 
     it 'cons prepends a char' do

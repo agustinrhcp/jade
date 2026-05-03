@@ -24,8 +24,8 @@ module Jade
       end
 
       it 'extracts the field' do
-        expect(PatternBind.get_name.call(Maybe::Just[{ name: 'Alice' }])).to eql Maybe::Just['Alice']
-        expect(PatternBind.get_name.call(Maybe::Nothing[])).to eql Maybe::Nothing[]
+        expect(PatternBind.get_name.call(Maybe::Just[{ name: 'Alice' }])).to be_just('Alice')
+        expect(PatternBind.get_name.call(Maybe::Nothing[])).to be_nothing
       end
     end
 

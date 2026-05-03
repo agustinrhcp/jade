@@ -19,6 +19,7 @@ require 'rspec/collection_matchers'
 require 'byebug'
 
 require 'jade/result'
+require 'jade/tasks/rspec'
 
 Dir[File.join(File.dirname(__FILE__), 'support/**/*.rb')].sort.each { |f| require f }
 

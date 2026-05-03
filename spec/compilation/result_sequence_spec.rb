@@ -30,15 +30,15 @@ module Jade
     end
 
     it 'collects all Oks into a list' do
-      expect(Seq.all_ok.call).to eql Result::Ok[[1, 2, 3]]
+      expect(Seq.all_ok.call).to be_ok([1, 2, 3])
     end
 
     it 'returns the error when any element is Err' do
-      expect(Seq.with_err.call).to eql Result::Err['oops']
+      expect(Seq.with_err.call).to be_err('oops')
     end
 
     it 'returns the first error encountered' do
-      expect(Seq.first_err_wins.call).to eql Result::Err['first']
+      expect(Seq.first_err_wins.call).to be_err('first')
     end
   end
 end

@@ -70,9 +70,15 @@ module Jade
 
         case symbol
         in Symbol::InteropFunction
-          lower_to_ruby(symbol.expected_type)
-            .then { "#{symbol.interop_module_name}, :#{symbol.name}, #{it}" }
-            .then { "Jade::Runtime.guard(#{it})" }
+          symbol.expected_type => ['task', ok_type, err_type]
+          [
+            symbol.interop_module_name,
+            ":#{symbol.name}",
+            lower_to_ruby(ok_type),
+            lower_to_ruby(err_type),
+          ]
+            .join(', ')
+            .then { "Jade::Runtime.task_call(#{it})" }
 
         in Symbol::StdlibFunction(codegen:, params:) if params.empty?
           "#{codegen}.call()"
@@ -116,7 +122,9 @@ module Jade
         ConstructorReference.generate(node, registry)
 
       in AST::TypeDeclaration(variants:)
-        generate_many(variants, registry, '; ')
+        variants
+          .map { VariantDeclaration.generate(it, variants.map(&:name)) }
+          .join('; ')
 
       in AST::StructDeclaration(name:, record_type:)
         record_type
@@ -127,10 +135,6 @@ module Jade
 
       in AST::InterfaceDeclaration
         ""
-
-
-      in AST::VariantDeclaration
-        VariantDeclaration.generate(node)
 
       in AST::QualifiedAccess(symbol:)
         case registry.lookup(symbol)

@@ -36,23 +36,23 @@ module Jade
     before { test_compiler.require('task_test', source) }
 
     it 'succeed produces an Ok on run' do
-      expect(TaskTest.always_ok.call.run).to eql Result::Ok[42]
+      expect(TaskTest.always_ok.call.run).to be_ok(42)
     end
 
     it 'fail produces an Err on run' do
-      expect(TaskTest.always_err.call.run).to eql Result::Err['oops']
+      expect(TaskTest.always_err.call.run).to be_err('oops')
     end
 
     it 'map transforms the success value' do
-      expect(TaskTest.mapped.call.run).to eql Result::Ok[2]
+      expect(TaskTest.mapped.call.run).to be_ok(2)
     end
 
     it 'and_then chains tasks' do
-      expect(TaskTest.chained.call.run).to eql Result::Ok[2]
+      expect(TaskTest.chained.call.run).to be_ok(2)
     end
 
     it 'and_then short-circuits on failure' do
-      expect(TaskTest.chained_err.call.run).to eql Result::Err['chained error']
+      expect(TaskTest.chained_err.call.run).to be_err('chained error')
     end
 
     context 'sequence' do
@@ -77,15 +77,15 @@ module Jade
       before { test_compiler.require('task_test', source) }
 
       it 'collects all values when all tasks succeed' do
-        expect(TaskTest.all_ok.call.run).to eql Result::Ok[[1, 2, 3]]
+        expect(TaskTest.all_ok.call.run).to be_ok([1, 2, 3])
       end
 
       it 'short-circuits on the first failure' do
-        expect(TaskTest.first_fails.call.run).to eql Result::Err['first']
+        expect(TaskTest.first_fails.call.run).to be_err('first')
       end
 
       it 'short-circuits on any failure' do
-        expect(TaskTest.second_fails.call.run).to eql Result::Err['second']
+        expect(TaskTest.second_fails.call.run).to be_err('second')
       end
 
       it 'is lazy' do
@@ -115,15 +115,15 @@ module Jade
       before { test_compiler.require('task_test', source) }
 
       it 'passes Ok through unchanged' do
-        expect(TaskTest.pass_through.call.run).to eql Result::Ok[42]
+        expect(TaskTest.pass_through.call.run).to be_ok(42)
       end
 
       it 'recovers from a failed task' do
-        expect(TaskTest.recover.call.run).to eql Result::Ok[0]
+        expect(TaskTest.recover.call.run).to be_ok(0)
       end
 
       it 'can remap the error' do
-        expect(TaskTest.remap.call.run).to eql Result::Err['oops!']
+        expect(TaskTest.remap.call.run).to be_err('oops!')
       end
     end
 
@@ -149,11 +149,11 @@ module Jade
       before { test_compiler.require('task_test', source) }
 
       it 'chains successful tasks' do
-        expect(TaskTest.sum.call.run).to eql Result::Ok[3]
+        expect(TaskTest.sum.call.run).to be_ok(3)
       end
 
       it 'short-circuits on the first failure' do
-        expect(TaskTest.short_circuits.call.run).to eql Result::Err['first error']
+        expect(TaskTest.short_circuits.call.run).to be_err('first error')
       end
 
       it 'is lazy' do

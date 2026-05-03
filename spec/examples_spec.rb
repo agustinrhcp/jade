@@ -59,19 +59,19 @@ module Jade
       before { compile('maybe_examples.jd') }
 
       it 'divides safely' do
-        expect(MaybeExamples.safe_divide.call(10, 2)).to eq Maybe::Just[5]
-        expect(MaybeExamples.safe_divide.call(10, 0)).to eq Maybe::Nothing[]
+        expect(MaybeExamples.safe_divide.call(10, 2)).to be_just(5)
+        expect(MaybeExamples.safe_divide.call(10, 0)).to be_nothing
       end
 
       it 'finds the first matching element' do
         even = ->(x) { x % 2 == 0 }
-        expect(MaybeExamples.find_first.call([1, 3, 4, 5], even)).to eq Maybe::Just[4]
-        expect(MaybeExamples.find_first.call([1, 3, 5], even)).to eq Maybe::Nothing[]
+        expect(MaybeExamples.find_first.call([1, 3, 4, 5], even)).to be_just(4)
+        expect(MaybeExamples.find_first.call([1, 3, 5], even)).to be_nothing
       end
 
       it 'chains operations with pipeline' do
-        expect(MaybeExamples.pipeline.call(4)).to eq Maybe::Just[13]
-        expect(MaybeExamples.pipeline.call(0)).to eq Maybe::Nothing[]
+        expect(MaybeExamples.pipeline.call(4)).to be_just(13)
+        expect(MaybeExamples.pipeline.call(0)).to be_nothing
       end
     end
 

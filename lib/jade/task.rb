@@ -1,13 +1,104 @@
-module Jade
-  Task = Data.define(:_1) do
-    def run = _1.call
+require 'jade/tasks'
 
-    def self.ok(&block)
-      new(-> { Jade::Result::Ok[block.call] })
+# Predeclared so the Task variants and Outcome work before stdlib Result is
+# compiled. Stdlib re-assigns these constants on first compile.
+module Jade
+  module Result
+    Ok  = Data.define(:_1) unless const_defined?(:Ok, false)
+    Err = Data.define(:_1) unless const_defined?(:Err, false)
+  end
+end
+
+module Jade
+  module Task
+    Literal = Data.define(:result) do
+      include Task
+
+      def run
+        result
+      end
     end
 
-    def self.error(&block)
-      new(-> { Jade::Result::Err[block.call] })
+    Dispatch = Data.define(:task_def, :args) do
+      include Task
+
+      def run
+        Jade::Tasks.dispatch(task_def, *args)
+      end
+    end
+
+    Map = Data.define(:task, :fn) do
+      include Task
+
+      def run
+        case task.run
+        in Jade::Result::Ok[value]  then Jade::Result::Ok[fn.call(value)]
+        in Jade::Result::Err => err then err
+        end
+      end
+    end
+
+    AndThen = Data.define(:task, :fn) do
+      include Task
+
+      def run
+        case task.run
+        in Jade::Result::Ok[value]  then fn.call(value).run
+        in Jade::Result::Err => err then err
+        end
+      end
+    end
+
+    OnError = Data.define(:task, :fn) do
+      include Task
+
+      def run
+        case task.run
+        in Jade::Result::Ok => ok    then ok
+        in Jade::Result::Err[error]  then fn.call(error).run
+        end
+      end
+    end
+
+    MapError = Data.define(:task, :fn) do
+      include Task
+
+      def run
+        case task.run
+        in Jade::Result::Ok => ok    then ok
+        in Jade::Result::Err[error]  then Jade::Result::Err[fn.call(error)]
+        end
+      end
+    end
+
+    Sequence = Data.define(:tasks) do
+      include Task
+
+      def run
+        tasks.reduce(Jade::Result::Ok[[]]) do |acc, task|
+          case acc
+          in Jade::Result::Err then acc
+          in Jade::Result::Ok[values]
+            case task.run
+            in Jade::Result::Ok[value]   then Jade::Result::Ok[values + [value]]
+            in Jade::Result::Err => err  then err
+            end
+          end
+        end
+      end
+    end
+
+    Guarded = Data.define(:task, :ok_type, :err_type) do
+      include Task
+
+      def run
+        case task.run
+        in Jade::Result::Ok[value]
+          Jade::Result::Ok[Jade::Interop::Guard.guard(value, ok_type)]
+        in Jade::Result::Err[error]
+          Jade::Result::Err[Jade::Interop::Guard.guard(error, err_type)]
+        end
+      end
     end
   end
 end

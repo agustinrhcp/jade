@@ -96,7 +96,14 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "Just = Data.define(:_1); Nothing = Data.define" }
+      it 'emits Data classes with sibling-aware predicates' do
+        expect(subject).to include 'Just = Data.define(:_1) do'
+        expect(subject).to include 'def just?; true'
+        expect(subject).to include 'def nothing?; false'
+        expect(subject).to include 'Nothing = Data.define do'
+        expect(subject).to include 'def just?; false'
+        expect(subject).to include 'def nothing?; true'
+      end
 
       context 'and reference' do
         let(:text) do
@@ -106,10 +113,9 @@ module Jade
           JADE
         end
 
-        subject { super().split('; ') }
-        its([0]) { is_expected.to eql "Just = Data.define(:_1)" }
-        its([1]) { is_expected.to eql "Nothing = Data.define" }
-        its([2]) { is_expected.to eql "__Test__::Just.method(:[]).call(12)" }
+        it 'emits the constructor call after the type definitions' do
+          expect(subject).to include '__Test__::Just.method(:[]).call(12)'
+        end
       end
     end
 
@@ -296,7 +302,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to include "Jade::Runtime.guard(Jade::Date, :today, [\"task\", \"int\", \"never\"]).call()" }
+      it { is_expected.to include "Jade::Runtime.task_call(Jade::Date, :today, \"int\", \"never\").call()" }
     end
 
     describe 'struct declaration' do

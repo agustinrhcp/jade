@@ -61,35 +61,35 @@ module Jade
       before { test_compiler.require('on_error', on_error_source) }
 
       it 'passes through Ok unchanged' do
-        expect(OnError.recover.call(Result::Ok[42])).to eql Result::Ok[42]
+        expect(OnError.recover.call(Result::Ok[42])).to be_ok(42)
       end
 
       it 'recovers from Err with a new Ok' do
-        expect(OnError.recover.call(Result::Err["oops"])).to eql Result::Ok[0]
+        expect(OnError.recover.call(Result::Err["oops"])).to be_ok(0)
       end
 
       it 'can remap the error' do
-        expect(OnError.passthrough.call(Result::Err["oops"])).to eql Result::Err["oops!"]
+        expect(OnError.passthrough.call(Result::Err["oops"])).to be_err("oops!")
       end
     end
 
     it 'works' do
-      expect(Pepe.int_to_r.call(1)).to eql Result::Ok[1]
-      expect(Pepe.int_to_r.call(2)).to eql Result::Ok[3]
-      expect(Pepe.int_to_r.call(3)).to eql Result::Ok[5]
-      expect(Pepe.int_to_r.call(4)).to eql Result::Err['Not 1, 2 or 3']
+      expect(Pepe.int_to_r.call(1)).to be_ok(1)
+      expect(Pepe.int_to_r.call(2)).to be_ok(3)
+      expect(Pepe.int_to_r.call(3)).to be_ok(5)
+      expect(Pepe.int_to_r.call(4)).to be_err('Not 1, 2 or 3')
 
-      expect(Pepe.int_to_r_times_2.call(1)).to eql Result::Ok[2]
-      expect(Pepe.int_to_r_times_2.call(2)).to eql Result::Ok[6]
-      expect(Pepe.int_to_r_times_2.call(4)).to eql Result::Err['Not 1, 2 or 3']
+      expect(Pepe.int_to_r_times_2.call(1)).to be_ok(2)
+      expect(Pepe.int_to_r_times_2.call(2)).to be_ok(6)
+      expect(Pepe.int_to_r_times_2.call(4)).to be_err('Not 1, 2 or 3')
 
-      expect(Pepe.int_to_r_times_2_to_r.call(1)).to eql Result::Ok[3]
-      expect(Pepe.int_to_r_times_2_to_r.call(2)).to eql Result::Err['Not 1, 2 or 3']
+      expect(Pepe.int_to_r_times_2_to_r.call(1)).to be_ok(3)
+      expect(Pepe.int_to_r_times_2_to_r.call(2)).to be_err('Not 1, 2 or 3')
 
-      expect(Pepe.int_to_r_to_maybe.call(1)).to eql Maybe::Just[1]
-      expect(Pepe.int_to_r_to_maybe.call(2)).to eql Maybe::Just[3]
-      expect(Pepe.int_to_r_to_maybe.call(3)).to eql Maybe::Just[5]
-      expect(Pepe.int_to_r_to_maybe.call(4)).to eql Maybe::Nothing[]
+      expect(Pepe.int_to_r_to_maybe.call(1)).to be_just(1)
+      expect(Pepe.int_to_r_to_maybe.call(2)).to be_just(3)
+      expect(Pepe.int_to_r_to_maybe.call(3)).to be_just(5)
+      expect(Pepe.int_to_r_to_maybe.call(4)).to be_nothing
     end
   end
 end
