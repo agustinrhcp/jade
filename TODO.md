@@ -28,12 +28,6 @@ analysis. We should record what the user wrote, not what it means at parse
 time.
 
 
-### Holes for currying
-
-Person(_, _, _, _)
-is the same as (\a -> \b -> \c -> \d -> Person(a, b, c, d))
-
-
 ### SemanticAnalysis::Exposed
 
 Semantic analysis of exposed symbols

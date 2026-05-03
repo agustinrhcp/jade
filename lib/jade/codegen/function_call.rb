@@ -16,7 +16,7 @@ module Jade
       private
 
       def generate_callee(callee, args, registry, dictionaries)
-        return generate_node(callee, registry) if callee in AST::ConstructorReference | AST::RecordAccess
+        return generate_node(callee, registry) if callee in AST::ConstructorReference | AST::RecordAccess | AST::FunctionCall | AST::Grouping
 
         case callee.symbol
         in Symbol::ValueRef

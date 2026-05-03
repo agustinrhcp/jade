@@ -48,6 +48,7 @@ module Jade
     define(:InfixOperator, :value)
 
     define(:FunctionCall, :callee, :args, :infix, :dictionaries)
+    define(:Placeholder)
     define(:MemberAccess, :target, :name)
     define(:QualifiedAccess, :target, :name)
     define(:RecordAccess, :target, :name)
@@ -353,6 +354,10 @@ module Jade
       ->(token) do
         Pattern::Wildcard[token.range]
       end
+    end
+
+    def placeholder
+      ->(token) { Placeholder[token.range] }
     end
 
     def literal_pattern

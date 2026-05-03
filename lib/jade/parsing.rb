@@ -220,11 +220,19 @@ module Jade
 
     def function_call
       (
-        type(:lparen) >> 
-          (sequence(lazy { expression }, separated_by: type(:comma).skip).map { [it] } |
+        type(:lparen) >>
+          (sequence(function_call_arg, separated_by: type(:comma).skip).map { [it] } |
             none.map { [[]] }) >>
           type(:rparen)
       ).map { FunctionCallPostfix[*it] }
+    end
+
+    def function_call_arg
+      placeholder | lazy { expression }
+    end
+
+    def placeholder
+      type(:wildcard).map(&AST.placeholder)
     end
 
     def member_access
