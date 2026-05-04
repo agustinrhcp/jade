@@ -166,7 +166,7 @@ module Jade
           )
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
-          .then { |(t, c, _)| [Type.function(args, t), c + arg_cs + [constraint]] }
+          .then { |(t, c, _)| [args.empty? ? t : Type.function(args, t), c + arg_cs + [constraint]] }
           .then { it + [var_map] }
 
       in Symbol::Constructor if symbol.args.empty?

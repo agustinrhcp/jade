@@ -11,7 +11,7 @@ module Jade
       end
 
       def imports
-        [Basics, Maybe, Result, Task, String, Tuple]
+        [Basics, Maybe, Result, Task, String, Tuple, Decode, Encode]
       end
 
       def default_imports
@@ -28,6 +28,9 @@ module Jade
                                    to_iso_string, from_iso_string,
                                    to_rata_die, from_rata_die,
                                    add, diff)
+
+          import Decode exposing(Decoder, Decodable, Value)
+          import Encode exposing(Encodable)
 
           type Month   = Jan | Feb | Mar | Apr | May | Jun
                        | Jul | Aug | Sep | Oct | Nov | Dec
@@ -296,6 +299,26 @@ module Jade
 
           implements Eq(Date) with
             (==): date_eq
+          end
+
+          def date_decoder() -> Decoder(Date)
+            Decode.string |> Decode.and_then(parse_date)
+          end
+
+          def parse_date(s: String) -> Decoder(Date)
+            Decode.from_result(from_iso_string(s))
+          end
+
+          def date_encoder(d: Date) -> Value
+            Encode.string(to_iso_string(d))
+          end
+
+          implements Decodable(Date) with
+            decoder: date_decoder
+          end
+
+          implements Encodable(Date) with
+            encoder: date_encoder
           end
         JADE
       end

@@ -262,5 +262,67 @@ module Jade
         expect(Use.equal.call(a, c)).to be false
       end
     end
+
+    describe 'Encodable / Decodable' do
+      let(:source) do
+        <<~JADE
+          module Json exposing(instant_to_json, instant_from_json,
+                               duration_to_json, duration_from_json,
+                               make_duration)
+
+          import Clock exposing(Instant, Duration)
+          import Encode
+          import Decode exposing(DecodeError)
+
+          def make_duration(ms: Int) -> Duration
+            Clock.millis(ms)
+          end
+
+          def instant_to_json(i: Instant) -> String
+            Encode.encode_to_string(Encode.encode(i))
+          end
+
+          def instant_from_json(s: String) -> Result(Instant, DecodeError)
+            Decode.from_json(s)
+          end
+
+          def duration_to_json(d: Duration) -> String
+            Encode.encode_to_string(Encode.encode(d))
+          end
+
+          def duration_from_json(s: String) -> Result(Duration, DecodeError)
+            Decode.from_json(s)
+          end
+        JADE
+      end
+
+      before { test_compiler.require('json', source) }
+
+      it 'encodes an Instant as ISO 8601' do
+        i = Use.at_ms.call(1_700_000_000_000)
+        expect(Json.instant_to_json.call(i)).to eql '"2023-11-14T22:13:20Z"'
+      end
+
+      it 'decodes an Instant from ISO 8601' do
+        result = Json.instant_from_json.call('"2023-11-14T22:13:20Z"')
+        expect(result).to be_a(Result::Ok)
+        expect(Use.since_epoch_ms.call(result._1)).to eql 1_700_000_000_000
+      end
+
+      it 'fails decoding an invalid Instant' do
+        expect(Json.instant_from_json.call('"nope"')).to be_a(Result::Err)
+      end
+
+      it 'encodes a Duration as Int milliseconds' do
+        d = Json.make_duration.call(5000)
+        expect(Json.duration_to_json.call(d)).to eql '5000'
+      end
+
+      it 'decodes a Duration from Int milliseconds' do
+        result = Json.duration_from_json.call('5000')
+        expect(result).to be_a(Result::Ok)
+        expect(result._1).to eql Json.make_duration.call(5000)
+      end
+    end
   end
 end

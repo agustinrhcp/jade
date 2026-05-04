@@ -386,24 +386,24 @@ module Jade
       before { test_compiler.require('patch', source) }
 
       it 'returns an empty list when no fields are present' do
-        result = Patch.parse_updates.call(Decode::Value[{}])
+        result = Patch.parse_updates.call({})
         expect(result).to eql Result::Ok[[]]
       end
 
       it 'collects only the fields that were provided' do
-        result = Patch.parse_updates.call(Decode::Value[{ name: 'Pepe' }])
+        result = Patch.parse_updates.call({ name: 'Pepe' })
         expect(result).to be_a(Result::Ok)
         expect(result._1).to eql [Patch::SetName['Pepe']]
       end
 
       it 'collects all fields when all are present' do
-        result = Patch.parse_updates.call(Decode::Value[{ name: 'Pepe', age: 30 }])
+        result = Patch.parse_updates.call({ name: 'Pepe', age: 30 })
         expect(result).to be_a(Result::Ok)
         expect(result._1).to eql [Patch::SetName['Pepe'], Patch::SetAge[30]]
       end
 
       it 'fails when a present field has the wrong type' do
-        result = Patch.parse_updates.call(Decode::Value[{ name: 42 }])
+        result = Patch.parse_updates.call({ name: 42 })
         expect(result).to be_a(Result::Err)
       end
     end

@@ -6,9 +6,9 @@ module Decode
   AtField      = Data.define(:_1, :_2)
   AtIndex      = Data.define(:_1, :_2)
   Multiple     = Data.define(:_1)
+  Custom       = Data.define(:_1)
 
   Decoder = Data.define(:desc)
-  Value   = Data.define(:_1)
 
   module Desc
     Str      = Data.define()
@@ -26,6 +26,8 @@ module Decode
     AndMap   = Data.define(:wrapped, :value_d)
     Sequence = Data.define(:decoders)
     OneOf    = Data.define(:decoders)
+    AndThen  = Data.define(:fn, :d)
+    Fail     = Data.define(:msg)
   end
 
   module Runner
@@ -163,6 +165,15 @@ module Decode
           end
         end
         err(wrap_errors(errors))
+
+      in Desc::AndThen[fn, d]
+        case interp(d, value)
+        in ::Result::Ok[v]    then interp(fn.call(v).desc, value)
+        in ::Result::Err => e then e
+        end
+
+      in Desc::Fail[msg]
+        err(::Decode::Custom[msg])
       end
     end
 

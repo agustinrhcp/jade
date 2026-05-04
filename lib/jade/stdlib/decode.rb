@@ -16,6 +16,7 @@ module Jade
       variant :AtField,      of: :DecodeError, args: ['String', 'DecodeError']
       variant :AtIndex,      of: :DecodeError, args: ['Int', 'DecodeError']
       variant :Multiple,     of: :DecodeError, args: ['List(DecodeError)']
+      variant :Custom,       of: :DecodeError, args: ['String']
 
       union :Value
       union :Decoder, 'a'
@@ -23,7 +24,7 @@ module Jade
       interface(
         'Decodable',
         'a',
-        { 'decoder' => '() -> Decoder(a)' },
+        { 'decoder' => 'Decoder(a)' },
       )
 
       # Primitives
@@ -153,6 +154,33 @@ module Jade
         ::Decode::Decoder[::Decode::Desc::OneOf[decoders.map(&:desc)]]
       }
 
+      function(
+        'and_then',
+        { decoder: 'Decoder(a)', fn: 'a -> Decoder(b)' },
+        'Decoder(b)',
+      ) { |decoder, fn|
+        ::Decode::Decoder[::Decode::Desc::AndThen[fn, decoder.desc]]
+      }
+
+      function(
+        'fail',
+        { msg: 'String' },
+        'Decoder(a)',
+      ) { |msg|
+        ::Decode::Decoder[::Decode::Desc::Fail[msg]]
+      }
+
+      function(
+        'from_result',
+        { r: 'Result(a, String)' },
+        'Decoder(a)',
+      ) { |r|
+        case r
+        in ::Result::Ok[v]   then ::Decode::Decoder[::Decode::Desc::Succeed[v]]
+        in ::Result::Err[e]  then ::Decode::Decoder[::Decode::Desc::Fail[e]]
+        end
+      }
+
       # Entry points
 
       function(
@@ -160,7 +188,7 @@ module Jade
         { decoder: 'Decoder(a)', value: 'Value' },
         'Result(a, DecodeError)',
       ) { |decoder, value|
-        ::Decode::Runner.run(decoder, value._1)
+        ::Decode::Runner.run(decoder, value)
       }
 
       function(
@@ -183,7 +211,7 @@ module Jade
           body: [:call,
             [:stdlib_fn, 'Decode.decode'],
             [
-              [:call, [:impl_arg, 0, 'decoder'], []],
+              [:impl_arg, 0, 'decoder'],
               [:var, 'value'],
             ],
           ],
@@ -200,7 +228,7 @@ module Jade
           body: [:call,
             [:stdlib_fn, 'Decode.decode_string'],
             [
-              [:call, [:impl_arg, 0, 'decoder'], []],
+              [:impl_arg, 0, 'decoder'],
               [:var, 'json'],
             ],
           ],

@@ -75,11 +75,16 @@ module Jade
       def generate_impl_fn(fn, dep_dispatches, sibling_fns, registry)
         case fn
         in Symbol::DerivedFunction(params:, body:)
-          inner = "->(#{params.join(', ')}) { #{emit(body, registry)} }"
+          inner = params.empty? \
+            ? emit(body, registry)
+            : "->(#{params.join(', ')}) { #{emit(body, registry)} }"
           return inner if dep_dispatches.empty?
 
           impl_arg = build_impl_arg(dep_dispatches)
           "->(impl_arg) { #{inner} }.call(#{impl_arg})"
+
+        in Symbol::StdlibFunction if fn.params.empty?
+          "#{fn.codegen}.call()"
 
         in Symbol::StdlibFunction
           fn.codegen
@@ -94,6 +99,9 @@ module Jade
 
         in Symbol::ValueRef
           registry.lookup(fn).then { generate_impl_fn(it, dep_dispatches, sibling_fns, registry) }
+
+        in Symbol::Function => fn if fn.params.empty?
+          "#{to_qualified(fn.module_name)}.#{fn.name}.call()"
 
         in Symbol::Function => fn
           "#{to_qualified(fn.module_name)}.#{fn.name}"

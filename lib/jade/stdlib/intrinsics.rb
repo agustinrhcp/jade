@@ -222,12 +222,19 @@ module Jade
 
         in 'Decodable'
           'Decode'
+
+        in 'Encodable'
+          'Encode'
         end
           .then { Symbol.type_ref(it, interface.to_s) }
       end
 
       def to_interface_function(interface_name, fn_name, fn)
-        fn => Symbol::FunctionType(params:, return_type:)
+        params, return_type =
+          case fn
+          in Symbol::FunctionType then [fn.params, fn.return_type]
+          else [[], fn]
+          end
 
         Symbol.interface_function(
           fn_name,

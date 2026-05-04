@@ -258,5 +258,43 @@ module Jade
       b = Use.build.call(2026, ::Calendar::Apr[], 14)
       expect(Use.span.call(a, b, ::Calendar::Months[])).to eql 2
     end
+
+    context 'Encodable / Decodable' do
+      let(:source) do
+        <<~JADE
+          module Json exposing(date_to_json, date_from_json)
+
+          import Calendar exposing(Date, Month(..))
+          import Encode
+          import Decode exposing(DecodeError)
+
+          def date_to_json(d: Date) -> String
+            Encode.encode_to_string(Encode.encode(d))
+          end
+
+          def date_from_json(s: String) -> Result(Date, DecodeError)
+            Decode.from_json(s)
+          end
+        JADE
+      end
+
+      before { test_compiler.require('json', source) }
+
+      it 'encodes a Date as an ISO 8601 string' do
+        d = Use.build.call(2026, ::Calendar::May[], 4)
+        expect(Json.date_to_json.call(d)).to eql '"2026-05-04"'
+      end
+
+      it 'decodes a Date from an ISO 8601 string' do
+        result = Json.date_from_json.call('"2026-05-04"')
+        expect(result).to be_a(Result::Ok)
+        expect(result._1).to have_attributes(year: 2026, day: 4)
+      end
+
+      it 'fails decoding an invalid ISO date' do
+        result = Json.date_from_json.call('"not-a-date"')
+        expect(result).to be_a(Result::Err)
+      end
+    end
   end
 end

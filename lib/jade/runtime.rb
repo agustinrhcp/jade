@@ -41,6 +41,7 @@ module Jade
       require "jade/stdlib/tuple"
       require "jade/stdlib/task"
       require "jade/stdlib/decode"
+      require "jade/stdlib/encode"
     end
 
     def intr(name)
