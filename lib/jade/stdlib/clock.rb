@@ -11,7 +11,7 @@ module Jade
       end
 
       def imports
-        [Basics, Maybe, Result, Task, String, Tuple, Calendar]
+        [Basics, Maybe, Result, Task, String, Tuple, Decode, Encode, Calendar]
       end
 
       def default_imports
@@ -31,6 +31,9 @@ module Jade
                                 add, diff,
                                 from_iso, to_iso,
                                 on_date, at_time)
+
+          import Decode exposing(Decoder, Decodable, Value)
+          import Encode exposing(Encodable)
 
           type Instant  = Instant(Int)
           type Duration = Duration(Int)
@@ -232,6 +235,42 @@ module Jade
 
           implements Eq(Instant) with
             (==): instant_eq
+          end
+
+          def instant_decoder() -> Decoder(Instant)
+            Decode.string |> Decode.and_then(parse_instant)
+          end
+
+          def parse_instant(s: String) -> Decoder(Instant)
+            Decode.from_result(from_iso(s))
+          end
+
+          def instant_encoder(i: Instant) -> Value
+            Encode.string(to_iso(i))
+          end
+
+          implements Decodable(Instant) with
+            decoder: instant_decoder
+          end
+
+          implements Encodable(Instant) with
+            encoder: instant_encoder
+          end
+
+          def duration_decoder() -> Decoder(Duration)
+            Decode.map(Duration, Decode.int)
+          end
+
+          def duration_encoder(d: Duration) -> Value
+            Encode.int(in_millis(d))
+          end
+
+          implements Decodable(Duration) with
+            decoder: duration_decoder
+          end
+
+          implements Encodable(Duration) with
+            encoder: duration_encoder
           end
           JADE
       end

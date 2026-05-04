@@ -5,6 +5,7 @@ module Jade
         module Deriving
           module Decodable
             extend self
+            include Helpers
 
             INTERFACE = 'Decode.Decodable'
 
@@ -56,7 +57,7 @@ module Jade
                 body = [:call,
                   [:stdlib_fn, stdlib_fn],
                   [
-                    [:call, [:impl_arg, 0, 'decoder'], []],
+                    [:impl_arg, 0, 'decoder'],
                   ],
                 ]
 
@@ -86,7 +87,7 @@ module Jade
                   [:stdlib_fn, 'Decode.field'],
                   [
                     field_name.to_s,
-                    [:call, [:impl_arg, idx, 'decoder'], []],
+                    [:impl_arg, idx, 'decoder'],
                   ],
                 ]
 
@@ -94,46 +95,6 @@ module Jade
               end
 
               Ok[implementation(constraint, body, resolved_deps)]
-            end
-
-            def struct_fields(struct_sym, type_args, registry)
-              record = struct_sym.record_type
-              type_param_names = struct_sym.type_params.map(&:name)
-              subst = type_param_names.zip(type_args).to_h
-
-              record.fields.map do |name, sym|
-                [name, instantiate(sym, subst, registry)]
-              end
-            end
-
-            def instantiate(sym, subst, registry)
-              case sym
-              in Symbol::Variable(name:)
-                subst.fetch(name) { Type.var(nil, name) }
-
-              in Symbol::TypeApplication(constructor:, args:)
-                inner_args = args.map { instantiate(it, subst, registry) }
-                Symbol
-                  .type_ref(*qualify_constructor(constructor))
-                  .then { registry.lookup(it) }
-                  .then { type_application_to_type(it, inner_args, registry) }
-
-              in Symbol::TypeRef
-                registry
-                  .lookup(sym)
-                  .then { type_application_to_type(it, [], registry) }
-              end
-            end
-
-            def qualify_constructor(constructor)
-              [constructor.module_name, constructor.name]
-            end
-
-            def type_application_to_type(sym, args, _registry)
-              case sym
-              in Symbol::Union | Symbol::Struct
-                Type.constructor(sym.qualified_name).apply(args)
-              end
             end
 
             def resolve_dep(dep, lookup, entry_name)
