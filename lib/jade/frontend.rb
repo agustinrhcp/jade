@@ -34,29 +34,61 @@ module Jade
        end
     end
 
-    def run_repl(ast, registry, current_entry, scope, env, var_gen)
-      registry ||= registry_with_basics
-      current_entry ||= entry_with_basics('JadeRepl')
-      scope ||= SemanticAnalysis::Scope.new
-      env ||= TypeChecking::Env.new
-      var_gen ||= TypeChecking::VarGen.new
+    def repl_init
+      entry = Registry.entry('JadeRepl')
 
-      ForwardDeclaration
-        .declare(ast, registry, current_entry)
-        .then { |entry| FixityFixer.fix(ast).then { [it, entry] } }
-        .then do |fixed_ast, updated_entry|
-          updated_registry = registry.update_module(updated_entry)
-          SymbolResolution
-            .resolve(fixed_ast, updated_registry, updated_entry) 
-            .then do |enhanced_ast|
-              SemanticAnalysis
-                .analyze_repl(enhanced_ast, updated_registry, scope)
-                .and_then do |scope|
-                  TypeChecking.check_repl(enhanced_ast, updated_registry, env, var_gen)
-                    .map { |type, new_env| [enhanced_ast, type, updated_registry, updated_entry, scope, new_env] }
+      Stdlib.load(Registry.new)
+        .add_module(entry)
+        .then { Stdlib.apply(it) }
+        .then do |reg|
+          loaded_entry = reg.modules['JadeRepl']
+          init_scope = loaded_entry.values
+            .reduce(SemanticAnalysis::Scope.new) { |acc, (n, s)| acc.bind(n, s) }
+          init_env = TypeChecking::Loader.load(loaded_entry, reg)
+          [reg, loaded_entry, init_scope, init_env]
+        end
+    end
+
+    def repl_stdlib_runtime(registry)
+      Stdlib::COMPILED
+        .map { registry.get(it) }
+        .compact
+        .map(&:generated)
+        .compact
+        .join("; ")
+    end
+
+    def run_repl(ast, registry, current_entry, scope, env)
+      FixityFixer.fix(ast)
+        .then { Desugaring.desugar(it) }
+        .then do |fixed_ast|
+          ForwardDeclaration
+            .declare(fixed_ast, registry, current_entry)
+            .and_then do |updated_entry|
+              updated_registry = registry.update_module(updated_entry)
+              updated_scope = bind_new_values(scope, current_entry, updated_entry)
+              updated_env = TypeChecking::Loader.load(updated_entry, updated_registry, env: env)
+
+              SymbolResolution
+                .resolve(fixed_ast, updated_registry, updated_entry)
+                .and_then do |enhanced_ast|
+                  SemanticAnalysis
+                    .analyze_repl(enhanced_ast, updated_registry, updated_scope, updated_entry)
+                    .and_then do |new_scope|
+                      TypeChecking
+                        .check_repl(enhanced_ast, updated_registry, updated_env)
+                        .map do |(type, new_env)|
+                          [enhanced_ast, type, updated_registry, updated_entry, new_scope, new_env]
+                        end
+                    end
                 end
             end
         end
+    end
+
+    def bind_new_values(scope, old_entry, new_entry)
+      (new_entry.defined_values.keys - old_entry.defined_values.keys)
+        .reduce(scope) { |acc, name| acc.bind(name, new_entry.defined_values[name]) }
     end
 
     def run_up_to_semantic_analysis(ast)
