@@ -2,6 +2,7 @@
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 
+require 'readline'
 require 'result'
 require 'jade'
 
@@ -31,62 +32,149 @@ module PrettyPrinting
 end
 
 module Jade
+  module ValueInspect
+    extend self
+
+    def show(value)
+      case value
+      when ::Data
+        members = value.class.members
+        ctor    = value.class.name&.split('::')&.last || 'value'
+
+        if members.empty?
+          ctor
+        elsif members.all? { |m| m.to_s.match?(/\A_\d+\z/) }
+          args = members.map { |m| show(value.public_send(m)) }.join(", ")
+          "#{ctor}(#{args})"
+        else
+          fields = members.map { |m| "#{m}: #{show(value.public_send(m))}" }.join(", ")
+          "{ #{fields} }"
+        end
+      when ::Array
+        "[" + value.map { show(it) }.join(", ") + "]"
+      when ::String
+        value.inspect
+      when ::Method
+        "<function>"
+      else
+        value.inspect
+      end
+    end
+  end
+end
+
+module Jade
   module REPL
     extend self
 
     using ColoredStrings
     using PrettyPrinting
 
-    def run
-      puts "Jade REPL — type :quit to exit\n\n"
+    def run(debug: false)
+      puts "Jade REPL — type :quit to exit (:debug to toggle codegen output)\n\n"
 
-      registry = nil
-      current_entry = nil
-      scope = nil
-      env = nil
-      var_gen = Frontend::TypeChecking::VarGen.new
+      registry, current_entry, scope, env = Frontend.repl_init
 
-      @ruby_env = binding
+      eval(Frontend.repl_stdlib_runtime(registry), TOPLEVEL_BINDING)
+
+      Object.const_set(:JadeRepl, Module.new) unless Object.const_defined?(:JadeRepl)
+      JadeRepl.module_eval("extend self")
+      @ruby_env = JadeRepl.module_eval("binding", __FILE__, __LINE__)
 
       loop do
-        print "> "
-        line = $stdin.gets
-        break unless line
-        input = line.strip
+        input = read_input
+        break if input.nil?
+        next if input.empty?
 
         case input
         when ":quit", ":q", ":exit"
           puts "Bye!"
           break
-        when ""
+        when ":debug"
+          debug = !debug
+          puts "debug #{debug ? 'on' : 'off'}"
           next
         end
 
-        case evaluate(input, registry, current_entry, scope, env, var_gen)
+        case evaluate(input, registry, current_entry, scope, env)
         in Err(message)
-          puts message
+          puts message.red
         in Ok([registry, current_entry, scope, env, type, generated_code])
-          puts generated_code.violet
-
+          puts generated_code.violet if debug
           eval(generated_code, @ruby_env)
-            .then { puts "=> #{it.inspect.green} : #{type.to_s.violet}"}
+            .then { puts "=> #{ValueInspect.show(it).green} : #{type.to_s.violet}" }
         end
       end
     end
 
     private
 
-    def evaluate(src, registry, current_entry, scope, env, var_gen)
-      Source.new(nil, src)
-        .then { Lexer.tokenize(it) }
-        .then { Parsing.parse(it) }
-        .on_err { return Err[it.message] } => Ok(ast)
+    def read_input
+      buffer = nil
 
-      Frontend::FixityFixer.fix(ast)
+      loop do
+        prompt = buffer.nil? ? "> " : ".. "
+        line = Readline.readline(prompt, false)
+        return nil if line.nil?
+
+        buffer = buffer.nil? ? line : "#{buffer}\n#{line}"
+        input = buffer.strip
+        return "" if input.empty?
+
+        case parse_status(buffer)
+        in :complete | :error
+          Readline::HISTORY.push(buffer)
+          return input
+        in :incomplete
+          # keep reading
+        end
+      end
+    end
+
+    def parse_status(src)
+      tokens = Lexer.tokenize(Source.new(src, src))
+      case Parsing.parse(tokens, entry: 'JadeRepl')
+      in Ok(_) then :complete
+      in Err(err) if incomplete?(err, tokens) then :incomplete
+      in Err(_) then :error
+      end
+    end
+
+    def incomplete?(err, tokens)
+      return true if err.is_a?(Parsing::EOFError)
+      return false unless tokens.any?
+
+      CONTINUATION_TOKENS.include?(tokens.last.type) || unbalanced?(tokens)
+    end
+
+    CONTINUATION_TOKENS = Set[
+      :def, :if, :then, :else, :case, :of, :module, :import, :with, :as,
+      :exposing, :interface, :implements, :extends, :struct, :data, :type, :uses,
+      :arrow, :plus, :minus, :star, :slash, :pipe_forward, :pipe_backward,
+      :eq, :not_eq, :lt, :gt, :lte, :gte, :andand, :plusplus, :assign, :bind,
+      :comma, :colon, :pipe, :lparen, :lbrace, :lbrack, :dot, :coloncolon,
+    ].freeze
+
+    def unbalanced?(tokens)
+      depth = 0
+      tokens.each do |t|
+        case t.type
+        when :lparen, :lbrace, :lbrack then depth += 1
+        when :rparen, :rbrace, :rbrack then depth -= 1
+        end
+      end
+      depth > 0
+    end
+
+    def evaluate(src, registry, current_entry, scope, env)
+      Source.new(src, src)
+        .then { Lexer.tokenize(it) }
+        .then { Parsing.parse(it, entry: 'JadeRepl') }
+        .on_err { return Err[it.message] } => Ok([ast, _comments])
 
       Frontend
-        .run_repl(ast, registry, current_entry, scope, env, var_gen)
-        .on_err { return Err[it.first.message] } => Ok([
+        .run_repl(ast, registry, current_entry, scope, env)
+        .on_err { return Err[Array(it).map(&:message).join("\n")] } => Ok([
           ast, type, registry, current_entry, scope, env,
         ])
 
@@ -106,5 +194,5 @@ end
 # Allow debug options.
 # Show errors nicely
 
-Jade::REPL.run
+Jade::REPL.run(debug: ARGV.include?('--debug'))
 

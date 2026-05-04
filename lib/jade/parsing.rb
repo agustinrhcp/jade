@@ -103,21 +103,25 @@ module Jade
     def if_then_else
       (
         type(:if) >>
-          lazy { expression } >>
-          type(:then).skip >>
-          body >>
-          type(:else).skip >>
-          body >>
-          type(:end)
+          (
+            lazy { expression } >>
+            type(:then).skip >>
+            body >>
+            type(:else).skip >>
+            body >>
+            type(:end)
+          ).commit
       ).map(&AST.if_then_else)
     end
 
     def case_of
       (
         type(:case) >>
-          lazy { expression } >>
-          sequence(case_of_branch).map { [it] } >>
-          type(:end)
+          (
+            lazy { expression } >>
+            sequence(case_of_branch).map { [it] } >>
+            type(:end)
+          ).commit
       ).map(&AST.case_of)
     end
 

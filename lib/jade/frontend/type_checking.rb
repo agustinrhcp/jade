@@ -61,9 +61,16 @@ module Jade
           .is_a?(Symbol::InterfaceFunction)
       end
 
-      def check_repl(node, registry, env = Env.new)
-        check_node(node, registry, env, Expected.infer(env.fresh))
-          .to_result
+      def check_repl(node, registry, env)
+        state = State.init(env)
+        new_state, result = check_node(node, registry, state, Expected.infer(env.fresh))
+
+        if new_state.errors.any?
+          Err[new_state.errors]
+        else
+          new_state.env.substitution.apply(result.type)
+            .then { |t| Ok[[t, new_state.env]] }
+        end
       end
 
       def check_node(node, registry, state, expected_type)
