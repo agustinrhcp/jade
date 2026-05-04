@@ -7,21 +7,22 @@ require 'jade/stdlib/string'
 require 'jade/stdlib/result'
 require 'jade/stdlib/task'
 require 'jade/stdlib/decode'
+require 'jade/stdlib/decode/params'
 
 module Jade
   module Stdlib
     extend self
 
     INTRINSICS = %w[Basics String List Tuple Char Task Decode].freeze
-    COMPILED = %w[Maybe Result].freeze
+    COMPILED = %w[Maybe Result Decode.Params].freeze
     STDLIBS = [
       Stdlib::Basics, Stdlib::Maybe, Stdlib::List, Stdlib::Char,
       Stdlib::Tuple, Stdlib::String, Stdlib::Result, Stdlib::Task,
-      Stdlib::Decode,
+      Stdlib::Decode, Stdlib::Decode::Params,
     ]
     # Loaded into the registry but not auto-imported into user modules.
-    # Users must `import Decode` explicitly.
-    EXTENSIONS = [Stdlib::Decode]
+    # Users must `import Decode` / `import Decode.Params` explicitly.
+    EXTENSIONS = [Stdlib::Decode, Stdlib::Decode::Params]
 
     def load(registry)
       registry
@@ -47,7 +48,7 @@ module Jade
 
       prefix = '../' * name.count('.')
       COMPILED
-        .map(&:downcase)
+        .map { it.downcase.tr('.', '/') }
         .map { "require_relative '#{prefix}#{it}'; "}
         .join("")
     end
