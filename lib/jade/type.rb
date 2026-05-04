@@ -114,6 +114,10 @@ module Jade
           .then { |(t, c, _)| [Type.function(args, t), c + arg_cs] }
           .then { it + [var_map] }
 
+      in Symbol::StdlibFunction if symbol.params.empty? && symbol.constraints.empty?
+        from_symbol_r(symbol.return_type, registry, var_gen, {})
+          .then { |(t, c, _)| [t, c, var_map] }
+
       in Symbol::StdlibFunction
         args, arg_cs, local_map = symbol
           .params

@@ -19,49 +19,49 @@ module Jade
         struct Point = { x: Int, y: Int }
 
         def run_string(json: String) -> Result(String, DecodeError)
-          Decode.decode_string(Decode.string(), json)
+          Decode.decode_string(Decode.string, json)
         end
 
         def run_int(json: String) -> Result(Int, DecodeError)
-          Decode.decode_string(Decode.int(), json)
+          Decode.decode_string(Decode.int, json)
         end
 
         def run_field(json: String) -> Result(String, DecodeError)
-          Decode.decode_string(Decode.field("name", Decode.string()), json)
+          Decode.decode_string(Decode.field("name", Decode.string), json)
         end
 
         def run_missing(json: String) -> Result(String, DecodeError)
-          Decode.decode_string(Decode.field("age", Decode.string()), json)
+          Decode.decode_string(Decode.field("age", Decode.string), json)
         end
 
         def run_nullable_present(json: String) -> Result(Maybe(String), DecodeError)
-          Decode.decode_string(Decode.nullable(Decode.string()), json)
+          Decode.decode_string(Decode.nullable(Decode.string), json)
         end
 
         def run_nullable_nil(json: String) -> Result(Maybe(String), DecodeError)
-          Decode.decode_string(Decode.nullable(Decode.string()), json)
+          Decode.decode_string(Decode.nullable(Decode.string), json)
         end
 
         def run_optional_absent(json: String) -> Result(Maybe(String), DecodeError)
-          Decode.decode_string(Decode.optional_field("x", Decode.string()), json)
+          Decode.decode_string(Decode.optional_field("x", Decode.string), json)
         end
 
         def run_optional_present(json: String) -> Result(Maybe(String), DecodeError)
-          Decode.decode_string(Decode.optional_field("x", Decode.string()), json)
+          Decode.decode_string(Decode.optional_field("x", Decode.string), json)
         end
 
         def run_wrong_type(json: String) -> Result(Int, DecodeError)
-          Decode.decode_string(Decode.int(), json)
+          Decode.decode_string(Decode.int, json)
         end
 
         def run_list(json: String) -> Result(List(Int), DecodeError)
-          Decode.decode_string(Decode.list(Decode.int()), json)
+          Decode.decode_string(Decode.list(Decode.int), json)
         end
 
         def run_map2(json: String) -> Result(Point, DecodeError)
           decoder = Decode.succeed(Point(_, _))
-            |> Decode.required("x", Decode.int())
-            |> Decode.required("y", Decode.int())
+            |> Decode.required("x", Decode.int)
+            |> Decode.required("y", Decode.int)
           Decode.decode_string(decoder, json)
         end
       JADE
@@ -135,17 +135,17 @@ module Jade
           import Decode exposing(DecodeError)
 
           def run_all_ok(json: String) -> Result(List(Int), DecodeError)
-            decoders = [Decode.field("a", Decode.int()), Decode.field("b", Decode.int())]
+            decoders = [Decode.field("a", Decode.int), Decode.field("b", Decode.int)]
             Decode.decode_string(Decode.sequence(decoders), json)
           end
 
           def run_one_err(json: String) -> Result(List(Int), DecodeError)
-            decoders = [Decode.field("a", Decode.int()), Decode.field("b", Decode.int())]
+            decoders = [Decode.field("a", Decode.int), Decode.field("b", Decode.int)]
             Decode.decode_string(Decode.sequence(decoders), json)
           end
 
           def run_two_err(json: String) -> Result(List(Int), DecodeError)
-            decoders = [Decode.field("a", Decode.int()), Decode.field("b", Decode.int())]
+            decoders = [Decode.field("a", Decode.int), Decode.field("b", Decode.int)]
             Decode.decode_string(Decode.sequence(decoders), json)
           end
         JADE
@@ -180,8 +180,8 @@ module Jade
           type Id = StringId(String) | IntId(Int)
 
           def id_from_json(json: String) -> Result(Id, DecodeError)
-            string_id = Decode.map(StringId, Decode.string())
-            int_id = Decode.map(IntId, Decode.int())
+            string_id = Decode.map(StringId, Decode.string)
+            int_id = Decode.map(IntId, Decode.int)
             decoder = Decode.one_of([string_id, int_id])
             Decode.decode_string(decoder, json)
           end
@@ -216,9 +216,9 @@ module Jade
 
           def person_decoder() -> Decoder(Person)
             Decode.succeed(Person(_, _, _))
-              |> Decode.required("name", Decode.string())
-              |> Decode.required("age", Decode.int())
-              |> Decode.optional("nickname", Decode.string(), "anon")
+              |> Decode.required("name", Decode.string)
+              |> Decode.required("age", Decode.int)
+              |> Decode.optional("nickname", Decode.string, "anon")
           end
 
           def person_from_json(json: String) -> Result(Person, DecodeError)
@@ -376,8 +376,8 @@ module Jade
 
           def parse_updates(value: Value) -> Result(List(Update), DecodeError)
             decoder = Decode.succeed(make_pair(_, _))
-              |> Decode.and_map(Decode.optional_field("name", Decode.map(name_update, Decode.string())))
-              |> Decode.and_map(Decode.optional_field("age", Decode.map(age_update, Decode.int())))
+              |> Decode.and_map(Decode.optional_field("name", Decode.map(name_update, Decode.string)))
+              |> Decode.and_map(Decode.optional_field("age", Decode.map(age_update, Decode.int)))
             Decode.decode(decoder, value)
           end
         JADE

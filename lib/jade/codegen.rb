@@ -59,6 +59,9 @@ module Jade
             .then { "#{symbol.interop_module_name}, :#{symbol.name}, #{it}" }
             .then { "Jade::Runtime.guard(#{it})" }
 
+        in Symbol::StdlibFunction(codegen:, params:) if params.empty?
+          "#{codegen}.call()"
+
         in Symbol::StdlibFunction(codegen:)
           codegen
 
@@ -116,6 +119,9 @@ module Jade
 
       in AST::QualifiedAccess(symbol:)
         case registry.lookup(symbol)
+        in Symbol::StdlibFunction(codegen:, params:) if params.empty?
+          "#{codegen}.call()"
+
         in Symbol::StdlibFunction(codegen:)
           codegen
 

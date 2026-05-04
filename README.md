@@ -177,8 +177,8 @@ Useful for applicative-style pipelines:
 
 ```jade
 Decode.succeed(Person(_, _, _))
-  |> Decode.required("name", Decode.string())
-  |> Decode.required("age", Decode.int())
+  |> Decode.required("name", Decode.string)
+  |> Decode.required("age", Decode.int)
 ```
 
 `_` is only valid as a direct argument inside a call — not as a bare expression

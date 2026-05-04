@@ -52,6 +52,9 @@ module Jade
         in 'Decoder' | 'Decodable' | 'DecodeError' | 'Value'
           'Decode'
 
+        in 'Params'
+          'Decode.Params'
+
         end
           .then { [it, type] }
       end
