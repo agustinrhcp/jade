@@ -26,6 +26,7 @@ module Jade
                                    month_to_int, month_from_int,
                                    weekday_to_int, weekday_from_int,
                                    to_iso_string, from_iso_string,
+                                   to_rata_die, from_rata_die,
                                    add, diff)
 
           type Month   = Jan | Feb | Mar | Apr | May | Jun
