@@ -46,8 +46,8 @@ module Jade
         in Symbol::Function(module_name:, name:)
           to_qualified(module_name) + "." + name
 
-        in Symbol::Constructor(module_name:, name:)
-          to_qualified(module_name + "." + name) + ".method(:[])"
+        in Symbol::Constructor => sym
+          ConstructorReference.from_symbol(sym)
 
         in Symbol::StdlibImplementation => symbol
           dictionaries

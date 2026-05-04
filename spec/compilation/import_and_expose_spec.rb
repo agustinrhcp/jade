@@ -74,7 +74,7 @@ module Jade
           import Exposing exposing(MyType(..))
 
           def hello() -> String
-            MyType() |> Exposing.my_function
+            MyType |> Exposing.my_function
           end
         JADE
       end
@@ -98,7 +98,7 @@ module Jade
           import Exposing
 
           def hello() -> String
-            Exposing.MyType() |> Exposing.my_function
+            Exposing.MyType |> Exposing.my_function
           end
         JADE
       end

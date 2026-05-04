@@ -32,9 +32,11 @@ module Jade
             sym
               .variants
               .map do |variant|
-                Type
-                  .from_symbol(variant, registry, var_gen)
-                  .then { Definition.constructor(variant.qualified_name, sym.qualified_name, it.first.args) }
+                args = case Type.from_symbol(variant, registry, var_gen).first
+                       in Type::Function(args:) then args
+                       else []
+                       end
+                Definition.constructor(variant.qualified_name, sym.qualified_name, args)
               end
               .then { Definition.type(sym.qualified_name, type.args, it) }
 

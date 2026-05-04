@@ -156,7 +156,7 @@ module Jade
           module InterfaceTest exposing (just_eq, nothing_eq)
 
           def nothing_eq() -> Bool
-            Nothing() == Nothing()
+            Nothing == Nothing
           end
 
           def just_eq(a: Int, b: Int) -> Bool

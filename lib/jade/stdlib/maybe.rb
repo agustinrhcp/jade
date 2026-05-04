@@ -49,7 +49,7 @@ module Jade
             of Just(something) then
               something |> fn
 
-            of Nothing then Nothing()
+            of Nothing then Nothing
             end
           end
 

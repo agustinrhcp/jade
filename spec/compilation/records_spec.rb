@@ -51,7 +51,7 @@ module Jade
             end
 
             def pauls_age() -> Int
-              paul().age
+              paul.age
             end
           JADE
         end
@@ -72,7 +72,7 @@ module Jade
               end
 
               def pauls_age() -> Int
-                paul() |> .age
+                paul |> .age
               end
             JADE
           end
@@ -94,7 +94,7 @@ module Jade
               end
 
               def pauls_age() -> Int
-                paul().ate
+                paul.ate
               end
             JADE
           end
@@ -116,7 +116,7 @@ module Jade
             end
 
             def pauls_birthday() -> { name : String, age : Int }
-              paul_before_today = paul()
+              paul_before_today = paul
               { paul_before_today | age: paul_before_today.age + 1 }
             end
           JADE
@@ -139,7 +139,7 @@ module Jade
             end
 
             def pauls_birthday() -> { name : String, age : Int }
-              paul_before_today = paul()
+              paul_before_today = paul
               paul_before_today
                 |> .age=(paul_before_today.age + 1)
             end
