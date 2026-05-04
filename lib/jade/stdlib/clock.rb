@@ -21,13 +21,19 @@ module Jade
       def code
         <<~JADE
           module Clock exposing(Instant, Duration,
-                                now, from_millis, to_millis,
+                                now, epoch,
+                                millis,    in_millis,
+                                seconds,   in_seconds,
+                                minutes,   in_minutes,
+                                hours,     in_hours,
+                                days,      in_days,
+                                parts,
                                 add, diff,
-                                to_iso_string, from_iso_string,
-                                to_date)
+                                from_iso, to_iso,
+                                on_date, at_time)
 
-          struct Instant  = { millis: Int }
-          struct Duration = { millis: Int }
+          type Instant  = Instant(Int)
+          type Duration = Duration(Int)
 
           uses Jade::Clock::Runtime with
             now_raw: Task({ millis: Int }, Never)
@@ -38,24 +44,83 @@ module Jade
             Task.succeed(Instant(raw.millis))
           end
 
-          def from_millis(n: Int) -> Instant
-            Instant(n)
+          def epoch() -> Instant
+            Instant(0)
           end
 
-          def to_millis(i: Instant) -> Int
-            i.millis
+          def millis(n: Int) -> Duration
+            Duration(n)
+          end
+
+          def in_millis(d: Duration) -> Int
+            Duration(n) = d
+            n
+          end
+
+          def seconds(n: Int) -> Duration
+            Duration(n * 1000)
+          end
+
+          def in_seconds(d: Duration) -> Int
+            in_millis(d) / 1000
+          end
+
+          def minutes(n: Int) -> Duration
+            Duration(n * 60000)
+          end
+
+          def in_minutes(d: Duration) -> Int
+            in_millis(d) / 60000
+          end
+
+          def hours(n: Int) -> Duration
+            Duration(n * 3600000)
+          end
+
+          def in_hours(d: Duration) -> Int
+            in_millis(d) / 3600000
+          end
+
+          def days(n: Int) -> Duration
+            Duration(n * 86400000)
+          end
+
+          def in_days(d: Duration) -> Int
+            in_millis(d) / 86400000
+          end
+
+          def parts(d: Duration) -> { days: Int, hours: Int, minutes: Int, seconds: Int, millis: Int }
+            ms = in_millis(d)
+            { days:    ms / 86400000,
+              hours:   mod(ms, 86400000) / 3600000,
+              minutes: mod(ms, 3600000) / 60000,
+              seconds: mod(ms, 60000) / 1000,
+              millis:  mod(ms, 1000) }
           end
 
           def add(i: Instant, d: Duration) -> Instant
-            Instant(i.millis + d.millis)
+            Instant(ms) = i
+            Instant(ms + in_millis(d))
           end
 
           def diff(a: Instant, b: Instant) -> Duration
-            Duration(b.millis - a.millis)
+            Instant(ams) = a
+            Instant(bms) = b
+            Duration(bms - ams)
           end
 
-          def to_date(i: Instant) -> Calendar.Date
-            Calendar.from_rata_die(floor_div(i.millis, 86400000) + 719163)
+          def on_date(i: Instant) -> Calendar.Date
+            Instant(ms) = i
+            Calendar.from_rata_die(floor_div(ms, 86400000) + 719163)
+          end
+
+          def at_time(i: Instant) -> { hour: Int, minute: Int, second: Int, millisecond: Int }
+            Instant(ms) = i
+            day_ms = mod(ms, 86400000)
+            { hour:        day_ms / 3600000,
+              minute:      mod(day_ms, 3600000) / 60000,
+              second:      mod(day_ms, 60000) / 1000,
+              millisecond: mod(day_ms, 1000) }
           end
 
           def floor_div(a: Int, b: Int) -> Int
@@ -63,15 +128,11 @@ module Jade
             if a < 0 && mod(a, b) != 0 then q - 1 else q end
           end
 
-          def to_iso_string(i: Instant) -> String
-            d = to_date(i)
-            day_ms = mod(i.millis, 86400000)
-            secs = day_ms / 1000
-            hour = secs / 3600
-            minute = mod(secs / 60, 60)
-            second = mod(secs, 60)
+          def to_iso(i: Instant) -> String
+            d = on_date(i)
+            tod = at_time(i)
             Calendar.to_iso_string(d) ++ "T"
-              ++ pad2(hour) ++ ":" ++ pad2(minute) ++ ":" ++ pad2(second) ++ "Z"
+              ++ pad2(tod.hour) ++ ":" ++ pad2(tod.minute) ++ ":" ++ pad2(tod.second) ++ "Z"
           end
 
           def pad2(n: Int) -> String
@@ -79,7 +140,7 @@ module Jade
             if String.length(s) < 2 then "0" ++ s else s end
           end
 
-          def from_iso_string(s: String) -> Result(Instant, String)
+          def from_iso(s: String) -> Result(Instant, String)
             case split_dt(s)
             of Just((date_part, time_part)) then
               case (Calendar.from_iso_string(date_part), parse_time(time_part))
@@ -149,16 +210,20 @@ module Jade
           end
 
           def combine(d: Calendar.Date, hour: Int, minute: Int, second: Int, sub_ms: Int) -> Instant
-            days = Calendar.to_rata_die(d) - 719163
-            Instant(days * 86400000 + hour * 3600000 + minute * 60000 + second * 1000 + sub_ms)
+            day_count = Calendar.to_rata_die(d) - 719163
+            Instant(day_count * 86400000 + hour * 3600000 + minute * 60000 + second * 1000 + sub_ms)
           end
 
           def compare_instant(a: Instant, b: Instant) -> Ordering
-            compare(a.millis, b.millis)
+            Instant(ams) = a
+            Instant(bms) = b
+            compare(ams, bms)
           end
 
           def instant_eq(a: Instant, b: Instant) -> Bool
-            a.millis == b.millis
+            Instant(ams) = a
+            Instant(bms) = b
+            ams == bms
           end
 
           implements Comparable(Instant) with

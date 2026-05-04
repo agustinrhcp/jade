@@ -9,22 +9,78 @@ module Jade
 
     let(:source) do
       <<~JADE
-        module Use exposing(now, build, millis, advance, span,
+        module Use exposing(now, epoch, at_ms, since_epoch_ms,
+                            ms_to, to_ms, sec_to, to_sec,
+                            min_to, to_min, hr_to, to_hr, day_to, to_day,
+                            parts, time_of_day,
+                            advance, span,
                             iso, parse_iso, to_date, before, equal)
 
-        import Clock exposing(Instant, Duration)
+        import Clock    exposing(Instant, Duration)
         import Calendar exposing(Date, Month(..))
 
         def now() -> Task(Instant, Never)
           Clock.now
         end
 
-        def build(n: Int) -> Instant
-          Clock.from_millis(n)
+        def epoch() -> Instant
+          Clock.epoch
         end
 
-        def millis(i: Instant) -> Int
-          Clock.to_millis(i)
+        def at_ms(n: Int) -> Instant
+          Clock.add(Clock.epoch, Clock.millis(n))
+        end
+
+        def since_epoch_ms(i: Instant) -> Int
+          Clock.diff(Clock.epoch, i) |> Clock.in_millis
+        end
+
+        def ms_to(n: Int) -> Duration
+          Clock.millis(n)
+        end
+
+        def to_ms(d: Duration) -> Int
+          Clock.in_millis(d)
+        end
+
+        def sec_to(n: Int) -> Duration
+          Clock.seconds(n)
+        end
+
+        def to_sec(d: Duration) -> Int
+          Clock.in_seconds(d)
+        end
+
+        def min_to(n: Int) -> Duration
+          Clock.minutes(n)
+        end
+
+        def to_min(d: Duration) -> Int
+          Clock.in_minutes(d)
+        end
+
+        def hr_to(n: Int) -> Duration
+          Clock.hours(n)
+        end
+
+        def to_hr(d: Duration) -> Int
+          Clock.in_hours(d)
+        end
+
+        def day_to(n: Int) -> Duration
+          Clock.days(n)
+        end
+
+        def to_day(d: Duration) -> Int
+          Clock.in_days(d)
+        end
+
+        def parts(d: Duration) -> { days: Int, hours: Int, minutes: Int, seconds: Int, millis: Int }
+          Clock.parts(d)
+        end
+
+        def time_of_day(i: Instant) -> { hour: Int, minute: Int, second: Int, millisecond: Int }
+          Clock.at_time(i)
         end
 
         def advance(i: Instant, d: Duration) -> Instant
@@ -36,15 +92,15 @@ module Jade
         end
 
         def iso(i: Instant) -> String
-          Clock.to_iso_string(i)
+          Clock.to_iso(i)
         end
 
         def parse_iso(s: String) -> Result(Instant, String)
-          Clock.from_iso_string(s)
+          Clock.from_iso(s)
         end
 
         def to_date(i: Instant) -> Date
-          Clock.to_date(i)
+          Clock.on_date(i)
         end
 
         def before(a: Instant, b: Instant) -> Bool
@@ -57,94 +113,154 @@ module Jade
       JADE
     end
 
+    def duration(n) = ::Clock::Duration[n]
+
     before { test_compiler.require('use', source) }
 
-    it 'now() returns a Task that resolves to an Instant' do
+    it 'now() returns a Task that resolves to an Instant after the epoch' do
       result = Use.now.call.run
       expect(result).to be_a(Result::Ok)
-      i = result._1
-      expect(i.millis).to be_a(Integer)
-      expect(i.millis).to be > 0
+      expect(Use.since_epoch_ms.call(result._1)).to be > 0
     end
 
-    it 'builds and reads back epoch millis' do
-      i = Use.build.call(1_700_000_000_000)
-      expect(Use.millis.call(i)).to eql 1_700_000_000_000
+    it 'epoch is 1970-01-01T00:00:00Z' do
+      expect(Use.iso.call(Use.epoch.call)).to eql '1970-01-01T00:00:00Z'
     end
 
-    it 'add(instant, duration) returns a shifted instant' do
-      i = Use.build.call(1_000_000)
-      d = ::Clock::Duration[500]
-      expect(Use.advance.call(i, d).millis).to eql 1_000_500
+    it 'add(epoch, from_millis(n)) reaches a specific Instant' do
+      i = Use.at_ms.call(1_700_000_000_000)
+      expect(Use.since_epoch_ms.call(i)).to eql 1_700_000_000_000
     end
 
-    it 'diff(a, b) returns a duration in millis' do
-      a = Use.build.call(1_000_000)
-      b = Use.build.call(1_000_500)
-      expect(Use.span.call(a, b).millis).to eql 500
+    describe 'Duration unit constructors and accessors' do
+      it 'from_millis / to_millis round-trip' do
+        expect(Use.to_ms.call(Use.ms_to.call(500))).to eql 500
+      end
+
+      it 'from_seconds / to_seconds' do
+        expect(Use.to_ms.call(Use.sec_to.call(60))).to eql 60_000
+        expect(Use.to_sec.call(Use.ms_to.call(2_500))).to eql 2
+      end
+
+      it 'from_minutes / to_minutes' do
+        expect(Use.to_ms.call(Use.min_to.call(2))).to eql 120_000
+        expect(Use.to_min.call(Use.ms_to.call(120_500))).to eql 2
+      end
+
+      it 'from_hours / to_hours' do
+        expect(Use.to_ms.call(Use.hr_to.call(1))).to eql 3_600_000
+        expect(Use.to_hr.call(Use.ms_to.call(7_260_000))).to eql 2
+      end
+
+      it 'from_days / to_days' do
+        expect(Use.to_ms.call(Use.day_to.call(1))).to eql 86_400_000
+        expect(Use.to_day.call(Use.ms_to.call(2 * 86_400_000 + 100))).to eql 2
+      end
     end
 
-    it 'formats an Instant as an ISO 8601 UTC string' do
-      i = Use.build.call(0)
-      expect(Use.iso.call(i)).to eql '1970-01-01T00:00:00Z'
+    describe 'to_parts on a Duration' do
+      it 'breaks a complex duration into named components' do
+        d = duration(1 * 86_400_000 + 2 * 3_600_000 + 3 * 60_000 + 4 * 1_000 + 5)
+        parts = Use.parts.call(d)
+        expect(parts.days).to    eql 1
+        expect(parts.hours).to   eql 2
+        expect(parts.minutes).to eql 3
+        expect(parts.seconds).to eql 4
+        expect(parts.millis).to  eql 5
+      end
+
+      it 'zeros out parts smaller than the duration' do
+        parts = Use.parts.call(duration(500))
+        expect(parts.days).to    eql 0
+        expect(parts.hours).to   eql 0
+        expect(parts.minutes).to eql 0
+        expect(parts.seconds).to eql 0
+        expect(parts.millis).to  eql 500
+      end
     end
 
-    it 'formats a known epoch into an ISO string' do
-      i = Use.build.call(1_700_000_000_000)
-      expect(Use.iso.call(i)).to eql '2023-11-14T22:13:20Z'
+    describe 'to_time_of_day on an Instant' do
+      it 'extracts wall-clock parts from epoch millis' do
+        tod = Use.time_of_day.call(Use.at_ms.call(1_700_000_000_123))
+        expect(tod.hour).to        eql 22
+        expect(tod.minute).to      eql 13
+        expect(tod.second).to      eql 20
+        expect(tod.millisecond).to eql 123
+      end
+
+      it 'returns midnight for the epoch' do
+        tod = Use.time_of_day.call(Use.epoch.call)
+        expect(tod.hour).to        eql 0
+        expect(tod.minute).to      eql 0
+        expect(tod.second).to      eql 0
+        expect(tod.millisecond).to eql 0
+      end
     end
 
-    it 'parses an ISO 8601 UTC string' do
-      result = Use.parse_iso.call('1970-01-01T00:00:00Z')
-      expect(result).to be_a(Result::Ok)
-      expect(result._1.millis).to eql 0
+    describe 'add / diff' do
+      it 'add(instant, duration) returns a shifted instant' do
+        i = Use.at_ms.call(1_000_000)
+        d = duration(500)
+        expect(Use.since_epoch_ms.call(Use.advance.call(i, d))).to eql 1_000_500
+      end
+
+      it 'diff(a, b) returns a Duration in millis' do
+        a = Use.at_ms.call(1_000_000)
+        b = Use.at_ms.call(1_000_500)
+        expect(Use.to_ms.call(Use.span.call(a, b))).to eql 500
+      end
     end
 
-    it 'parses with a space separator (PostgreSQL style)' do
-      result = Use.parse_iso.call('2023-11-14 22:13:20Z')
-      expect(result).to be_a(Result::Ok)
-      expect(result._1.millis).to eql 1_700_000_000_000
+    describe 'ISO 8601 formatting and parsing' do
+      it 'formats a known epoch into an ISO string' do
+        expect(Use.iso.call(Use.at_ms.call(1_700_000_000_000))).to eql '2023-11-14T22:13:20Z'
+      end
+
+      it 'parses an ISO 8601 UTC string' do
+        result = Use.parse_iso.call('1970-01-01T00:00:00Z')
+        expect(result).to be_a(Result::Ok)
+        expect(Use.since_epoch_ms.call(result._1)).to eql 0
+      end
+
+      it 'parses with a space separator (PostgreSQL style)' do
+        result = Use.parse_iso.call('2023-11-14 22:13:20Z')
+        expect(result).to be_a(Result::Ok)
+        expect(Use.since_epoch_ms.call(result._1)).to eql 1_700_000_000_000
+      end
+
+      it 'parses sub-second precision' do
+        result = Use.parse_iso.call('2023-11-14T22:13:20.123Z')
+        expect(result).to be_a(Result::Ok)
+        expect(Use.since_epoch_ms.call(result._1)).to eql 1_700_000_000_123
+      end
+
+      it 'returns Err for an invalid timestamp' do
+        expect(Use.parse_iso.call('not-a-time')).to be_a(Result::Err)
+      end
+
+      it 'projects an Instant onto a Calendar Date' do
+        d = Use.to_date.call(Use.at_ms.call(1_700_000_000_000))
+        expect(d.year).to eql 2023
+        expect(d.month).to eql ::Calendar::Nov[]
+        expect(d.day).to eql 14
+      end
     end
 
-    it 'parses sub-second precision' do
-      result = Use.parse_iso.call('2023-11-14T22:13:20.123Z')
-      expect(result).to be_a(Result::Ok)
-      expect(result._1.millis).to eql 1_700_000_000_123
-    end
+    describe 'Comparable / Eq on Instant' do
+      it 'orders instants' do
+        a = Use.at_ms.call(100)
+        b = Use.at_ms.call(200)
+        expect(Use.before.call(a, b)).to be true
+        expect(Use.before.call(b, a)).to be false
+      end
 
-    it 'returns Err for an invalid timestamp' do
-      expect(Use.parse_iso.call('not-a-time')).to be_a(Result::Err)
-    end
-
-    it 'round-trips via ISO' do
-      i = Use.build.call(1_700_000_000_000)
-      iso = Use.iso.call(i)
-      result = Use.parse_iso.call(iso)
-      expect(result).to be_a(Result::Ok)
-      expect(result._1.millis).to eql 1_700_000_000_000
-    end
-
-    it 'projects an Instant onto a Calendar Date' do
-      i = Use.build.call(1_700_000_000_000)
-      d = Use.to_date.call(i)
-      expect(d.year).to eql 2023
-      expect(d.month).to eql ::Calendar::Nov[]
-      expect(d.day).to eql 14
-    end
-
-    it 'orders instants via Comparable' do
-      a = Use.build.call(100)
-      b = Use.build.call(200)
-      expect(Use.before.call(a, b)).to be true
-      expect(Use.before.call(b, a)).to be false
-    end
-
-    it 'compares instants via Eq' do
-      a = Use.build.call(100)
-      b = Use.build.call(100)
-      c = Use.build.call(101)
-      expect(Use.equal.call(a, b)).to be true
-      expect(Use.equal.call(a, c)).to be false
+      it 'compares for equality' do
+        a = Use.at_ms.call(100)
+        b = Use.at_ms.call(100)
+        c = Use.at_ms.call(101)
+        expect(Use.equal.call(a, b)).to be true
+        expect(Use.equal.call(a, c)).to be false
+      end
     end
   end
 end
