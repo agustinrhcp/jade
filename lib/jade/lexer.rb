@@ -70,6 +70,7 @@ module Jade
       '::' => :coloncolon,
 
       '&&' => :andand,
+      '||' => :oror,
     }.freeze
 
     SYMBOLS_REGEX = Regexp.union(SYMBOLS.keys.sort_by { |k| -k.length })

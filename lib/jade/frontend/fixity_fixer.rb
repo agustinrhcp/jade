@@ -143,6 +143,10 @@ module Jade
           AST::StructDeclaration | AST::QualifiedAccess | AST::Placeholder | AST::InterfaceDeclaration
 
           node
+
+        in AST::RecordAccess(target:)
+          fix(target)
+            .then { node.with(target: it) }
         end
       end
 

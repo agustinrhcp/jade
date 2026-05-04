@@ -80,6 +80,7 @@ module Jade
       function('int_sub',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a - b }
       function('int_mul',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a * b }
       function('int_div',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a / b }
+      function('mod',       { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a % b }
 
       function('float_add', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a + b }
       function('float_sub', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a - b }
