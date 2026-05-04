@@ -95,6 +95,12 @@ module Jade
       end
 
       function(
+        :from_int,
+        { n: 'Int' },
+        'String',
+      ) { |n| n.to_s }
+
+      function(
         :split,
         { str: 'String', by: 'String' },
         'List(String)',

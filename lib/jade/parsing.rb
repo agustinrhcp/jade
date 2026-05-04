@@ -183,7 +183,7 @@ module Jade
     def operator
       type(:plus) | type(:minus) | type(:star) | type(:slash) |
         type(:pipe_forward) | type(:pipe_backward) | type(:eq) | type(:not_eq) |
-        type(:lt) | type(:gt) | type(:lte) | type(:gte) | type(:andand) |
+        type(:lt) | type(:gt) | type(:lte) | type(:gte) | type(:andand) | type(:oror) |
         type(:plusplus)
     end
 

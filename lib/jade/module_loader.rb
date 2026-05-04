@@ -46,6 +46,7 @@ module Jade
     def compile(registry)
       registry
         .modules_in_topo_order
+        .reject { Stdlib.is_stdlib?(it) }
         .reduce(registry) do |acc, entry|
           Frontend
             .run_entry(entry, acc)
