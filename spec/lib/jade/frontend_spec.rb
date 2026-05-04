@@ -1652,7 +1652,7 @@ module Jade
         context 'type application' do
           let(:text) do
             <<~JADE
-              Just(1) == Nothing()
+              Just(1) == Nothing
             JADE
           end
 
@@ -1662,7 +1662,7 @@ module Jade
         context 'type application with unknown types' do
           let(:text) do
             <<~JADE
-              Nothing() == Nothing()
+              Nothing == Nothing
             JADE
           end
 

@@ -36,7 +36,7 @@ module Jade
         def first_char(s: String) -> Maybe(Char)
           case String.uncons(s)
           of Just((c, _)) then Just(c)
-          of Nothing then Nothing()
+          of Nothing then Nothing
           end
         end
 

@@ -56,7 +56,7 @@ module Jade
           def to_maybe(result: Result(a, e)) -> Maybe(a)
             case result
             of Ok(something) then Just(something)
-            of _ then Nothing()
+            of _ then Nothing
             end
           end
 

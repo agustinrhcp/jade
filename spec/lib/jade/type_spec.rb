@@ -82,18 +82,10 @@ module Jade
 
         let(:entry) { Registry.entry('__Test__') }
 
-        it { is_expected.to be_a(Type::Function) }
-        its(:return_type) { is_expected.to be_a(Type::Application) }
+        it { is_expected.to be_a(Type::Application) }
 
-        its(:args) { is_expected.to be_empty }
-
-        describe 'the return type' do
-          subject { super().return_type }
-          it { is_expected.to be_a(Type::Application) }
-
-          its(:constructor) { is_expected.to be_a(Type::Constructor).and have_attributes(name: 'Maybe.Maybe') }
-          its(:args) { is_expected.to eql [Type.var('a1', 'a')] }
-        end
+        its(:constructor) { is_expected.to be_a(Type::Constructor).and have_attributes(name: 'Maybe.Maybe') }
+        its(:args) { is_expected.to eql [Type.var('a1', 'a')] }
       end
 
       describe 'variant symbol: Just' do

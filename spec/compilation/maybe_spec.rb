@@ -23,7 +23,7 @@ module Jade
           Maybe.and_then(n, (int) -> {
             case int
             of 1 then Just("ONE")
-            of _ then Nothing()
+            of _ then Nothing
             end
           })
         end
@@ -50,7 +50,7 @@ module Jade
           module Pepe exposing (nott)
 
           def nott() -> Maybe
-            Nothing()
+            Nothing
           end
         JADE
       end

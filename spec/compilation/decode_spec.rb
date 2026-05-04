@@ -222,11 +222,11 @@ module Jade
           end
 
           def person_from_json(json: String) -> Result(Person, DecodeError)
-            Decode.decode_string(person_decoder(), json)
+            Decode.decode_string(person_decoder, json)
           end
 
           def person_with_default_from_json(json: String) -> Result(Person, DecodeError)
-            Decode.decode_string(person_decoder(), json)
+            Decode.decode_string(person_decoder, json)
           end
         JADE
       end

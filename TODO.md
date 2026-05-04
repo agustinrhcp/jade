@@ -44,16 +44,6 @@ New pass to track usages of symbols. This is helpful for duplicate error
 (now being raised by semantic analysis), unused imports and dead code detection.
 
 
-### No args constructor into constants
-
-Having to do Nothing() is alien, and probably a trap. So having
-Just be a function but Nothing be a constant would make tons of sense.
-
-```ruby
-return type_from_symbol(symbol.union, registry) if symbol.args.empty?
-```
-
-
 ### Missing Type Name Should fail
 
 ```jade
@@ -79,16 +69,6 @@ and mimic the current lookup (to be lookup_value) when dealing with types too.
 ### Test Int(a)
 
 This should fail, Int has no vars
-
-
-### No arg functions into constants
-
-Similar to above, but
-
-def pepe() -> Int
-
-should be callable as pepe (without parens)
-or should it not? I think it should.
 
 
 ### Interop part II - Tasks

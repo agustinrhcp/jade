@@ -39,6 +39,22 @@ def greet(name: String) -> String
 end
 ```
 
+### Nullary references as values
+
+Zero-parameter functions and zero-arity constructors are values at the reference site. The `()` stays at the definition site for grep-ability, but call parens at the use site are a type error.
+
+```jade
+def pi() -> Float
+  3.14
+end
+
+area = pi * radius * radius     -- not pi()
+flag = True                     -- not True()
+none = Nothing                  -- not Nothing()
+```
+
+Constructors with payloads are unchanged: `Just(x)`, `Ok(value)`.
+
 ### Types
 
 Jade infers types throughout — annotations are only required on function signatures.
@@ -292,8 +308,6 @@ See the [`examples/`](examples/) directory:
 
 ### Language Features
 - **Ranges** — `1..10`, `1...10`
-- **No-arg functions as constants** — `def pi() -> Float` should be callable as `pi`, not `pi()`
-- **No-arg constructors as constants** — `Nothing` instead of `Nothing()`
 
 ### Type System
 - **Unresolved constraint error messages** — constraint propagation works but error messages need improvement

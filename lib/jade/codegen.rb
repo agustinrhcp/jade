@@ -2,6 +2,9 @@ require 'jade/codegen/helpers'
 
 require 'jade/codegen/emitter'
 
+require 'jade/codegen/constructor_reference'
+require 'jade/codegen/variant_declaration'
+require 'jade/codegen/pattern/constructor'
 require 'jade/codegen/function_declaration'
 require 'jade/codegen/function_call'
 require 'jade/codegen/implementation'
@@ -59,6 +62,9 @@ module Jade
         in Symbol::StdlibFunction(codegen:)
           codegen
 
+        in Symbol::Function if symbol.params.empty?
+          "#{name}.call()"
+
         else
           name
         end
@@ -88,8 +94,8 @@ module Jade
       in AST::FunctionCall
         FunctionCall.generate(node, registry)
 
-      in AST::ConstructorReference(name:, symbol:)
-        to_qualified(symbol.qualified_name) + ".method(:[])"
+      in AST::ConstructorReference
+        ConstructorReference.generate(node, registry)
 
       in AST::TypeDeclaration(variants:)
         generate_many(variants, registry, '; ')
@@ -105,23 +111,22 @@ module Jade
         ""
 
 
-      in AST::VariantDeclaration(name:, args:)
-        args
-          .map
-          .with_index { |_, i| "_#{i + 1}" }
-          .then { data_define(it) }
-          .then { "#{name} = #{it}" }
+      in AST::VariantDeclaration
+        VariantDeclaration.generate(node)
 
       in AST::QualifiedAccess(symbol:)
         case registry.lookup(symbol)
         in Symbol::StdlibFunction(codegen:)
           codegen
 
+        in Symbol::Function(module_name:, name:, params:) if params.empty?
+          to_qualified(module_name) + ".#{name}.call()"
+
         in Symbol::Function(module_name:, name:)
           to_qualified(module_name) + ".#{name}"
 
-        in Symbol::Constructor(module_name:, name:)
-          to_qualified(module_name + "." + name) + ".method(:[])"
+        in Symbol::Constructor => sym
+          ConstructorReference.from_symbol(sym)
         end
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)
@@ -161,12 +166,8 @@ module Jade
           .join(', ')
           .then { "[#{it}]" }
 
-      in AST::Pattern::Constructor(symbol:, patterns:)
-        sym = registry.lookup(symbol)
-
-        generate_many(patterns, registry)
-          .then { it.empty? ? it : "(#{it})"}
-          .then { "#{to_qualified(sym.qualified_name)}#{it}" }
+      in AST::Pattern::Constructor
+        Pattern::Constructor.generate(node, registry)
 
       in AST::Lambda(params:, body:)
         param_strs = params.zip(0..).map { |p, i| param_name(p, i) }

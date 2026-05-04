@@ -20,7 +20,7 @@ module Jade
 
           def chain_nothing(a: Maybe(Int)) -> Maybe(Int)
             x <- a
-            y <- Nothing()
+            y <- Nothing
             Just(x + y)
           end
         JADE

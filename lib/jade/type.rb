@@ -97,6 +97,10 @@ module Jade
           .constructor(symbol.qualified_name)
           .then { [it.apply(union_vars), union_cs, union_map] }
 
+      in Symbol::Function if symbol.params.empty?
+        from_symbol_r(symbol.return_type, registry, var_gen, {})
+          .then { |(t, c, _)| [t, c, var_map] }
+
       in Symbol::Function
         args, arg_cs, local_map = symbol
           .params
@@ -160,6 +164,9 @@ module Jade
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
           .then { |(t, c, _)| [Type.function(args, t), c + arg_cs + [constraint]] }
           .then { it + [var_map] }
+
+      in Symbol::Constructor if symbol.args.empty?
+        from_symbol_r(symbol.parent, registry, var_gen, var_map)
 
       in Symbol::Constructor
         union_type, union_cs, union_vars =

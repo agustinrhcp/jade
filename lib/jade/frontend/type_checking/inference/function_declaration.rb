@@ -11,18 +11,23 @@ module Jade
 
             state.env.lookup(symbol.qualified_name) => { type: fn_type, constraints: fn_constraints }
 
-            new_state, body_result = fn_type
-              .args
+            arg_types, return_type =
+              case fn_type
+              in Type::Function(args:, return_type:) then [args, return_type]
+              else [[], fn_type]
+              end
+
+            new_state, body_result = arg_types
               .zip(params)
               .reduce(state) do |acc, (t, p)|
                 acc.bind(p.name, Scheme.mono(t))
               end
-              .then { check(body, registry, it, Expected.check(fn_type.return_type)) }
+              .then { check(body, registry, it, Expected.check(return_type)) }
 
             new_state
               .unify(
                 body_result.type,
-                fn_type.return_type,
+                return_type,
                 fn_type.unbound_vars
               ) do
                 Error::FunctionBodyTypeMismatch.new(

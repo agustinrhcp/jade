@@ -394,20 +394,20 @@ module Jade
           let(:text) do
             <<~JADE
               def test() -> Bool
-                Nothing() == Just(1)
+                Nothing == Just(1)
               end
             JADE
           end
 
           it('is derived') { is_expected.to include("impl_arg[0]['(==)'].call(l0, r0)") }
           it { is_expected.to start_with "def test; ->() { ->(impl_arg) { ->(one, other) { " }
-          it { is_expected.to end_with ".call(Maybe::Nothing.method(:[]).call(), Maybe::Just.method(:[]).call(1)) }; end" }
+          it { is_expected.to end_with ".call(Maybe::Nothing[], Maybe::Just.method(:[]).call(1)) }; end" }
 
           context 'when calling !=' do
             let(:text) do
               <<~JADE
                 def test() -> Bool
-                  Nothing() != Just(1)
+                  Nothing != Just(1)
                 end
               JADE
             end

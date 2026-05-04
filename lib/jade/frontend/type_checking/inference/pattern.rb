@@ -73,6 +73,15 @@ module Jade
                     )
                 end
 
+            in AST::Pattern::Constructor(symbol:, patterns: [])
+              state.env.lookup(symbol.qualified_name) => { type: constructor_type }
+
+              state.unify_result(
+                Result.init(constructor_type),
+                expected.type,
+                &type_error(state, pattern)
+              )
+
             in AST::Pattern::Constructor(symbol:, patterns:)
               state.env.lookup(symbol.qualified_name) => { type: constructor_type }
 
