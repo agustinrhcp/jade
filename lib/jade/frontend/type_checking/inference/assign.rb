@@ -25,27 +25,31 @@ module Jade
               Expected.check(expr_result.type),
             )
 
-            final_state =
+            final_state, residual_cs =
               case pattern
               in AST::Pattern::Binding(name:)
-                pattern_state
-                  .env
-                  .substitution
-                  .then do |sub|
-                    pattern_state.bind(name, generalize(
-                      expr_state.env,
-                      sub.apply(expr_result.type),
-                      expr_result.constraints.map { sub.apply(it) },
-                    ))
-                  end
+                bind_with_residual(pattern_state, expr_state, expr_result, name)
               else
-                pattern_state
+                [pattern_state, expr_result.constraints]
               end
 
             PatternAnalysis::Exhaustiveness
               .assert([pattern], pattern.range, final_state.env, registry, expr_result.type)
               .then { final_state.add_errors(it) }
-              .unify_result(expr_result, expected.type)
+              .unify_result(expr_result.with(constraints: residual_cs), expected.type)
+          end
+
+          private
+
+          # Constraints whose vars are quantified into the new binding's scheme
+          # are captured by it; the rest propagate to the enclosing scope.
+          def bind_with_residual(pattern_state, expr_state, expr_result, name)
+            result = expr_result.apply(pattern_state.env.substitution)
+            scheme = generalize(expr_state.env, result.type, result.constraints)
+
+            result.constraints
+              .reject { |c| c.unbound_vars.any? { |v| scheme.quantified.any? { it.id == v.id } } }
+              .then { [pattern_state.bind(name, scheme), it] }
           end
         end
       end

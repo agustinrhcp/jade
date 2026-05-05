@@ -11,7 +11,12 @@ module Jade
           def infer(node, registry, state, expected)
             node => AST::CaseOf(expression:, branches:)
 
-            new_state, expr_result = check(expression, registry, state, Expected.infer(state.fresh))
+            new_state, expr_result = check(
+              expression,
+              registry,
+              state,
+              Expected.infer(state.fresh),
+            )
 
             first_branch, *rest_branches = branches
             after_first_state, first_result = infer_branch(
@@ -22,25 +27,62 @@ module Jade
               expr_result,
             )
 
+            seed = [
+              after_first_state,
+              expr_result.constraints + first_result.constraints
+            ]
+
             rest_branches
               .each_with_index
-              .reduce(after_first_state) do |acc, (branch, i)|
-                new_acc, type = infer_branch(branch, registry, acc, expected, expr_result)
-                new_acc.unify(type.type, first_result.type) do
-                  Error::CaseOfBranchesTypeMismatch
-                    .new(new_acc.env.entry_name, branch.range, actual: it.actual, expected: it.expected, actual_index: i + 2)
-                end
+              .reduce(seed) do |(acc, cs), (branch, i)|
+                unify_branch(
+                  branch,
+                  i,
+                  acc,
+                  first_result,
+                  cs,
+                  registry,
+                  expected,
+                  expr_result,
+                )
               end
-              .then { check_exhaustiveness(node, it, registry, expr_result) }
-              .then { [it, first_result.apply(it.env.substitution)] }
+              .then { |st, cs| [check_exhaustiveness(node, st, registry, expr_result), cs] }
+              .then do |st, cs|
+                first_result
+                  .with(constraints: cs)
+                  .apply(st.env.substitution)
+                  .then { |result| [st, result] }
+              end
           end
 
           private
 
+          def unify_branch(branch, i, state, first_result, cs, registry, expected, expr_result)
+            new_state, body = infer_branch(branch, registry, state, expected, expr_result)
+
+            new_state
+              .unify(body.type, first_result.type) { branch_mismatch(new_state, branch, it, i) }
+              .then { [it, cs + body.constraints] }
+          end
+
+          def branch_mismatch(state, branch, error, index)
+            Error::CaseOfBranchesTypeMismatch.new(
+              state.env.entry_name,
+              branch.range,
+              actual: error.actual,
+              expected: error.expected,
+              actual_index: index + 2,
+            )
+          end
+
           def check_exhaustiveness(node, state, registry, result)
             node => AST::CaseOf(branches:)
+
+            patterns = branches.map(&:pattern)
+            type     = result.apply(state.env.substitution).type
+
             PatternAnalysis::Exhaustiveness
-              .assert(branches.map(&:pattern), node.range, state.env, registry, result.apply(state.env.substitution).type)
+              .assert(patterns, node.range, state.env, registry, type)
               .then { state.add_errors(it) }
           end
 

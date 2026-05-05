@@ -7,10 +7,10 @@ module Jade
       def generate(node, registry)
         node => AST::FunctionCall(callee:, args:, dictionaries:)
 
-        generate_many(args, registry)
-          .then do
-            "#{generate_callee(callee, args, registry, dictionaries)}.call(#{it})"
-          end
+        [generate_many(args, registry), generate_dict_args(callee, dictionaries, registry)]
+          .reject(&:empty?)
+          .join(', ')
+          .then { "#{generate_callee(callee, args, registry, dictionaries)}.call(#{it})" }
       end
 
       private
@@ -31,7 +31,7 @@ module Jade
 
         in Symbol::StdlibFunction => symbol if symbol.constraints.any?
           dictionaries
-            .map { |impl| generate_impl_dispatch(impl, registry) }
+            .map { |entry| dispatch_dict(entry, registry) }
             .then { generate_impl_fn(symbol.codegen, it, {}, registry) }
 
         in Symbol::StdlibFunction
@@ -43,26 +43,100 @@ module Jade
         in Symbol::Lambda
           generate_node(callee, registry)
 
-        in Symbol::Function(module_name:, name:)
-          to_qualified(module_name) + "." + name
+        in Symbol::Function => fn_sym
+          to_qualified(fn_sym.module_name) + "." + fn_target_name(fn_sym, registry)
 
         in Symbol::Constructor => sym
           ConstructorReference.from_symbol(sym)
 
         in Symbol::StdlibImplementation => symbol
           dictionaries
-            .reduce({}) { |acc, impl| acc.merge generate_impl_dispatch(impl, registry) }
+            .reduce({}) { |acc, entry| acc.merge dispatch_dict(entry, registry) }
             .then { generate_stdlib_implementation(symbol, registry, it) }
 
         in Symbol::InterfaceFunction => symbol if dictionaries.any?
-          dictionaries
-            .reduce({}) { |acc, impl| acc.merge generate_impl_dispatch(impl, registry) }
-            .then { it[symbol.name] }
+          dispatch_lookup(dictionaries.first, symbol.name, registry) {
+            runtime_dispatch(symbol, args, registry)
+          }
 
         in Symbol::InterfaceFunction => symbol
-          first_arg = generate_node(args.first, registry)
-          "Jade::Runtime.impl_for(#{symbol.interface.qualified_name.inspect}, #{first_arg})[#{symbol.name.inspect}]"
+          runtime_dispatch(symbol, args, registry)
         end
+      end
+
+      # When a user fn has var-typed constraints, two definitions are emitted:
+      # `name` (Ruby-boundary wrapper, no dicts) and `__name__impl__` (takes
+      # dicts). Jade-internal calls target the latter.
+      def fn_target_name(fn_sym, registry)
+        return fn_sym.name if dict_constraints(fn_sym, registry).empty?
+
+        fn_impl_synthetic_name(fn_sym.name)
+      end
+
+      # Returns the list of dict args to pass after regular args. Only
+      # Symbol::Function callees take dict params; other branches dispatch
+      # via `dictionaries` directly inside generate_callee. dictionaries are
+      # attached in callee constraint order; only var-typed slots need a
+      # runtime dict (others are resolved at finalize).
+      def generate_dict_args(callee, dictionaries, registry)
+        symbol =
+          case callee.symbol
+          in Symbol::ValueRef then registry.lookup(callee.symbol)
+          else callee.symbol
+          end
+
+        return "" unless symbol.is_a?(Symbol::Function)
+
+        fn_constraints(symbol, registry)
+          .each_with_index
+          .filter_map { |c, i| dispatch_value(dictionaries[i], registry) if c.type.is_a?(Type::Var) }
+          .join(', ')
+      end
+
+      # Resolves a dictionary entry (Symbol::Implementation or Type::Constraint)
+      # to a Ruby expression evaluating to a dict hash.
+      def dispatch_value(entry, registry)
+        case entry
+        in Type::Constraint(interface:, type: Type::Var(id:))
+          Codegen.dict_env[[interface, id]]
+
+        in Symbol::Implementation
+          generate_impl_dispatch(entry, registry)
+            .map { |k, v| "#{k.inspect} => #{v}" }
+            .join(', ')
+            .then { "{ #{it} }" }
+        end
+      end
+
+      # Returns a codegen-time hash of fn_name => ruby_code for the entry.
+      # For Implementation, inlines functions. For a Var Constraint marker, we
+      # can't enumerate fn names at compile time, so callers must use
+      # dispatch_lookup instead.
+      def dispatch_dict(entry, registry)
+        case entry
+        in Symbol::Implementation
+          generate_impl_dispatch(entry, registry)
+        end
+      end
+
+      # Generates a Ruby expression for `dict[fn_name]` from a dictionary entry.
+      # Falls back to the supplied block when a var-typed marker has no entry
+      # in the current dict_env (e.g. an anonymous lambda's body).
+      def dispatch_lookup(entry, fn_name, registry, &fallback)
+        case entry
+        in Type::Constraint(interface:, type: Type::Var(id:))
+          Codegen
+            .dict_env[[interface, id]]
+            &.then { "#{it}[#{fn_name.inspect}]" } || fallback.call
+
+        in Symbol::Implementation
+          generate_impl_dispatch(entry, registry)[fn_name]
+        end
+      end
+
+      def runtime_dispatch(symbol, args, registry)
+        generate_node(args.first, registry)
+          .then { "Jade::Runtime.impl_for(#{symbol.interface.qualified_name.inspect}, #{it})[#{symbol.name.inspect}]" }
       end
 
       def generate_impl_dispatch(impl, registry)

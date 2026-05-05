@@ -9,7 +9,14 @@ module Jade
           def infer(node, registry, state, _)
             node => AST::FunctionDeclaration(symbol:, body:, params:)
 
-            state.env.lookup(symbol.qualified_name) => { type: fn_type, constraints: fn_constraints }
+            # Use the binding directly instead of env.lookup, which would
+            # instantiate fresh vars and detach body call sites' dict markers
+            # from the binding's stored constraints.
+            state
+              .env
+              .bindings[symbol.qualified_name] => {
+                type: fn_type, constraints: fn_constraints,
+              }
 
             arg_types, return_type =
               case fn_type

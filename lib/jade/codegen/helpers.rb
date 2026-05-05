@@ -34,6 +34,40 @@ module Jade
         "__impl_#{interface}_#{type_name}_#{sanitized}__"
       end
 
+      def dict_synthetic_name(index)
+        "__dict#{index}__"
+      end
+
+      def fn_impl_synthetic_name(name)
+        "__#{name}__impl__"
+      end
+
+      # Returns the list of Type::Constraint for a Symbol::Function, looked up
+      # from its module entry's env (populated during type checking) and
+      # canonicalised through the env's substitution so the var ids match the
+      # ones body call sites used when attaching dict markers.
+      #
+      # Stdlib::Compiled hands codegen a registry whose entry hasn't been
+      # re-added after type checking, so env can be nil here — fall back to
+      # no constraints in that case.
+      def fn_constraints(fn_symbol, registry)
+        env = registry.get(fn_symbol.module_name)&.env
+        return [] unless env
+
+        env
+          .bindings[fn_symbol.qualified_name]
+          .constraints
+          .map { env.substitution.apply(it) }
+      end
+
+      # Subset of fn_constraints that need a runtime dict param: those whose
+      # type is a bare Type::Var. Other constraints (e.g. Eq(Maybe(α)) where α
+      # is unbound but the outer constructor is concrete) are resolved at
+      # finalize via the impl table — no dict threaded for them.
+      def dict_constraints(fn_symbol, registry)
+        fn_constraints(fn_symbol, registry).select { |c| c.type.is_a?(Type::Var) }
+      end
+
     def lower_to_ruby(value)
       case value
       in String

@@ -11,13 +11,31 @@ module Jade
 
             *first_expressions, last_expression = expressions
 
-            first_expressions_state = first_expressions
-              .reduce(state) do |acc, expr|
-                new_state, _ = check(expr, registry, acc, Expected.infer(state.fresh))
-                new_state
+            first_state, first_cs = first_expressions
+              .reduce([state, []]) do |(acc, cs), expr|
+                new_state, result = check(
+                  expr,
+                  registry,
+                  acc,
+                  Expected.infer(state.fresh),
+                )
+                [new_state, cs + result.constraints]
               end
 
-            check(last_expression, registry, first_expressions_state, expected)
+            last_state, last_result = check(
+              last_expression,
+              registry,
+              first_state,
+              expected,
+            )
+
+            first_cs
+              .map { last_state.env.substitution.apply(it) }
+              .then do
+                last_result
+                  .with(constraints: it + last_result.constraints)
+                  .then { |result| [last_state, result] }
+              end
           end
         end
       end

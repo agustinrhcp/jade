@@ -43,8 +43,39 @@ module Jade
             .then { Err[it] }
         end
 
+        # An origin's dictionaries can be touched by multiple inference frames:
+        # the call's own callee constraints attach here, and outer frames
+        # may also attach when args bubble up concretely. Dedup so a concrete
+        # impl supersedes a prior var-typed marker for the same interface.
         def attach_dictionary(constraint, impl)
-          constraint.origin.dictionaries.concat([impl])
+          constraint => Type::Constraint(
+            interface: iface,
+            origin: { dictionaries: dicts },
+          )
+
+          if impl.is_a?(Symbol::Implementation)
+            dicts.reject! { same_iface?(it, iface) }
+            dicts << impl
+          elsif dicts.none? { same_iface?(it, iface) && marker_matches?(it, impl) }
+            dicts << impl
+          end
+        end
+
+        def same_iface?(entry, iface)
+          dict_iface(entry) == iface
+        end
+
+        def dict_iface(entry)
+          case entry
+          in Type::Constraint(interface:) then interface
+          in Symbol::Implementation(interface:) then interface.qualified_name
+          end
+        end
+
+        def marker_matches?(entry, impl)
+          entry in Type::Constraint(type: Type::Var(id:)) and
+            impl.type.is_a?(Type::Var) and
+            impl.type.id == id
         end
 
         def solve_at_finalize(constraint, registry, entry_name)

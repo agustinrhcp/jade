@@ -15,6 +15,21 @@ module Jade
     extend Emitter
     extend Helpers
 
+    # Maps [interface_qname, type_var_id] => ruby parameter name. Set by
+    # FunctionDeclaration around its body so nested calls can resolve the
+    # caller's dict for var-typed constraints. Empty outside any function.
+    def dict_env
+      @dict_env ||= {}
+    end
+
+    def with_dict_env(env)
+      prev = @dict_env
+      @dict_env = env
+      yield
+    ensure
+      @dict_env = prev
+    end
+
     def generate_entry(entry, registry)
       generate(entry.ast, registry)
         .then { entry.entry ? "#{load_path} #{it}" : it }

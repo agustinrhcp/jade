@@ -21,14 +21,23 @@ module Jade
             if_state, if_result = check(if_branch, registry, after_cond_state, expected)
             else_state, else_result = check(else_branch, registry, if_state, expected)
 
-            else_state.unify_result(else_result, if_result.type, expected.rigid_vars) do
-              Error::IfBranchesTypeMismatch.new(
-                state.env.entry_name,
-                else_branch.range,
-                expected: it.expected,
-                actual: it.actual,
-              )
-            end
+            constraints = cond_result.constraints +
+              if_result.constraints +
+              else_result.constraints
+
+            else_state
+              .unify_result(
+                else_result.with(constraints:),
+                if_result.type,
+                expected.rigid_vars
+              ) do
+                Error::IfBranchesTypeMismatch.new(
+                  state.env.entry_name,
+                  else_branch.range,
+                  expected: it.expected,
+                  actual: it.actual,
+                )
+              end
           end
         end
       end
