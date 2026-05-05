@@ -6,7 +6,7 @@ module Jade
 
         def instantiate(scheme, var_gen)
           sub = scheme
-            .quantified.reduce(Substitution.new) do |subs, var|
+            .quantified.reduce(Substitution::EMPTY) do |subs, var|
               subs.bind(var.id, var_gen.fresh(var.name))
             end
 

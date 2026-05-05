@@ -152,9 +152,11 @@ module Jade
       describe 'the substitution' do
         subject { super() => Ok(substitution); substitution }
 
-        its(:mappings) { is_expected.to include('a' => Type.parse('{ t2 | a: Int, b: String }')) }
-        its(:mappings) { is_expected.to include('b' => Type.parse('{ t2 | a: Int, b: String }')) }
-        its(:mappings) { is_expected.to include('t1' => Type.parse('{ t2 | a: Int, b: String }')) }
+        let(:merged) { Type.parse('{ t2 | a: Int, b: String }') }
+
+        it { expect(subject.apply(Type.var('a'))).to eq merged }
+        it { expect(subject.apply(Type.var('b'))).to eq merged }
+        it { expect(subject.apply(Type.var('t1'))).to eq merged }
       end
     end
 
@@ -176,7 +178,7 @@ module Jade
       describe 'the substitution' do
         subject { super() => Ok(substitution); substitution }
 
-        its(:mappings) { is_expected.to include('t1' => type2) }
+        it { expect(subject.apply(Type.var('t1'))).to eq type2 }
       end
     end
 
@@ -198,7 +200,7 @@ module Jade
       describe 'the substitution' do
         subject { super() => Ok(substitution); substitution }
 
-        its(:mappings) { is_expected.to include('t1' => type2) }
+        it { expect(subject.apply(Type.var('t1'))).to eq type2 }
       end
     end
 
