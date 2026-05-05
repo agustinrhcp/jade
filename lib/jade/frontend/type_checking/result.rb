@@ -19,7 +19,7 @@ module Jade
 
         def attach_origin(node)
           constraints
-            .map { it.with(origin: it.origin || node )}
+            .map { it.with(origin: node) }
             .then { with(constraints: it) }
         end
 

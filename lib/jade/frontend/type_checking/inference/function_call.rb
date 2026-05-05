@@ -47,14 +47,40 @@ module Jade
               # double dispatch code.
               next [st, rs] if st.skip_constraints
 
-              (rs.constraints + args_acc.constraints)
+              callee_subst = rs
+                .constraints
                 .map { st.env.substitution.apply(it) }
-                .partition { it.type.is_a?(Type::Var) }
-                .then { |propagated, solvable|
-                  solvable
-                    .flat_map { Constraints.solve_at_call_site(it, registry, st.env.entry_name) }
-                    .then { [st.add_errors(it), rs.with(constraints: propagated)] }
-                }
+
+              # Attach a resolution per callee constraint, in callee order, so codegen
+              # can pass dicts positionally. Concrete constraints attach a resolved
+              # Implementation; var-typed ones attach themselves as a marker meaning
+              # "use the enclosing function's local dict".
+              callee_errors = callee_subst
+                .flat_map do |c|
+                  case c.type
+                  in Type::Var
+                    Constraints.attach_dictionary(c, c)
+                    []
+                  else
+                    Constraints.solve_at_call_site(c, registry, st.env.entry_name)
+                  end
+                end
+
+              args_subst = args_acc
+                .constraints
+                .map { st.env.substitution.apply(it) }
+
+              # Ares' constraints dispatch at their own origins (inner call sites).
+              args_errors = args_subst
+                .reject { it.type.is_a?(Type::Var) }
+                .flat_map { Constraints.solve_at_call_site(it, registry, st.env.entry_name) }
+
+              propagated = (callee_subst + args_subst)
+                .select { it.type.is_a?(Type::Var) }
+
+              st
+                .add_errors(callee_errors + args_errors)
+                .then { [it, rs.with(constraints: propagated)] }
             end
           end
 

@@ -44,7 +44,7 @@ module Jade
 
                   Symbol::Implementation.new(
                     module_name: nil,
-                    interface: constraint.interface,
+                    interface: Symbol.type_ref_from_qualified_name(constraint.interface),
                     type: constraint.type,
                     type_params: args,
                     constraints: deps,
@@ -133,7 +133,7 @@ module Jade
               if type_vars.empty? && constraints.empty?
                 Symbol::Implementation.new(
                    module_name: nil,
-                   interface: constraint.interface,
+                   interface: Symbol.type_ref_from_qualified_name(constraint.interface),
                    type: constraint.type,
                    type_params: [],
                    constraints: [],
@@ -145,7 +145,7 @@ module Jade
 
               else
                 Symbol::ImplementationTemplate.new(
-                  interface: constraint.interface,
+                  interface: Symbol.type_ref_from_qualified_name(constraint.interface),
                   type: constraint.type,
                   type_params: type_vars.map { Type.var(it) },
                   constraints:,
@@ -212,7 +212,7 @@ module Jade
 
               Symbol::Implementation.new(
                 module_name: nil,
-                interface: constraint.interface,
+                interface: Symbol.type_ref_from_qualified_name(constraint.interface),
                 type: constraint.type,
                 type_params: [],
                 constraints: [],

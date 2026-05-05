@@ -110,7 +110,7 @@ module Jade
 
               Symbol::Implementation.new(
                 module_name: nil,
-                interface: constraint.interface,
+                interface: Symbol.type_ref_from_qualified_name(constraint.interface),
                 type: constraint.type,
                 type_params: [],
                 constraints: [],

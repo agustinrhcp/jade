@@ -100,6 +100,19 @@ module Jade
         expect(InterfaceTest.int_eq.call(1, 1)).to be true
         expect(InterfaceTest.bool_eq.call(true, true)).to be true
       end
+
+      it 'dispatches Jade-internal polymorphic calls without consulting IMPLEMENTATIONS' do
+        test_compiler.require('interface_test', source)
+
+        impl_for_calls = 0
+        Jade::Runtime.singleton_class.prepend(Module.new {
+          define_method(:impl_for) { |*a| impl_for_calls += 1; super(*a) }
+        })
+
+        # int_eq calls poly_eq with a dict it builds inline — no impl_for needed
+        InterfaceTest.int_eq.call(1, 1)
+        expect(impl_for_calls).to eq 0
+      end
     end
 
     context 'orphan implementation' do
