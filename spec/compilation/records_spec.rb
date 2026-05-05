@@ -356,6 +356,56 @@ module Jade
           expect(Pepe.frank_is_paul.call()).to be false
         end
       end
+
+      describe 'calling a nullary function from another function' do
+        let(:pepe_source) do
+          <<~JADE
+            module Pepe exposing(name_of_paul)
+
+            struct Person = { name: String, age: Int }
+
+            def paul() -> Person
+              Person("Paul", 55)
+            end
+
+            def name_of_paul() -> String
+              paul().name
+            end
+          JADE
+        end
+
+        it 'allows `paul()` even though `paul` is also a value' do
+          expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
+          expect(Pepe.name_of_paul.call()).to eql 'Paul'
+        end
+      end
+
+      describe 'passing the result of a nullary call to a polymorphic function' do
+        let(:pepe_source) do
+          <<~JADE
+            module Pepe exposing(query)
+
+            struct Table(c) = { val: c }
+
+            def get_val(t: Table(c)) -> c
+              t.val
+            end
+
+            def persons() -> Table(Int)
+              Table(42)
+            end
+
+            def query() -> Int
+              get_val(persons())
+            end
+          JADE
+        end
+
+        it 'instantiates the type parameter from the call result' do
+          expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
+          expect(Pepe.query.call()).to eql 42
+        end
+      end
     end
   end
 end
