@@ -609,6 +609,25 @@ module Jade
         it { is_expected.to be_a(AST::ImportDeclaration).and have_attributes(module_name: 'Maybe') }
         its(:exposing) { is_expected.to be_a(AST::ExposeAll) }
       end
+
+      context 'with multiline exposing list and trailing comma' do
+        let(:text) do
+          <<~JADE
+            import Maybe exposing (
+              Just,
+              Nothing,
+              map,
+            )
+          JADE
+        end
+
+        describe 'its exposing' do
+          subject { super().exposing }
+
+          it { is_expected.to be_a(AST::ExposeList) }
+          its(:items) { is_expected.to have(3).items }
+        end
+      end
     end
 
     context 'member access' do

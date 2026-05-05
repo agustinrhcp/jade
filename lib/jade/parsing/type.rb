@@ -14,7 +14,7 @@ module Jade
           type(:lparen) >>
             lazy { type_atom } >>
             type(:comma).skip >>
-            sequence(lazy { type_atom }, separated_by: type(:comma).skip).map { [it] } >>
+            comma_sequence(lazy { type_atom }) >>
             type(:rparen)
         ).map(&AST.type_tuple)
       end
@@ -28,13 +28,12 @@ module Jade
       end
 
       def type_record_fields
-        sequence(
+        comma_sequence(
           (identifier >>
             type(:colon).skip >>
             lazy { type_expression }
           ).map { [it] },
-          separated_by: type(:comma).skip,
-        ).map { [it] }
+        )
       end
 
       def type_param
@@ -71,20 +70,20 @@ module Jade
 
       def type_application
         (
-          (type_name >> (type_application_args| none.map { [[], nil] })) |
+          (type_name >> (type_application_args | none.map { [Combinators::CommaList.empty, nil] })) |
           (type_var  >> type_application_args)
         ).map(&AST.type_application)
       end
 
       def type_params
         type(:lparen).skip >>
-          sequence(type_param, separated_by: type(:comma).skip).map { [it] } >>
+          comma_sequence(type_param) >>
           type(:rparen).skip
       end
 
       def type_expressions
         type(:lparen).skip >>
-          sequence(type_expression, separated_by: type(:comma).skip).map { [it] } >>
+          comma_sequence(type_expression) >>
           type(:rparen).skip
       end
 
@@ -92,7 +91,7 @@ module Jade
 
       def type_application_args
         type(:lparen).skip >>
-          sequence(lazy { type_expression }, separated_by: type(:comma).skip).map { [it] } >>
+          comma_sequence(lazy { type_expression }) >>
           type(:rparen)
       end
     end

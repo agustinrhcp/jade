@@ -99,6 +99,11 @@ module Jade
     context 'list' do
       let(:text) { "[1, 2, 3]" }
       it { is_expected.to eql "[1, 2, 3]" }
+
+      context 'with trailing comma hint' do
+        let(:text) { "[1, 2, 3,]" }
+        it { is_expected.to eql "[\n  1,\n  2,\n  3,\n]" }
+      end
     end
 
     context 'tuple' do
@@ -108,6 +113,11 @@ module Jade
       context 'three elements' do
         let(:text) { "(1, 2, 3)" }
         it { is_expected.to eql "(1, 2, 3)" }
+      end
+
+      context 'with trailing comma hint' do
+        let(:text) { "(1, 2, 3,)" }
+        it { is_expected.to eql "(\n  1,\n  2,\n  3,\n)" }
       end
     end
 
@@ -119,7 +129,7 @@ module Jade
 
       context 'multiple fields' do
         let(:text) { '{ name: "Alice", age: 30 }' }
-        it { is_expected.to eql "{\n  name: \"Alice\",\n  age: 30\n}" }
+        it { is_expected.to eql "{\n  name: \"Alice\",\n  age: 30,\n}" }
       end
     end
 

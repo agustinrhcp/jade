@@ -53,7 +53,9 @@ module Jade
 
       return nil unless type_ref
 
-      (types[unqualified_name].variants & exposes.to_a)
+      types[unqualified_name]
+        .constructor_refs
+        .then { it & exposes.to_a }
         .then { it.empty? ? nil : it }
     end
 

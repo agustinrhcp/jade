@@ -275,7 +275,7 @@ end
 Tasks are lazy — no Ruby code runs until `.run` is called on the returned value:
 
 ```ruby
-Jade.require(‘my_module’)
+Jade.require('my_module')
 
 task = MyModule.current_time.call   # nothing runs yet
 result = task.run                   # => Result::Ok[1234567890]
@@ -296,6 +296,8 @@ Jade guards values at the interop boundary — if Ruby returns the wrong type, y
 | `Char` | `to_code`, `from_code`, `is_digit`, `is_alpha`, `is_alpha_num`, `is_upper`, `is_lower` |
 | `Tuple` | `first`, `second`, `map_first`, `map_second` |
 | `Task` | `succeed`, `fail`, `map`, `and_then`, `on_error`, `sequence` |
+| `Decode` | `string`, `int`, `float`, `bool`, `list`, `field`, `at`, `succeed`, `required`, `optional`, ... |
+| `Encode` | `string`, `int`, `float`, `bool`, `list`, `object`, plus `Encodable` derivation for user types |
 | `Basics` | `Eq`, `Comparable`, `Appendable`, `Mappable`, `Chainable`, `Ordering` |
 
 ---
@@ -335,9 +337,6 @@ See the [`examples/`](examples/) directory:
 - **Language Server (LSP)** — go-to-definition, hover types, inline errors
 - **Diagnostics** — structured error output for editor integration
 - **`jade fmt`** — formatter CLI entrypoint (formatter exists internally)
-
-### Interop and Runtime
-- **Decoding Ruby / JSON values** — a decoder layer for safely converting untyped Ruby or JSON data into typed Jade values
 
 ### Infrastructure
 - **Reference index pass** — track symbol usages for unused import detection and dead code warnings

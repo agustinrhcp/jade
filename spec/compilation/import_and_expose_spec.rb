@@ -228,6 +228,96 @@ module Jade
       end
     end
 
+    context 'with a struct' do
+      let(:exposing_source) do
+        <<~JADE
+          module Exposing exposing(Person(..), greet)
+
+          struct Person = { name: String, age: Int }
+
+          def greet(p: Person) -> String
+            "Hello, " ++ p.name
+          end
+        JADE
+      end
+
+      context 'when importing the struct constructor with (..)' do
+        let(:importing_source) do
+          <<~JADE
+            module Importing exposing(hello)
+
+            import Exposing exposing(Person(..), greet)
+
+            def hello() -> String
+              greet(Person("Paul", 55))
+            end
+          JADE
+        end
+
+        before { test_compiler.write('exposing', exposing_source) }
+
+        it 'works because the constructor is in scope' do
+          expect { test_compiler.require('importing', importing_source) }
+            .to_not raise_error
+          expect(Importing.hello.call()).to eql 'Hello, Paul'
+        end
+      end
+
+      context 'when importing only the type without (..)' do
+        let(:importing_source) do
+          <<~JADE
+            module Importing exposing(hello)
+
+            import Exposing exposing(Person, greet)
+
+            def hello() -> String
+              greet(Person("Paul", 55))
+            end
+          JADE
+        end
+
+        before { test_compiler.write('exposing', exposing_source) }
+
+        it 'fails because the constructor is not in scope' do
+          expect { test_compiler.require('importing', importing_source) }
+            .to raise_error(RuntimeError, /cannot find a `Person` constructor/)
+        end
+      end
+
+      context 'when the defining module does not expose the constructor' do
+        let(:exposing_source) do
+          <<~JADE
+            module Exposing exposing(Person, greet)
+
+            struct Person = { name: String, age: Int }
+
+            def greet(p: Person) -> String
+              "Hello, " ++ p.name
+            end
+          JADE
+        end
+
+        let(:importing_source) do
+          <<~JADE
+            module Importing exposing(hello)
+
+            import Exposing exposing(Person(..), greet)
+
+            def hello() -> String
+              greet(Person("Paul", 55))
+            end
+          JADE
+        end
+
+        before { test_compiler.write('exposing', exposing_source) }
+
+        it 'fails because the struct constructor is private' do
+          expect { test_compiler.require('importing', importing_source) }
+            .to raise_error(RuntimeError, /Exposing's `Person` type does not allow `\(\.\.\)`/)
+        end
+      end
+    end
+
     context 'when using a polypmorphic exposed functoin' do
       let(:exposing_source) do
         <<~JADE
