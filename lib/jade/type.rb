@@ -50,8 +50,10 @@ module Jade
       constructor('List.List')
     end
 
+    CONSTRUCTORS = {}
+
     def constructor(name)
-      Constructor[name]
+      CONSTRUCTORS[name] ||= Constructor[name].freeze
     end
 
     def function(args, return_type)

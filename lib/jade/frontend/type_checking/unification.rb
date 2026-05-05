@@ -16,7 +16,7 @@ module Jade
         end
 
         def unify(type1, type2, env, ctx = Context.empty)
-          return Ok[Substitution.new] if never?(type1) || never?(type2)
+          return Ok[Substitution::EMPTY] if never?(type1) || never?(type2)
 
           case [type1, type2]
           in [Type::Application, Type::Application]
@@ -45,7 +45,7 @@ module Jade
             end
 
           in [Type::Var, _]
-            return Ok[Substitution.new] if type1 == type2
+            return Ok[Substitution::EMPTY] if type1 == type2
 
             if (ctx.rigid?(type1) || ctx.rigid?(type2)) && type1 != type2
               return Err[UnificationError.new(type1, type2)]
@@ -53,7 +53,7 @@ module Jade
 
             return Err[UnificationError.new(type1, type2)] if occurs_in?(type1, type2)
 
-            Ok[Substitution.new.bind(type1.id, type2)]
+            Ok[Substitution::EMPTY.bind(type1.id, type2)]
 
           in [_, Type::Var]
             unify(type2, type1, env, ctx)
@@ -81,7 +81,7 @@ module Jade
 
           in [Type::Constructor, Type::Constructor]
             type1 == type2 ?
-              Ok[Substitution.new] :
+              Ok[Substitution::EMPTY] :
               Err[UnificationError.new(type1, type2)]
 
           in [Type::AnonymousRecord, Type::AnonymousRecord]
@@ -109,7 +109,7 @@ module Jade
 
                   Type
                     .anonymous_record(type1.fields.merge(type2.fields), env.fresh)
-                    .then { Substitution.new.bind(fresh_type.id, it)}
+                    .then { Substitution::EMPTY.bind(fresh_type.id, it)}
                     .bind(type1.row_var.id, fresh_type)
                     .bind(type2.row_var.id, fresh_type)
                     .compose(fields_r)
@@ -135,7 +135,7 @@ module Jade
 
             expanded
               .type_params.map(&:id).zip(type2.args).to_h
-              .reduce(Substitution.new) do |acc, (k, v)|
+              .reduce(Substitution::EMPTY) do |acc, (k, v)|
                 acc.bind(k, v)
               end
               .apply(expanded.body)
@@ -214,7 +214,7 @@ module Jade
           fields2 = type2.fields
 
           shared_fields
-            .reduce(Ok[Substitution.new]) do |subs_r, key|
+            .reduce(Ok[Substitution::EMPTY]) do |subs_r, key|
               sub = substitution_of(subs_r)
 
               case unify(fields1[key], fields2[key], env, ctx)
@@ -229,7 +229,7 @@ module Jade
         def unify_many(types1, types2, env, ctx)
           types1
             .zip(types2)
-            .reduce(Ok[Substitution.new]) do |subs_r, args|
+            .reduce(Ok[Substitution::EMPTY]) do |subs_r, args|
               args_r = args
                 .map { substitution_of(subs_r).apply(it) }
                 .then { unify(*it, env, ctx) }
@@ -250,7 +250,7 @@ module Jade
           def initialize(actual, expected, partial_sub = nil)
             @actual = actual
             @expected = expected
-            @partial_sub = partial_sub || Substitution.new
+            @partial_sub = partial_sub || Substitution::EMPTY
           end
 
           def flip

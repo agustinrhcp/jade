@@ -7,7 +7,7 @@ module Jade
     module TypeChecking
       Env = Data.define(:entry_name, :bindings, :substitution, :definitions, :var_gen) do
         def self.empty(var_gen = VarGen.new)
-          Env[nil, {}, Substitution.new, {}, var_gen]
+          Env[nil, {}, Substitution::EMPTY, {}, var_gen]
         end
 
         def fresh
