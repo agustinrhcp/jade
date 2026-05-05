@@ -68,6 +68,24 @@ Jade infers types throughout — annotations are only required on function signa
 type Shape = Circle(Float) | Rectangle(Float, Float)
 ```
 
+A variant payload may also be keyed — useful when positional args become hard to read:
+
+```jade
+type Charge
+  = Refund(Int)
+  | Settled(paid_amount: Int, tax_amount: Int, issued_amount: Int)
+
+Settled(paid_amount: 100, tax_amount: 20, issued_amount: 80)
+
+case charge
+of Refund(n) then n
+of Settled(r) then r.paid_amount + r.tax_amount
+of Settled(paid_amount: pa, tax_amount: _, issued_amount: _) then pa
+end
+```
+
+The payload is an anonymous record, so `r.paid_amount` and `{ r | paid_amount: 0 }` work as usual.
+
 **Structs (named records):**
 ```jade
 struct Person = { name: String, age: Int }

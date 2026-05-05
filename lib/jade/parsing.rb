@@ -154,10 +154,16 @@ module Jade
     def constructor_pattern
       (constructor_reference >>
         ((type(:lparen).skip >>
-        (sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } |
+        (keyed_pattern |
+          sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } |
           none.map { [[]] }) >>
         type(:rparen)) | none.map { [[]] })
       ).map(&AST.constructor_pattern)
+    end
+
+    def keyed_pattern
+      sequence(record_field_pattern, separated_by: type(:comma).skip)
+        .map(&AST.keyed_pattern)
     end
 
     def record_pattern
@@ -221,7 +227,8 @@ module Jade
     def function_call
       (
         type(:lparen) >>
-          (sequence(function_call_arg, separated_by: type(:comma).skip).map { [it] } |
+          (keyed_call |
+            sequence(function_call_arg, separated_by: type(:comma).skip).map { [it] } |
             none.map { [[]] }) >>
           type(:rparen)
       ).map { FunctionCallPostfix[*it] }
@@ -229,6 +236,11 @@ module Jade
 
     def function_call_arg
       placeholder | lazy { expression }
+    end
+
+    def keyed_call
+      sequence(record_field, separated_by: type(:comma).skip)
+        .map(&AST.keyed_call)
     end
 
     def placeholder
@@ -333,8 +345,16 @@ module Jade
     def variant_declaration
       (
         constant >>
-          (type_expressions | none.map { [[]] })
+          (keyed_variant | type_expressions | none.map { [[]] })
       ).map(&AST.variant_declaration)
+    end
+
+    def keyed_variant
+      (
+        type(:lparen) >>
+          type_record_fields >>
+          type(:rparen)
+      ).map(&AST.keyed_variant)
     end
 
     def literal

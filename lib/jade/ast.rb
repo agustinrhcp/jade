@@ -300,6 +300,27 @@ module Jade
       end
     end
 
+    def keyed_variant
+      ->((lparen, fields, rparen)) do
+        type_record.call([lparen, nil, fields, rparen])
+          .then { [[it]] }
+      end
+    end
+
+    def keyed_call
+      ->(fields) do
+        record_literal.call([fields.first, fields, fields.last])
+          .then { [[it]] }
+      end
+    end
+
+    def keyed_pattern
+      ->(fields) do
+        record_pattern.call([fields.first, fields, fields.last])
+          .then { [[it]] }
+      end
+    end
+
     def import_declaration
       ->((import, module_parts, as, exposing)) do
         ImportDeclaration[

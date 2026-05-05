@@ -70,15 +70,19 @@ module Jade
         end
 
       in AST::VariantDeclaration(name:, args:)
-        if args.nil? || args.empty?
+        case args
+        in nil | []
           name
+        in [AST::TypeRecord(fields:, row_var: nil)]
+          fields
+            .map { |k, v| "#{k}: #{format_type(v)}" }
+            .join(', ')
+            .then { "#{name}(#{it})" }
         else
-          args_str =
-            args
-              .map { format_type(it) }
-              .join(', ')
-
-          "#{name}(#{args_str})"
+          args
+            .map { format_type(it) }
+            .join(', ')
+            .then { "#{name}(#{it})" }
         end
 
       in AST::StructDeclaration(name:, type_params:, record_type:)
