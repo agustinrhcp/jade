@@ -223,14 +223,17 @@ module Jade
             .then(&and_indent(indent))
         end
 
-      in AST::FunctionCall(callee:, args:)
-        args_str =
-          args
-            .map { format_node(it) }
-            .join(', ')
+      in AST::FunctionCall(callee:, args:, trailing_comma:)
+        callee_str = format_node(callee)
+        args_strs  = args.map { format_node(it) }
 
-        "#{format_node(callee)}(#{args_str})"
-          .then(&and_indent(indent))
+        if trailing_comma
+          inner = args_strs.map { "#{it.then(&and_indent(indent + 1))}," }.join("\n")
+          "#{callee_str.then(&and_indent(indent))}(\n#{inner}\n#{INDENT * indent})"
+        else
+          "#{callee_str}(#{args_strs.join(', ')})"
+            .then(&and_indent(indent))
+        end
 
       in AST::MemberAccess(target:, name:)
         "#{format_node(target)}.#{name.name}"
@@ -256,43 +259,33 @@ module Jade
         "(#{format_node(expression)})"
           .then(&and_indent(indent))
 
-      in AST::Tuple(items:)
-        items_str =
-          items
-            .map { format_node(it) }
-            .join(', ')
+      in AST::Tuple(items:, trailing_comma:)
+        format_delimited(items.map { format_node(it) }, '(', ')', trailing_comma, indent)
 
-        "(#{items_str})"
-          .then(&and_indent(indent))
+      in AST::List(items:, trailing_comma:)
+        format_delimited(items.map { format_node(it) }, '[', ']', trailing_comma, indent)
 
-      in AST::List(items:)
-        items_str =
-          items
-            .map { format_node(it) }
-            .join(', ')
+      in AST::RecordLiteral(fields:, trailing_comma:)
+        field_strs = fields.map { "#{it.key}: #{format_node(it.value)}" }
+        multiline  = trailing_comma || fields.size > 1
 
-        "[#{items_str}]"
-          .then(&and_indent(indent))
-
-      in AST::RecordLiteral(fields:)
-        if fields.size > 1
-          fields_str = fields
-            .map { "#{it.key}: #{format_node(it.value)}".then(&and_indent(indent + 1)) }
-            .join(",\n")
-          "#{INDENT * indent}{\n#{fields_str}\n#{INDENT * indent}}"
+        if multiline
+          inner = field_strs.map { "#{it.then(&and_indent(indent + 1))}," }.join("\n")
+          "#{INDENT * indent}{\n#{inner}\n#{INDENT * indent}}"
         else
-          "{ #{fields.map { "#{it.key}: #{format_node(it.value)}" }.join(', ')} }"
+          "{ #{field_strs.join(', ')} }"
             .then(&and_indent(indent))
         end
 
-      in AST::RecordUpdate(base:, fields:)
-        if fields.size > 1
-          fields_str = fields
-            .map { "#{it.key}: #{format_node(it.value)}".then(&and_indent(indent + 1)) }
-            .join(",\n")
-          "#{INDENT * indent}{ #{format_node(base)} |\n#{fields_str}\n#{INDENT * indent}}"
+      in AST::RecordUpdate(base:, fields:, trailing_comma:)
+        field_strs = fields.map { "#{it.key}: #{format_node(it.value)}" }
+        multiline  = trailing_comma || fields.size > 1
+
+        if multiline
+          inner = field_strs.map { "#{it.then(&and_indent(indent + 1))}," }.join("\n")
+          "#{INDENT * indent}{ #{format_node(base)} |\n#{inner}\n#{INDENT * indent}}"
         else
-          "{ #{format_node(base)} | #{fields.map { "#{it.key}: #{format_node(it.value)}" }.join(', ')} }"
+          "{ #{format_node(base)} | #{field_strs.join(', ')} }"
             .then(&and_indent(indent))
         end
 
@@ -464,7 +457,7 @@ module Jade
       end
     end
 
-    def format_exposing(node)
+    def format_exposing(node, indent: 0)
       case node
       in AST::ExposeAll
         "exposing (..)"
@@ -472,13 +465,25 @@ module Jade
       in AST::ExposeNone | nil
         ""
 
-      in AST::ExposeList(items:)
-        items_str =
-          items
-            .map { format_expose_item(it) }
-            .join(', ')
+      in AST::ExposeList(items:, trailing_comma:)
+        item_strs = items.map { format_expose_item(it) }
 
-        "exposing (#{items_str})"
+        if trailing_comma
+          inner = item_strs.map { "#{INDENT * (indent + 1)}#{it}," }.join("\n")
+          "exposing (\n#{inner}\n#{INDENT * indent})"
+        else
+          "exposing (#{item_strs.join(', ')})"
+        end
+      end
+    end
+
+    def format_delimited(strs, open, close, trailing_comma, indent)
+      if trailing_comma
+        inner = strs.map { "#{it.then(&and_indent(indent + 1))}," }.join("\n")
+        "#{INDENT * indent}#{open}\n#{inner}\n#{INDENT * indent}#{close}"
+      else
+        "#{open}#{strs.join(', ')}#{close}"
+          .then(&and_indent(indent))
       end
     end
 

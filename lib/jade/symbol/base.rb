@@ -6,6 +6,10 @@ module Jade
       end
 
       alias_method :qname, :qualified_name
+
+      def constructor_refs
+        []
+      end
     end
   end
 end

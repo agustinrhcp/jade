@@ -14,6 +14,29 @@ module Jade
           .map { it.flatten(1) }
       end
 
+      CommaList = Data.define(:items, :trailing_comma) do
+        def self.empty
+          new(items: [], trailing_comma: false)
+        end
+      end
+
+      def comma_sequence(parser)
+        P.new do |state|
+          sequence(parser, separated_by: type(:comma).skip).call(state).and_then do |(items, state1)|
+            if !state1.eof? && state1.current.type == :comma
+              [true, state1.advance]
+            else
+              [false, state1]
+            end
+              .then { Ok[[CommaList.new(items:, trailing_comma: it[0]), it[1]]] }
+          end
+        end
+      end
+
+      def empty_comma_list
+        none.map { CommaList.empty }
+      end
+
       def none
         P.new { |state| Ok[[nil, state]] }
       end

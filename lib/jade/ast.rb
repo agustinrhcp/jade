@@ -170,15 +170,16 @@ module Jade
 
     def function_declaration
       ->(tokens) do
-        tokens => [def_token, name, param_nodes, return_type, body, end_token]
+        tokens => [def_token, name, params_list, return_type, body, end_token]
 
-        FunctionDeclaration[
-          name.value,
-          param_nodes,
-          return_type,
-          body,
-          def_token.range.begin...end_token.range.end,
-        ]
+        FunctionDeclaration.new(
+          name: name.value,
+          params: params_list.items,
+          return_type:,
+          body:,
+          trailing_comma: params_list.trailing_comma,
+          range: def_token.range.begin...end_token.range.end,
+        )
       end
     end
 
@@ -201,12 +202,13 @@ module Jade
     end
 
     def type_record
-      ->((lbrace, row_var, fields, rbrace)) do
-        TypeRecord[
-          fields.map { |(identifier, type)| [identifier.value, type] }.to_h,
-          row_var,
-          lbrace.range.begin..rbrace.range.end
-        ]
+      ->((lbrace, row_var, fields_list, rbrace)) do
+        TypeRecord.new(
+          fields: fields_list.items.map { |(identifier, type)| [identifier.value, type] }.to_h,
+          row_var:,
+          trailing_comma: fields_list.trailing_comma,
+          range: lbrace.range.begin..rbrace.range.end,
+        )
       end
     end
 
@@ -224,8 +226,13 @@ module Jade
     end
 
     def type_application
-      ->((constructor, args, rparen)) do
-        TypeApplication[constructor, args, constructor.range.begin..(rparen || constructor).range.end]
+      ->((constructor, args_list, rparen)) do
+        TypeApplication.new(
+          constructor:,
+          args: args_list.items,
+          trailing_comma: args_list.trailing_comma,
+          range: constructor.range.begin..(rparen || constructor).range.end,
+        )
       end
     end
 
@@ -252,12 +259,13 @@ module Jade
     end
 
     def function_call
-      ->(callee, lparen, args, rparen) do
+      ->(callee, lparen, args_list, rparen) do
         FunctionCall.new(
           callee:,
-          args:,
+          args: args_list.items,
           infix: false,
           dictionaries: [],
+          trailing_comma: args_list.trailing_comma,
           range: lparen.range.begin..rparen.range.end,
         )
       end
@@ -274,13 +282,14 @@ module Jade
     end
 
     def type_declaration
-      ->((type_token, name, type_params, variants)) do
-        TypeDeclaration[
-          name.value,
-          type_params,
-          variants,
-          type_token.range.begin..variants.last.range.end,
-        ]
+      ->((type_token, name, type_params_list, variants)) do
+        TypeDeclaration.new(
+          name: name.value,
+          type_params: type_params_list.items,
+          variants:,
+          trailing_comma: type_params_list.trailing_comma,
+          range: type_token.range.begin..variants.last.range.end,
+        )
       end
     end
 
@@ -291,33 +300,36 @@ module Jade
     end
 
     def variant_declaration
-      ->((name, args)) do
-        VariantDeclaration[
-          name.value,
-          args,
-          name.range.begin..(args&.last || name).range.end,
-        ]
+      ->((name, args_list)) do
+        VariantDeclaration.new(
+          name: name.value,
+          args: args_list.items,
+          trailing_comma: args_list.trailing_comma,
+          range: name.range.begin..(args_list.items.last || name).range.end,
+        )
       end
     end
 
     def keyed_variant
       ->((lparen, fields, rparen)) do
         type_record.call([lparen, nil, fields, rparen])
-          .then { [[it]] }
+          .then { Parsing::Combinators::CommaList.new(items: [it], trailing_comma: false) }
       end
     end
 
     def keyed_call
       ->(fields) do
-        record_literal.call([fields.first, fields, fields.last])
-          .then { [[it]] }
+        fields_list = Parsing::Combinators::CommaList.new(items: fields, trailing_comma: false)
+        record_literal.call([fields.first, fields_list, fields.last])
+          .then { Parsing::Combinators::CommaList.new(items: [it], trailing_comma: false) }
       end
     end
 
     def keyed_pattern
       ->(fields) do
-        record_pattern.call([fields.first, fields, fields.last])
-          .then { [[it]] }
+        fields_list = Parsing::Combinators::CommaList.new(items: fields, trailing_comma: false)
+        record_pattern.call([fields.first, fields_list, fields.last])
+          .then { Parsing::Combinators::CommaList.new(items: [it], trailing_comma: false) }
       end
     end
 
@@ -397,18 +409,23 @@ module Jade
     end
 
     def constructor_pattern
-      ->((constructor, patterns)) do
-        Pattern::Constructor[
-          constructor,
-          patterns,
-          constructor.range.begin..(patterns.first&.range&.end || constructor.range.end)
-        ]
+      ->((constructor, patterns_list)) do
+        Pattern::Constructor.new(
+          constructor:,
+          patterns: patterns_list.items,
+          trailing_comma: patterns_list.trailing_comma,
+          range: constructor.range.begin..(patterns_list.items.first&.range&.end || constructor.range.end),
+        )
       end
     end
 
     def record_pattern
-      ->((lbrace, fields, r_brace)) do
-        Pattern::Record[fields, lbrace.range.begin..r_brace.range.end]
+      ->((lbrace, fields_list, r_brace)) do
+        Pattern::Record.new(
+          fields: fields_list.items,
+          trailing_comma: fields_list.trailing_comma,
+          range: lbrace.range.begin..r_brace.range.end,
+        )
       end
     end
 
@@ -423,14 +440,23 @@ module Jade
     end
 
     def tuple_pattern
-      ->((lparen_token, first, rest, rparen_token)) do
-        Pattern::Tuple[[first, *rest], lparen_token.range.begin..rparen_token.range.end]
+      ->((lparen_token, first, rest_list, rparen_token)) do
+        Pattern::Tuple.new(
+          patterns: [first, *rest_list.items],
+          trailing_comma: rest_list.trailing_comma,
+          range: lparen_token.range.begin..rparen_token.range.end,
+        )
       end
     end
 
     def list_pattern
-      ->((lbrack, (patterns, tail), rbrack)) do
-        Pattern::List[patterns, tail, lbrack.range.begin..rbrack.range.end]
+      ->((lbrack, (patterns_list, tail), rbrack)) do
+        Pattern::List.new(
+          patterns: patterns_list.items,
+          rest: tail,
+          trailing_comma: patterns_list.trailing_comma,
+          range: lbrack.range.begin..rbrack.range.end,
+        )
       end
     end
 
@@ -444,24 +470,33 @@ module Jade
     end
 
     def tuple
-      ->((lparen_token, first, rest, rparen_token)) do
-        Tuple[[first, *rest], lparen_token.range.begin..rparen_token.range.end]
+      ->((lparen_token, first, rest_list, rparen_token)) do
+        Tuple.new(
+          items: [first, *rest_list.items],
+          trailing_comma: rest_list.trailing_comma,
+          range: lparen_token.range.begin..rparen_token.range.end,
+        )
       end
     end
 
     def type_tuple
-      ->((lparen_token, first, rest, rparen_token)) do
-        TypeTuple[[first, *rest], lparen_token.range.begin..rparen_token.range.end]
+      ->((lparen_token, first, rest_list, rparen_token)) do
+        TypeTuple.new(
+          items: [first, *rest_list.items],
+          trailing_comma: rest_list.trailing_comma,
+          range: lparen_token.range.begin..rparen_token.range.end,
+        )
       end
     end
 
     def lambda
-      ->((lparen_token, params, body, rbrace_token)) do
-        Lambda[
-          params,
-          body,
-          lparen_token.range.begin..rbrace_token.range.end,
-        ]
+      ->((lparen_token, params_list, body, rbrace_token)) do
+        Lambda.new(
+          params: params_list.items,
+          body:,
+          trailing_comma: params_list.trailing_comma,
+          range: lparen_token.range.begin..rbrace_token.range.end,
+        )
       end
     end
 
@@ -478,8 +513,12 @@ module Jade
     end
 
     def expose_list
-      ->((items)) do
-        ExposeList[items, items.first.range.begin..items.last.range.end]
+      ->(comma_list) do
+        ExposeList.new(
+          items: comma_list.items,
+          trailing_comma: comma_list.trailing_comma,
+          range: comma_list.items.first.range.begin..comma_list.items.last.range.end,
+        )
       end
     end
 
@@ -508,14 +547,22 @@ module Jade
     end
 
     def list
-      ->((lbrack, items, rbrack)) do
-        List[items, lbrack.range.begin..rbrack.range.end]
+      ->((lbrack, items_list, rbrack)) do
+        List.new(
+          items: items_list.items,
+          trailing_comma: items_list.trailing_comma,
+          range: lbrack.range.begin..rbrack.range.end,
+        )
       end
     end
 
     def record_literal
-      ->((lbrace, fields, rbrace)) do
-        RecordLiteral[fields, lbrace.range.begin..rbrace.range.begin]
+      ->((lbrace, fields_list, rbrace)) do
+        RecordLiteral.new(
+          fields: fields_list.items,
+          trailing_comma: fields_list.trailing_comma,
+          range: lbrace.range.begin..rbrace.range.begin,
+        )
       end
     end
 
@@ -526,8 +573,13 @@ module Jade
     end
 
     def record_update
-      ->((lbrace, variable_reference, _pipe, fields, rbrace)) do
-        RecordUpdate[variable_reference, fields, lbrace.range.begin..rbrace.range.begin]
+      ->((lbrace, variable_reference, _pipe, fields_list, rbrace)) do
+        RecordUpdate.new(
+          base: variable_reference,
+          fields: fields_list.items,
+          trailing_comma: fields_list.trailing_comma,
+          range: lbrace.range.begin..rbrace.range.begin,
+        )
       end
     end
 
@@ -573,13 +625,14 @@ module Jade
     end
 
     def struct_declaration
-      ->((struct_token, name, type_params, record_type)) do
-        StructDeclaration[
-          name.value,
-          type_params,
-          record_type,
-          struct_token.range.begin..record_type.range.end,
-        ]
+      ->((struct_token, name, type_params_list, record_type)) do
+        StructDeclaration.new(
+          name: name.value,
+          type_params: type_params_list.items,
+          record_type:,
+          trailing_comma: type_params_list.trailing_comma,
+          range: struct_token.range.begin..record_type.range.end,
+        )
       end
     end
 

@@ -1,4 +1,4 @@
-require 'result'
+require 'jade/result'
 
 require 'jade/parsing/combinators'
 require 'jade/parsing/error'
@@ -70,7 +70,7 @@ module Jade
         type(:lparen) >>
           lazy { expression } >>
           type(:comma).skip >>
-          sequence(lazy { expression }, separated_by: type(:comma).skip).map { [it] } >>
+          comma_sequence(lazy { expression }) >>
           type(:rparen)
       ).map(&AST.tuple)
     end
@@ -91,7 +91,7 @@ module Jade
     def lambda
       (
         type(:lparen) >>
-          (sequence(assignment_pattern, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
+          (comma_sequence(assignment_pattern) | empty_comma_list) >>
           type(:rparen).skip >>
           type(:arrow).skip >>
           type(:lbrace).skip >>
@@ -134,7 +134,7 @@ module Jade
         type(:lparen) >>
           lazy { pattern } >>
           type(:comma).skip >>
-          sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } >>
+          comma_sequence(lazy { pattern }) >>
           type(:rparen)
       ).map(&AST.tuple_pattern)
     end
@@ -155,9 +155,9 @@ module Jade
       (constructor_reference >>
         ((type(:lparen).skip >>
         (keyed_pattern |
-          sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } |
-          none.map { [[]] }) >>
-        type(:rparen)) | none.map { [[]] })
+          comma_sequence(lazy { pattern }) |
+          empty_comma_list) >>
+        type(:rparen)) | empty_comma_list)
       ).map(&AST.constructor_pattern)
     end
 
@@ -169,7 +169,7 @@ module Jade
     def record_pattern
       (
         type(:lbrace) >>
-        sequence(record_field_pattern, separated_by: type(:comma).skip).map { [it] } >>
+        comma_sequence(record_field_pattern) >>
         type(:rbrace)
       ).map(&AST.record_pattern)
     end
@@ -228,8 +228,8 @@ module Jade
       (
         type(:lparen) >>
           (keyed_call |
-            sequence(function_call_arg, separated_by: type(:comma).skip).map { [it] } |
-            none.map { [[]] }) >>
+            comma_sequence(function_call_arg) |
+            empty_comma_list) >>
           type(:rparen)
       ).map { FunctionCallPostfix[*it] }
     end
@@ -281,8 +281,7 @@ module Jade
     end
 
     def expose_list
-      (sequence(expose_item, separated_by: type(:comma).skip))
-        .map { [it] }.map(&AST.expose_list)
+      comma_sequence(expose_item).map(&AST.expose_list)
     end
 
     def expose_item
@@ -308,7 +307,7 @@ module Jade
           (
             identifier >>
             type(:lparen).skip >>
-            (sequence(param, separated_by: type(:comma).skip).map { [it] } | none.map { [[]] }) >>
+            (comma_sequence(param) | empty_comma_list) >>
             type(:rparen).skip >>
             type(:arrow).skip >>
             type_expression >>
@@ -324,7 +323,7 @@ module Jade
         type(:type) >>
           (
             constant >>
-            (type_params | none.map { [[]] }) >>
+            (type_params | empty_comma_list) >>
             type(:assign).skip >>
             sequence(variant_declaration, separated_by: type(:pipe).skip).map { [it] }
           ).commit
@@ -336,7 +335,7 @@ module Jade
       (
         type(:data) >>
           constant >>
-          (type_params | none.map { [[]] }) >>
+          (type_params | empty_comma_list) >>
           type(:assign).skip >>
           type_record
       ).map(&AST.record_declaration)
@@ -345,7 +344,7 @@ module Jade
     def variant_declaration
       (
         constant >>
-          (keyed_variant | type_expressions | none.map { [[]] })
+          (keyed_variant | type_expressions | empty_comma_list)
       ).map(&AST.variant_declaration)
     end
 
@@ -366,9 +365,9 @@ module Jade
         type(:lbrack) >>
         (
           (
-            sequence(lazy { pattern }, separated_by: type(:comma).skip).map { [it] } >>
+            comma_sequence(lazy { pattern }) >>
             (type(:pipe).skip >> lazy { pattern } | none)
-          ) | none.map { [[], nil] }
+          ) | (empty_comma_list >> none)
         ).map { [it] } >>
         type(:rbrack)
       ).map(&AST.list_pattern)
@@ -376,9 +375,7 @@ module Jade
 
     def list
       (type(:lbrack) >>
-        (sequence(lazy { expression }, separated_by: type(:comma).skip).map { [it] } |
-          none.map { [[]] }
-        ) >>
+        (comma_sequence(lazy { expression }) | empty_comma_list) >>
         type(:rbrack)
       ).map(&AST.list)
     end
@@ -425,8 +422,7 @@ module Jade
     end
 
     def record_fields
-      sequence(record_field, separated_by: type(:comma).skip)
-        .map { [it] }
+      comma_sequence(record_field)
     end
 
     def record_field
@@ -531,7 +527,7 @@ module Jade
         type(:struct) >>
           (
             constant >>
-            (type_params | none.map { [[]] }) >>
+            (type_params | empty_comma_list) >>
             type(:assign).skip >>
             type_record
           ).commit

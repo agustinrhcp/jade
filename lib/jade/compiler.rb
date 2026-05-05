@@ -3,10 +3,13 @@ module Jade
     attr_reader :config
 
     def initialize
+      @loaded = {}
       yield(config) if block_given?
     end
 
     def require(path)
+      return false if @loaded[path]
+
       ModuleLoader
         .load(config.source_root.first, path + '.jd')
         .then { ModuleLoader.emit(it, path: build_root) }
@@ -17,6 +20,7 @@ module Jade
       )
 
       load compiled_path
+      @loaded[path] = true
     end
 
     private 

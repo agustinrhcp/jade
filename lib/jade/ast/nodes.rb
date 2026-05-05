@@ -11,7 +11,8 @@ module Jade
           :id,
           :leading_comments,
           :trailing_comments,
-          :dangling_comments
+          :dangling_comments,
+          :trailing_comma
         ) {
           include Node
 
@@ -21,6 +22,7 @@ module Jade
             kwargs[:leading_comments]  ||= []
             kwargs[:trailing_comments] ||= []
             kwargs[:dangling_comments] ||= []
+            kwargs[:trailing_comma]    ||= false
             super(**kwargs)
           end
         }

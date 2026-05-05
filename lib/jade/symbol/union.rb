@@ -6,6 +6,10 @@ module Jade
       def to_ref
         TypeRef[module_name, name]
       end
+
+      def constructor_refs
+        variants
+      end
     end
   end
 end

@@ -41,12 +41,12 @@ module Jade
 
       def shallow_declare_node(node, registry, entry)
         resolver(node, entry)
-          &.shallow(node, registry, entry) || return Result[entry, []]
+          &.shallow(node, registry, entry) || Result[entry, []]
       end
 
       def deep_declare_node(node, entry, registry)
         resolver(node, entry)
-          &.deep(node, entry, registry) || return Result[entry, []]
+          &.deep(node, entry, registry) || Result[entry, []]
       end
 
       private

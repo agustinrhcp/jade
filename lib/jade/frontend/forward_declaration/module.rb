@@ -64,18 +64,18 @@ module Jade
         def lookup_and_expose_type_with_variants(entry, name, span)
           symbol = entry.lookup_type(name)
 
-          if symbol
-            return symbol
-              .variants
-              .reduce(entry) { |acc, variant| acc.expose(variant.to_ref) }
-              .expose(symbol.to_ref)
-              .then { Result[it, []] }
+          unless symbol
+            return Result[
+              entry,
+              [Error::ExposedTypeNotFound.new(entry.name, span, name:)],
+            ]
           end
 
-          Result[
-            entry,
-            [Error::ExposedTypeNotFound.new(entry.name, span, name:)],
-          ]
+          symbol
+            .constructor_refs
+            .reduce(entry) { |acc, ctor| acc.expose(ctor.to_ref) }
+            .expose(symbol.to_ref)
+            .then { Result[it, []] }
         end
 
         def lookup_and_expose_value(entry, name, span)
