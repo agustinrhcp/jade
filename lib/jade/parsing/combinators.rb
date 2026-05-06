@@ -1,6 +1,21 @@
 module Jade
   module Parsing
     module Combinators
+      module Dsl
+        def parser(name, private: false, &block)
+          builder = :"_build_#{name}"
+          define_method(builder, &block)
+          send(:private, builder)
+          module_eval(<<~RUBY, __FILE__, __LINE__ + 1)
+            def #{name}
+              @#{name} ||= #{builder}
+            end
+          RUBY
+          send(:private, name) if private
+        end
+      end
+      extend Dsl
+
       def grouped(parser)
         type(:lparen).skip >> parser >> type(:rparen).skip
       end
@@ -21,8 +36,9 @@ module Jade
       end
 
       def comma_sequence(parser)
+        inner = sequence(parser, separated_by: type(:comma).skip)
         P.new do |state|
-          sequence(parser, separated_by: type(:comma).skip).call(state).and_then do |(items, state1)|
+          inner.call(state).and_then do |(items, state1)|
             if !state1.eof? && state1.current.type == :comma
               [true, state1.advance]
             else
@@ -33,13 +49,9 @@ module Jade
         end
       end
 
-      def empty_comma_list
-        none.map { CommaList.empty }
-      end
+      parser(:empty_comma_list) { none.map { CommaList.empty } }
 
-      def none
-        P.new { |state| Ok[[nil, state]] }
-      end
+      parser(:none) { P.new { |state| Ok[[nil, state]] } }
 
       def skip(parser)
         parser.map { |_| :skip }
@@ -69,7 +81,7 @@ module Jade
       end
 
       def type(type)
-        P.new do |state|
+        (@types ||= {})[type] ||= P.new do |state|
           if state.eof?
             Err[[
               Parsing::EOFError.new(

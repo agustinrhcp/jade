@@ -11,6 +11,7 @@ module Jade
     include Combinators
     include Token
     include Type
+    extend Combinators::Dsl
 
     FunctionCallPostfix = Data.define(:lparen, :args, :rparen) do
       def apply(node)
@@ -33,7 +34,7 @@ module Jade
         .map_error(&:first)
     end
 
-    def module_
+    parser(:module_) {
       (
         type(:module).skip >>
         (
@@ -42,30 +43,22 @@ module Jade
           program_body
         ).commit
       ).map(&AST.module_)
-    end
+    }
 
-    def program
-      module_ | program_body
-    end
+    parser(:program) { module_ | program_body }
 
-    def program_body
-      sequence(declaration | statement).map(&AST.body)
-    end
+    parser(:program_body) { sequence(declaration | statement).map(&AST.body) }
 
-    def statement
-      bind | assign | expression
-    end
+    parser(:statement) { bind | assign | expression }
 
-    def declaration
+    parser(:declaration) {
       function_declaration | type_declaration | import_declaration | interop_import_declaration |
         struct_declaration | implementation | interface_declaration
-    end
+    }
 
-    def expression
-      case_of | if_then_else | lambda | infix_expression
-    end
+    parser(:expression) { case_of | if_then_else | lambda | infix_expression }
 
-    def tuple
+    parser(:tuple) {
       (
         type(:lparen) >>
           lazy { expression } >>
@@ -73,22 +66,22 @@ module Jade
           comma_sequence(lazy { expression }) >>
           type(:rparen)
       ).map(&AST.tuple)
-    end
+    }
 
-    def grouping
+    parser(:grouping) {
       (type(:lparen) >> lazy { expression } >> type(:rparen)).map(&AST.grouping)
-    end
+    }
 
-    def infix_expression
+    parser(:infix_expression) {
       (primary >> many(operator >> primary))
         .map do |(head, *tail)|
           tail.reduce(head) do |left, (op, right)|
             AST.infix_application.call(left, op, right)
           end
         end
-    end
+    }
 
-    def lambda
+    parser(:lambda) {
       (
         type(:lparen) >>
           (comma_sequence(assignment_pattern) | empty_comma_list) >>
@@ -98,9 +91,9 @@ module Jade
           body >>
           type(:rbrace)
       ).map(&AST.lambda)
-    end
+    }
 
-    def if_then_else
+    parser(:if_then_else) {
       (
         type(:if) >>
           lazy { expression } >>
@@ -110,26 +103,27 @@ module Jade
           body >>
           type(:end)
       ).map(&AST.if_then_else)
-    end
+    }
 
-    def case_of
+    parser(:case_of) {
       (
         type(:case) >>
           lazy { expression } >>
           sequence(case_of_branch).map { [it] } >>
           type(:end)
       ).map(&AST.case_of)
-    end
+    }
 
-    def case_of_branch
+    parser(:case_of_branch) {
       (type(:of) >> pattern >> type(:then).skip >> body).map(&AST.case_of_branch)
-    end
+    }
 
-    def pattern
-      wildcard_pattern | list_pattern | literal_pattern | binding_pattern | constructor_pattern | tuple_pattern | record_pattern
-    end
+    parser(:pattern) {
+      wildcard_pattern | list_pattern | literal_pattern | binding_pattern |
+        constructor_pattern | tuple_pattern | record_pattern
+    }
 
-    def tuple_pattern
+    parser(:tuple_pattern) {
       (
         type(:lparen) >>
           lazy { pattern } >>
@@ -137,21 +131,15 @@ module Jade
           comma_sequence(lazy { pattern }) >>
           type(:rparen)
       ).map(&AST.tuple_pattern)
-    end
+    }
 
-    def wildcard_pattern
-      type(:wildcard).map(&AST.wildcard_pattern)
-    end
+    parser(:wildcard_pattern) { type(:wildcard).map(&AST.wildcard_pattern) }
 
-    def binding_pattern
-      identifier.map(&AST.binding_pattern)
-    end
+    parser(:binding_pattern) { identifier.map(&AST.binding_pattern) }
 
-    def literal_pattern
-      literal.map(&AST.literal_pattern)
-    end
+    parser(:literal_pattern) { literal.map(&AST.literal_pattern) }
 
-    def constructor_pattern
+    parser(:constructor_pattern) {
       (constructor_reference >>
         ((type(:lparen).skip >>
         (keyed_pattern |
@@ -159,72 +147,68 @@ module Jade
           empty_comma_list) >>
         type(:rparen)) | empty_comma_list)
       ).map(&AST.constructor_pattern)
-    end
+    }
 
-    def keyed_pattern
+    parser(:keyed_pattern) {
       sequence(record_field_pattern, separated_by: type(:comma).skip)
         .map(&AST.keyed_pattern)
-    end
+    }
 
-    def record_pattern
+    parser(:record_pattern) {
       (
         type(:lbrace) >>
         comma_sequence(record_field_pattern) >>
         type(:rbrace)
       ).map(&AST.record_pattern)
-    end
+    }
 
-    def record_field_pattern
+    parser(:record_field_pattern) {
       (
-        (identifier >> type(:colon) >> lazy { pattern }) | 
+        (identifier >> type(:colon) >> lazy { pattern }) |
           (identifier >> type(:colon))
             .map { |identifier, colon| [identifier, colon, AST.binding_pattern.call(identifier)] }
       ).map(&AST.record_field_pattern)
-    end
+    }
 
-    def body
-      sequence(lazy { statement }).map(&AST.body)
-    end
+    parser(:body) { sequence(lazy { statement }).map(&AST.body) }
 
-    def operator
+    parser(:operator) {
       type(:plus) | type(:minus) | type(:star) | type(:slash) |
         type(:pipe_forward) | type(:pipe_backward) | type(:eq) | type(:not_eq) |
         type(:lt) | type(:gt) | type(:lte) | type(:gte) | type(:andand) | type(:oror) |
         type(:plusplus)
-    end
+    }
 
-    def primary
+    parser(:primary) {
       (atom >> many(postfix))
         .map do |(node, *postfixes)|
           postfixes.reduce(node) do |acc, postfix_type|
             postfix_type.apply(acc)
           end
         end
-    end
+    }
 
-    def negative_literal
+    parser(:negative_literal) {
       (type(:minus) >> (int | float)).map do |(minus_tok, lit_node)|
         lit_node.with(
           value: -lit_node.value,
           range: minus_tok.range.begin..lit_node.range.end,
         )
       end
-    end
+    }
 
-    def atom
-      variable_reference | negative_literal | literal | constructor_reference | tuple | grouping | record_literal |
-       record_update_sugar | record_access_sugar | record_update
-    end
+    parser(:atom) {
+      variable_reference | negative_literal | literal | constructor_reference | tuple |
+        grouping | record_literal | record_update_sugar | record_access_sugar | record_update
+    }
 
-    def postfix
-      function_call | member_access
-    end
+    parser(:postfix) { function_call | member_access }
 
-    def module_name
+    parser(:module_name) {
       sequence(constant, separated_by: type(:dot).skip).map { [it] }
-    end
+    }
 
-    def function_call
+    parser(:function_call) {
       (
         type(:lparen) >>
           (keyed_call |
@@ -232,27 +216,23 @@ module Jade
             empty_comma_list) >>
           type(:rparen)
       ).map { FunctionCallPostfix[*it] }
-    end
+    }
 
-    def function_call_arg
-      placeholder | lazy { expression }
-    end
+    parser(:function_call_arg) { placeholder | lazy { expression } }
 
-    def keyed_call
+    parser(:keyed_call) {
       sequence(record_field, separated_by: type(:comma).skip)
         .map(&AST.keyed_call)
-    end
+    }
 
-    def placeholder
-      type(:wildcard).map(&AST.placeholder)
-    end
+    parser(:placeholder) { type(:wildcard).map(&AST.placeholder) }
 
-    def member_access
+    parser(:member_access) {
       (type(:dot) >> (variable_reference | constructor_reference))
         .map { MemberAccessPostfix[*it] }
-    end
+    }
 
-    def import_declaration
+    parser(:import_declaration) {
       (
         type(:import) >>
           (
@@ -262,46 +242,34 @@ module Jade
           ).commit
       ).map(&AST.import_declaration)
        .context("import declaration")
-    end
+    }
 
-    def exposing
+    parser(:exposing) {
       (type(:exposing).skip >>
           type(:lparen).skip >>
           (expose_list | expose_all) >>
           type(:rparen).skip
       ) | expose_none
-    end
+    }
 
-    def expose_none
-      none.map(&AST.expose_none)
-    end
+    parser(:expose_none) { none.map(&AST.expose_none) }
 
-    def expose_all
-      type(:dotdot).map(&AST.expose_all)
-    end
+    parser(:expose_all) { type(:dotdot).map(&AST.expose_all) }
 
-    def expose_list
-      comma_sequence(expose_item).map(&AST.expose_list)
-    end
+    parser(:expose_list) { comma_sequence(expose_item).map(&AST.expose_list) }
 
-    def expose_item
-      expose_value | expose_type_expand | expose_type
-    end
+    parser(:expose_item) { expose_value | expose_type_expand | expose_type }
 
-    def expose_value
-      identifier.map(&AST.expose_value)
-    end
+    parser(:expose_value) { identifier.map(&AST.expose_value) }
 
-    def expose_type_expand
+    parser(:expose_type_expand) {
       (constant >> type(:lparen) >> type(:dotdot) >> type(:rparen))
         .map(&AST.expose_type_expand)
-    end
+    }
 
-    def expose_type
-      constant.map(&AST.expose_type)
-    end
+    parser(:expose_type) { constant.map(&AST.expose_type) }
 
-    def function_declaration
+    parser(:function_declaration) {
       (
         type(:def) >>
           (
@@ -316,9 +284,9 @@ module Jade
           ).commit
       ).map(&AST.function_declaration)
        .context("function declaration")
-    end
+    }
 
-    def type_declaration
+    parser(:type_declaration) {
       (
         type(:type) >>
           (
@@ -329,9 +297,9 @@ module Jade
           ).commit
       ).map(&AST.type_declaration)
        .context("type declaration")
-    end
+    }
 
-    def record_declaration
+    parser(:record_declaration) {
       (
         type(:data) >>
           constant >>
@@ -339,28 +307,26 @@ module Jade
           type(:assign).skip >>
           type_record
       ).map(&AST.record_declaration)
-    end
+    }
 
-    def variant_declaration
+    parser(:variant_declaration) {
       (
         constant >>
           (keyed_variant | type_expressions | empty_comma_list)
       ).map(&AST.variant_declaration)
-    end
+    }
 
-    def keyed_variant
+    parser(:keyed_variant) {
       (
         type(:lparen) >>
           type_record_fields >>
           type(:rparen)
       ).map(&AST.keyed_variant)
-    end
+    }
 
-    def literal
-      string | char | int | bool | float | list
-    end
+    parser(:literal) { string | char | int | bool | float | list }
 
-    def list_pattern
+    parser(:list_pattern) {
       (
         type(:lbrack) >>
         (
@@ -371,105 +337,99 @@ module Jade
         ).map { [it] } >>
         type(:rbrack)
       ).map(&AST.list_pattern)
-    end
+    }
 
-    def list
+    parser(:list) {
       (type(:lbrack) >>
         (comma_sequence(lazy { expression }) | empty_comma_list) >>
         type(:rbrack)
       ).map(&AST.list)
-    end
+    }
 
     # Should refactor to just an Identifier node
-    def variable_reference
-      identifier.map(&AST.variable_reference)
-    end
+    parser(:variable_reference) { identifier.map(&AST.variable_reference) }
 
     # Should refactor to just an Constant node
-    def constructor_reference
-      constant.map(&AST.constructor_reference)
-    end
+    parser(:constructor_reference) { constant.map(&AST.constructor_reference) }
 
-    def param
+    parser(:param) {
       (
         identifier >> type(:colon).skip >> type_expression
       ).map(&AST.function_declaration_param)
-    end
+    }
 
-    def bind
+    parser(:bind) {
       (
         assignment_pattern >>
           type(:bind) >>
           expression.commit
       ).map(&AST.bind)
-    end
+    }
 
-    def assign
+    parser(:assign) {
       (
         assignment_pattern >>
           type(:assign) >>
           expression.commit
       ).map(&AST.assign)
-    end
+    }
 
-    def assignment_pattern
-      wildcard_pattern | constructor_pattern | tuple_pattern | record_pattern | list_pattern | binding_pattern
-    end
+    parser(:assignment_pattern) {
+      wildcard_pattern | constructor_pattern | tuple_pattern | record_pattern |
+        list_pattern | binding_pattern
+    }
 
     # Records
-    def record_literal
+    parser(:record_literal) {
       (type(:lbrace) >> record_fields >> type(:rbrace)).map(&AST.record_literal)
-    end
+    }
 
-    def record_fields
-      comma_sequence(record_field)
-    end
+    parser(:record_fields) { comma_sequence(record_field) }
 
-    def record_field
+    parser(:record_field) {
       (identifier >> type(:colon).skip >> lazy { expression }).map(&AST.record_field)
-    end
+    }
 
-    def record_access_sugar
+    parser(:record_access_sugar) {
       (type(:dot) >> type(:identifier)).map(&AST.record_access_sugar)
-    end
+    }
 
-    def record_update
-      (type(:lbrace) >> variable_reference >> type(:pipe) >> record_fields >> type(:rbrace)).map(&AST.record_update)
-    end
+    parser(:record_update) {
+      (type(:lbrace) >> variable_reference >> type(:pipe) >> record_fields >> type(:rbrace))
+        .map(&AST.record_update)
+    }
 
-    def record_update_sugar
+    parser(:record_update_sugar) {
       (type(:dot) >> type(:identifier) >> type(:assign)).map(&AST.record_update_sugar)
-    end
+    }
 
-    def interop_import_declaration
+    parser(:interop_import_declaration) {
       (
         type(:uses) >>
           (interop_module_name >> type(:with) >> interop_functions >> type(:end).skip)
             .commit
       ).map(&AST.interop_import_declaration)
        .context("interop import declaration")
-    end
+    }
 
-    def interop_namespace_sep
-      type(:coloncolon)
-    end
+    parser(:interop_namespace_sep) { type(:coloncolon) }
 
-    def interop_module_name
+    parser(:interop_module_name) {
       at_least_one(constant, separated_by: interop_namespace_sep.skip)
         .map(&AST.interop_module)
-    end
+    }
 
-    def interop_functions
+    parser(:interop_functions) {
       at_least_one(interop_function, separated_by: type(:comma).skip)
         .map { [it] }
-    end
+    }
 
-    def interop_function
-      (identifier >> type(:colon).skip >> type_expression )
+    parser(:interop_function) {
+      (identifier >> type(:colon).skip >> type_expression)
         .map(&AST.interop_function)
-    end
+    }
 
-    def implementation
+    parser(:implementation) {
       (
         type(:implements) >>
           (
@@ -486,9 +446,9 @@ module Jade
           ).commit
       ).map(&AST.implementation)
        .context("implementation")
-    end
+    }
 
-    def interface_declaration
+    parser(:interface_declaration) {
       (
         type(:interface) >>
           (
@@ -503,26 +463,26 @@ module Jade
           ).commit
       ).map(&AST.interface_declaration)
        .context("interface declaration")
-    end
+    }
 
-    def interface_function_decl
+    parser(:interface_function_decl) {
       (
         (type(:identifier) | (type(:lparen).skip >> operator >> type(:rparen).skip)) >>
         type(:colon).skip >>
         type_expression
       ).map(&AST.interface_function_decl)
-    end
+    }
 
-    def implementation_function
+    parser(:implementation_function) {
       (
         (type(:identifier) | (type(:lparen).skip >> operator >> type(:rparen).skip)) >>
         type(:colon).skip >>
         (lambda | variable_reference)
       )
         .map(&AST.implementation_function)
-    end
+    }
 
-    def struct_declaration
+    parser(:struct_declaration) {
       (
         type(:struct) >>
           (
@@ -533,31 +493,20 @@ module Jade
           ).commit
       ).map(&AST.struct_declaration)
        .context("struct declaration")
-    end
+    }
 
-    def int
-      type(:int).map(&AST.literal)
-    end
+    parser(:int)   { type(:int).map(&AST.literal) }
+    parser(:float) { type(:float).map(&AST.literal) }
+    parser(:bool)  { type(:bool).map(&AST.literal) }
+    parser(:char)  { type(:char).map(&AST.char_literal) }
 
-    def float
-      type(:float).map(&AST.literal)
-    end
-
-    def bool
-      type(:bool).map(&AST.literal)
-    end
-
-    def char
-      type(:char).map(&AST.char_literal)
-    end
-
-    def string
+    parser(:string) {
       (
         type(:quote) >>
           (type(:string_chunk) >> type(:quote))
             .commit
       )
         .map(&AST.string_literal)
-    end
+    }
   end
 end

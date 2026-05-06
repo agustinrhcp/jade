@@ -1,15 +1,17 @@
+require 'jade/parsing/combinators'
+
 module Jade
   module Parsing
     module Type
-      def type_expression
-        type_function | type_atom | type_record
-      end
+      extend Combinators::Dsl
 
-      def type_atom
+      parser(:type_expression) { type_function | type_atom | type_record }
+
+      parser(:type_atom) {
         type_application | type_var | type_tuple | grouped(lazy { type_function })
-      end
+      }
 
-      def type_tuple
+      parser(:type_tuple) {
         (
           type(:lparen) >>
             lazy { type_atom } >>
@@ -17,83 +19,73 @@ module Jade
             comma_sequence(lazy { type_atom }) >>
             type(:rparen)
         ).map(&AST.type_tuple)
-      end
+      }
 
-      def type_record
+      parser(:type_record) {
         (type(:lbrace) >> type_record_row >> type_record_fields >> type(:rbrace)).map(&AST.type_record)
-      end
+      }
 
-      def type_record_row
-        (type_param >> type(:pipe).skip) | none.map { nil }
-      end
+      parser(:type_record_row) { (type_param >> type(:pipe).skip) | none.map { nil } }
 
-      def type_record_fields
+      parser(:type_record_fields) {
         comma_sequence(
           (identifier >>
             type(:colon).skip >>
             lazy { type_expression }
           ).map { [it] },
         )
-      end
+      }
 
-      def type_param
-        identifier.map(&AST.type_param)
-      end
+      parser(:type_param) { identifier.map(&AST.type_param) }
 
-      def type_name
-        qualified_type_name | constant.map(&AST.type_name)
-      end
+      parser(:type_name) { qualified_type_name | constant.map(&AST.type_name) }
 
-      def qualified_type_name
-        (constant >> type(:dot).skip >> 
+      parser(:qualified_type_name) {
+        (constant >> type(:dot).skip >>
           sequence(constant, separated_by: type(:dot).skip)
         ).map(&AST.qualified_type_name)
-      end
+      }
 
-      def type_var
-        identifier.map(&AST.type_var)
-      end
+      parser(:type_var) { identifier.map(&AST.type_var) }
 
-      def type_function
+      parser(:type_function) {
         (
           (unit | sequence(type_atom, separated_by: type(:comma).skip).map { [it] }) >>
           type(:arrow).skip >>
           type_atom
         ).map(&AST.type_function)
-      end
+      }
 
-      def unit
+      parser(:unit) {
         (type(:lparen) >> type(:rparen)).map { |lparen, rparen|
           [[AST::TypeUnit[lparen.range.begin..rparen.range.end]]]
         }
-      end
+      }
 
-      def type_application
+      parser(:type_application) {
         (
           (type_name >> (type_application_args | none.map { [Combinators::CommaList.empty, nil] })) |
           (type_var  >> type_application_args)
         ).map(&AST.type_application)
-      end
+      }
 
-      def type_params
+      parser(:type_params) {
         type(:lparen).skip >>
           comma_sequence(type_param) >>
           type(:rparen).skip
-      end
+      }
 
-      def type_expressions
+      parser(:type_expressions) {
         type(:lparen).skip >>
           comma_sequence(type_expression) >>
           type(:rparen).skip
-      end
+      }
 
-      private
-
-      def type_application_args
+      parser(:type_application_args, private: true) {
         type(:lparen).skip >>
           comma_sequence(lazy { type_expression }) >>
           type(:rparen)
-      end
+      }
     end
   end
 end

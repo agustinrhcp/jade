@@ -106,13 +106,13 @@ module Jade
           map do |row|
             case row.first
             in Record(fields:)
-              type_fields 
+              type_fields
                 .map do |(k, v)|
                   fields[k] || Wildcard[]
-                end + rows.drop(1)
+                end + row.drop(1)
 
             in Wildcard
-              type_fields.map { Wildcard[] } + rows.drop(1)
+              type_fields.map { Wildcard[] } + row.drop(1)
             end
           end
             .with(types: type_fields.values + types.drop(1))
