@@ -1,13 +1,12 @@
+require 'jade/parsing/combinators'
+
 module Jade
   module Parsing
     module Token
-      def identifier
-        type(:identifier)
-      end
+      extend Combinators::Dsl
 
-      def constant
-        type(:constant)
-      end
+      parser(:identifier) { type(:identifier) }
+      parser(:constant)   { type(:constant) }
     end
   end
 end

@@ -102,5 +102,29 @@ module Jade
         expect(PatternBind.first_or_zero.call([42, 1, 2])).to eql 42
       end
     end
+
+    context 'cons pattern over list of struct' do
+      let(:source) do
+        <<~JADE
+          module PatternBind exposing (head_id)
+
+          struct Charge = { id: Int, due_cents: Int }
+
+          def head_id(xs: List(Charge)) -> Int
+            case xs
+            of [] then 0
+            of [c | rest] then c.id
+            end
+          end
+        JADE
+      end
+
+      it 'destructures and projects a struct field' do
+        c1 = PatternBind::Charge[1, 100]
+        c2 = PatternBind::Charge[2, 200]
+        expect(PatternBind.head_id.call([])).to eql 0
+        expect(PatternBind.head_id.call([c1, c2])).to eql 1
+      end
+    end
   end
 end

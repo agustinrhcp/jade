@@ -14,12 +14,11 @@ module Jade
         .load(config.source_root.first, path + '.jd')
         .then { ModuleLoader.emit(it, path: build_root) }
 
-      compiled_path = File.expand_path(
-        "#{build_root}/#{path}.rb",
-        config.project_root,
-      )
+      File
+        .expand_path("#{build_root}/#{path}.rb", config.project_root)
+        .then { File.realpath(it) }
+        .then { Kernel.require(it) }
 
-      load compiled_path
       @loaded[path] = true
     end
 
