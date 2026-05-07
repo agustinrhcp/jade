@@ -7,15 +7,22 @@ module Jade
       def generate(node, sibling_names)
         node => AST::VariantDeclaration(name:, args:)
 
-        fields = args.map.with_index { |_, i| "_#{i + 1}" }
-
         sibling_names
           .map { |s| "def #{predicate_name(s)}; #{s == name}; end" }
           .join('; ')
-          .then { "#{name} = #{data_define(fields)} do; #{it}; end" }
+          .then { "#{name} = #{data_define(fields_for(args))} do; #{it}; end" }
       end
 
       private
+
+      def fields_for(args)
+        case args
+        in [AST::TypeRecord(fields:)]
+          fields.keys
+        else
+          args.map.with_index { |_, i| "_#{i + 1}" }
+        end
+      end
 
       def predicate_name(variant_name)
         variant_name

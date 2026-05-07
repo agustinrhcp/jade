@@ -1,4 +1,4 @@
-module PatternMatching exposing (describe_list, sum, fibonacci)
+module PatternMatching exposing (describe_list, fibonacci, sum)
 
 def describe_list(list: List(Int)) -> String
   case List.length(list)

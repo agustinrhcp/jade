@@ -54,6 +54,7 @@ module Jade
       let(:text) do
         <<~JADE.strip
           x = 42
+
           x
         JADE
       end
@@ -127,8 +128,13 @@ module Jade
         it { is_expected.to eql '{ name: "Alice" }' }
       end
 
-      context 'multiple fields' do
+      context 'multiple fields, no trailing comma' do
         let(:text) { '{ name: "Alice", age: 30 }' }
+        it { is_expected.to eql '{ name: "Alice", age: 30 }' }
+      end
+
+      context 'multiple fields with trailing comma' do
+        let(:text) { '{ name: "Alice", age: 30, }' }
         it { is_expected.to eql "{\n  name: \"Alice\",\n  age: 30,\n}" }
       end
     end
@@ -368,6 +374,7 @@ module Jade
           <<~JADE.strip
             def compute(x: Int) -> Int
               y = x + 1
+
               y * 2
             end
           JADE
@@ -409,7 +416,10 @@ module Jade
           <<~JADE.strip
             module Foo exposing (..)
 
-            type Color = Red | Green | Blue
+            type Color
+              = Red
+              | Green
+              | Blue
           JADE
         end
 
@@ -421,7 +431,9 @@ module Jade
           <<~JADE.strip
             module Foo exposing (..)
 
-            type Shape = Circle(Int) | Rect(Int, Int)
+            type Shape
+              = Circle(Int)
+              | Rect(Int, Int)
           JADE
         end
 
@@ -433,7 +445,9 @@ module Jade
           <<~JADE.strip
             module Foo exposing (..)
 
-            type Maybe(a) = Just(a) | Nothing
+            type Maybe(a)
+              = Just(a)
+              | Nothing
           JADE
         end
 
@@ -447,7 +461,10 @@ module Jade
           <<~JADE.strip
             module Foo exposing (..)
 
-            struct Point = { x: Int, y: Int }
+            struct Point = {
+              x: Int,
+              y: Int
+            }
           JADE
         end
 
@@ -656,6 +673,7 @@ module Jade
         <<~JADE.strip
           def chain(m: Maybe(Int)) -> Maybe(Int)
             x <- m
+
             Just(x)
           end
         JADE
@@ -678,6 +696,7 @@ module Jade
           def example(m: Maybe(Int)) -> Maybe(Int)
             a <- m
             b <- m
+
             a + b
           end
         JADE
@@ -812,6 +831,7 @@ module Jade
           <<~JADE.strip
             def foo(x: Int) -> Int
               y = x + 1
+
               # result
               y
             end

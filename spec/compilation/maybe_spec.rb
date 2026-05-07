@@ -9,7 +9,7 @@ module Jade
 
     let(:pepe_source) do
       <<~JADE
-        module Pepe exposing (hello, sum_maybe, and_then_test)
+        module Pepe exposing (and_then_test, hello, sum_maybe)
 
         def hello(maybe: Maybe(String)) -> String
           Maybe.with_default(maybe, "Hello pepe")

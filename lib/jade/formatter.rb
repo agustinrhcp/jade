@@ -92,11 +92,15 @@ module Jade
         record_type => AST::TypeRecord(fields:, row_var:)
 
         if fields.size > 1
-          row_str    = row_var ? " | #{row_var}" : ""
+          open_brace = row_var ? "{ #{row_var.name} |" : "{"
           fields_str = fields
             .map { |k, v| "#{k}: #{format_type(v)}".then(&and_indent(indent + 1)) }
             .join(",\n")
-          "#{and_indent(indent).call("#{header} {")}\n#{fields_str}\n#{INDENT * indent}}#{row_str}"
+
+          and_indent(indent)
+            .call("#{header} #{open_brace}")
+            .then { "#{it}\n#{fields_str}\n#{INDENT * indent}}" }
+          
         else
           "#{header} #{format_type(record_type)}".then(&and_indent(indent))
         end
@@ -114,7 +118,7 @@ module Jade
         funcs_str =
           functions
             .map { format_node(it).then(&and_indent(indent + 1)) }
-            .join("\n")
+            .join(",\n")
 
         "uses #{interop_module.name} with\n#{funcs_str}\nend"
           .then(&and_indent(indent))
@@ -137,9 +141,10 @@ module Jade
         fns_str     = functions
           .map { format_node(it, indent: indent + 1) }
           .join(",\n")
+        header = "implements #{interface}(#{format_type(applied_type)})#{extends_str} with"
 
         [
-          "implements #{interface}(#{format_type(applied_type)})#{extends_str} with".then(&and_indent(indent)),
+          header.then(&and_indent(indent)),
           fns_str,
           "end".then(&and_indent(indent)),
         ]
@@ -204,16 +209,26 @@ module Jade
             .map { format_pattern(it) }
             .join(', ')
 
-        "(#{params_str}) -> { #{format_node(body)} }"
-          .then(&and_indent(indent))
+        if inline_lambda_body?(body)
+          "(#{params_str}) -> { #{format_node(body.expressions.first)} }"
+            .then(&and_indent(indent))
+        else
+          [
+            "(#{params_str}) -> {".then(&and_indent(indent)),
+            format_node(body, indent: indent + 1),
+            "}".then(&and_indent(indent)),
+          ]
+            .join("\n")
+        end
 
       in AST::InfixApplication(left:, operator:, right:)
         if operator.value == '|>'
           chain = collect_pipe_chain(node)
           if chain.length > 2
             indent_str = INDENT * indent
-            ([format_node(chain.first, indent:)] + chain[1..].map { "#{indent_str}|> #{format_node(it)}" })
-              .join("\n")
+            head = format_node(chain.first, indent:)
+            tail = chain[1..].map { "#{indent_str}|> #{format_node(it)}" }
+            ([head] + tail).join("\n")
           else
             "#{format_node(left)} |> #{format_node(right)}"
               .then(&and_indent(indent))
@@ -226,13 +241,13 @@ module Jade
       in AST::FunctionCall(callee:, args:, trailing_comma:)
         callee_str = format_node(callee)
         args_strs  = args.map { format_node(it) }
+        inline     = "#{callee_str}(#{args_strs.join(', ')})"
 
-        if trailing_comma
+        if trailing_comma || too_long?(inline, indent)
           inner = args_strs.map { "#{it.then(&and_indent(indent + 1))}," }.join("\n")
           "#{callee_str.then(&and_indent(indent))}(\n#{inner}\n#{INDENT * indent})"
         else
-          "#{callee_str}(#{args_strs.join(', ')})"
-            .then(&and_indent(indent))
+          inline.then(&and_indent(indent))
         end
 
       in AST::MemberAccess(target:, name:)
@@ -252,7 +267,7 @@ module Jade
           .then(&and_indent(indent))
 
       in AST::RecordUpdateSugar(field_key:)
-        ".#{field_key} ="
+        ".#{field_key}="
           .then(&and_indent(indent))
 
       in AST::Grouping(expression:)
@@ -267,26 +282,25 @@ module Jade
 
       in AST::RecordLiteral(fields:, trailing_comma:)
         field_strs = fields.map { "#{it.key}: #{format_node(it.value)}" }
-        multiline  = trailing_comma || fields.size > 1
+        inline     = "{ #{field_strs.join(', ')} }"
 
-        if multiline
+        if trailing_comma || too_long?(inline, indent)
           inner = field_strs.map { "#{it.then(&and_indent(indent + 1))}," }.join("\n")
           "#{INDENT * indent}{\n#{inner}\n#{INDENT * indent}}"
         else
-          "{ #{field_strs.join(', ')} }"
-            .then(&and_indent(indent))
+          inline.then(&and_indent(indent))
         end
 
       in AST::RecordUpdate(base:, fields:, trailing_comma:)
+        base_str   = format_node(base)
         field_strs = fields.map { "#{it.key}: #{format_node(it.value)}" }
-        multiline  = trailing_comma || fields.size > 1
+        inline     = "{ #{base_str} | #{field_strs.join(', ')} }"
 
-        if multiline
+        if trailing_comma || too_long?(inline, indent)
           inner = field_strs.map { "#{it.then(&and_indent(indent + 1))}," }.join("\n")
-          "#{INDENT * indent}{ #{format_node(base)} |\n#{inner}\n#{INDENT * indent}}"
+          "#{INDENT * indent}{ #{base_str} |\n#{inner}\n#{INDENT * indent}}"
         else
-          "{ #{format_node(base)} | #{field_strs.join(', ')} }"
-            .then(&and_indent(indent))
+          inline.then(&and_indent(indent))
         end
 
       in AST::VariableReference(name:)
@@ -306,7 +320,7 @@ module Jade
         in Integer | Float  then value.to_s
         in TrueClass        then "True"
         in FalseClass       then "False"
-        in String           then "\"#{value}\""
+        in String           then value.inspect
         end
           .then(&and_indent(indent))
       end
@@ -327,7 +341,10 @@ module Jade
     end
 
     def and_indent(indent)
-      ->(str) { "#{INDENT * indent}#{str}" }
+      ->(str) {
+        prefix = INDENT * indent
+        str.lines.map { |line| line == "\n" ? line : "#{prefix}#{line}" }.join
+      }
     end
 
     def format_leading_comments(node, indent)
@@ -386,9 +403,9 @@ module Jade
             .map { |k, v| "#{k}: #{format_type(v)}" }
             .join(", ")
 
-        row_str = row_var ? " | #{row_var}" : ""
+        row_prefix = row_var ? "#{row_var.name} | " : ""
 
-        "{ #{fields_str}#{row_str} }"
+        "{ #{row_prefix}#{fields_str} }"
 
       in AST::TypeTuple(items:)
         items_str =
@@ -433,6 +450,9 @@ module Jade
 
         "{ #{fields_str} }"
 
+      in AST::Pattern::RecordField(name:, pattern: AST::Pattern::Binding(name: ^name))
+        "#{name}:"
+
       in AST::Pattern::RecordField(name:, pattern:)
         "#{name}: #{format_pattern(pattern)}"
 
@@ -466,24 +486,52 @@ module Jade
         ""
 
       in AST::ExposeList(items:, trailing_comma:)
-        item_strs = items.map { format_expose_item(it) }
+        item_strs = sort_exposing(items).map { format_expose_item(it) }
+        inline    = "exposing (#{item_strs.join(', ')})"
 
-        if trailing_comma
+        if trailing_comma || too_long?(inline, indent)
           inner = item_strs.map { "#{INDENT * (indent + 1)}#{it}," }.join("\n")
           "exposing (\n#{inner}\n#{INDENT * indent})"
         else
-          "exposing (#{item_strs.join(', ')})"
+          inline
         end
       end
     end
 
+    def sort_exposing(items)
+      items.sort_by do |item|
+        case item
+        in AST::ExposeType | AST::ExposeTypeExpand then [0, item.name]
+        in AST::ExposeValue then [1, item.name]
+        end
+      end
+    end
+
+    LINE_LIMIT = 100
+
+    INLINE_LAMBDA_BODY = [
+      AST::Literal, AST::CharLiteral, AST::VariableReference, AST::ConstructorReference,
+      AST::FunctionCall, AST::RecordAccess, AST::InfixApplication, AST::RecordLiteral,
+      AST::List, AST::Tuple, AST::Grouping, AST::RecordUpdate, AST::RecordUpdateSugar,
+      AST::RecordAccessSugar,
+    ].freeze
+
+    def too_long?(line, indent)
+      (INDENT * indent).length + line.length > LINE_LIMIT
+    end
+
+    def inline_lambda_body?(body)
+      body.expressions.length == 1 &&
+        INLINE_LAMBDA_BODY.any? { body.expressions.first.is_a?(it) }
+    end
+
     def format_delimited(strs, open, close, trailing_comma, indent)
-      if trailing_comma
+      inline = "#{open}#{strs.join(', ')}#{close}"
+      if trailing_comma || too_long?(inline, indent)
         inner = strs.map { "#{it.then(&and_indent(indent + 1))}," }.join("\n")
         "#{INDENT * indent}#{open}\n#{inner}\n#{INDENT * indent}#{close}"
       else
-        "#{open}#{strs.join(', ')}#{close}"
-          .then(&and_indent(indent))
+        inline.then(&and_indent(indent))
       end
     end
 

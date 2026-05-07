@@ -424,6 +424,17 @@ module Jade
 
         it { is_expected.to be_a(AST::InfixApplication) }
       end
+
+      context 'pipe forward into a bare lambda' do
+        let(:text) do
+          <<~JADE
+            n |> (m) -> { m * 2 }
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::InfixApplication) }
+        its(:right) { is_expected.to be_a(AST::Lambda) }
+      end
     end
 
     context 'function calls' do
@@ -487,7 +498,10 @@ module Jade
         context 'with a record literal arg (distinct from keyed call)' do
           let(:text) do
             <<~JADE
-              Person({ name: "Paul", age: 55 })
+              Person({
+                name: "Paul",
+                age: 55,
+              })
             JADE
           end
 
@@ -524,7 +538,9 @@ module Jade
 
       let(:text) do
         <<~JADE
-          type Maybe(a) = Just(a) | Nothing
+          type Maybe(a)
+            = Just(a)
+            | Nothing
         JADE
       end
 
@@ -543,13 +559,30 @@ module Jade
       context 'followed by a constructor expression on the next line' do
         let(:text) do
           <<~JADE
-            type Maybe(a) = Just(a) | Nothing
-
+            type Maybe(a)
+              = Just(a)
+              | Nothing
             (Just(1))
           JADE
         end
 
-        pending 'ambiguous: parser greedily reads (Just(1)) as args of Nothing'
+        subject do
+          parse => Ok([body, _]); body.expressions
+        end
+
+        its(:size) { is_expected.to eql 2 }
+
+        it 'parses Nothing as a no-arg variant, not consuming (Just(1))' do
+          expect(subject[0]).to be_a(AST::TypeDeclaration).and have_attributes(name: 'Maybe')
+          expect(subject[0].variants[1]).to have_attributes(name: 'Nothing', args: [])
+        end
+
+        it 'parses (Just(1)) as a separate top-level grouped expression' do
+          expect(subject[1]).to be_a(AST::Grouping)
+          expect(subject[1].expression).to be_a(AST::FunctionCall)
+          expect(subject[1].expression.callee).to be_a(AST::ConstructorReference)
+          expect(subject[1].expression.callee.name).to eql 'Just'
+        end
       end
 
       context 'a single variant' do
@@ -567,7 +600,7 @@ module Jade
       context 'with a record' do
         let(:text) do
           <<~JADE
-            type Date = Date({ year: Int })
+            type Date = Date(year: Int)
           JADE
         end
 
@@ -780,6 +813,45 @@ module Jade
       end
     end
 
+    context 'postfix if' do
+      context 'simple form' do
+        let(:text) { '1 if x == 0 else 2' }
+
+        it { is_expected.to be_a(AST::Body) }
+
+        describe 'the expression' do
+          subject { super().expressions.first }
+
+          it { is_expected.to be_a(AST::IfThenElse) }
+          its(:condition) { is_expected.to be_a(AST::InfixApplication) }
+          its(:if_branch) { is_expected.to be_a(AST::Body) }
+          its(:else_branch) { is_expected.to be_a(AST::Body) }
+        end
+      end
+
+      context 'cascaded' do
+        let(:text) { '"a" if c1 else "b" if c2 else "c"' }
+
+        describe 'right-associative parse' do
+          subject { super().expressions.first }
+
+          it { is_expected.to be_a(AST::IfThenElse) }
+          its(:'if_branch.expressions.first.value') { is_expected.to eql 'a' }
+          its(:'else_branch.expressions.first') { is_expected.to be_a(AST::IfThenElse) }
+        end
+      end
+
+      context 'with infix in the leading expression' do
+        let(:text) { 'n * 2 if big else n' }
+
+        describe 'the if-branch' do
+          subject { super().expressions.first.if_branch.expressions.first }
+
+          it { is_expected.to be_a(AST::InfixApplication) }
+        end
+      end
+    end
+
     context 'lambda' do
       include_context "single expression body"
 
@@ -962,7 +1034,7 @@ module Jade
         let(:text) do
           <<~JADE
             case { name: "Pepe" }
-            of { name: name } then name
+            of { name: } then name
             end
           JADE
         end
@@ -1048,7 +1120,10 @@ module Jade
 
       let(:text) do
         <<~JADE
-          { a: "Hello", b: 2 }
+          {
+            a: "Hello",
+            b: 2,
+          }
         JADE
       end
 
@@ -1074,6 +1149,7 @@ module Jade
           <<~JADE
             def pauls_birthday() -> Person
               paul_before_today = paul()
+
               { paul_before_today | age: paul_before_today.age + 1 }
             end
           JADE
@@ -1121,8 +1197,11 @@ module Jade
 
       let(:text) do
         <<~JADE
-          def add() -> { name : String, age : Int }
-            { name: "Paul", age: 55 }
+          def add() -> { name: String, age: Int }
+            {
+              name: "Paul",
+              age: 55,
+            }
           end
         JADE
       end
@@ -1157,7 +1236,7 @@ module Jade
       context 'an open record type' do
         let(:text) do
           <<~JADE
-            def name(thing: { a | name : String }) -> String
+            def name(thing: { a | name: String }) -> String
               thing.name
             end
           JADE
@@ -1187,7 +1266,8 @@ module Jade
 
       let(:text) do
         <<~JADE
-          uses Jade::Date with today: Int
+          uses Jade::Date with
+            today : Int
           end
         JADE
       end
@@ -1207,8 +1287,8 @@ module Jade
         let(:text) do
           <<~JADE
             uses Jade::Date with
-              today: Int,
-              today_plus_days: Int -> Int
+              today : Int,
+              today_plus_days : Int -> Int
             end
           JADE
         end
@@ -1266,7 +1346,7 @@ module Jade
       let(:text) do
         <<~JADE
           implements Eq(Pepe) with
-            (==) : eq_pepe
+            (==): eq_pepe
           end
         JADE
       end

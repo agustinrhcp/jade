@@ -1,4 +1,4 @@
-module Interfaces exposing (larger, sort_pair, are_equal)
+module Interfaces exposing (are_equal, larger, sort_pair)
 
 def larger(a: a, b: a) -> a
   case compare(a, b)

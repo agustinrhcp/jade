@@ -14,37 +14,55 @@ module Jade
 
       let(:sql_source) do
         <<~JADE
-          module Sql exposing(column, from)
+          module Sql exposing (column, from)
 
-          struct Expr(a) = { to_sql: String, type_: a }
+          struct Expr(a) = {
+            to_sql: String,
+            type_: a
+          }
 
           struct From = { alias_: String }
-          struct Query = { from: From, options: QueryOptions }
-          struct QueryOptions = { selects: List(String), wheres: List(String) }
+
+          struct Query = {
+            from: From,
+            options: QueryOptions
+          }
+
+          struct QueryOptions = {
+            selects: List(String),
+            wheres: List(String)
+          }
 
           type SqlString = SqlString
+
           type SqlBool = SqlBool
-          type SqlInt  = SqlInt
 
-          struct Table(a) = { name: String, alias_: String, columns: (String -> a) }
+          type SqlInt = SqlInt
 
-          def table(name: String, alias_: String, columns: (String -> a)) -> Table(a)
+          struct Table(a) = {
+            name: String,
+            alias_: String,
+            columns: String -> a
+          }
+
+          def table(name: String, alias_: String, columns: String -> a) -> Table(a)
             Table(name, alias_, columns)
           end
 
           def column(table_name_or_alias: String, column_name: String, type_: a) -> Expr(a)
             sql = [table_name_or_alias, column_name]
-              |> List.filter((part) -> { part |> String.is_empty |> Basics.not })
-              |> String.join(".")
+            |> List.filter((part) -> { part
+            |> String.is_empty
+            |> Basics.not })
+            |> String.join(".")
 
             Expr(sql, type_)
           end
 
-          def from(table_: Table(a), select_fn: (a -> QueryOptions)) -> Query
-            Query(
-              From(table_.alias_),
-              table_.alias_ |> table_.columns |> select_fn
-            )
+          def from(table_: Table(a), select_fn: a -> QueryOptions) -> Query
+            Query(From(table_.alias_), table_.alias_
+            |> table_.columns
+            |> select_fn)
           end
         JADE
       end

@@ -1,4 +1,5 @@
 require "tmpdir"
+require_relative "format_check"
 
 module Jade
   class TestCompiler
@@ -22,14 +23,14 @@ module Jade
     end
 
     def write(module_name, source)
-      File.write(
-        File.join(@source_root, "#{module_name}.jd"),
-        source
-      )
+      path = File.join(@source_root, "#{module_name}.jd")
+      FileUtils.mkdir_p(File.dirname(path))
+      File.write(path, source)
       @written[module_name] = source
     end
 
     def require(module_name, source)
+      FormatCheck.assert!(source, label: module_name) unless ENV['JADE_SKIP_FORMAT_CHECK']
       write(module_name, source)
 
       key = [module_name, @written.sort].freeze

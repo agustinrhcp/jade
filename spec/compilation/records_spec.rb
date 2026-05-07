@@ -10,10 +10,13 @@ module Jade
     describe 'record literal' do
       let(:pepe_source) do
         <<~JADE
-          module Pepe exposing(person)
+          module Pepe exposing (person)
 
-          def person() -> { name : String, age : Int }
-            { name: "Paul", age: 55 }
+          def person() -> { name: String, age: Int }
+            {
+              name: "Paul",
+              age: 55,
+            }
           end
         JADE
       end
@@ -27,10 +30,13 @@ module Jade
       context 'when signature does not match' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(person)
+            module Pepe exposing (person)
 
-            def person() -> { name : String, age : Float }
-              { name: "Paul", age: 55 }
+            def person() -> { name: String, age: Float }
+              {
+                name: "Paul",
+                age: 55,
+              }
             end
           JADE
         end
@@ -44,10 +50,13 @@ module Jade
       context 'accessing a field' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(paul, pauls_age)
+            module Pepe exposing (paul, pauls_age)
 
-            def paul() -> { name : String, age : Int }
-              { name: "Paul", age: 55 }
+            def paul() -> { name: String, age: Int }
+              {
+                name: "Paul",
+                age: 55,
+              }
             end
 
             def pauls_age() -> Int
@@ -65,10 +74,13 @@ module Jade
         context 'sugar acces to a' do
           let(:pepe_source) do
             <<~JADE
-              module Pepe exposing(paul, pauls_age)
+              module Pepe exposing (paul, pauls_age)
 
-              def paul() -> { name : String, age : Int }
-                { name: "Paul", age: 55 }
+              def paul() -> { name: String, age: Int }
+                {
+                  name: "Paul",
+                  age: 55,
+                }
               end
 
               def pauls_age() -> Int
@@ -87,10 +99,13 @@ module Jade
         context 'accessing a field that does not exist' do
           let(:pepe_source) do
             <<~JADE
-              module Pepe exposing(paul, pauls_age)
+              module Pepe exposing (paul, pauls_age)
 
-              def paul() -> { name : String, age : Int }
-                { name: "Paul", age: 55 }
+              def paul() -> { name: String, age: Int }
+                {
+                  name: "Paul",
+                  age: 55,
+                }
               end
 
               def pauls_age() -> Int
@@ -109,14 +124,18 @@ module Jade
       describe 'updating a field' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(paul, pauls_birthday)
+            module Pepe exposing (paul, pauls_birthday)
 
-            def paul() -> { name : String, age : Int }
-              { name: "Paul", age: 55 }
+            def paul() -> { name: String, age: Int }
+              {
+                name: "Paul",
+                age: 55,
+              }
             end
 
-            def pauls_birthday() -> { name : String, age : Int }
+            def pauls_birthday() -> { name: String, age: Int }
               paul_before_today = paul
+
               { paul_before_today | age: paul_before_today.age + 1 }
             end
           JADE
@@ -132,16 +151,19 @@ module Jade
       describe 'updating a field with sugar on top' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(paul, pauls_birthday)
+            module Pepe exposing (paul, pauls_birthday)
 
-            def paul() -> { name : String, age : Int }
-              { name: "Paul", age: 55 }
+            def paul() -> { name: String, age: Int }
+              {
+                name: "Paul",
+                age: 55,
+              }
             end
 
-            def pauls_birthday() -> { name : String, age : Int }
+            def pauls_birthday() -> { name: String, age: Int }
               paul_before_today = paul
-              paul_before_today
-                |> .age=(paul_before_today.age + 1)
+
+              paul_before_today |> .age=(paul_before_today.age + 1)
             end
           JADE
         end
@@ -156,20 +178,24 @@ module Jade
       describe 'with type params' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(pauls_id, franks_id)
+            module Pepe exposing (franks_id, pauls_id)
 
-            def id(rec: { a | id : id }) -> id
+            def id(rec: { a | id: id }) -> id
               rec.id
             end
 
             def pauls_id() -> Int
-              { name: "Paul", id: 10 }
-                |> id
+              {
+                name: "Paul",
+                id: 10,
+              } |> id
             end
 
             def franks_id() -> String
-              { name: "Paul", id: "f10" }
-                |> id
+              {
+                name: "Paul",
+                id: "f10",
+              } |> id
             end
           JADE
         end
@@ -185,7 +211,7 @@ module Jade
       describe 'pattern matching' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(paul_is_paul, frank_is_paul)
+            module Pepe exposing (frank_is_paul, paul_is_paul)
 
             def is_paul(person: { name: String, id: Int }) -> Bool
               case person
@@ -195,11 +221,17 @@ module Jade
             end
 
             def paul_is_paul() -> Bool
-              { name: "Paul", id: 10 } |> is_paul
+              {
+                name: "Paul",
+                id: 10,
+              } |> is_paul
             end
 
             def frank_is_paul() -> Bool
-              { name: "Frank", id: 20 } |> is_paul
+              {
+                name: "Frank",
+                id: 20,
+              } |> is_paul
             end
           JADE
         end
@@ -214,7 +246,7 @@ module Jade
         context "with wrong field type" do
           let(:pepe_source) do
             <<~JADE
-              module Pepe exposing(is_paul)
+              module Pepe exposing (is_paul)
 
               def is_paul(person: { name: String, id: Int }) -> Bool
                 case person
@@ -234,7 +266,7 @@ module Jade
         context "with wrong constructor type" do
           let(:pepe_source) do
             <<~JADE
-              module Pepe exposing(is_paul)
+              module Pepe exposing (is_paul)
 
               def is_paul(person: { name: String, id: Int }) -> Bool
                 case person
@@ -256,9 +288,12 @@ module Jade
     describe 'struct' do
       let(:pepe_source) do
         <<~JADE
-          module Pepe exposing(person)
+          module Pepe exposing (person)
 
-          struct Person = { name: String, age: Int }
+          struct Person = {
+            name: String,
+            age: Int
+          }
 
           def person() -> Person
             Person("Paul", 55)
@@ -275,11 +310,14 @@ module Jade
       context 'accessor' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(pauls_name)
+            module Pepe exposing (pauls_name)
 
-            struct Person = { name: String, age: Int }
+            struct Person = {
+              name: String,
+              age: Int
+            }
 
-            def named(thing: { a | name : String }) -> String
+            def named(thing: { a | name: String }) -> String
               thing.name
             end
 
@@ -299,9 +337,12 @@ module Jade
       context 'with type params' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(paul, frank, identified)
+            module Pepe exposing (frank, identified, paul)
 
-            struct Person(a) = { name: String, id: a }
+            struct Person(a) = {
+              name: String,
+              id: a
+            }
 
             def paul() -> Person(Int)
               Person("Paul", 1)
@@ -328,9 +369,12 @@ module Jade
       describe 'pattern matching' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(paul_is_paul, frank_is_paul)
+            module Pepe exposing (frank_is_paul, paul_is_paul)
 
-            struct Person = { name: String, id: Int }
+            struct Person = {
+              name: String,
+              id: Int
+            }
 
             def is_paul(person: Person) -> Bool
               case person
@@ -360,9 +404,12 @@ module Jade
       describe 'pipe-sugar update on a struct returns the struct' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(birthday)
+            module Pepe exposing (birthday)
 
-            struct Person = { name: String, age: Int }
+            struct Person = {
+              name: String,
+              age: Int
+            }
 
             def birthday(p: Person) -> Person
               p |> .age=(p.age + 1)
@@ -381,9 +428,12 @@ module Jade
       describe 'calling a nullary function from another function' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(name_of_paul)
+            module Pepe exposing (name_of_paul)
 
-            struct Person = { name: String, age: Int }
+            struct Person = {
+              name: String,
+              age: Int
+            }
 
             def paul() -> Person
               Person("Paul", 55)
@@ -404,7 +454,7 @@ module Jade
       describe 'passing the result of a nullary call to a polymorphic function' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(query)
+            module Pepe exposing (query)
 
             struct Table(c) = { val: c }
 
@@ -431,12 +481,18 @@ module Jade
       describe 'wrapping a record literal in a struct constructor is rejected' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(paul)
+            module Pepe exposing (paul)
 
-            struct Person = { name: String, age: Int }
+            struct Person = {
+              name: String,
+              age: Int
+            }
 
             def paul() -> Person
-              Person({ name: "Paul", age: 55 })
+              Person({
+                name: "Paul",
+                age: 55,
+              })
             end
           JADE
         end
@@ -450,9 +506,12 @@ module Jade
       describe 'wrapping a record update in a struct constructor is rejected' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(older_paul)
+            module Pepe exposing (older_paul)
 
-            struct Person = { name: String, age: Int }
+            struct Person = {
+              name: String,
+              age: Int
+            }
 
             def paul() -> Person
               Person("Paul", 55)
@@ -473,11 +532,11 @@ module Jade
       describe 'parameterized struct with a record-typed param accepts anon record' do
         let(:pepe_source) do
           <<~JADE
-            module Pepe exposing(wrap)
+            module Pepe exposing (wrap)
 
             struct Wrapper(a) = { wrapped: a }
 
-            def wrap() -> Wrapper({ val : Int })
+            def wrap() -> Wrapper({ val: Int })
               Wrapper({ val: 42 })
             end
           JADE
@@ -537,11 +596,18 @@ module Jade
           source = <<~JADE
             module Forms exposing (bad)
 
-            struct Address = { street: String, city: String }
+            struct Address = {
+              street: String,
+              city: String
+            }
+
             struct Wrapper = { addr: Address }
 
             def bad() -> Wrapper
-              Wrapper({ street: "Main", city: "Paris" })
+              Wrapper({
+                street: "Main",
+                city: "Paris",
+              })
             end
           JADE
 

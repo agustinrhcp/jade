@@ -34,6 +34,12 @@ module Jade
                 registry
                   .lookup(sym)
                   .then { type_application_to_type(it, []) }
+
+              in Symbol::FunctionType(params:, return_type:)
+                Type.function(
+                  params.map { instantiate(it, subst, registry) },
+                  instantiate(return_type, subst, registry),
+                )
               end
             end
 

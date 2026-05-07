@@ -9,7 +9,7 @@ module Jade
 
     let(:source) do
       <<~JADE
-        module TaskTest exposing (always_ok, always_err, mapped, chained, chained_err)
+        module TaskTest exposing (always_err, always_ok, chained, chained_err, mapped)
 
         def always_ok() -> Task(Int, String)
           Task.succeed(42)
@@ -130,17 +130,19 @@ module Jade
     context '<- syntax' do
       let(:source) do
         <<~JADE
-          module TaskTest exposing (sum, short_circuits)
+          module TaskTest exposing (short_circuits, sum)
 
           def sum() -> Task(Int, String)
             one <- Task.succeed(1)
             two <- Task.succeed(2)
+
             Task.succeed(one + two)
           end
 
           def short_circuits() -> Task(Int, String)
             one <- Task.fail("first error")
             two <- Task.succeed(2)
+
             Task.succeed(one + two)
           end
         JADE

@@ -18,6 +18,7 @@ module Jade
 
           def get_name(m: Maybe({ name: String })) -> Maybe(String)
             { name: } <- m
+
             Just(name)
           end
         JADE
@@ -36,6 +37,7 @@ module Jade
 
           def sum_pair(pair: (Int, Int)) -> Int
             f = ((a, b)) -> { a + b }
+
             f(pair)
           end
         JADE
@@ -53,6 +55,7 @@ module Jade
 
           def get_name_direct(person: { name: String, age: Int }) -> String
             f = ({ name: }) -> { name }
+
             f(person)
           end
         JADE
@@ -108,7 +111,10 @@ module Jade
         <<~JADE
           module PatternBind exposing (head_id)
 
-          struct Charge = { id: Int, due_cents: Int }
+          struct Charge = {
+            id: Int,
+            due_cents: Int
+          }
 
           def head_id(xs: List(Charge)) -> Int
             case xs

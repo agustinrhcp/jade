@@ -21,14 +21,16 @@ module Jade
         end
 
         def int_to_r_times_2(int: Int) -> Result(Int, String)
-          int |> int_to_r |> Result.map((n) -> { n * 2 })
+          int
+          |> int_to_r
+          |> Result.map((n) -> { n * 2 })
         end
 
         def int_to_r_times_2_to_r(int: Int) -> Result(Int, String)
           int
-            |> int_to_r
-            |> Result.map((n) -> { n * 2 })
-            |> Result.and_then(int_to_r)
+          |> int_to_r
+          |> Result.map((n) -> { n * 2 })
+          |> Result.and_then(int_to_r)
         end
 
         def int_to_r_to_maybe(int: Int) -> Maybe(Int)
@@ -46,7 +48,7 @@ module Jade
     context 'on_error' do
       let(:on_error_source) do
         <<~JADE
-          module OnError exposing (recover, passthrough)
+          module OnError exposing (passthrough, recover)
 
           def recover(r: Result(Int, String)) -> Result(Int, String)
             Result.on_error(r, (e) -> { Ok(0) })

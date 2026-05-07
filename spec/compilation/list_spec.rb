@@ -9,9 +9,16 @@ module Jade
 
     let(:pepe_source) do
       <<~JADE
-        module Pepe exposing(
-          strs_to_list, list_length, list_singleton, repeat, is_empty, range,
-          maptiply, maptindexply, str_fold
+        module Pepe exposing (
+          is_empty,
+          list_length,
+          list_singleton,
+          maptindexply,
+          maptiply,
+          range,
+          repeat,
+          str_fold,
+          strs_to_list,
         )
 
         def strs_to_list(str: String, str2: String) -> List(String)
@@ -39,18 +46,15 @@ module Jade
         end
 
         def maptiply(list: List(Int)) -> List(Int)
-          list
-          |> List.map((n) -> { n * 2 })
+          list |> List.map((n) -> { n * 2 })
         end
 
         def maptindexply(list: List(Int)) -> List(Int)
-          list
-          |> List.indexed_map((index, n) -> { n * index })
+          list |> List.indexed_map((index, n) -> { n * index })
         end
 
         def str_fold(list: List(String), initial: String) -> String
-          list
-          |> List.fold(initial, (acc, item) -> { String.concat([acc, item]) })
+          list |> List.fold(initial, (acc, item) -> { String.concat([acc, item]) })
         end
       JADE
     end
@@ -84,6 +88,45 @@ module Jade
 
       expect(Pepe.str_fold.call([], "")).to eql ""
       expect(Pepe.str_fold.call(["LalaCoco"], "Pepe")).to eql "PepeLalaCoco"
+    end
+
+    context 'sort and sort_by' do
+      let(:source) do
+        <<~JADE
+          module SortTest exposing (sort_by_neg, sort_by_str_len, sort_floats, sort_ints, sort_strings)
+
+          def sort_ints(list: List(Int)) -> List(Int)
+            List.sort(list)
+          end
+
+          def sort_floats(list: List(Float)) -> List(Float)
+            List.sort(list)
+          end
+
+          def sort_strings(list: List(String)) -> List(String)
+            List.sort(list)
+          end
+
+          def sort_by_neg(list: List(Int)) -> List(Int)
+            list |> List.sort_by((n) -> { 0 - n })
+          end
+
+          def sort_by_str_len(list: List(String)) -> List(String)
+            list |> List.sort_by(String.length)
+          end
+        JADE
+      end
+
+      before { test_compiler.require('sort_test', source) }
+
+      it 'sorts ints, floats, strings and supports sort_by' do
+        expect(SortTest.sort_ints.call([3, 1, 2])).to eql [1, 2, 3]
+        expect(SortTest.sort_ints.call([])).to eql []
+        expect(SortTest.sort_floats.call([2.5, 1.1, 3.3])).to eql [1.1, 2.5, 3.3]
+        expect(SortTest.sort_strings.call(['c', 'a', 'b'])).to eql ['a', 'b', 'c']
+        expect(SortTest.sort_by_neg.call([1, 3, 2])).to eql [3, 2, 1]
+        expect(SortTest.sort_by_str_len.call(['ccc', 'a', 'bb'])).to eql ['a', 'bb', 'ccc']
+      end
     end
   end
 end

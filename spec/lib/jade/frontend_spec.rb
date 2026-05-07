@@ -88,6 +88,7 @@ module Jade
         let(:text) do
           <<~JADE
             (a, b) = (1, 2)
+
             a
           JADE
         end
@@ -104,6 +105,7 @@ module Jade
             type Box(a) = Box(a)
 
             Box(x) = Box(1)
+
             x
           JADE
         end
@@ -129,6 +131,7 @@ module Jade
         let(:text) do
           <<~JADE
             { name: n } = { name: "Pepe" }
+
             n
           JADE
         end
@@ -141,7 +144,9 @@ module Jade
       context 'non-exhaustive constructor pattern' do
         let(:text) do
           <<~JADE
-            type Maybe(a) = Just(a) | Nothing
+            type Maybe(a)
+              = Just(a)
+              | Nothing
 
             Just(x) = Just(1)
           JADE
@@ -162,6 +167,7 @@ module Jade
 
             fn = (b) -> {
               Box(x) <- b
+
               x
             }
           JADE
@@ -177,6 +183,7 @@ module Jade
           <<~JADE
             fn = (b) -> {
               _ <- b
+
               42
             }
           JADE
@@ -192,6 +199,7 @@ module Jade
           <<~JADE
             fn = (b) -> {
               { name: n } <- b
+
               n
             }
           JADE
@@ -207,6 +215,7 @@ module Jade
           <<~JADE
             fn = (b) -> {
               [] <- b
+
               []
             }
           JADE
@@ -223,6 +232,7 @@ module Jade
           <<~JADE
             fn = (b) -> {
               [x | xs] <- b
+
               x
             }
           JADE
@@ -263,7 +273,9 @@ module Jade
       context 'with a non-exhaustive constructor pattern' do
         let(:text) do
           <<~JADE
-            type Maybe(a) = Just(a) | Nothing
+            type Maybe(a)
+              = Just(a)
+              | Nothing
 
             fn = (Just(x)) -> { x }
           JADE
@@ -293,6 +305,7 @@ module Jade
       let(:text) do
         <<~JADE
           hello = "Hola"
+
           hello
         JADE
       end
@@ -450,8 +463,9 @@ module Jade
     context 'a function declaration with a type var' do
       let(:text) do
         <<~JADE
-          type Maybe(a) = Just(a) | Nothing
-
+          type Maybe(a)
+            = Just(a)
+            | Nothing
           def pepe(maybe: Maybe(Int), default: Int) -> Int
             case maybe
             of Nothing then default
@@ -570,7 +584,9 @@ module Jade
 
       let(:text) do
         <<~JADE
-          type Maybe(a) = Just(a) | Nothing
+          type Maybe(a)
+            = Just(a)
+            | Nothing
         JADE
       end
 
@@ -622,7 +638,9 @@ module Jade
     context 'type def and reference' do
       let(:text) do
         <<~JADE
-          type Maybe(a) = Just(a) | Nothing
+          type Maybe(a)
+            = Just(a)
+            | Nothing
           Just
         JADE
       end
@@ -690,7 +708,7 @@ module Jade
       context 'without expose' do
         let(:text) do
           <<~JADE
-            module Test
+            module Test 
 
             def hello(str: String) -> Bool
               String.is_empty(str)
@@ -786,7 +804,7 @@ module Jade
         let(:text) do
           <<~JADE
             case { name: "Pepe" }
-            of { name: name } then name
+            of { name: } then name
             end
           JADE
         end
@@ -814,8 +832,9 @@ module Jade
     context 'case of with constructor' do
       let(:text) do
         <<~JADE
-          type Maybe(a) = Just(a) | Nothing
-
+          type Maybe(a)
+            = Just(a)
+            | Nothing
           case Just(1)
           of Nothing then 0
           of Just(x) then x
@@ -843,8 +862,9 @@ module Jade
     describe 'function declaration with lambda' do
       let(:text) do
         <<~JADE
-          type Maybe(a) = Just(a) | Nothing
-
+          type Maybe(a)
+            = Just(a)
+            | Nothing
           def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
             case maybe
             of Just(something) then Just(fn(something))
@@ -876,9 +896,11 @@ module Jade
     describe 'import declaration' do
       let(:text) do
         <<~JADE
-          module Imported exposing(MyType, my_function)
+          module Imported exposing (MyType, my_function)
 
-          type MyType = MyType | SomeOtherType(String)
+          type MyType
+            = MyType
+            | SomeOtherType(String)
 
           def my_function(thing: MyType) -> String
             case thing
@@ -901,9 +923,11 @@ module Jade
       context 'when exposing constructors' do
         let(:text) do
           <<~JADE
-            module Imported exposing(MyType(..), my_function)
+            module Imported exposing (MyType(..), my_function)
 
-            type MyType = MyType | SomeOtherType(String)
+            type MyType
+              = MyType
+              | SomeOtherType(String)
 
             def my_function(thing: MyType) -> String
               case thing
@@ -960,7 +984,10 @@ module Jade
 
       let(:text) do
         <<~JADE
-          { a: "hello", b: 42 }
+          {
+            a: "hello",
+            b: 42,
+          }
         JADE
       end
 
@@ -969,7 +996,10 @@ module Jade
       context 'with duplicate keys' do
         let(:text) do
           <<~JADE
-            { a: "hello", a: 42 }
+            {
+              a: "hello",
+              a: 42,
+            }
           JADE
         end
 
@@ -985,7 +1015,7 @@ module Jade
 
       let(:text) do
         <<~JADE
-          def name(thing: { a | name : String }) -> String
+          def name(thing: { a | name: String }) -> String
             thing.name
           end
         JADE
@@ -999,7 +1029,11 @@ module Jade
 
       let(:text) do
         <<~JADE
-          a = { a: 0, b: 0 }
+          a = {
+            a: 0,
+            b: 0,
+          }
+
           { a | b: 42 }
         JADE
       end
@@ -1009,8 +1043,11 @@ module Jade
       context 'with sugar on top' do
         let(:text) do
           <<~JADE
-            def pauls_birthday() -> { name : String, age : Int }
-              paul_before_today = { name: "Paul", age: 55 }
+            def pauls_birthday() -> { name: String, age: Int }
+              paul_before_today = {
+                name: "Paul",
+                age: 55,
+              }
 
               paul_before_today |> .age=(paul_before_today.age + 1)
             end
@@ -1031,7 +1068,8 @@ module Jade
 
       let(:text) do
         <<~JADE
-          uses Jade::Date with today: Task(Int, Never)
+          uses Jade::Date with
+            today : Task(Int, Never)
           end
         JADE
       end
@@ -1042,8 +1080,8 @@ module Jade
         let(:text) do
           <<~JADE
             uses Jade::Date with
-              today: Task(Int, Never),
-              today_plus_n_days: Int -> Task(Int, Never)
+              today : Task(Int, Never),
+              today_plus_n_days : Int -> Task(Int, Never)
             end
           JADE
         end
@@ -1058,9 +1096,9 @@ module Jade
 
       let(:text) do
         <<~JADE
-          uses Jade::Date with today: Task(Int, Never)
+          uses Jade::Date with
+            today : Task(Int, Never)
           end
-
           def real_today() -> Task(Int, Never)
             today()
           end
@@ -1115,7 +1153,7 @@ module Jade
         let(:text) do
           <<~JADE
             uses Jade::Date with
-              today: Task(Maybe, Never)
+              today : Task(Maybe, Never)
             end
           JADE
         end
@@ -1274,7 +1312,10 @@ module Jade
 
       let(:text) do
         <<~JADE
-          struct Person = { name: String, age: Int }
+          struct Person = {
+            name: String,
+            age: Int
+          }
         JADE
       end
 
@@ -1284,7 +1325,10 @@ module Jade
     context 'constructing a struct' do
       let(:text) do
         <<~JADE
-          struct Person = { name: String, age: Int }
+          struct Person = {
+            name: String,
+            age: Int
+          }
           Person("Guybrush", 28)
         JADE
       end
@@ -1462,11 +1506,9 @@ module Jade
       let(:text) do
         <<~JADE
           type Pepe = Pepe(Int)
-
           implements Eq(Pepe) with
-            (==) : eq_pepe
+            (==): eq_pepe
           end
-
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
@@ -1482,9 +1524,8 @@ module Jade
       let(:text) do
         <<~JADE
           implements Eq(Int) with
-            (==) : int_eq_override
+            (==): int_eq_override
           end
-
           def int_eq_override(one: Int, other: Int) -> Bool
             True
           end
@@ -1501,11 +1542,9 @@ module Jade
       let(:text) do
         <<~JADE
           type Pepe = Pepe(Int)
-
           implements Eq(Pepe) with
-            eq : eq_pepe
+            eq: eq_pepe
           end
-
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
@@ -1522,8 +1561,8 @@ module Jade
       let(:text) do
         <<~JADE
           type Pepe = Pepe(Int)
-
           implements Eq(Pepe) with
+
           end
         JADE
       end
@@ -1538,11 +1577,9 @@ module Jade
       let(:text) do
         <<~JADE
           type Pepe = Pepe(Int)
-
           implements Eq(Pepe) extends GhostInterface with
-            (==) : eq_pepe
+            (==): eq_pepe
           end
-
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
@@ -1559,11 +1596,9 @@ module Jade
       let(:text) do
         <<~JADE
           type Pepe = Pepe(Int)
-
           implements Eq(Pepe) extends Comparable with
-            (==) : eq_pepe
+            (==): eq_pepe
           end
-
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
@@ -1580,19 +1615,15 @@ module Jade
       let(:text) do
         <<~JADE
           type Pepe = Pepe(Int)
-
           implements Eq(Pepe) with
-            (==) : eq_pepe
+            (==): eq_pepe
           end
-
           implements Comparable(Pepe) extends Eq, GhostInterface with
-            compare : compare_pepe
+            compare: compare_pepe
           end
-
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
-
           def compare_pepe(one: Pepe, other: Pepe) -> Ordering
             LT
           end
@@ -1609,19 +1640,15 @@ module Jade
       let(:text) do
         <<~JADE
           type Pepe = Pepe(Int)
-
           implements Eq(Pepe) extends Comparable with
-            (==) : eq_pepe
+            (==): eq_pepe
           end
-
           implements Comparable(Pepe) extends Eq with
-            compare : compare_pepe
+            compare: compare_pepe
           end
-
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
-
           def compare_pepe(one: Pepe, other: Pepe) -> Ordering
             LT
           end
@@ -1714,9 +1741,8 @@ module Jade
       let(:text) do
         <<~JADE
           type Pepe = Pepe(Int)
-
           implements Eq(Pepe) with
-            (==) : (one, other) -> { one == other }
+            (==): (one, other) -> { one == other }
           end
         JADE
       end

@@ -42,7 +42,13 @@ module Jade
               &type_error(state, node)
             )
             .then do |st, rs|
-              callee_subst = rs
+              # When expected is authoritative and this unification failed,
+              # adopt expected.type so the enclosing body-level unify doesn't
+              # re-report the same mismatch.
+              adopted = expected.check? && st.errors.size > after_callee_state.errors.size
+              base_rs = adopted ? rs.with(type: expected.type) : rs
+
+              callee_subst = base_rs
                 .constraints
                 .map { st.env.substitution.apply(it) }
 
@@ -57,7 +63,7 @@ module Jade
               # bubble up through outer constructor calls and reach the function
               # binding before generalization. Skip only the mutating dictionary
               # attachment, which would otherwise emit double dispatch code.
-              next [st, rs.with(constraints: propagated)] if st.skip_constraints
+              next [st, base_rs.with(constraints: propagated)] if st.skip_constraints
 
               # Attach a resolution per callee constraint, in callee order, so codegen
               # can pass dicts positionally. Concrete constraints attach a resolved
@@ -74,14 +80,14 @@ module Jade
                   end
                 end
 
-              # Ares' constraints dispatch at their own origins (inner call sites).
+              # Args' constraints dispatch at their own origins (inner call sites).
               args_errors = args_subst
                 .reject { it.type.is_a?(Type::Var) }
                 .flat_map { Constraints.solve_at_call_site(it, registry, st.env.entry_name) }
 
               st
                 .add_errors(callee_errors + args_errors)
-                .then { [it, rs.with(constraints: propagated)] }
+                .then { [it, base_rs.with(constraints: propagated)] }
             end
           end
 

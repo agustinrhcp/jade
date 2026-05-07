@@ -57,6 +57,7 @@ module Jade
         <<~JADE
           finish = "Hei"
           spanish = "Hola"
+
           spanish
         JADE
       end
@@ -92,7 +93,9 @@ module Jade
     context 'type def' do
       let(:text) do
         <<~JADE
-          type Maybe(a) = Just(a) | Nothing
+          type Maybe(a)
+            = Just(a)
+            | Nothing
         JADE
       end
 
@@ -108,7 +111,9 @@ module Jade
       context 'and reference' do
         let(:text) do
           <<~JADE
-            type Maybe(a) = Just(a) | Nothing
+            type Maybe(a)
+              = Just(a)
+              | Nothing
             Just(12)
           JADE
         end
@@ -188,7 +193,9 @@ module Jade
       context 'with constructor branches' do
         let(:text) do
           <<~JADE
-            type Maybe(a) = Just(a) | Nothing
+            type Maybe(a)
+              = Just(a)
+              | Nothing
             case Just(1)
             of Nothing then 0
             of Just(x) then x
@@ -273,7 +280,10 @@ module Jade
     describe 'record literal' do
       let(:text) do
         <<~JADE
-          { a: "hello", b: 42 }
+          {
+            a: "hello",
+            b: 42,
+          }
         JADE
       end
 
@@ -283,7 +293,10 @@ module Jade
     describe 'record access' do
       let(:text) do
         <<~JADE
-          { a: "hello", b: 42 }.a
+          {
+            a: "hello",
+            b: 42,
+          }.a
         JADE
       end
 
@@ -293,9 +306,9 @@ module Jade
     describe 'using an interop import' do
       let(:text) do
         <<~JADE
-          uses Jade::Date with today: Task(Int, Never)
+          uses Jade::Date with
+            today : Task(Int, Never)
           end
-
           def real_today() -> Task(Int, Never)
             today()
           end
@@ -308,7 +321,10 @@ module Jade
     describe 'struct declaration' do
       let(:text) do
         <<~JADE
-          struct Person = { name: String, age: Int }
+          struct Person = {
+            name: String,
+            age: Int
+          }
           Person("Guybrush", 28)
         JADE
       end
@@ -364,9 +380,7 @@ module Jade
     describe 'calling a record field that is a function' do
       let(:text) do
         <<~JADE
-          record_w_fn = {
-            some_fn: (n) -> { n + 2 }
-          }
+          record_w_fn = { some_fn: (n) -> { n + 2 } }
 
           record_w_fn.some_fn(1)
         JADE
@@ -439,7 +453,13 @@ module Jade
           let(:text) do
             <<~JADE
               def test() -> Bool
-                { salute: "Hola", n: 1 } == { salute: "Hei", n: 2 }
+                {
+                  salute: "Hola",
+                  n: 1,
+                } == {
+                  salute: "Hei",
+                  n: 2,
+                }
               end
             JADE
           end
@@ -470,10 +490,12 @@ module Jade
         context 'with an inline lambda that dispatches to another interface' do
           let(:text) do
             <<~JADE
-              struct Person = { id: Int, name: String }
-
+              struct Person = {
+                id: Int,
+                name: String
+              }
               implements Eq(Person) with
-                (==) : (one, other) -> { one.id == other.id }
+                (==): (one, other) -> { one.id == other.id }
               end
             JADE
           end
@@ -487,11 +509,9 @@ module Jade
           let(:text) do
             <<~JADE
               type Pepe = Pepe(Int)
-
               implements Eq(Pepe) with
-                (==) : eq_pepe
+                (==): eq_pepe
               end
-
               def eq_pepe(one: Pepe, other: Pepe) -> Bool
                 True
               end

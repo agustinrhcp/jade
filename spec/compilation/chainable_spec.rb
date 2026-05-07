@@ -15,12 +15,14 @@ module Jade
           def chain(a: Maybe(Int), b: Maybe(Int)) -> Maybe(Int)
             x <- a
             y <- b
+
             Just(x + y)
           end
 
           def chain_nothing(a: Maybe(Int)) -> Maybe(Int)
             x <- a
             y <- Nothing
+
             Just(x + y)
           end
         JADE
@@ -64,12 +66,14 @@ module Jade
           def chain(a: Int, b: Int) -> Result(Int, String)
             x <- validate(a)
             y <- validate(b)
+
             Ok(x + y)
           end
 
           def chain_err(a: Int, b: Int) -> Result(Int, String)
             x <- validate(a)
             y <- Err("forced")
+
             Ok(x + y)
           end
         JADE
@@ -115,6 +119,7 @@ module Jade
 
           def chain(a: Box) -> Box
             x <- a
+
             Box(1)
           end
         JADE

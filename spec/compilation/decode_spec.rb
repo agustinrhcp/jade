@@ -127,22 +127,25 @@ module Jade
     context 'sequence' do
       let(:source) do
         <<~JADE
-          module SeqTest exposing(run_all_ok, run_one_err, run_two_err)
+          module SeqTest exposing (run_all_ok, run_one_err, run_two_err)
 
-          import Decode exposing(DecodeError)
+          import Decode exposing (DecodeError)
 
           def run_all_ok(json: String) -> Result(List(Int), DecodeError)
             decoders = [Decode.field("a", Decode.int), Decode.field("b", Decode.int)]
+
             Decode.decode_string(Decode.sequence(decoders), json)
           end
 
           def run_one_err(json: String) -> Result(List(Int), DecodeError)
             decoders = [Decode.field("a", Decode.int), Decode.field("b", Decode.int)]
+
             Decode.decode_string(Decode.sequence(decoders), json)
           end
 
           def run_two_err(json: String) -> Result(List(Int), DecodeError)
             decoders = [Decode.field("a", Decode.int), Decode.field("b", Decode.int)]
+
             Decode.decode_string(Decode.sequence(decoders), json)
           end
         JADE
@@ -168,16 +171,19 @@ module Jade
     context 'one_of' do
       let(:source) do
         <<~JADE
-          module OneOfTest exposing(Id(..), id_from_json)
+          module OneOfTest exposing (Id(..), id_from_json)
 
-          import Decode exposing(DecodeError)
+          import Decode exposing (DecodeError)
 
-          type Id = StringId(String) | IntId(Int)
+          type Id
+            = StringId(String)
+            | IntId(Int)
 
           def id_from_json(json: String) -> Result(Id, DecodeError)
             string_id = Decode.map(StringId, Decode.string)
             int_id = Decode.map(IntId, Decode.int)
             decoder = Decode.one_of([string_id, int_id])
+
             Decode.decode_string(decoder, json)
           end
         JADE
@@ -255,13 +261,21 @@ module Jade
     context 'auto-derived Decodable' do
       let(:source) do
         <<~JADE
-          module Derived exposing(int_from_json, str_from_json,
-                                  list_from_json, maybe_from_json,
-                                  person_from_json, people_from_json)
+          module Derived exposing (
+            int_from_json,
+            list_from_json,
+            maybe_from_json,
+            people_from_json,
+            person_from_json,
+            str_from_json,
+          )
 
-          import Decode exposing(DecodeError)
+          import Decode exposing (DecodeError)
 
-          struct Person = { name: String, age: Int }
+          struct Person = {
+            name: String,
+            age: Int
+          }
 
           def int_from_json(json: String) -> Result(Int, DecodeError)
             Decode.from_json(json)
@@ -397,11 +411,14 @@ module Jade
     context 'auto-derived Decodable with Maybe field' do
       let(:source) do
         <<~JADE
-          module DerivedMaybe exposing(person_from_json)
+          module DerivedMaybe exposing (person_from_json)
 
-          import Decode exposing(DecodeError)
+          import Decode exposing (DecodeError)
 
-          struct Person = { name: String, nickname: Maybe(String) }
+          struct Person = {
+            name: String,
+            nickname: Maybe(String)
+          }
 
           def person_from_json(json: String) -> Result(Person, DecodeError)
             Decode.from_json(json)
@@ -437,18 +454,22 @@ module Jade
 
       let(:value_source) do
         <<~JADE
-          module ValueDecoding exposing(handle)
+          module ValueDecoding exposing (handle)
 
-          import Decode exposing(Value, DecodeError)
+          import Decode exposing (DecodeError, Value)
 
           uses Jade::TestBodyParser with
-            get_body: Task(Value, Never)
+            get_body : Task(Value, Never)
           end
 
-          struct Person = { name: String, age: Int }
+          struct Person = {
+            name: String,
+            age: Int
+          }
 
           def handle() -> Task(Person, DecodeError)
             body <- get_body()
+
             Task.from_result(Decode.from_value(body))
           end
         JADE

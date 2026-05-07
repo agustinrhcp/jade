@@ -5,6 +5,7 @@ module Jade
         module Deriving
           module Eq
             extend self
+            include Helpers
 
             INTERFACE = 'Basics.Eq'
 
@@ -19,9 +20,14 @@ module Jade
             def resolve(constraint, registry, entry_name, lookup)
               case [constraint.interface, constraint.type]
               in [INTERFACE, Type::Application(constructor:, args:)]
-                impl = registry
-                  .implementations[[constraint.interface, constructor.name]] ||
-                    derive_union_eq(constraint, constructor, registry, lookup)
+                registry
+                  .implementations[[constraint.interface, constructor.name]]
+                  .then do
+                    it \
+                      ? Ok[it]
+                      : derive_for_type(constraint, constructor, args, registry, lookup, entry_name)
+                  end
+                  .on_err { return Err[it] } => Ok(impl)
 
                 case impl
                 in Symbol::ImplementationTemplate
@@ -61,14 +67,12 @@ module Jade
 
               in [INTERFACE, Type::AnonymousRecord(fields:)]
                 derive_record_eq(constraint, fields, lookup)
-                  .then { Ok[it] }
 
               else
                 Err[
                   Error::DerivationFailed
                     .new(entry_name, constraint.origin.range, constraint:, trace: [])
                 ]
-                
               end
             end
 
@@ -106,55 +110,69 @@ module Jade
               end
             end
 
-            def derive_union_eq(constraint, constructor, registry, lookup)
+            def derive_for_type(constraint, constructor, args, registry, lookup, entry_name)
               symbol =
                 Symbol
                   .type_ref_from_qualified_name(constructor.name)
                   .then { registry.lookup(it) }
-                  .then { |sym| sym.with(variants: sym.variants.map { registry.lookup(it) }) }
 
+              case symbol
+              in Symbol::Union
+                Ok[derive_union_eq(constraint, symbol, registry, lookup)]
+
+              in Symbol::Struct
+                derive_struct_eq(constraint, symbol, args, registry, lookup, entry_name)
+
+              else
+                Err[
+                  Error::DerivationFailed
+                    .new(entry_name, constraint.origin.range, constraint:, trace: [])
+                ]
+              end
+            end
+
+            def derive_union_eq(constraint, symbol, registry, lookup)
               type_vars = symbol.type_params.map(&:name)
-              constraints = type_vars.map { Type.constraint(INTERFACE, Type.var(it), nil) }
               index_map = type_vars.each_with_index.map.to_h
 
-              cases =
-                symbol.variants.map do |variant|
-                  build_variant_case(variant, index_map, lookup)
-                end + [[[:_], [false]]]
+              cases = symbol.variants
+                .map { registry.lookup(it) }
+                .map { build_variant_case(it, index_map, lookup, constraint.origin) }
 
-              subject = [:list, [[:var, "one"], [:var, "other"]]]
+              eq_fn = Symbol::DerivedFunction.new(
+                params: ["one", "other"],
+                body: [:case,
+                  [:list, [[:var, "one"], [:var, "other"]]],
+                  cases + [[[:_], [false]]],
+                ],
+              )
 
-              eq_fn = Symbol::DerivedFunction
-                .new(
-                  params: ["one", "other"],
-                  body: [:case, subject, cases]
-                )
-
-              if type_vars.empty? && constraints.empty?
+              if type_vars.empty?
                 Symbol::Implementation.new(
-                   module_name: nil,
-                   interface: Symbol.type_ref_from_qualified_name(constraint.interface),
-                   type: constraint.type,
-                   type_params: [],
-                   constraints: [],
-                   functions: { '(==)' => eq_fn },
-                   deps: [],
-                   extends: [],
-                   decl_span: nil,
+                  module_name: nil,
+                  interface: Symbol.type_ref_from_qualified_name(constraint.interface),
+                  type: constraint.type,
+                  type_params: [],
+                  constraints: [],
+                  functions: { '(==)' => eq_fn },
+                  deps: [],
+                  extends: [],
+                  decl_span: nil,
                 )
-
               else
                 Symbol::ImplementationTemplate.new(
                   interface: Symbol.type_ref_from_qualified_name(constraint.interface),
                   type: constraint.type,
                   type_params: type_vars.map { Type.var(it) },
-                  constraints:,
+                  constraints: type_vars.map {
+                    Type.constraint(INTERFACE, Type.var(it), constraint.origin)
+                  },
                   functions: { '(==)' => eq_fn },
                 )
               end
             end
 
-            def build_variant_case(variant, index_map, lookup)
+            def build_variant_case(variant, index_map, lookup, origin)
               field_count = variant.args.length
 
               left_vars  = (0...field_count).map { |i| "l#{i}" }
@@ -176,7 +194,7 @@ module Jade
                     ]
 
                   else
-                    lookup.call(Type.constraint(INTERFACE, arg_type, nil)) => Ok[impl]
+                    lookup.call(Type.constraint(INTERFACE, arg_type, origin)) => Ok[impl]
 
                     [:call,
                       [:impl_value, impl, "(==)"],
@@ -197,16 +215,44 @@ module Jade
             end
 
             def derive_record_eq(constraint, fields, lookup)
-              deps = fields.values.map { |field_type|
-                lookup.call(Type.constraint(INTERFACE, field_type, nil)) => Ok[impl]; impl
-              }
+              field_types = fields.values
+              field_keys  = fields.keys
 
-              comparisons = fields.keys.each_with_index.map { |field_name, idx|
-                left  = [:access, [:var, 'one'],   field_name]
-                right = [:access, [:var, 'other'], field_name]
-                [:call, [:impl_arg, idx, '(==)'], [left, right]]
-              }
+              resolve_field_deps(field_types, lookup, constraint.origin)
+                .and_then do |deps|
+                  field_keys
+                    .each_with_index.map { |field_name, idx|
+                      left  = [:access, [:var, 'one'],   field_name]
+                      right = [:access, [:var, 'other'], field_name]
+                      [:call, [:impl_arg, idx, '(==)'], [left, right]]
+                    }
+                    .then { build_record_impl(constraint, it, deps) }
+                    .then { Ok[it] }
+              end
+            end
 
+            def derive_struct_eq(constraint, struct_sym, type_args, registry, lookup, entry_name)
+              fields      = struct_fields(struct_sym, type_args, registry)
+              field_types = fields.map { |_, t| t }
+              field_names = fields.map { |k, _| k.to_s }
+
+              resolve_field_deps(field_types, lookup, constraint.origin).and_then do |deps|
+                comparisons = field_names.each_with_index.map { |field_name, idx|
+                  left  = [:access, [:var, 'one'],   field_name]
+                  right = [:access, [:var, 'other'], field_name]
+                  [:call, [:impl_arg, idx, '(==)'], [left, right]]
+                }
+                Ok[build_record_impl(constraint, comparisons, deps)]
+              end
+            end
+
+            def resolve_field_deps(field_types, lookup, origin)
+              field_types
+                .map { lookup.call(Type.constraint(INTERFACE, it, origin)) }
+                .then { Results.sequence(it) }
+            end
+
+            def build_record_impl(constraint, comparisons, deps)
               body = comparisons.empty? ? true : comparisons.reduce { |a, b| [:and, a, b] }
               eq_fn = Symbol::DerivedFunction.new(params: ['one', 'other'], body:)
 

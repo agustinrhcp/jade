@@ -1,6 +1,10 @@
 module Records exposing (birthday, full_name, update_email)
 
-struct Person = { name: String, age: Int, email: String }
+struct Person = {
+  name: String,
+  age: Int,
+  email: String
+}
 
 def birthday(person: Person) -> Person
   { person | age: person.age + 1 }
@@ -8,10 +12,19 @@ end
 
 def full_name(first: String, last: String) -> { full: String, length: Int }
   name = first ++ " " ++ last
-  { full: name, length: String.length(name) }
+
+  {
+    full: name,
+    length: String.length(name),
+  }
 end
 
 def update_email(person: Person, new_email: String) -> Person
-  { name: name, age: age } = person
-  { name: name, age: age, email: new_email }
+  { name:, age: } = person
+
+  {
+    name: name,
+    age: age,
+    email: new_email,
+  }
 end

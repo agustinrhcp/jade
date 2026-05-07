@@ -8,7 +8,7 @@ module Jade
 
     let(:pepe_source) do
       <<~JADE
-        module Pepe exposing(str_to_int)
+        module Pepe exposing (str_to_int)
 
         def str_to_int(str: String) -> Maybe(Int)
           String.to_int(str)
@@ -31,7 +31,7 @@ module Jade
 
     let(:source) do
       <<~JADE
-        module Strs exposing(first_char, prepend, single, walk)
+        module Strs exposing (first_char, prepend, single, walk)
 
         def first_char(s: String) -> Maybe(Char)
           case String.uncons(s)
@@ -83,7 +83,7 @@ module Jade
 
     let(:source) do
       <<~JADE
-        module StrMap exposing(double)
+        module StrMap exposing (double)
 
         def double(s: String) -> String
           String.map(s, (c) -> { c })
@@ -149,7 +149,7 @@ module Jade
 
     let(:source) do
       <<~'JADE'
-        module Escape exposing (newline, tab, backslash, quote)
+        module Escape exposing (backslash, newline, quote, tab)
 
         def newline() -> String
           "Hello\nWorld"
