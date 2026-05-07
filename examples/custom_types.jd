@@ -1,4 +1,4 @@
-module CustomTypes exposing (area, perimeter, describe)
+module CustomTypes exposing (area, describe, perimeter)
 
 type Shape
   = Circle(Float)
@@ -11,6 +11,7 @@ def area(shape: Shape) -> Float
   of Rectangle(w, h) then w * h
   of Triangle(a, b, c) then
     s = (a + b + c) / 2.0
+
     s * (s - a) * (s - b) * (s - c)
   end
 end

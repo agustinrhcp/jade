@@ -9,7 +9,7 @@ module Jade
 
     let(:source) do
       <<~JADE
-        module Seq exposing (all_ok, with_err, first_err_wins)
+        module Seq exposing (all_ok, first_err_wins, with_err)
 
         def all_ok() -> Result(List(Int), String)
           Result.sequence([Ok(1), Ok(2), Ok(3)])

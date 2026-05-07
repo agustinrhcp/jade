@@ -22,11 +22,14 @@ module Jade
               .each_with_index
               .reduce([head_state, head_result]) do |(state_acc, result_acc), (item, i)|
                 new_state, result = check(item, registry, state_acc, Expected.infer(state_acc.fresh))
-                new_state.unify_result(result, result_acc.type, &type_error(new_state, item, i))
+                new_state
+                  .unify_result(result, result_acc.type, &type_error(new_state, item, i))
+                  .then { |st, rs| [st, rs.with(constraints: result_acc.constraints + rs.constraints)] }
               end
 
-            result = Result.init(Type.list.apply([items_result.type]))
-            items_state.unify_result(result, expected.type, expected.rigid_vars)
+            Result
+              .init(Type.list.apply([items_result.type]), items_result.constraints)
+              .then { items_state.unify_result(it, expected.type, expected.rigid_vars) }
           end
 
           private

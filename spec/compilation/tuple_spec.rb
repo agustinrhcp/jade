@@ -9,9 +9,7 @@ module Jade
 
     let(:pepe_source) do
       <<~JADE
-        module Pepe exposing(
-          make_pair, get_first, get_second, swap, pattern_matching
-        )
+        module Pepe exposing (get_first, get_second, make_pair, pattern_matching, swap)
 
         def make_pair(a: Int, b: String) -> (Int, String)
           (a, b)

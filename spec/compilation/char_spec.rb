@@ -8,7 +8,7 @@ module Jade
 
     let(:source) do
       <<~JADE
-        module Pepe exposing(is_a, code_of, roundtrip)
+        module Pepe exposing (code_of, is_a, roundtrip)
 
         def is_a(c: Char) -> Bool
           c == 'a'
@@ -41,7 +41,7 @@ module Jade
     end
 
     it 'parses a char literal' do
-      test_compiler.require('lit', "module Lit exposing(c)\ndef c() -> Char\n  'x'\nend")
+      test_compiler.require('lit', "module Lit exposing (c)\n\ndef c() -> Char\n  'x'\nend\n")
       expect(Lit.c.call).to eql 'x'
     end
   end

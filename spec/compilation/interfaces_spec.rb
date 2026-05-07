@@ -9,7 +9,7 @@ module Jade
 
     let(:source) do
       <<~JADE
-        module InterfaceTest exposing (int_equality, bool_equality, int_inequality)
+        module InterfaceTest exposing (bool_equality, int_equality, int_inequality)
 
         def int_equality(int1: Int, int2: Int) -> Bool
           int1 == int2
@@ -42,6 +42,7 @@ module Jade
 
           def fn_equality() -> Bool
             one = (a, b) -> { a + b }
+
             one == one
           end
         JADE
@@ -78,7 +79,7 @@ module Jade
     context 'polymorphic equality' do
       let(:source) do
         <<~JADE
-          module InterfaceTest exposing (int_eq, bool_eq)
+          module InterfaceTest exposing (bool_eq, int_eq)
 
           def poly_eq(a: a, b: a) -> Bool
             a == b
@@ -121,7 +122,7 @@ module Jade
           module InterfaceTest exposing (int_eq_override)
 
           implements Eq(Int) with
-            (==) : int_eq_override
+            (==): int_eq_override
           end
 
           def int_eq_override(one: Int, other: Int) -> Bool
@@ -144,7 +145,7 @@ module Jade
           type Pepe = Pepe(Int)
 
           implements Eq(Pepe) with
-            (==) : eq_pepe
+            (==): eq_pepe
           end
 
           def eq_pepe(one: Int, other: Int) -> Bool
@@ -190,7 +191,7 @@ module Jade
     context 'deriving equality for records' do
       let(:source) do
         <<~JADE
-          module InterfaceTest exposing (neq, eq)
+          module InterfaceTest exposing (eq, neq)
 
           def neq() -> Bool
             { hi: "Hello" } == { hi: "hello" }
@@ -216,11 +217,23 @@ module Jade
           module InterfaceTest exposing (eq, neq)
 
           def eq() -> Bool
-            { x: 1, y: 2 } == { x: 1, y: 2 }
+            {
+              x: 1,
+              y: 2,
+            } == {
+              x: 1,
+              y: 2,
+            }
           end
 
           def neq() -> Bool
-            { x: 1, y: 2 } == { x: 1, y: 3 }
+            {
+              x: 1,
+              y: 2,
+            } == {
+              x: 1,
+              y: 3,
+            }
           end
         JADE
       end
@@ -238,7 +251,10 @@ module Jade
         <<~JADE
           module InterfaceTest exposing (eq)
 
-          struct Point = { x: Int, y: Int }
+          struct Point = {
+            x: Int,
+            y: Int
+          }
 
           def eq() -> Bool
             Point(1, 2) == Point(1, 2)
@@ -246,10 +262,29 @@ module Jade
         JADE
       end
 
-      pending 'works (struct == not yet implemented)' do
+      it 'works' do
         test_compiler.require('interface_test', source)
 
         expect(InterfaceTest.eq.call()).to be true
+      end
+
+      context 'when a field has no Eq impl' do
+        let(:source) do
+          <<~JADE
+            module InterfaceTest exposing (eq)
+
+            struct Box = { f: Int -> Int }
+
+            def eq(a: Box, b: Box) -> Bool
+              a == b
+            end
+          JADE
+        end
+
+        it 'reports a derivation failure rather than crashing' do
+          expect { test_compiler.require('interface_test', source) }
+            .to raise_error(RuntimeError, /Basics.Eq cannot be derived for/)
+        end
       end
     end
 
@@ -257,12 +292,15 @@ module Jade
     context 'equality implementation for structs with inline lambda' do
       let(:source) do
         <<~JADE
-          module InterfaceTest exposing (new_person, eq_person)
+          module InterfaceTest exposing (eq_person, new_person)
 
-          struct Person = { id: Int, name: String }
+          struct Person = {
+            id: Int,
+            name: String
+          }
 
           implements Eq(Person) with
-            (==) : (one, other) -> { one.id == other.id }
+            (==): (one, other) -> { one.id == other.id }
           end
 
           def new_person(id: Int, name: String) -> Person
@@ -291,12 +329,15 @@ module Jade
     context 'equality implementation for structs' do
       let(:source) do
         <<~JADE
-          module InterfaceTest exposing (new_person, eq_person)
+          module InterfaceTest exposing (eq_person, new_person)
 
-          struct Person = { id: Int, name: String }
+          struct Person = {
+            id: Int,
+            name: String
+          }
 
           implements Eq(Person) with
-            (==) : eq
+            (==): eq
           end
 
           def eq(one: Person, other: Person) -> Bool
@@ -329,16 +370,16 @@ module Jade
     context 'comparable implementation for structs' do
       let(:source) do
         <<~JADE
-          module InterfaceTest exposing (new_score, lt, gt, lte, gte)
+          module InterfaceTest exposing (gt, gte, lt, lte, new_score)
 
           struct Score = { value: Int }
 
           implements Eq(Score) with
-            (==) : score_eq
+            (==): score_eq
           end
 
           implements Comparable(Score) extends Eq with
-            compare : score_compare
+            compare: score_compare
           end
 
           def score_eq(one: Score, other: Score) -> Bool

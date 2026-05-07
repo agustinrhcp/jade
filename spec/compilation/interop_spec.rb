@@ -31,11 +31,11 @@ module Jade
 
     let(:with_interop_source) do
       <<~JADE
-        module WithInterop exposing(today)
+        module WithInterop exposing (today)
 
         uses Jade::TestDate with
-          internal_today: Task(Int, Never),
-          internal_today_plus_n_days: Int -> Task(Int, Never)
+          internal_today : Task(Int, Never),
+          internal_today_plus_n_days : Int -> Task(Int, Never)
         end
 
         def today() -> Task(Int, Never)
@@ -69,10 +69,10 @@ module Jade
 
       let(:with_interop_source) do
         <<~JADE
-          module WithInterop exposing(today)
+          module WithInterop exposing (today)
 
           uses Jade::TestBetterDate with
-            internal_today: Task({ year: Int, month: Int, day: Int }, Never)
+            internal_today : Task({ year: Int, month: Int, day: Int }, Never)
           end
 
           def today() -> Task({ year: Int, month: Int, day: Int }, Never)
@@ -91,10 +91,10 @@ module Jade
       context 'when expecting a type variable' do
         let(:with_interop_source) do
           <<~JADE
-            module WithInterop exposing(today)
+            module WithInterop exposing (today)
 
             uses Jade::TestBetterDate with
-              internal_today: Task(a, Never)
+              internal_today : Task(a, Never)
             end
 
             def today() -> Task(a, Never)
@@ -124,12 +124,16 @@ module Jade
 
         let(:with_interop_source) do
           <<~JADE
-            module WithInterop exposing(today)
+            module WithInterop exposing (today)
 
-            struct Date = { year: Int, month: Int, day: Int }
+            struct Date = {
+              year: Int,
+              month: Int,
+              day: Int
+            }
 
             uses Jade::TestStructDate with
-              internal_today: Task(Date, Never)
+              internal_today : Task(Date, Never)
             end
 
             def today() -> Task(Date, Never)
@@ -149,12 +153,12 @@ module Jade
       context 'when expecting a non literal constructor' do
         let(:with_interop_source) do
           <<~JADE
-            module WithInterop exposing(today)
+            module WithInterop exposing (today)
 
             type Date = Date(Int, Int, Int)
 
             uses Jade::TestBetterDate with
-              internal_today: Task(Date, Never)
+              internal_today : Task(Date, Never)
             end
 
             def today() -> Task(Date, Never)
@@ -184,10 +188,10 @@ module Jade
 
         let(:with_interop_source) do
           <<~JADE
-            module WithInterop exposing(today)
+            module WithInterop exposing (today)
 
             uses Jade::TestMaybeDate with
-              internal_today: Task(Maybe({ year: Int, month: Int, day: Int }), Never)
+              internal_today : Task(Maybe({ year: Int, month: Int, day: Int }), Never)
             end
 
             def today() -> Task(Maybe({ year: Int, month: Int, day: Int }), Never)
@@ -206,10 +210,10 @@ module Jade
       context 'when a port does not return Task' do
         let(:with_interop_source) do
           <<~JADE
-            module WithInterop exposing(today)
+            module WithInterop exposing (today)
 
             uses Jade::TestBetterDate with
-              internal_today: { year: Int, month: Int, day: Int }
+              internal_today : { year: Int, month: Int, day: Int }
             end
 
             def today() -> { year: Int, month: Int, day: Int }
@@ -227,10 +231,10 @@ module Jade
       context 'when a port declares a Task whose Ok arm is itself a Task' do
         let(:with_interop_source) do
           <<~JADE
-            module WithInterop exposing(today)
+            module WithInterop exposing (today)
 
             uses Jade::TestBetterDate with
-              internal_today: Task(Task(Int, Never), Never)
+              internal_today : Task(Task(Int, Never), Never)
             end
 
             def today() -> Task(Task(Int, Never), Never)
@@ -257,10 +261,10 @@ module Jade
 
       let(:with_interop_source) do
         <<~JADE
-          module WithInterop exposing(fetch)
+          module WithInterop exposing (fetch)
 
           uses Jade::TestFallible with
-            fetch_data: Task(Int, String)
+            fetch_data : Task(Int, String)
           end
 
           def fetch() -> Task(Int, String)
@@ -286,10 +290,10 @@ module Jade
 
       let(:with_interop_source) do
         <<~JADE
-          module WithInterop exposing(fetch)
+          module WithInterop exposing (fetch)
 
           uses Jade::TestBadPort with
-            fetch_number: Task(Int, Never)
+            fetch_number : Task(Int, Never)
           end
 
           def fetch() -> Task(Int, Never)
@@ -316,10 +320,10 @@ module Jade
 
       let(:with_interop_source) do
         <<~JADE
-          module WithInterop exposing(fetch)
+          module WithInterop exposing (fetch)
 
           uses Jade::TestWrongInner with
-            fetch_number: Task(Int, Never)
+            fetch_number : Task(Int, Never)
           end
 
           def fetch() -> Task(Int, Never)
@@ -347,23 +351,25 @@ module Jade
 
       let(:with_interop_source) do
         <<~JADE
-          module WithInterop exposing(sum, short_circuits)
+          module WithInterop exposing (short_circuits, sum)
 
           uses Jade::TestArithmetic with
-            get_one: Task(Int, String),
-            get_two: Task(Int, String),
-            get_error: Task(Int, String)
+            get_one : Task(Int, String),
+            get_two : Task(Int, String),
+            get_error : Task(Int, String)
           end
 
           def sum() -> Task(Int, String)
             one <- get_one()
             two <- get_two()
+
             Task.succeed(one + two)
           end
 
           def short_circuits() -> Task(Int, String)
             one <- get_error()
             two <- get_two()
+
             Task.succeed(one + two)
           end
         JADE
@@ -405,7 +411,7 @@ module Jade
           module StdlibDate exposing (today, year)
 
           uses Jade::Stdlib::Date with
-            today_: Task({ year: Int, month: Int, day: Int }, Never)
+            today_ : Task({ year: Int, month: Int, day: Int }, Never)
           end
 
           def today() -> Task({ year: Int, month: Int, day: Int }, Never)

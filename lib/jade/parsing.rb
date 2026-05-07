@@ -62,7 +62,19 @@ module Jade
         struct_declaration | implementation | interface_declaration
     }
 
-    parser(:expression) { case_of | if_then_else | lambda | infix_expression }
+    parser(:expression) {
+      (
+        (case_of | if_then_else | lambda | infix_expression) >>
+          (postfix_if_tail | none.map { [nil, nil] })
+      ).map(&AST.maybe_postfix_if)
+    }
+
+    parser(:postfix_if_tail, private: true) {
+      type(:if).skip >>
+        lazy { expression } >>
+        type(:else).skip >>
+        lazy { expression }
+    }
 
     parser(:tuple) {
       (
@@ -204,8 +216,9 @@ module Jade
     }
 
     parser(:atom) {
-      variable_reference | negative_literal | literal | constructor_reference | tuple |
-        grouping | record_literal | record_update_sugar | record_access_sugar | record_update
+      variable_reference | negative_literal | literal | constructor_reference |
+        lambda | tuple | grouping |
+        record_literal | record_update_sugar | record_access_sugar | record_update
     }
 
     parser(:postfix) { function_call | member_access }

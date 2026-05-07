@@ -82,6 +82,7 @@ module Jade
             <<~JADE
               def add(a: Int, b: Int) -> Int
                 c = 10
+
                 c
               end
             JADE
@@ -248,7 +249,9 @@ module Jade
       context 'type def and reference' do
         let(:text) do
           <<~JADE
-            type Maybe(a) = Just(a) | Nothing
+            type Maybe(a)
+              = Just(a)
+              | Nothing
             Just
           JADE
         end
@@ -265,7 +268,9 @@ module Jade
         describe 'and call' do
           let(:text) do
             <<~JADE
-              type Maybe(a) = Just(a) | Nothing
+              type Maybe(a)
+                = Just(a)
+                | Nothing
               Just(12)
             JADE
           end
@@ -277,7 +282,9 @@ module Jade
         describe 'and call with different type application' do
           let(:text) do
             <<~JADE
-              type Maybe(a) = Just(a) | Nothing
+              type Maybe(a)
+                = Just(a)
+                | Nothing
               Just(12)
               Just("Hello")
             JADE
@@ -290,7 +297,9 @@ module Jade
         describe 'and call with wrong params' do
           let(:text) do
             <<~JADE
-              type Maybe(a) = Just(a, a) | Nothing
+              type Maybe(a)
+                = Just(a, a)
+                | Nothing
               Just(12, "Hello")
             JADE
           end
@@ -436,8 +445,9 @@ module Jade
         context 'with constructor pattern' do
           let(:text) do
             <<~JADE
-              type Maybe(a) = Just(a) | Nothing
-
+              type Maybe(a)
+                = Just(a)
+                | Nothing
               case Just(1)
               of Nothing then 0
               of Just(x) then x
@@ -453,7 +463,10 @@ module Jade
       describe 'record literal' do
         let(:text) do
           <<~JADE
-            { a: "hello", b: 42 }
+            {
+              a: "hello",
+              b: 42,
+            }
           JADE
         end
 
@@ -481,7 +494,7 @@ module Jade
           context 'with an if' do
             let(:text) do
               <<~JADE
-                def f(x : a) -> a
+                def f(x: a) -> a
                   if True then
                     x
                   else
@@ -597,7 +610,9 @@ module Jade
         context 'with non-exhaustive constructor pattern param' do
           let(:text) do
             <<~JADE
-              type Maybe(a) = Just(a) | Nothing
+              type Maybe(a)
+                = Just(a)
+                | Nothing
 
               fn = (Just(x)) -> { x }
             JADE
@@ -610,7 +625,10 @@ module Jade
       describe'struct def and reference' do
         let(:text) do
           <<~JADE
-            struct Person = { name: String, age: Int }
+            struct Person = {
+              name: String,
+              age: Int
+            }
             Person
           JADE
         end
@@ -621,7 +639,10 @@ module Jade
         context 'instantiation' do
           let(:text) do
             <<~JADE
-              struct Person = { name: String, age: Int }
+              struct Person = {
+                name: String,
+                age: Int
+              }
               Person("Paul", 55)
             JADE
           end
@@ -633,8 +654,10 @@ module Jade
         context 'in function declaration' do
           let(:text) do
             <<~JADE
-              struct Person = { name: String, age: Int }
-
+              struct Person = {
+                name: String,
+                age: Int
+              }
               def person(name: String, age: Int) -> Person
                 Person(name, age)
               end
@@ -648,19 +671,17 @@ module Jade
         context 'unifying against a record' do
           let(:text) do
             <<~JADE
-              struct Person = { name: String, age: Int }
-
+              struct Person = {
+                name: String,
+                age: Int
+              }
               def person(name: String, age: Int) -> { name: String, age: String }
                 Person(name, age)
               end
             JADE
           end
 
-          xcontext 'it should be one error, but function call unifies twice' do
-            its(:errors) { is_expected.to have(1).item  }
-          end
-
-          its(:errors) { is_expected.to have(2).item  }
+          its(:errors) { is_expected.to have(1).item  }
           context 'the message' do
             subject { super().errors.map(&:message).join(', ') }
 
@@ -671,12 +692,13 @@ module Jade
         context 'unifying against an open record' do
           let(:text) do
             <<~JADE
-              struct Person = { name: String, age: Int }
-
+              struct Person = {
+                name: String,
+                age: Int
+              }
               def name(named: { a | name: String }) -> String
                 named.name
               end
-
               name(Person("Paul", 55))
             JADE
           end
@@ -688,12 +710,13 @@ module Jade
         context 'with type params' do
           let(:text) do
             <<~JADE
-              struct Person(id) = { name: String, id: id }
-
+              struct Person(id) = {
+                name: String,
+                id: id
+              }
               def identified(name: String, id: a) -> Person(a)
                 Person(name, id)
               end
-
               Person("Paul", 1)
               Person("Frank", "asdf-1234")
             JADE

@@ -9,12 +9,25 @@ module Jade
 
     let(:source) do
       <<~JADE
-        module Use exposing(today, build, year_of, month_of, day_of, weekday_of,
-                            describe_month, describe_weekday, before, equal,
-                            month_round_trip,
-                            iso, parse_iso, shift, span)
+        module Use exposing (
+          before,
+          build,
+          day_of,
+          describe_month,
+          describe_weekday,
+          equal,
+          iso,
+          month_of,
+          month_round_trip,
+          parse_iso,
+          shift,
+          span,
+          today,
+          weekday_of,
+          year_of,
+        )
 
-        import Calendar exposing(Date, Month(..), Weekday(..), Unit(..))
+        import Calendar exposing (Date, Month(..), Unit(..), Weekday(..))
 
         def today() -> Task(Date, Never)
           Calendar.today
@@ -257,11 +270,11 @@ module Jade
     context 'Encodable / Decodable' do
       let(:source) do
         <<~JADE
-          module Json exposing(date_to_json, date_from_json)
+          module Json exposing (date_from_json, date_to_json)
 
-          import Calendar exposing(Date, Month(..))
+          import Calendar exposing (Date, Month(..))
           import Encode
-          import Decode exposing(DecodeError)
+          import Decode exposing (DecodeError)
 
           def date_to_json(d: Date) -> String
             Encode.encode_to_string(Encode.encode(d))

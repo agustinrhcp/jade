@@ -9,15 +9,34 @@ module Jade
 
     let(:source) do
       <<~JADE
-        module Use exposing(now, epoch, at_ms, since_epoch_ms,
-                            ms_to, to_ms, sec_to, to_sec,
-                            min_to, to_min, hr_to, to_hr, day_to, to_day,
-                            parts, time_of_day,
-                            advance, span,
-                            iso, parse_iso, to_date, before, equal)
+        module Use exposing (
+          advance,
+          at_ms,
+          before,
+          day_to,
+          epoch,
+          equal,
+          hr_to,
+          iso,
+          min_to,
+          ms_to,
+          now,
+          parse_iso,
+          parts,
+          sec_to,
+          since_epoch_ms,
+          span,
+          time_of_day,
+          to_date,
+          to_day,
+          to_hr,
+          to_min,
+          to_ms,
+          to_sec,
+        )
 
-        import Clock    exposing(Instant, Duration)
-        import Calendar exposing(Date, Month(..))
+        import Clock exposing (Duration, Instant)
+        import Calendar exposing (Date, Month(..))
 
         def now() -> Task(Instant, Never)
           Clock.now
@@ -265,13 +284,11 @@ module Jade
     describe 'Encodable / Decodable' do
       let(:source) do
         <<~JADE
-          module Json exposing(instant_to_json, instant_from_json,
-                               duration_to_json, duration_from_json,
-                               make_duration)
+          module Json exposing (duration_from_json, duration_to_json, instant_from_json, instant_to_json, make_duration)
 
-          import Clock exposing(Instant, Duration)
+          import Clock exposing (Duration, Instant)
           import Encode
-          import Decode exposing(DecodeError)
+          import Decode exposing (DecodeError)
 
           def make_duration(ms: Int) -> Duration
             Clock.millis(ms)

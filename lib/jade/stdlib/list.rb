@@ -83,6 +83,65 @@ module Jade
         'List(a)',
       ) { |list, fn| list.filter(&fn) }
 
+      function(
+        :sort,
+        { list: 'List(a)' },
+        'List(a)',
+        constraints: [['Basics.Comparable', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['list'],
+          body: [:call,
+            [:stdlib_fn, 'List._sort_with'],
+            [[:var, 'list'], [:impl_arg, 0, 'compare']],
+          ],
+        ),
+      )
+
+      function(
+        :sort_by,
+        { list: 'List(a)', key: 'a -> b' },
+        'List(a)',
+        constraints: [['Basics.Comparable', 'b']],
+        body: Symbol::DerivedFunction.new(
+          params: ['list', 'key'],
+          body: [:call,
+            [:stdlib_fn, 'List._sort_by_with'],
+            [[:var, 'list'], [:var, 'key'], [:impl_arg, 0, 'compare']],
+          ],
+        ),
+      )
+
+      function(
+        '_sort_with',
+        { list: 'List(a)', cmp: 'a, a -> Ordering' },
+        'List(a)',
+      ) do |list, cmp|
+        list.sort do |x, y|
+          case cmp.call(x, y)
+          in Jade::Basics::LT then -1
+          in Jade::Basics::GT then 1
+          else 0
+          end
+        end
+      end
+
+      function(
+        '_sort_by_with',
+        { list: 'List(a)', key: 'a -> b', cmp: 'b, b -> Ordering' },
+        'List(a)',
+      ) do |list, key, cmp|
+        list
+          .map { |x| [x, key.call(x)] }
+          .sort do |(_, ka), (_, kb)|
+            case cmp.call(ka, kb)
+            in Jade::Basics::LT then -1
+            in Jade::Basics::GT then 1
+            else 0
+            end
+          end
+          .map(&:first)
+      end
+
       implementation('Appendable', 'List', '(++)' => 'list_append')
       implementation('Mappable', 'List', 'map' => 'map')
       implementation('Chainable', 'List', 'and_then' => 'and_then')

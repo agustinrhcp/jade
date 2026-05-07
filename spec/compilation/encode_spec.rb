@@ -10,7 +10,7 @@ module Jade
     context 'primitives' do
       let(:source) do
         <<~JADE
-          module Primitives exposing(s, i, f, b, n)
+          module Primitives exposing (b, f, i, n, s)
 
           import Encode
 
@@ -48,7 +48,7 @@ module Jade
     context 'structural — nullable, list, object' do
       let(:source) do
         <<~JADE
-          module Structural exposing(maybe_present, maybe_nil, list_of_ints, person_object)
+          module Structural exposing (list_of_ints, maybe_nil, maybe_present, person_object)
 
           import Encode
 
@@ -66,6 +66,7 @@ module Jade
 
           def person_object() -> String
             pairs = [Encode.field("name", Encode.string, "Pepe"), Encode.field("age", Encode.int, 30)]
+
             Encode.encode_to_string(Encode.object(pairs))
           end
         JADE
@@ -93,13 +94,22 @@ module Jade
     context 'derived Encodable — primitives, Maybe, List, struct' do
       let(:source) do
         <<~JADE
-          module Derived exposing(int_string, str_string,
-                                  list_string, maybe_just_string, maybe_nothing_string,
-                                  person_string, people_string)
+          module Derived exposing (
+            int_string,
+            list_string,
+            maybe_just_string,
+            maybe_nothing_string,
+            people_string,
+            person_string,
+            str_string,
+          )
 
           import Encode
 
-          struct Person = { name: String, age: Int }
+          struct Person = {
+            name: String,
+            age: Int
+          }
 
           def int_string(i: Int) -> String
             Encode.encode_to_string(Encode.encode(i))
@@ -168,15 +178,19 @@ module Jade
     context 'round-trip with Decode' do
       let(:source) do
         <<~JADE
-          module RoundTrip exposing(roundtrip_person)
+          module RoundTrip exposing (roundtrip_person)
 
           import Encode
-          import Decode exposing(DecodeError)
+          import Decode exposing (DecodeError)
 
-          struct Person = { name: String, age: Int }
+          struct Person = {
+            name: String,
+            age: Int
+          }
 
           def roundtrip_person(p: Person) -> Result(Person, DecodeError)
             json = Encode.encode_to_string(Encode.encode(p))
+
             Decode.from_json(json)
           end
         JADE
@@ -194,12 +208,15 @@ module Jade
     context 'Encode.encode returns plain Ruby data' do
       let(:source) do
         <<~JADE
-          module Boundary exposing(get_user, get_users)
+          module Boundary exposing (get_user, get_users)
 
           import Encode
-          import Decode exposing(Value)
+          import Decode exposing (Value)
 
-          struct Person = { name: String, age: Int }
+          struct Person = {
+            name: String,
+            age: Int
+          }
 
           def get_user() -> Value
             Encode.encode(Person("Pepe", 30))

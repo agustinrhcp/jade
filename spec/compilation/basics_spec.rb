@@ -18,6 +18,7 @@ module Jade
 
           def example1() -> Int
             pepe = Just(1)
+
             1 + 2 * 3
           end
 
@@ -51,7 +52,7 @@ module Jade
       context 'negative integer literal' do
         let(:math_source) do
           <<~JADE
-            module Math exposing (neg_int, neg_float)
+            module Math exposing (neg_float, neg_int)
 
             def neg_int() -> Int
               -1
@@ -94,7 +95,7 @@ module Jade
 
       let(:source) do
         <<~JADE
-          module Cmp exposing (min_int, max_int, min_float, max_float)
+          module Cmp exposing (max_float, max_int, min_float, min_int)
 
           def min_int(a: Int, b: Int) -> Int
             min(a, b)

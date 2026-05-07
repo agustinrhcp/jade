@@ -39,15 +39,16 @@ describe 'tasks mocker — DateTasks example' do
 
   let(:schedule_source) do
     <<~JADE
-      module Schedule exposing(run)
+      module Schedule exposing (run)
 
       uses DateTasks with
-        today: Task(Int, Never),
-        plus_days: Int -> Task(Int, Never)
+        today : Task(Int, Never),
+        plus_days : Int -> Task(Int, Never)
       end
 
       def run(offset: Int) -> Task(Int, Never)
         _ <- today()
+
         plus_days(offset)
       end
     JADE
@@ -211,9 +212,11 @@ describe 'auto-generated predicates for user-defined unions' do
 
   before do
     test_compiler.require('shapes', <<~JADE)
-      module Shapes exposing(Shape(..))
+      module Shapes exposing (Shape(..))
 
-      type Shape = Circle(Float) | Rectangle(Float, Float)
+      type Shape
+        = Circle(Float)
+        | Rectangle(Float, Float)
     JADE
   end
 
@@ -233,9 +236,11 @@ describe 'snake_case predicate names for multi-word variants' do
 
   before do
     test_compiler.require('events', <<~JADE)
-      module Events exposing(Event(..))
+      module Events exposing (Event(..))
 
-      type Event = UserSignedUp(String) | OrderPlaced(Int)
+      type Event
+        = UserSignedUp(String)
+        | OrderPlaced(Int)
     JADE
   end
 

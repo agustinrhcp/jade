@@ -9,9 +9,11 @@ module Jade
 
     let(:exposing_source) do
       <<~JADE
-        module Exposing exposing(MyType(..), my_function)
+        module Exposing exposing (MyType(..), my_function)
 
-        type MyType = MyType | SomeOtherType(String)
+        type MyType
+          = MyType
+          | SomeOtherType(String)
 
         def my_function(thing: MyType) -> String
           case thing
@@ -24,7 +26,7 @@ module Jade
 
     let(:importing_source) do
       <<~JADE
-        module Importing exposing(hello)
+        module Importing exposing (hello)
 
         import Exposing
 
@@ -46,9 +48,9 @@ module Jade
     context 'when exposing the type' do
       let(:importing_source) do
         <<~JADE
-          module Importing exposing(hello)
+          module Importing exposing (hello)
 
-          import Exposing exposing(MyType)
+          import Exposing exposing (MyType)
 
           def hello() -> String
             MyType() |> Exposing.my_function
@@ -69,9 +71,9 @@ module Jade
     context 'when exposing and expanding the type' do
       let(:importing_source) do
         <<~JADE
-          module Importing exposing(hello)
+          module Importing exposing (hello)
 
-          import Exposing exposing(MyType(..))
+          import Exposing exposing (MyType(..))
 
           def hello() -> String
             MyType |> Exposing.my_function
@@ -93,7 +95,7 @@ module Jade
     context 'when using the type constructor qualified' do
       let(:importing_source) do
         <<~JADE
-          module Importing exposing(hello)
+          module Importing exposing (hello)
 
           import Exposing
 
@@ -116,9 +118,11 @@ module Jade
       context 'but when exposing doesnt expose the constructor' do
         let(:exposing_source) do
           <<~JADE
-            module Exposing exposing(MyType, my_function)
+            module Exposing exposing (MyType, my_function)
 
-            type MyType = MyType | SomeOtherType(String)
+            type MyType
+              = MyType
+              | SomeOtherType(String)
 
             def my_function(thing: MyType) -> String
               case thing
@@ -139,7 +143,7 @@ module Jade
     context 'when using the type in a signature' do
       let(:importing_source) do
         <<~JADE
-          module Importing exposing(hello)
+          module Importing exposing (hello)
 
           import Exposing
 
@@ -163,9 +167,11 @@ module Jade
     context 'when trying to expand private type' do
       let(:exposing_source) do
         <<~JADE
-          module Exposing exposing(MyType, my_function)
+          module Exposing exposing (MyType, my_function)
 
-          type MyType = MyType | SomeOtherType(String)
+          type MyType
+            = MyType
+            | SomeOtherType(String)
 
           def my_function(thing: MyType) -> String
             case thing
@@ -178,7 +184,7 @@ module Jade
 
       let(:importing_source) do
         <<~JADE
-          module Importing exposing(hello)
+          module Importing exposing (hello)
 
           import Exposing exposing (MyType(..))
 
@@ -197,9 +203,11 @@ module Jade
     context 'when trying to expose a missing symbol' do
       let(:exposing_source) do
         <<~JADE
-          module Exposing exposing(MyType(..), my_function)
+          module Exposing exposing (MyType(..), my_function)
 
-          type MyType = MyType | SomeOtherType(String)
+          type MyType
+            = MyType
+            | SomeOtherType(String)
 
           def my_function(thing: MyType) -> String
             case thing
@@ -212,7 +220,7 @@ module Jade
 
       let(:importing_source) do
         <<~JADE
-          module Importing exposing(hello)
+          module Importing exposing (hello)
 
           import Exposing exposing (MyType(..), wacamole)
 
@@ -231,9 +239,12 @@ module Jade
     context 'with a struct' do
       let(:exposing_source) do
         <<~JADE
-          module Exposing exposing(Person(..), greet)
+          module Exposing exposing (Person(..), greet)
 
-          struct Person = { name: String, age: Int }
+          struct Person = {
+            name: String,
+            age: Int
+          }
 
           def greet(p: Person) -> String
             "Hello, " ++ p.name
@@ -244,9 +255,9 @@ module Jade
       context 'when importing the struct constructor with (..)' do
         let(:importing_source) do
           <<~JADE
-            module Importing exposing(hello)
+            module Importing exposing (hello)
 
-            import Exposing exposing(Person(..), greet)
+            import Exposing exposing (Person(..), greet)
 
             def hello() -> String
               greet(Person("Paul", 55))
@@ -266,9 +277,9 @@ module Jade
       context 'when importing only the type without (..)' do
         let(:importing_source) do
           <<~JADE
-            module Importing exposing(hello)
+            module Importing exposing (hello)
 
-            import Exposing exposing(Person, greet)
+            import Exposing exposing (Person, greet)
 
             def hello() -> String
               greet(Person("Paul", 55))
@@ -287,9 +298,12 @@ module Jade
       context 'when the defining module does not expose the constructor' do
         let(:exposing_source) do
           <<~JADE
-            module Exposing exposing(Person, greet)
+            module Exposing exposing (Person, greet)
 
-            struct Person = { name: String, age: Int }
+            struct Person = {
+              name: String,
+              age: Int
+            }
 
             def greet(p: Person) -> String
               "Hello, " ++ p.name
@@ -299,9 +313,9 @@ module Jade
 
         let(:importing_source) do
           <<~JADE
-            module Importing exposing(hello)
+            module Importing exposing (hello)
 
-            import Exposing exposing(Person(..), greet)
+            import Exposing exposing (Person(..), greet)
 
             def hello() -> String
               greet(Person("Paul", 55))
@@ -321,7 +335,7 @@ module Jade
     context 'when using a polypmorphic exposed functoin' do
       let(:exposing_source) do
         <<~JADE
-          module Exposing exposing(id)
+          module Exposing exposing (id)
 
           def id(thing: a) -> a
             thing
@@ -331,14 +345,17 @@ module Jade
 
       let(:importing_source) do
         <<~JADE
-          module Importing exposing(hello)
+          module Importing exposing (hello)
 
           import Exposing
 
           def hello() -> Int
             int = Exposing.id(12)
             string = Exposing.id("12")
-            int_from_string = string |> String.to_int |> Maybe.with_default(0)
+            int_from_string = string
+            |> String.to_int
+            |> Maybe.with_default(0)
+
             int + int_from_string
           end
         JADE

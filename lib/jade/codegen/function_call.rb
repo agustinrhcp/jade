@@ -7,6 +7,9 @@ module Jade
       def generate(node, registry)
         node => AST::FunctionCall(callee:, args:, dictionaries:)
 
+        variant_sym = keyed_variant_constructor(callee, registry)
+        return generate_keyed_variant_call(variant_sym, args, registry) if variant_sym
+
         [generate_many(args, registry), generate_dict_args(callee, dictionaries, registry)]
           .reject(&:empty?)
           .join(', ')
@@ -14,6 +17,44 @@ module Jade
       end
 
       private
+
+      # If the callee resolves to a constructor whose single arg is a record
+      # type, returns the resolved Symbol::Constructor. Used to emit
+      # field-spread construction for keyed variants whose runtime class
+      # carries the record fields directly.
+      def keyed_variant_constructor(callee, registry)
+        resolved =
+          case callee.symbol
+          in Symbol::ValueRef => ref then registry.lookup(ref)
+          in symbol then symbol
+          end
+
+        case resolved
+        in Symbol::Constructor(args: [Symbol::RecordType])
+          resolved
+
+        else
+          nil
+        end
+      end
+
+      def generate_keyed_variant_call(constructor, args, registry)
+        qualified = to_qualified(constructor.qualified_name)
+        record_fields = constructor.args[0].fields.keys
+
+        args[0] => arg
+        case arg
+        in AST::RecordLiteral(fields:)
+          fields_by_key = fields.to_h { [it.key, it.value] }
+          record_fields
+            .map { generate_node(fields_by_key.fetch(it), registry) }
+            .join(', ')
+            .then { "#{qualified}[#{it}]" }
+        else
+          "#{qualified}[**#{generate_node(arg, registry)}.to_h]"
+        end
+      end
+
 
       def generate_callee(callee, args, registry, dictionaries)
         return generate_node(callee, registry) if callee in AST::ConstructorReference | AST::RecordAccess | AST::FunctionCall | AST::Grouping

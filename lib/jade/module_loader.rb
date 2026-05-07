@@ -24,6 +24,9 @@ module Jade
     end
 
     def load_import(module_name, registry)
+      already_loaded = registry.get(module_name)
+      return registry if already_loaded&.ast
+
       Source
         .load_from_module_name(registry.source_root, module_name)
         .then { load_(it, registry) }

@@ -369,6 +369,19 @@ module Jade
       end
     end
 
+    def maybe_postfix_if
+      ->((expr, condition, else_expr)) do
+        next expr if condition.nil?
+
+        IfThenElse[
+          condition,
+          Body.new(expressions: [expr], range: expr.range),
+          Body.new(expressions: [else_expr], range: else_expr.range),
+          expr.range.begin..else_expr.range.end,
+        ]
+      end
+    end
+
     def case_of
       ->((case_token, expression, branches, end_token)) do
         CaseOf[
