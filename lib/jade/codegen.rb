@@ -253,25 +253,19 @@ module Jade
     end
 
     def namespace_setup(name)
-      first, *rest = name.split('.')
+      parts = name.split('.')
+      prefixes = (0...parts.length - 1)
+        .map { parts[0..it].join('::') }
 
-      rest
-        .reduce([[], first]) do |(paths, prev), part|
-          [paths + [prev], "#{prev}::#{part}"]
-        end
-        .first
-        .map { "module #{it}; end; " }
-        .join
-    end
-
-    def to_qualified(module_name)
-      "#{module_name.gsub('.', '::')}"
-    end
-
-    def data_define(fields)
-      return "Data.define" if fields.empty?
-
-      "Data.define(#{fields.map { ":#{it}" }.join(', ')})"
+      if Stdlib.stdlib_name?(name)
+        (['Jade'] + prefixes.map { "Jade::#{it}" })
+          .map { "module #{it}; end; " }
+          .join
+      else
+        prefixes
+          .map { "module #{it}; end; " }
+          .join
+      end
     end
 
     def load_path

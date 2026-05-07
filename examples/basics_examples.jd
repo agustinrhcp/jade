@@ -15,12 +15,12 @@ def absolute(n: Int) -> Int
   end
 end
 
-def clamp(value: Int, min: Int, max: Int) -> Int
-  case value < min
-  of True then min
+def clamp(value: Int, lo: Int, hi: Int) -> Int
+  case value < lo
+  of True then lo
   of False then
-    case value > max
-    of True then max
+    case value > hi
+    of True then hi
     of False then value
     end
   end

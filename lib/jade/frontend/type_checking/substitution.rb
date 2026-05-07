@@ -66,7 +66,10 @@ module Jade
               type.with(fields: applied_fields, row_var: applied_row_var)
 
             in Type::Application => struct
-              type.with(fields: applied_fields, row_var: struct)
+              # `{γ | fields}` whose row resolved to a nominal struct
+              # collapses to the struct — the open record was always a
+              # structural query against it.
+              struct
 
             end
           end

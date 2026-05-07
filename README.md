@@ -89,7 +89,14 @@ The payload is an anonymous record, so `r.paid_amount` and `{ r | paid_amount: 0
 **Structs (named records):**
 ```jade
 struct Person = { name: String, age: Int }
+
+p1 = Person("Paul", 55)              # positional
+p2 = Person(name: "Paul", age: 55)   # kwargs (canonical)
+p3 = { p1 | age: 56 }                # update (result is a Person)
+p4 = p1 |> .age=(57)                 # update sugar in pipelines
 ```
+
+Anonymous records do not coerce into nominal structs. To build a `Person`, use one of the forms above; passing `{ name: "Paul", age: 55 }` where `Person` is expected is a type error.
 
 **Anonymous records:**
 ```jade
@@ -114,12 +121,32 @@ type Result(a, e) = Ok(a) | Err(e)
 **`Never`** is a bottom type representing an impossible value. It marks a union variant that can never be constructed — the exhaustiveness checker understands this, so you can destructure without matching the impossible case:
 
 ```jade
--- Ok is the only possible case, so destructuring works
+# Ok is the only possible case, so destructuring works
 def unwrap(r: Result(Int, Never)) -> Int
   Ok(n) = r
   n
 end
 ```
+
+### `if` / `else`
+
+For boolean branches, use `if`/`then`/`else` — every `if` is an expression, so it must always have an `else`.
+
+```jade
+def absolute(n: Int) -> Int
+  if n < 0 then 0 - n else n end
+end
+
+def sign(n: Int) -> Int
+  if n < 0 then
+    -1
+  else
+    if n > 0 then 1 else 0 end
+  end
+end
+```
+
+For matching on data shapes (variants, lists, records, tuples), use `case` — see below.
 
 ### Pattern Matching
 
@@ -216,12 +243,12 @@ all  = list_a ++ list_b
 Interfaces are like typeclasses. `Eq`, `Comparable`, and `Appendable` are built-in.
 
 ```jade
--- Works for any type with an Eq instance
+# Works for any type with an Eq instance
 def are_equal(a: a, b: a) -> Bool
   a == b
 end
 
--- Works for any type with a Comparable instance
+# Works for any type with a Comparable instance
 def larger(a: a, b: a) -> a
   case compare(a, b)
   of GT then a
@@ -278,7 +305,7 @@ Tasks are lazy — no Ruby code runs until `.run` is called on the returned valu
 Jade.require('my_module')
 
 task = MyModule.current_time.call   # nothing runs yet
-result = task.run                   # => Result::Ok[1234567890]
+result = task.run                   # => Jade::Result::Ok[1234567890]
 ```
 
 Jade guards values at the interop boundary — if Ruby returns the wrong type, you get a `Guard::Error` rather than silent corruption. For `Task`, the inner value is guarded lazily when `.run` is called.

@@ -86,5 +86,55 @@ module Jade
         end
       end
     end
+
+    describe 'min and max' do
+      before do
+        test_compiler.require('cmp', source)
+      end
+
+      let(:source) do
+        <<~JADE
+          module Cmp exposing (min_int, max_int, min_float, max_float)
+
+          def min_int(a: Int, b: Int) -> Int
+            min(a, b)
+          end
+
+          def max_int(a: Int, b: Int) -> Int
+            max(a, b)
+          end
+
+          def min_float(a: Float, b: Float) -> Float
+            min(a, b)
+          end
+
+          def max_float(a: Float, b: Float) -> Float
+            max(a, b)
+          end
+        JADE
+      end
+
+      it 'picks the smaller of two ints' do
+        expect(Cmp.min_int.call(1, 2)).to eql 1
+        expect(Cmp.min_int.call(2, 1)).to eql 1
+        expect(Cmp.min_int.call(3, 3)).to eql 3
+      end
+
+      it 'picks the larger of two ints' do
+        expect(Cmp.max_int.call(1, 2)).to eql 2
+        expect(Cmp.max_int.call(2, 1)).to eql 2
+        expect(Cmp.max_int.call(3, 3)).to eql 3
+      end
+
+      it 'picks the smaller of two floats' do
+        expect(Cmp.min_float.call(1.5, 2.5)).to eql 1.5
+        expect(Cmp.min_float.call(2.5, 1.5)).to eql 1.5
+      end
+
+      it 'picks the larger of two floats' do
+        expect(Cmp.max_float.call(1.5, 2.5)).to eql 2.5
+        expect(Cmp.max_float.call(2.5, 1.5)).to eql 2.5
+      end
+    end
   end
 end

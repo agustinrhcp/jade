@@ -48,6 +48,7 @@ module Jade
     define(:InfixOperator, :value)
 
     define(:FunctionCall, :callee, :args, :infix, :dictionaries)
+    define(:KeyedCall, :callee, :fields)
     define(:Placeholder)
     define(:MemberAccess, :target, :name)
     define(:QualifiedAccess, :target, :name)
@@ -318,10 +319,12 @@ module Jade
     end
 
     def keyed_call
-      ->(fields) do
-        fields_list = Parsing::Combinators::CommaList.new(items: fields, trailing_comma: false)
-        record_literal.call([fields.first, fields_list, fields.last])
-          .then { Parsing::Combinators::CommaList.new(items: [it], trailing_comma: false) }
+      ->(callee, lparen, fields, rparen) do
+        KeyedCall.new(
+          callee:,
+          fields:,
+          range: lparen.range.begin..rparen.range.end,
+        )
       end
     end
 

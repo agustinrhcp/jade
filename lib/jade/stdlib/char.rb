@@ -23,9 +23,9 @@ module Jade
         'Maybe(Char)',
       ) do |code|
         code.chr
-          .then { ::Maybe::Just[it] }
+          .then { Jade::Maybe::Just[it] }
       rescue RangeError
-        ::Maybe::Nothing[]
+        Jade::Maybe::Nothing[]
       end
 
       function(

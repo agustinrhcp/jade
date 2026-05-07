@@ -75,6 +75,9 @@ module Jade
 
     SYMBOLS_REGEX = Regexp.union(SYMBOLS.keys.sort_by { |k| -k.length })
 
+    INVALID_OPS = %w[/=].freeze
+    INVALID_OP_REGEX = Regexp.union(INVALID_OPS.sort_by { |k| -k.length })
+
     def tokenize(source)
       source => Source(text:)
 
@@ -84,6 +87,9 @@ module Jade
       until scanner.eos?
         case
         when scanner.scan(/\s+/)
+
+        when scanner.scan(INVALID_OP_REGEX)
+          tokens << tok(:invalid_op, scanner)
 
         when scanner.scan(SYMBOLS_REGEX)
           type = SYMBOLS.fetch(scanner.matched)

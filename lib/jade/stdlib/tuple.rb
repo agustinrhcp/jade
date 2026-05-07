@@ -13,7 +13,7 @@ module Jade
         :pair,
         { first: 'a', second: 'b' },
         'Tuple2(a, b)',
-      ) { |first, second| ::Tuple::Tuple2[first, second] }
+      ) { |first, second| Jade::Tuple::Tuple2[first, second] }
 
       function(
         :first,

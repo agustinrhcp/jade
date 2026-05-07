@@ -3,11 +3,11 @@ module Jade
     def run = _1.call
 
     def self.ok(&block)
-      new(-> { ::Result::Ok[block.call] })
+      new(-> { Jade::Result::Ok[block.call] })
     end
 
     def self.error(&block)
-      new(-> { ::Result::Err[block.call] })
+      new(-> { Jade::Result::Err[block.call] })
     end
   end
 end

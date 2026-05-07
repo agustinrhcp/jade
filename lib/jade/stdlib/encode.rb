@@ -32,8 +32,8 @@ module Jade
         'Value',
       ) { |encoder, maybe|
         case maybe
-        in ::Maybe::Just[v] then encoder.call(v)
-        in ::Maybe::Nothing then nil
+        in Jade::Maybe::Just[v] then encoder.call(v)
+        in Jade::Maybe::Nothing then nil
         end
       }
 
@@ -59,7 +59,7 @@ module Jade
         { key: 'String', encoder: 'a -> Value', value: 'a' },
         'Tuple2(String, Value)',
       ) { |key, encoder, value|
-        ::Tuple::Tuple2[key.dup, encoder.call(value)]
+        Jade::Tuple::Tuple2[key.dup, encoder.call(value)]
       }
 
       function(

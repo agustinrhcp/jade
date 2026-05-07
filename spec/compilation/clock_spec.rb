@@ -113,7 +113,7 @@ module Jade
       JADE
     end
 
-    def duration(n) = ::Clock::Duration[n]
+    def duration(n) = Clock::Duration[n]
 
     before { test_compiler.require('use', source) }
 
@@ -241,7 +241,7 @@ module Jade
       it 'projects an Instant onto a Calendar Date' do
         d = Use.to_date.call(Use.at_ms.call(1_700_000_000_000))
         expect(d.year).to eql 2023
-        expect(d.month).to eql ::Calendar::Nov[]
+        expect(d.month).to eql Calendar::Nov[]
         expect(d.day).to eql 14
       end
     end

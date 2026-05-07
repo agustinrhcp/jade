@@ -23,7 +23,7 @@ module Jade
         'str_compare',
         { a: 'String', b: 'String' },
         'Ordering',
-      ) { |a, b| a < b ? ::Basics::LT[] : a > b ? ::Basics::GT[] : ::Basics::EQ[] }
+      ) { |a, b| a < b ? Jade::Basics::LT[] : a > b ? Jade::Basics::GT[] : Jade::Basics::EQ[] }
 
       function(
         'str_append',
@@ -54,7 +54,7 @@ module Jade
         { str: 'String' },
         'Maybe(Tuple2(Char, String))',
       ) do |str|
-        str.empty? ? ::Maybe::Nothing[] : ::Maybe::Just[::Tuple::Tuple2[str[0], str[1..]]]
+        str.empty? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[Jade::Tuple::Tuple2[str[0], str[1..]]]
       end
 
       function(
@@ -88,9 +88,9 @@ module Jade
       ) do |str|
         begin
           Integer(str)
-            .then { ::Maybe::Just[it] }
+            .then { Jade::Maybe::Just[it] }
         rescue
-          ::Maybe::Nothing[]
+          Jade::Maybe::Nothing[]
         end
       end
 

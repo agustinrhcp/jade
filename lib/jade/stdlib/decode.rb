@@ -30,19 +30,19 @@ module Jade
       # Primitives
 
       function('string', {}, 'Decoder(String)') {
-        ::Decode::Decoder[::Decode::Desc::Str[]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Str[]]
       }
 
       function('int', {}, 'Decoder(Int)') {
-        ::Decode::Decoder[::Decode::Desc::Int[]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Int[]]
       }
 
       function('float', {}, 'Decoder(Float)') {
-        ::Decode::Decoder[::Decode::Desc::Flt[]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Flt[]]
       }
 
       function('bool', {}, 'Decoder(Bool)') {
-        ::Decode::Decoder[::Decode::Desc::Bool[]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Bool[]]
       }
 
       # Structural
@@ -52,7 +52,7 @@ module Jade
         { decoder: 'Decoder(a)' },
         'Decoder(Maybe(a))',
       ) { |decoder|
-        ::Decode::Decoder[::Decode::Desc::Nullable[decoder.desc]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Nullable[decoder.desc]]
       }
 
       function(
@@ -60,7 +60,7 @@ module Jade
         { key: 'String', decoder: 'Decoder(a)' },
         'Decoder(a)',
       ) { |key, decoder|
-        ::Decode::Decoder[::Decode::Desc::Field[key, decoder.desc]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Field[key, decoder.desc]]
       }
 
       function(
@@ -68,7 +68,7 @@ module Jade
         { key: 'String', decoder: 'Decoder(a)' },
         'Decoder(Maybe(a))',
       ) { |key, decoder|
-        ::Decode::Decoder[::Decode::Desc::OptField[key, decoder.desc]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::OptField[key, decoder.desc]]
       }
 
       function(
@@ -76,7 +76,7 @@ module Jade
         { i: 'Int', decoder: 'Decoder(a)' },
         'Decoder(a)',
       ) { |i, decoder|
-        ::Decode::Decoder[::Decode::Desc::Idx[i, decoder.desc]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Idx[i, decoder.desc]]
       }
 
       function(
@@ -84,7 +84,7 @@ module Jade
         { decoder: 'Decoder(a)' },
         'Decoder(List(a))',
       ) { |decoder|
-        ::Decode::Decoder[::Decode::Desc::Lst[decoder.desc]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Lst[decoder.desc]]
       }
 
       # Mapping
@@ -94,7 +94,7 @@ module Jade
         { fn: 'a -> b', decoder: 'Decoder(a)' },
         'Decoder(b)',
       ) { |fn, decoder|
-        ::Decode::Decoder[::Decode::Desc::Map[fn, decoder.desc]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Map[fn, decoder.desc]]
       }
 
       # Pipeline
@@ -104,7 +104,7 @@ module Jade
         { value: 'a' },
         'Decoder(a)',
       ) { |value|
-        ::Decode::Decoder[::Decode::Desc::Succeed[value]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Succeed[value]]
       }
 
       function(
@@ -112,7 +112,7 @@ module Jade
         { wrapped: 'Decoder(a -> b)', decoder: 'Decoder(a)' },
         'Decoder(b)',
       ) { |wrapped, decoder|
-        ::Decode::Decoder[::Decode::Desc::AndMap[wrapped.desc, decoder.desc]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::AndMap[wrapped.desc, decoder.desc]]
       }
 
       function(
@@ -120,8 +120,8 @@ module Jade
         { wrapped: 'Decoder(a -> b)', key: 'String', field_decoder: 'Decoder(a)' },
         'Decoder(b)',
       ) { |wrapped, key, field_decoder|
-        ::Decode::Desc::Field[key, field_decoder.desc]
-          .then { ::Decode::Decoder[::Decode::Desc::AndMap[wrapped.desc, it]] }
+        Jade::Decode::Desc::Field[key, field_decoder.desc]
+          .then { Jade::Decode::Decoder[Jade::Decode::Desc::AndMap[wrapped.desc, it]] }
       }
 
       function(
@@ -134,8 +134,8 @@ module Jade
         },
         'Decoder(b)',
       ) { |wrapped, key, field_decoder, default|
-        ::Decode::Desc::Optional[key, field_decoder.desc, default]
-          .then { ::Decode::Decoder[::Decode::Desc::AndMap[wrapped.desc, it]] }
+        Jade::Decode::Desc::Optional[key, field_decoder.desc, default]
+          .then { Jade::Decode::Decoder[Jade::Decode::Desc::AndMap[wrapped.desc, it]] }
       }
 
       function(
@@ -143,7 +143,7 @@ module Jade
         { decoders: 'List(Decoder(a))' },
         'Decoder(List(a))',
       ) { |decoders|
-        ::Decode::Decoder[::Decode::Desc::Sequence[decoders.map(&:desc)]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Sequence[decoders.map(&:desc)]]
       }
 
       function(
@@ -151,7 +151,7 @@ module Jade
         { decoders: 'List(Decoder(a))' },
         'Decoder(a)',
       ) { |decoders|
-        ::Decode::Decoder[::Decode::Desc::OneOf[decoders.map(&:desc)]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::OneOf[decoders.map(&:desc)]]
       }
 
       function(
@@ -159,7 +159,7 @@ module Jade
         { decoder: 'Decoder(a)', fn: 'a -> Decoder(b)' },
         'Decoder(b)',
       ) { |decoder, fn|
-        ::Decode::Decoder[::Decode::Desc::AndThen[fn, decoder.desc]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::AndThen[fn, decoder.desc]]
       }
 
       function(
@@ -167,7 +167,7 @@ module Jade
         { msg: 'String' },
         'Decoder(a)',
       ) { |msg|
-        ::Decode::Decoder[::Decode::Desc::Fail[msg]]
+        Jade::Decode::Decoder[Jade::Decode::Desc::Fail[msg]]
       }
 
       function(
@@ -176,8 +176,8 @@ module Jade
         'Decoder(a)',
       ) { |r|
         case r
-        in ::Result::Ok[v]   then ::Decode::Decoder[::Decode::Desc::Succeed[v]]
-        in ::Result::Err[e]  then ::Decode::Decoder[::Decode::Desc::Fail[e]]
+        in Jade::Result::Ok[v]   then Jade::Decode::Decoder[Jade::Decode::Desc::Succeed[v]]
+        in Jade::Result::Err[e]  then Jade::Decode::Decoder[Jade::Decode::Desc::Fail[e]]
         end
       }
 
@@ -188,7 +188,7 @@ module Jade
         { decoder: 'Decoder(a)', value: 'Value' },
         'Result(a, DecodeError)',
       ) { |decoder, value|
-        ::Decode::Runner.run(decoder, value)
+        Jade::Decode::Runner.run(decoder, value)
       }
 
       function(
@@ -196,7 +196,7 @@ module Jade
         { decoder: 'Decoder(a)', json: 'String' },
         'Result(a, DecodeError)',
       ) { |decoder, json|
-        ::Decode::Runner.from_json(decoder, json)
+        Jade::Decode::Runner.from_json(decoder, json)
       }
 
       # Constrained helpers — pick the decoder via Decodable.

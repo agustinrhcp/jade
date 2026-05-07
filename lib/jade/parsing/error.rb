@@ -61,5 +61,23 @@ module Jade
         "#{context_prefix}Unexpected token #{actual.value.inspect}, expected #{expected}"
       end
     end
+
+    class InvalidOperatorError < Error
+      HINTS = {
+        '/=' => 'Use `!=` for inequality.',
+      }.freeze
+
+      def initialize(entry:, span:, actual:, expected: nil, committed: true, context: [])
+        super
+      end
+
+      def hint
+        HINTS[actual.value]
+      end
+
+      def message
+        "#{context_prefix}Invalid operator #{actual.value.inspect}.#{" #{hint}" if hint}"
+      end
+    end
   end
 end

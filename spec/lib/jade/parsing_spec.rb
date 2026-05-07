@@ -473,6 +473,29 @@ module Jade
         its(:callee) { is_expected.to be_a(AST::ConstructorReference).and have_attributes(name: 'Nothing') }
       end
 
+      context 'keyed call (kwargs)' do
+        let(:text) do
+          <<~JADE
+            Person(name: "Paul", age: 55)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::KeyedCall) }
+        its(:callee) { is_expected.to be_a(AST::ConstructorReference).and have_attributes(name: 'Person') }
+        its(:fields) { is_expected.to have(2).items.and all(be_a(AST::RecordField)) }
+
+        context 'with a record literal arg (distinct from keyed call)' do
+          let(:text) do
+            <<~JADE
+              Person({ name: "Paul", age: 55 })
+            JADE
+          end
+
+          it { is_expected.to be_a(AST::FunctionCall) }
+          its(:args) { is_expected.to have(1).items.and all(be_a(AST::RecordLiteral)) }
+        end
+      end
+
       context 'with a placeholder argument' do
         let(:text) do
           <<~JADE
@@ -1217,6 +1240,21 @@ module Jade
       end
 
       it { is_expected.to be_a(AST::InfixApplication) }
+    end
+
+    describe 'invalid operator (Haskell /=)' do
+      let(:text) do
+        <<~JADE
+          1 /= 2
+        JADE
+      end
+
+      subject { parse => Err(err); err }
+
+      it { is_expected.to be_kind_of(Parsing::InvalidOperatorError) }
+      its(:message) { is_expected.to include('Invalid operator "/="') }
+      its(:message) { is_expected.to include('Use `!=` for inequality') }
+      its(:hint) { is_expected.to eql 'Use `!=` for inequality.' }
     end
 
     xdescribe 'interface' do

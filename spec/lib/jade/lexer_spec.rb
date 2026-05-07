@@ -171,6 +171,12 @@ module Jade
         its([7]) { is_expected.to be_token.of_type(:slash).with('/') }
         its([8]) { is_expected.to be_token.of_type(:int).with('5') }
       end
+
+      context '/= (Haskell-style not-equal) tokenizes as :invalid_op' do
+        let(:text) { "a /= b\n" }
+
+        its([1]) { is_expected.to be_token.of_type(:invalid_op).with('/=') }
+      end
     end
 
     context 'function declaration' do

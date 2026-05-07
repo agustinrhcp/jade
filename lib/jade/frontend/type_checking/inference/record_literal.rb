@@ -7,7 +7,7 @@ module Jade
           extend self
 
           def infer(node, registry, state, expected)
-            node => AST::RecordLiteral(fields:, symbol:)
+            node => AST::RecordLiteral(fields:)
 
             fields_state, fields_types = fields
               .reduce([state, {}]) do |(state_acc, types_acc), field|
