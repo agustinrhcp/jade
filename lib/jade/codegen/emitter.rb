@@ -1,9 +1,12 @@
+require 'jade/codegen/helpers'
+
 module Jade
   module Codegen
     module Emitter
       extend self
+      extend Helpers
 
-      def emit(ir) 
+      def emit(ir)
         case ir
         in [:var, expr]
           expr
@@ -70,11 +73,6 @@ module Jade
         end
       end
 
-      private
-
-      def to_qualified(module_name)
-        "#{module_name.gsub('.', '::')}"
-      end
     end
   end
 end

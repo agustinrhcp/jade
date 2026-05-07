@@ -37,7 +37,7 @@ module Jade
         :head,
         { list: 'List(a)' },
         'Maybe(a)',
-      ) { |list| list.empty? ? ::Maybe::Nothing[] : ::Maybe::Just[list.first] }
+      ) { |list| list.empty? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[list.first] }
 
       function(
         :tail,

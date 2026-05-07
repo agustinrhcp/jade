@@ -1,3 +1,4 @@
+require 'set'
 require 'jade/stdlib/basics'
 require 'jade/stdlib/maybe'
 require 'jade/stdlib/list'
@@ -18,6 +19,7 @@ module Jade
 
     INTRINSICS = %w[Basics String List Tuple Char Task Decode Encode].freeze
     COMPILED = %w[Maybe Result Decode.Params Calendar Clock].freeze
+    TOPLEVELS = (INTRINSICS + COMPILED.map { it.split('.', 2).first }).to_set.freeze
     STDLIBS = [
       Stdlib::Basics, Stdlib::Maybe, Stdlib::List, Stdlib::Char,
       Stdlib::Tuple, Stdlib::String, Stdlib::Result, Stdlib::Task,
@@ -72,6 +74,12 @@ module Jade
 
     def is_stdlib?(entry)
       is_intrinsic?(entry) || COMPILED.include?(entry.name)
+    end
+
+    def stdlib_name?(qualified_name)
+      dot = qualified_name.index('.')
+      first = dot ? qualified_name[0, dot] : qualified_name
+      TOPLEVELS.include?(first)
     end
 
     private

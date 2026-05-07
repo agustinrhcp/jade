@@ -49,6 +49,11 @@ module Jade
             .with(args: args.map { desugar(it) })
             .then { Placeholder.lift(it) }
 
+        in AST::KeyedCall(callee:, fields:)
+          node
+            .with(callee: desugar(callee))
+            .with(fields: fields.map { desugar(it) })
+
         in AST::FunctionDeclaration(body:)
           node
             .with(body: desugar(body))

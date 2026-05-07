@@ -9,7 +9,7 @@ module Jade
           end
 
           def message
-            case @infix 
+            case @infix
             in AST::InfixOperator(value:)
               infix_error(value)
             else

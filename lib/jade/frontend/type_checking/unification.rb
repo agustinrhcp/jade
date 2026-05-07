@@ -129,9 +129,13 @@ module Jade
               end
 
           in [Type::AnonymousRecord, Type::Application]
+            # Only OPEN anon records (record-access queries like `{a | x: T}`)
+            # can match a nominal struct. Closed records are distinct types.
+            return Err[UnificationError.new(type1, type2)] if type1.closed?
+
             expanded = env.lookup_def(type2.constructor.name)
 
-            return Err[UnificationError.new(type1, type2)] unless expanded
+            return Err[UnificationError.new(type1, type2)] unless expanded.is_a?(StructDef)
 
             expanded
               .type_params.map(&:id).zip(type2.args).to_h
@@ -140,9 +144,11 @@ module Jade
               end
               .apply(expanded.body)
               .then { unify(type1, it, env, ctx) }
-              .and_then { |body_r| unify(type1.row_var, type2, env, ctx).map { body_r.compose(it) } }
+              .and_then do |body_r|
+                unify(type1.row_var, type2, env, ctx).map { body_r.compose(it) }
+              end
               .on_err { Err[UnificationError.new(type1, type2)] }
-            
+
 
           in [Type::Application, Type::AnonymousRecord]
             unify(type2, type1, env, ctx)

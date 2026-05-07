@@ -1,27 +1,26 @@
 require 'jade/interop/runtime'
 require 'jade/decode'
 
-module Tuple
-  Tuple2 = Data.define(:_1, :_2) do
-    def to_s = "(#{[_1, _2].map(&:to_s).join(', ')})"
-  end
-
-  Tuple3 = Data.define(:_1, :_2, :_3) do
-    def to_s = "(#{[_1, _2, _3].map(&:to_s).join(', ')})"
-  end
-
-  Tuple4 = Data.define(:_1, :_2, :_3, :_4) do
-    def to_s = "(#{[_1, _2, _3, _4].map(&:to_s).join(', ')})"
-  end
-end
-
-module Basics
-  GT = Data.define()
-  EQ = Data.define()
-  LT = Data.define()
-end
-
 module Jade
+  module Tuple
+    Tuple2 = Data.define(:_1, :_2) do
+      def to_s = "(#{[_1, _2].map(&:to_s).join(', ')})"
+    end
+
+    Tuple3 = Data.define(:_1, :_2, :_3) do
+      def to_s = "(#{[_1, _2, _3].map(&:to_s).join(', ')})"
+    end
+
+    Tuple4 = Data.define(:_1, :_2, :_3, :_4) do
+      def to_s = "(#{[_1, _2, _3, _4].map(&:to_s).join(', ')})"
+    end
+  end
+
+  module Basics
+    GT = Data.define()
+    EQ = Data.define()
+    LT = Data.define()
+  end
 
   module Runtime
     extend self

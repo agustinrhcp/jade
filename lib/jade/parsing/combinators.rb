@@ -92,6 +92,16 @@ module Jade
               state,
             ]]
 
+          elsif state.current.type == :invalid_op
+            Err[[
+              Parsing::InvalidOperatorError.new(
+                entry:    state.entry,
+                span:     state.current.range,
+                actual:   state.current,
+              ),
+              state,
+            ]]
+
           elsif state.current.type == type
             Ok[([state.current, state.advance])]
 

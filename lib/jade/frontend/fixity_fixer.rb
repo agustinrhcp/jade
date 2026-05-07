@@ -86,6 +86,11 @@ module Jade
             .map { fix(it) }
             .then { node.with(args: it, callee: fix(callee)) }
 
+        in AST::KeyedCall(callee:, fields:)
+          fields
+            .map { fix(it) }
+            .then { node.with(fields: it, callee: fix(callee)) }
+
         in AST::MemberAccess(target:)
           fix(target)
             .then { node.with(target: it) }

@@ -318,7 +318,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "Tuple::Tuple2.method(:[]).call(1, 2)" }
+        it { is_expected.to eql "Jade::Tuple::Tuple2.method(:[]).call(1, 2)" }
       end
 
       context 'three elements' do
@@ -328,7 +328,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "Tuple::Tuple3.method(:[]).call(1, 2, 3)" }
+        it { is_expected.to eql "Jade::Tuple::Tuple3.method(:[]).call(1, 2, 3)" }
       end
 
       context 'four elements' do
@@ -338,7 +338,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "Tuple::Tuple4.method(:[]).call(1, 2, 3, 4)" }
+        it { is_expected.to eql "Jade::Tuple::Tuple4.method(:[]).call(1, 2, 3, 4)" }
       end
     end
 
@@ -401,7 +401,7 @@ module Jade
 
           it('is derived') { is_expected.to include("impl_arg[0]['(==)'].call(l0, r0)") }
           it { is_expected.to start_with "def test; ->() { ->(impl_arg) { ->(one, other) { " }
-          it { is_expected.to end_with ".call(Maybe::Nothing[], Maybe::Just.method(:[]).call(1)) }; end" }
+          it { is_expected.to end_with ".call(Jade::Maybe::Nothing[], Jade::Maybe::Just.method(:[]).call(1)) }; end" }
 
           context 'when calling !=' do
             let(:text) do
@@ -505,25 +505,25 @@ module Jade
       context '(<)' do
         let(:text) { "1 < 2" }
 
-        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Basics::LT() then true; in _ then false; end } }.call(#{lt_dict}).call(1, 2)" }
+        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Jade::Basics::LT() then true; in _ then false; end } }.call(#{lt_dict}).call(1, 2)" }
       end
 
       context '(>)' do
         let(:text) { "1 > 2" }
 
-        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Basics::GT() then true; in _ then false; end } }.call(#{lt_dict}).call(1, 2)" }
+        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Jade::Basics::GT() then true; in _ then false; end } }.call(#{lt_dict}).call(1, 2)" }
       end
 
       context '(<=)' do
         let(:text) { "1 <= 2" }
 
-        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Basics::GT() then false; in _ then true; end } }.call(#{lt_dict}).call(1, 2)" }
+        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Jade::Basics::GT() then false; in _ then true; end } }.call(#{lt_dict}).call(1, 2)" }
       end
 
       context '(>=)' do
         let(:text) { "1 >= 2" }
 
-        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Basics::LT() then false; in _ then true; end } }.call(#{lt_dict}).call(1, 2)" }
+        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Jade::Basics::LT() then false; in _ then true; end } }.call(#{lt_dict}).call(1, 2)" }
       end
     end
   end

@@ -168,6 +168,40 @@ module Jade
       )
 
       function(
+        'min',
+        { a: 'a', b: 'a' },
+        'a',
+        constraints: [['Basics.Comparable', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['a', 'b'],
+          body: [:case,
+            [:call, [:impl_arg, 0, 'compare'], [[:var, 'a'], [:var, 'b']]],
+            [
+              [[:constructor, 'Basics.GT', []], [[:var, 'b']]],
+              [[:_], [[:var, 'a']]],
+            ],
+          ],
+        ),
+      )
+
+      function(
+        'max',
+        { a: 'a', b: 'a' },
+        'a',
+        constraints: [['Basics.Comparable', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['a', 'b'],
+          body: [:case,
+            [:call, [:impl_arg, 0, 'compare'], [[:var, 'a'], [:var, 'b']]],
+            [
+              [[:constructor, 'Basics.LT', []], [[:var, 'b']]],
+              [[:_], [[:var, 'a']]],
+            ],
+          ],
+        ),
+      )
+
+      function(
         '(&&)',
         { a: 'Bool', b: 'Bool' },
         'Bool',
@@ -203,13 +237,13 @@ module Jade
         'int_compare',
         { a: 'Int', b: 'Int' },
         'Ordering',
-      ) { |a, b| a < b ? ::Basics::LT[] : a > b ? ::Basics::GT[] : ::Basics::EQ[] }
+      ) { |a, b| a < b ? Jade::Basics::LT[] : a > b ? Jade::Basics::GT[] : Jade::Basics::EQ[] }
 
       function(
         'float_compare',
         { a: 'Float', b: 'Float' },
         'Ordering',
-      ) { |a, b| a < b ? ::Basics::LT[] : a > b ? ::Basics::GT[] : ::Basics::EQ[] }
+      ) { |a, b| a < b ? Jade::Basics::LT[] : a > b ? Jade::Basics::GT[] : Jade::Basics::EQ[] }
 
     end
   end

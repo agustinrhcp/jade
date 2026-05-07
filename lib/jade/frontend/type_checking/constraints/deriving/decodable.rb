@@ -1,3 +1,5 @@
+require 'jade/codegen/helpers'
+
 module Jade
   module Frontend
     module TypeChecking
@@ -78,7 +80,7 @@ module Jade
               end
 
               constructor_ref = [:raw,
-                "#{qualified_ruby(struct_sym.qualified_name)}.method(:[]).curry(#{fields.size})"
+                "#{Codegen::Helpers.to_qualified(struct_sym.qualified_name)}.method(:[]).curry(#{fields.size})"
               ]
               seed = [:call, [:stdlib_fn, 'Decode.succeed'], [constructor_ref]]
 
@@ -99,10 +101,6 @@ module Jade
 
             def resolve_dep(dep, lookup, entry_name)
               lookup.call(dep)
-            end
-
-            def qualified_ruby(qualified_name)
-              qualified_name.gsub('.', '::')
             end
 
             def implementation(constraint, body, deps)

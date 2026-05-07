@@ -357,6 +357,27 @@ module Jade
         end
       end
 
+      describe 'pipe-sugar update on a struct returns the struct' do
+        let(:pepe_source) do
+          <<~JADE
+            module Pepe exposing(birthday)
+
+            struct Person = { name: String, age: Int }
+
+            def birthday(p: Person) -> Person
+              p |> .age=(p.age + 1)
+            end
+          JADE
+        end
+
+        it 'preserves the nominal struct type through the pipe' do
+          expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
+
+          paul = Pepe::Person['Paul', 55]
+          expect(Pepe.birthday.call(paul)).to eql Pepe::Person['Paul', 56]
+        end
+      end
+
       describe 'calling a nullary function from another function' do
         let(:pepe_source) do
           <<~JADE
@@ -404,6 +425,167 @@ module Jade
         it 'instantiates the type parameter from the call result' do
           expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
           expect(Pepe.query.call()).to eql 42
+        end
+      end
+
+      describe 'wrapping a record literal in a struct constructor is rejected' do
+        let(:pepe_source) do
+          <<~JADE
+            module Pepe exposing(paul)
+
+            struct Person = { name: String, age: Int }
+
+            def paul() -> Person
+              Person({ name: "Paul", age: 55 })
+            end
+          JADE
+        end
+
+        it 'fails to compile' do
+          expect { test_compiler.require('pepe', pepe_source) }
+            .to raise_error(RuntimeError, /Function call mismatch/)
+        end
+      end
+
+      describe 'wrapping a record update in a struct constructor is rejected' do
+        let(:pepe_source) do
+          <<~JADE
+            module Pepe exposing(older_paul)
+
+            struct Person = { name: String, age: Int }
+
+            def paul() -> Person
+              Person("Paul", 55)
+            end
+
+            def older_paul() -> Person
+              Person({ paul | age: 56 })
+            end
+          JADE
+        end
+
+        it 'fails to compile' do
+          expect { test_compiler.require('pepe', pepe_source) }
+            .to raise_error(RuntimeError, /Function call mismatch/)
+        end
+      end
+
+      describe 'parameterized struct with a record-typed param accepts anon record' do
+        let(:pepe_source) do
+          <<~JADE
+            module Pepe exposing(wrap)
+
+            struct Wrapper(a) = { wrapped: a }
+
+            def wrap() -> Wrapper({ val : Int })
+              Wrapper({ val: 42 })
+            end
+          JADE
+        end
+
+        it 'positional construction with the record as the type-param value' do
+          expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
+          expect(Pepe.wrap.call().wrapped.val).to eql(42)
+        end
+      end
+
+      describe 'construction forms (catalogue)' do
+        let(:working_source) do
+          <<~JADE
+            module Forms exposing (
+              positional,
+              kwargs,
+              update,
+              nested
+            )
+
+            struct Address = { street: String, city: String }
+            struct Wrapper = { addr: Address }
+            struct Person  = { name: String, age: Int }
+
+            def positional() -> Person
+              Person("Paul", 55)
+            end
+
+            def kwargs() -> Person
+              Person(name: "Paul", age: 55)
+            end
+
+            def update() -> Person
+              base = Person("Paul", 55)
+              { base | age: 56 }
+            end
+
+            def nested() -> Wrapper
+              Wrapper(Address("Main", "Paris"))
+            end
+          JADE
+        end
+
+        it 'positional, kwargs, update, and nested all work' do
+          test_compiler.require('forms', working_source)
+
+          expected_person = Forms::Person['Paul', 55]
+          expect(Forms.positional.call).to eql expected_person
+          expect(Forms.kwargs.call).to     eql expected_person
+
+          expect(Forms.update.call).to eql Forms::Person['Paul', 56]
+          expect(Forms.nested.call).to eql Forms::Wrapper[Forms::Address['Main', 'Paris']]
+        end
+
+        it 'anonymous record cannot stand in for a nominal struct' do
+          source = <<~JADE
+            module Forms exposing (bad)
+
+            struct Address = { street: String, city: String }
+            struct Wrapper = { addr: Address }
+
+            def bad() -> Wrapper
+              Wrapper({ street: "Main", city: "Paris" })
+            end
+          JADE
+
+          expect { test_compiler.require('forms_bad', source) }
+            .to raise_error(RuntimeError, /Address/)
+        end
+      end
+
+      describe 'kwargs validation' do
+        let(:base_struct) do
+          'struct Person = { name: String, age: Int }'
+        end
+
+        def compile(body)
+          test_compiler.require('m', "module M exposing (f)\n#{base_struct}\ndef f() -> Person\n  #{body}\nend\n")
+        end
+
+        it 'rejects unknown fields with a pointed error' do
+          expect { compile('Person(name: "Paul", age: 55, nickname: "Pablo")') }
+            .to raise_error(RuntimeError, /`Person` has no field `nickname` \(has: `name`, `age`\)/)
+        end
+
+        it 'rejects missing fields' do
+          expect { compile('Person(name: "Paul")') }
+            .to raise_error(RuntimeError, /`Person` is missing field `age:`/)
+        end
+
+        it 'rejects duplicate fields' do
+          expect { compile('Person(name: "Paul", name: "Bob", age: 55)') }
+            .to raise_error(RuntimeError, /Field `name:` was given more than once/)
+        end
+
+        it 'rejects kwargs syntax on a regular function call' do
+          source = <<~JADE
+            module M exposing (f)
+            def add(a: Int, b: Int) -> Int
+              a + b
+            end
+            def f() -> Int
+              add(a: 1, b: 2)
+            end
+          JADE
+          expect { test_compiler.require('m_bad', source) }
+            .to raise_error(RuntimeError, /Keyword-argument syntax is only valid/)
         end
       end
     end

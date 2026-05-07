@@ -6,6 +6,7 @@ require 'jade/frontend/symbol_resolution/case_of'
 require 'jade/frontend/symbol_resolution/case_of_branch'
 require 'jade/frontend/symbol_resolution/constructor_reference'
 require 'jade/frontend/symbol_resolution/function_call'
+require 'jade/frontend/symbol_resolution/keyed_call'
 require 'jade/frontend/symbol_resolution/function_declaration'
 require 'jade/frontend/symbol_resolution/grouping'
 require 'jade/frontend/symbol_resolution/if_then_else'
@@ -90,6 +91,7 @@ module Jade
         in AST::ConstructorReference then ConstructorReference
         in AST::FunctionDeclaration then FunctionDeclaration
         in AST::FunctionCall then FunctionCall
+        in AST::KeyedCall then KeyedCall
         in AST::TypeDeclaration then TypeDeclaration
         in AST::VariantDeclaration then VariantDeclaration
         in AST::IfThenElse then IfThenElse

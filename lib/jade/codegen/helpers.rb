@@ -12,7 +12,8 @@ module Jade
       end
 
       def to_qualified(module_name)
-        "#{module_name.gsub('.', '::')}"
+        base = module_name.gsub('.', '::')
+        Stdlib.stdlib_name?(module_name) ? "Jade::#{base}" : base
       end
 
       def data_define(fields)

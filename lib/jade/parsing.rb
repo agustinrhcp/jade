@@ -19,6 +19,12 @@ module Jade
       end
     end
 
+    KeyedCallPostfix = Data.define(:lparen, :fields, :rparen) do
+      def apply(node)
+        AST.keyed_call.call(node, lparen, fields, rparen)
+      end
+    end
+
     MemberAccessPostfix = Data.define(:dot, :identifier) do
       def apply(node)
         AST.member_access.call(node, dot, identifier)
@@ -209,21 +215,26 @@ module Jade
     }
 
     parser(:function_call) {
+      keyed_call_postfix | positional_call_postfix
+    }
+
+    parser(:positional_call_postfix) {
       (
         type(:lparen) >>
-          (keyed_call |
-            comma_sequence(function_call_arg) |
-            empty_comma_list) >>
+          (comma_sequence(function_call_arg) | empty_comma_list) >>
           type(:rparen)
       ).map { FunctionCallPostfix[*it] }
     }
 
-    parser(:function_call_arg) { placeholder | lazy { expression } }
-
-    parser(:keyed_call) {
-      sequence(record_field, separated_by: type(:comma).skip)
-        .map(&AST.keyed_call)
+    parser(:keyed_call_postfix) {
+      (
+        type(:lparen) >>
+          comma_sequence(record_field) >>
+          type(:rparen)
+      ).map { |(lparen, fields, rparen)| KeyedCallPostfix[lparen, fields.items, rparen] }
     }
+
+    parser(:function_call_arg) { placeholder | lazy { expression } }
 
     parser(:placeholder) { type(:wildcard).map(&AST.placeholder) }
 
