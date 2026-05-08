@@ -1,0 +1,30 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/ruby:3.4.2
+    working_directory: ~/jade
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-bundle-{{ checksum "Gemfile.lock" }}
+            - v1-bundle-
+      - run:
+          name: Install gems
+          command: |
+            bundle config set --local path vendor/bundle
+            bundle install --jobs=4 --retry=3
+      - save_cache:
+          key: v1-bundle-{{ checksum "Gemfile.lock" }}
+          paths:
+            - vendor/bundle
+      - run:
+          name: RSpec
+          command: bundle exec rspec
+
+workflows:
+  ci:
+    jobs:
+      - test

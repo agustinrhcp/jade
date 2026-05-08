@@ -1,5 +1,7 @@
 # Jade
 
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/agustinrhcp/jade/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/agustinrhcp/jade/tree/master)
+
 A statically typed, functional language that compiles to Ruby. It focuses on simple, predictable code, with type inference, exhaustive pattern matching, and straightforward interop with Ruby.
 
 ---
