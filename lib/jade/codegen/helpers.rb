@@ -60,6 +60,37 @@ module Jade
         fn_constraints(fn_symbol, registry).select { |c| c.type.is_a?(Type::Var) }
       end
 
+      # Ruby classes that back primitive Jade types. Mirrors stdlib's
+      # `native_type` declarations so user impls on primitives register under
+      # the right Ruby class. (Lifting this onto Symbol::Union itself is
+      # tracked in plans/lift-native-types-into-symbol-table.md.)
+      NATIVE_RUBY_CLASSES = {
+        'Basics.Int' => ['Integer'],
+        'Basics.Float' => ['Float'],
+        'Basics.Bool' => ['TrueClass', 'FalseClass'],
+        'String.String' => ['String'],
+        'Char.Char' => ['String'],
+      }.freeze
+
+      # Returns the Ruby class names that values of `type_ref` may have at
+      # runtime. Strings here go straight into emitted Ruby. Returns [] for
+      # types that have no concrete runtime representation (interfaces).
+      def ruby_classes_for_type(type_ref, registry)
+        qname = type_ref.qualified_name
+        return NATIVE_RUBY_CLASSES[qname] if NATIVE_RUBY_CLASSES.key?(qname)
+
+        case registry.lookup(type_ref)
+        in Symbol::Union(variants:)
+          variants.map { "::#{to_qualified(it.qualified_name)}" }
+
+        in Symbol::Struct
+          ["::#{to_qualified(qname)}"]
+
+        in Symbol::Interface
+          []
+        end
+      end
+
     def lower_to_ruby(value)
       case value
       in String

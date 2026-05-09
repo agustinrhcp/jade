@@ -11,5 +11,20 @@ module Jade
         )
       end
     end
+
+    # Raised when Ruby tries to call a Jade function whose signature can't
+    # cross the boundary — typically a polymorphic function whose constrained
+    # type variable has no extractable witness in the args (function-typed
+    # arg, return-position-only var, etc.). Internal Jade callers are
+    # unaffected; they go through the impl-synthetic with an inline dict.
+    class NotCallableFromRuby < Error
+      def initialize(function_qname, cause)
+        super(
+          "Cannot call #{function_qname} from Ruby: #{cause}. " \
+            "Internal Jade callers still work; if Ruby needs this, write a " \
+            "monomorphizing Jade-side wrapper."
+        )
+      end
+    end
   end
 end

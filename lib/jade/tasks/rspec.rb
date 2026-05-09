@@ -177,7 +177,12 @@ module Jade
       private
 
       def lookup_short_name(short)
-        matches = ->(m) { m.name && m.name.split('::').last == short }
+        matches = ->(m) {
+          Module
+            .instance_method(:name)
+            .bind(m).call
+            .then { it && it.split('::').last == short }
+        }
 
         ObjectSpace.each_object(Class).select(&matches) +
           ObjectSpace.each_object(Module).select { |m| !m.is_a?(Class) && matches.call(m) }
