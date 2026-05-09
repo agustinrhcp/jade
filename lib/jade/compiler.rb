@@ -3,26 +3,22 @@ module Jade
     attr_reader :config
 
     def initialize
-      @loaded = {}
       yield(config) if block_given?
     end
 
     def require(path)
-      return false if @loaded[path]
+      target = File.expand_path("#{build_root}/#{path}.rb", config.project_root)
 
-      ModuleLoader
-        .load(config.source_root.first, path + '.jd')
-        .then { ModuleLoader.emit(it, path: build_root) }
+      unless File.exist?(target)
+        ModuleLoader
+          .load(config.source_root.first, path + '.jd')
+          .then { ModuleLoader.emit(it, path: build_root) }
+      end
 
-      File
-        .expand_path("#{build_root}/#{path}.rb", config.project_root)
-        .then { File.realpath(it) }
-        .then { Kernel.require(it) }
-
-      @loaded[path] = true
+      Kernel.require(File.realpath(target))
     end
 
-    private 
+    private
 
     def config
       @config ||= Config.new

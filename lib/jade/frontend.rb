@@ -30,7 +30,7 @@ module Jade
         .and_then do |(entry, registry)|
           TypeChecking
             .check(entry, registry)
-            .map { [entry.ast, registry] }
+            .map { [it.ast, registry.update_module(it)] }
        end
     end
 

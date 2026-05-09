@@ -43,17 +43,8 @@ module Jade
         "__#{name}__impl__"
       end
 
-      # Returns the list of Type::Constraint for a Symbol::Function, looked up
-      # from its module entry's env (populated during type checking) and
-      # canonicalised through the env's substitution so the var ids match the
-      # ones body call sites used when attaching dict markers.
-      #
-      # Stdlib::Compiled hands codegen a registry whose entry hasn't been
-      # re-added after type checking, so env can be nil here — fall back to
-      # no constraints in that case.
       def fn_constraints(fn_symbol, registry)
-        env = registry.get(fn_symbol.module_name)&.env
-        return [] unless env
+        env = registry.get(fn_symbol.module_name).env
 
         env
           .bindings[fn_symbol.qualified_name]

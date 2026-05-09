@@ -144,8 +144,8 @@ module Jade
       # to a Ruby expression evaluating to a dict hash.
       def dispatch_value(entry, registry)
         case entry
-        in Type::Constraint(interface:, type: Type::Var(id:))
-          Codegen.dict_env[[interface, id]]
+        in Type::Constraint(interface:, type: Type::Var)
+          Codegen.dict_env[[interface, canonical_var_id(entry.type)]]
 
         in Symbol::Implementation
           generate_impl_dispatch(entry, registry)
@@ -171,13 +171,20 @@ module Jade
       # in the current dict_env (e.g. an anonymous lambda's body).
       def dispatch_lookup(entry, fn_name, registry, &fallback)
         case entry
-        in Type::Constraint(interface:, type: Type::Var(id:))
+        in Type::Constraint(interface:, type: Type::Var)
           Codegen
-            .dict_env[[interface, id]]
+            .dict_env[[interface, canonical_var_id(entry.type)]]
             &.then { "#{it}[#{fn_name.inspect}]" } || fallback.call
 
         in Symbol::Implementation
           generate_impl_dispatch(entry, registry)[fn_name]
+        end
+      end
+
+      def canonical_var_id(var)
+        case Codegen.dict_substitution.apply(var)
+        in Type::Var(id:) then id
+        else var.id
         end
       end
 

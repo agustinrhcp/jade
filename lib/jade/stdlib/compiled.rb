@@ -18,7 +18,7 @@ module Jade
           .then do
             Frontend
               .run_entry(it, registry.add_module(it))
-              .map { Codegen.generate_entry(it, registry) }
+              .map { Codegen.generate_entry(it, registry.add_module(it)) }
           end => Ok(entry)
 
           @entry = entry
