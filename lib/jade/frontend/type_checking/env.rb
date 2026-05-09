@@ -47,7 +47,11 @@ module Jade
         end
 
         def free_vars
-          bindings.values.flat_map(&:free_vars).to_set.to_a
+          bindings
+            .values
+            .flat_map(&:free_vars)
+            .flat_map { substitution.apply(it).unbound_vars }
+            .uniq(&:id)
         end
 
         def composose_substitution(sub)

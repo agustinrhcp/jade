@@ -22,12 +22,19 @@ module Jade
       @dict_env ||= {}
     end
 
-    def with_dict_env(env)
-      prev = @dict_env
+    def dict_substitution
+      @dict_substitution ||= Frontend::TypeChecking::Substitution::EMPTY
+    end
+
+    def with_dict_env(env, substitution)
+      prev_env = @dict_env
+      prev_sub = @dict_substitution
       @dict_env = env
+      @dict_substitution = substitution
       yield
     ensure
-      @dict_env = prev
+      @dict_env = prev_env
+      @dict_substitution = prev_sub
     end
 
     def generate_entry(entry, registry)
