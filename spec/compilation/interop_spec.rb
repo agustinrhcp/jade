@@ -167,9 +167,9 @@ module Jade
           JADE
         end
 
-        it 'fails' do
+        it 'fails — Decodable cannot be derived and the user did not implement it' do
           expect { test_compiler.require('with_interop', with_interop_source) }
-            .to raise_error(RuntimeError, /Union \(Date\) cannot be lowered for interop/)
+            .to raise_error(RuntimeError, /Port `internal_today` cannot decode its ok arm \(`Date`\): no Decodable instance/)
         end
       end
 
@@ -332,11 +332,11 @@ module Jade
         JADE
       end
 
-      it 'raises a guard error lazily when run' do
+      it 'raises a decode error lazily when run' do
         test_compiler.require('with_interop', with_interop_source)
         task = WithInterop.fetch.call()
         expect { task.run }
-          .to raise_error(Jade::Interop::Guard::Error, /Expected Integer/)
+          .to raise_error(Jade::Interop::DecodeError, /expected Int, got String/)
       end
     end
 
@@ -388,6 +388,188 @@ module Jade
       it 'is lazy — no Ruby code runs until .run' do
         task = WithInterop.sum.call()
         expect(task).to be_a(Jade::Task)
+      end
+    end
+
+    context 'a port using Decode.Value opts out of decoding' do
+      module TestPassThrough
+        extend Jade::Port
+
+        task :fetch_anything do |t|
+          t.ok({ totally: 'arbitrary', nested: { stuff: [1, 2, 3] } })
+        end
+      end
+
+      let(:with_interop_source) do
+        <<~JADE
+          module WithInterop exposing (fetch)
+
+          import Decode exposing (Value)
+
+          uses Jade::TestPassThrough with
+            fetch_anything : Task(Value, Never)
+          end
+
+          def fetch() -> Task(Value, Never)
+            fetch_anything()
+          end
+        JADE
+      end
+
+      it 'passes the raw Ruby value through unchanged' do
+        test_compiler.require('with_interop', with_interop_source)
+        result = WithInterop.fetch.call().run
+        expect(result).to be_ok
+        expect(result._1).to eql({ totally: 'arbitrary', nested: { stuff: [1, 2, 3] } })
+      end
+    end
+
+    context 'a named struct produces an instance of the struct class' do
+      module TestNamedStruct
+        extend Jade::Port
+
+        task :fetch_user do |t|
+          t.ok({ name: 'Ada', age: 36 })
+        end
+      end
+
+      let(:with_interop_source) do
+        <<~JADE
+          module WithInterop exposing (fetch)
+
+          struct User = {
+            name: String,
+            age: Int
+          }
+
+          uses Jade::TestNamedStruct with
+            fetch_user : Task(User, Never)
+          end
+
+          def fetch() -> Task(User, Never)
+            fetch_user()
+          end
+        JADE
+      end
+
+      it 'returns the struct as the named class' do
+        test_compiler.require('with_interop', with_interop_source)
+        result = WithInterop.fetch.call().run
+        expect(result).to be_ok
+        expect(result._1).to be_a(WithInterop::User)
+        expect(result._1.name).to eql 'Ada'
+        expect(result._1.age).to eql 36
+      end
+    end
+
+    context 'a port with a missing field surfaces the path' do
+      module TestMissingField
+        extend Jade::Port
+
+        task :fetch_user do |t|
+          t.ok({ name: 'Ada' })
+        end
+      end
+
+      let(:with_interop_source) do
+        <<~JADE
+          module WithInterop exposing (fetch)
+
+          struct User = {
+            name: String,
+            age: Int
+          }
+
+          uses Jade::TestMissingField with
+            fetch_user : Task(User, Never)
+          end
+
+          def fetch() -> Task(User, Never)
+            fetch_user()
+          end
+        JADE
+      end
+
+      it 'raises with a path-aware message' do
+        test_compiler.require('with_interop', with_interop_source)
+        expect { WithInterop.fetch.call().run }
+          .to raise_error(Jade::Interop::DecodeError, /missing field `age`/)
+      end
+    end
+
+    context 'a port with a union type uses the user-implemented Decodable' do
+      module TestUnionPort
+        extend Jade::Port
+
+        task(:fetch_active)   { |t| t.ok('active') }
+        task(:fetch_inactive) { |t| t.ok('inactive') }
+        task(:fetch_bogus)    { |t| t.ok('weird') }
+      end
+
+      let(:with_interop_source) do
+        <<~JADE
+          module WithInterop exposing (active, bogus, inactive)
+
+          import Decode exposing (Decodable, Decoder)
+
+          type Status
+            = Active
+            | Inactive
+
+          def status_decoder() -> Decoder(Status)
+            Decode.and_then(
+              Decode.string,
+              (s) -> {
+                case s
+                of "active" then Decode.succeed(Active)
+                of "inactive" then Decode.succeed(Inactive)
+                of _ then Decode.fail("unknown status: " ++ s)
+                end
+              },
+            )
+          end
+
+          implements Decodable(Status) with
+            decoder: status_decoder
+          end
+
+          uses Jade::TestUnionPort with
+            fetch_active : Task(Status, Never),
+            fetch_inactive : Task(Status, Never),
+            fetch_bogus : Task(Status, Never)
+          end
+
+          def active() -> Task(Status, Never)
+            fetch_active()
+          end
+
+          def inactive() -> Task(Status, Never)
+            fetch_inactive()
+          end
+
+          def bogus() -> Task(Status, Never)
+            fetch_bogus()
+          end
+        JADE
+      end
+
+      before { test_compiler.require('with_interop', with_interop_source) }
+
+      it 'decodes the active variant' do
+        result = WithInterop.active.call().run
+        expect(result).to be_ok
+        expect(result._1).to look_like(:Active)
+      end
+
+      it 'decodes the inactive variant' do
+        result = WithInterop.inactive.call().run
+        expect(result).to be_ok
+        expect(result._1).to look_like(:Inactive)
+      end
+
+      it 'raises when the decoder rejects the value' do
+        expect { WithInterop.bogus.call().run }
+          .to raise_error(Jade::Interop::DecodeError, /unknown status: weird/)
       end
     end
 

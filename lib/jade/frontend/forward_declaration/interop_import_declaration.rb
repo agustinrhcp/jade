@@ -47,12 +47,9 @@ module Jade
         end
 
         def fn_type_to_interop(interop_mod_name, function_node, symbol, entry, registry)
-          Interop::Lowering
-            .lower_symbol(symbol.return_type, registry, entry) => { lowered_type:, errors: }
-
-          lifted_errors = errors.map do
-            Error::TypeNotLowerable.new(entry, function_node.range, message: it.message)
-          end
+          lifted_errors = Interop::Lowering
+            .validate(symbol.return_type, registry, entry)
+            .map { Error::TypeNotLowerable.new(entry, function_node.range, message: it.message) }
 
           Symbol
             .interop_function(
@@ -60,7 +57,6 @@ module Jade
               symbol.params,
               symbol.return_type,
               interop_mod_name.name,
-              lowered_type,
             )
             .then { [it, lifted_errors] }
         end

@@ -16,6 +16,7 @@ module Jade
       Int      = Data.define()
       Flt      = Data.define()
       Bool     = Data.define()
+      Pass     = Data.define()
       Nullable = Data.define(:inner)
       Field    = Data.define(:key, :inner)
       OptField = Data.define(:key, :inner)
@@ -62,6 +63,9 @@ module Jade
 
         in Desc::Bool[]
           value == true || value == false ? ok(value) : type_err("Bool", value)
+
+        in Desc::Pass[]
+          ok(value)
 
         in Desc::Nullable[inner]
           if value.nil?

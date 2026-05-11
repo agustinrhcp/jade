@@ -5,6 +5,7 @@ require 'jade/frontend/type_checking/error'
 require 'jade/frontend/type_checking/expected'
 require 'jade/frontend/type_checking/inference'
 require 'jade/frontend/type_checking/loader'
+require 'jade/frontend/type_checking/port_resolution'
 require 'jade/frontend/type_checking/result'
 require 'jade/frontend/type_checking/state'
 require 'jade/frontend/type_checking/substitution'
@@ -26,6 +27,7 @@ module Jade
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
           .then { finalize(*it, registry) }
           .map { entry.with(env: it) }
+          .and_then { PortResolution.resolve(it, registry) }
       end
 
       def finalize(state, result, registry)

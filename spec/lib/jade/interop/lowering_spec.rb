@@ -9,89 +9,43 @@ module Jade
     let(:registry) { Stdlib.load(Registry.new) }
     let(:entry)    { Entry.empty('Test') }
 
-    subject { described_class.lower_symbol(symbol, registry, entry).lowered_type }
+    subject { described_class.validate(symbol, registry, entry).map(&:message) }
 
-    context 'an Int' do
+    context 'an Int is permitted' do
       let(:symbol) { type_sym('Basics', 'Int') }
 
-      it { is_expected.to eql 'int' }
+      it { is_expected.to be_empty }
     end
 
-    context 'a Bool' do
-      let(:symbol) { type_sym('Basics', 'Bool') }
-
-      it { is_expected.to eql 'bool' }
-    end
-
-    context 'a Float' do
-      let(:symbol) { type_sym('Basics', 'Float') }
-
-      it { is_expected.to eql 'float' }
-    end
-
-    context 'a String' do
-      let(:symbol) { type_sym('String', 'String') }
-
-      it { is_expected.to eql 'string' }
-    end
-
-    context 'a Maybe(String)' do
-      let(:symbol) do
-        type_sym('String', 'String')
-          .then { type_sym('Maybe', 'Maybe').with(args: [it]) }
-      end
-
-      it { is_expected.to eql ['maybe', 'string'] }
-    end
-
-    context 'a List(Int)' do
-      let(:symbol) do
-        type_sym('Basics', 'Int')
-          .then { type_sym('List', 'List').with(args: [it]) }
-      end
-
-      it { is_expected.to eql ['list', 'int'] }
-    end
-
-    context 'a Maybe(List(Int))' do
+    context 'a Maybe(List(Int)) is permitted' do
       let(:symbol) do
         type_sym('Basics', 'Int')
           .then { type_sym('List', 'List').with(args: [it]) }
           .then { type_sym('Maybe', 'Maybe').with(args: [it]) }
       end
 
-      it { is_expected.to eql ['maybe', ['list', 'int']] }
+      it { is_expected.to be_empty }
     end
 
-    context 'a named struct resolved via entry (module not yet in registry)' do
-      let(:struct) do
-        Symbol::Struct.new(
-          module_name: 'MyModule',
-          name:        'Point',
-          type_params: [],
-          record_type: Symbol::RecordType.new(
-            { 'x' => type_sym('Basics', 'Int'), 'y' => type_sym('Basics', 'Int') },
-            nil
-          ),
-          decl_span: nil,
-        )
+    context 'a bare type variable is rejected' do
+      let(:symbol) { Symbol::Variable['a', nil] }
+
+      it { is_expected.to include('Type param (a) cannot be lowered for interop') }
+    end
+
+    context 'a type variable nested in a List arg is rejected' do
+      let(:symbol) do
+        Symbol::Variable['a', nil]
+          .then { type_sym('List', 'List').with(args: [it]) }
       end
 
-      let(:entry)  { Entry.empty('MyModule').define(struct) }
-      let(:symbol) { type_sym('MyModule', 'Point') }
-
-      subject { described_class.lower_symbol(symbol, registry, entry).lowered_type }
-
-      it { is_expected.to eql({ 'x' => 'int', 'y' => 'int' }) }
+      it { is_expected.to include('Type param (a) cannot be lowered for interop') }
     end
 
-    context 'a union type (cannot be lowered)' do
-      let(:entry)  { Entry.empty('MyModule') }
-      let(:symbol) { type_sym('MyModule', 'Color') }
+    context 'a function used as a type is rejected' do
+      let(:symbol) { Symbol.function_type([type_sym('Basics', 'Int')], type_sym('Basics', 'Int')) }
 
-      subject { described_class.lower_symbol(symbol, registry, entry).errors.map(&:message) }
-
-      it { is_expected.to include('Union (Color) cannot be lowered for interop') }
+      it { is_expected.to include('Function (inline function type) cannot be lowered for interop') }
     end
   end
 end

@@ -8,6 +8,7 @@ require 'jade/codegen/pattern/constructor'
 require 'jade/codegen/function_declaration'
 require 'jade/codegen/function_call'
 require 'jade/codegen/implementation'
+require 'jade/codegen/port_decoder'
 
 module Jade
   module Codegen
@@ -77,15 +78,9 @@ module Jade
 
         case symbol
         in Symbol::InteropFunction
-          symbol.expected_type => ['task', ok_type, err_type]
-          [
-            symbol.interop_module_name,
-            ":#{symbol.name}",
-            lower_to_ruby(ok_type),
-            lower_to_ruby(err_type),
-          ]
-            .join(', ')
-            .then { "Jade::Runtime.task_call(#{it})" }
+          registry
+            .lookup(symbol.to_ref)
+            .then { PortDecoder.task_call(it, registry) }
 
         in Symbol::StdlibFunction(codegen:, params:) if params.empty?
           "#{codegen}.call()"

@@ -26,5 +26,46 @@ module Jade
         )
       end
     end
+
+    class DecodeError < Error
+      attr_reader :decode_error, :value
+
+      def initialize(decode_error, value)
+        @decode_error = decode_error
+        @value = value
+        super(format(decode_error, value))
+      end
+
+      private
+
+      def format(error, value)
+        path, leaf = unwind(error)
+        location = path.empty? ? "value" : path.join
+
+        case leaf
+        in Jade::Decode::WrongType[expected, got]
+          "Port returned a value that failed to decode at #{location}: expected #{expected}, got #{got} (#{value.inspect})"
+
+        in Jade::Decode::MissingField[key]
+          "Port returned a value that failed to decode at #{location}: missing field `#{key}` (#{value.inspect})"
+
+        in Jade::Decode::Custom[msg]
+          "Port returned a value that failed to decode at #{location}: #{msg} (#{value.inspect})"
+
+        in Jade::Decode::Multiple[errors]
+          errors
+            .map { format(it, value) }
+            .join("; ")
+        end
+      end
+
+      def unwind(error, path = [])
+        case error
+        in Jade::Decode::AtField[key, inner] then unwind(inner, path + [".#{key}"])
+        in Jade::Decode::AtIndex[idx, inner] then unwind(inner, path + ["[#{idx}]"])
+        else [path, error]
+        end
+      end
+    end
   end
 end
