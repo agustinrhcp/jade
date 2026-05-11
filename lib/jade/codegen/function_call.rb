@@ -16,6 +16,21 @@ module Jade
           .then { "#{generate_callee(callee, args, registry, dictionaries)}.call(#{it})" }
       end
 
+      # Turns a Symbol::Implementation into a `{fn_name => ruby_code}` hash by
+      # walking its deps + functions. Public because PortDecoder needs it to
+      # emit a port's pre-resolved decoder; otherwise an internal helper.
+      def generate_impl_dispatch(impl, registry)
+        dep_dispatches = impl
+          .deps
+          .map { |dep| generate_impl_dispatch(dep, registry) }
+
+        impl
+          .functions
+          .transform_values do |fn|
+            generate_impl_fn(fn, dep_dispatches, impl.functions, registry)
+          end
+      end
+
       private
 
       # If the callee resolves to a constructor whose single arg is a record
@@ -65,16 +80,10 @@ module Jade
             .lookup(callee.symbol)
             .then { generate_callee(callee.with(symbol: it), args, registry, dictionaries) }
 
-        in Symbol::InteropFunction => symbol
-          symbol.expected_type => ['task', ok_type, err_type]
-          [
-            symbol.interop_module_name,
-            ":#{symbol.name}",
-            lower_to_ruby(ok_type),
-            lower_to_ruby(err_type),
-          ]
-            .join(', ')
-            .then { "Jade::Runtime.task_call(#{it})" }
+        in Symbol::InteropFunction
+          registry
+            .lookup(callee.symbol.to_ref)
+            .then { PortDecoder.task_call(it, registry) }
 
         in Symbol::StdlibFunction => symbol if symbol.constraints.any?
           dictionaries
@@ -191,13 +200,6 @@ module Jade
       def runtime_dispatch(symbol, args, registry)
         generate_node(args.first, registry)
           .then { "Jade::Runtime.impl_for(#{symbol.interface.qualified_name.inspect}, #{it})[#{symbol.name.inspect}]" }
-      end
-
-      def generate_impl_dispatch(impl, registry)
-        dep_dispatches = impl.deps.map { |dep| generate_impl_dispatch(dep, registry) }
-        impl.functions.transform_values { |fn|
-          generate_impl_fn(fn, dep_dispatches, impl.functions, registry)
-        }
       end
 
       def generate_impl_fn(fn, dep_dispatches, sibling_fns, registry)

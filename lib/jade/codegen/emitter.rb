@@ -47,8 +47,11 @@ module Jade
         in [:stdlib_fn, name]
           "Jade::Runtime.intr(#{name.inspect})"
 
-        in [:raw, code]
-          code
+        in [:struct_constructor, qualified_name, arity]
+          "#{to_qualified(qualified_name)}.method(:[]).curry(#{arity})"
+
+        in [:anon_record_constructor, keys]
+          "#{data_define(keys)}.method(:[]).curry(#{keys.size})"
 
         in [:list, exprs]
           exprs

@@ -111,8 +111,8 @@ module Jade
       InteropFunction[nil, name, [], nil, nil, nil]
     end
 
-    def interop_function(name, params, return_type, interop_module_name, expected_type)
-      InteropFunction[nil, name, params, return_type, interop_module_name, expected_type]
+    def interop_function(name, params, return_type, interop_module_name)
+      InteropFunction[nil, name, params, return_type, interop_module_name, nil]
     end
 
     def type_application(constructor, args, span)

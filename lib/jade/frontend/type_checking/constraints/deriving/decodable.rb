@@ -1,5 +1,3 @@
-require 'jade/codegen/helpers'
-
 module Jade
   module Frontend
     module TypeChecking
@@ -33,6 +31,9 @@ module Jade
                 else
                   failed(constraint, entry_name)
                 end
+
+              in Type::AnonymousRecord(fields:)
+                derive_anonymous_record(constraint, fields, lookup, entry_name)
 
               else
                 failed(constraint, entry_name)
@@ -70,6 +71,18 @@ module Jade
             def derive_struct(constraint, struct_sym, type_args, registry, lookup, entry_name)
               fields = struct_fields(struct_sym, type_args, registry)
 
+              [:struct_constructor, struct_sym.qualified_name, fields.size]
+                .then { derive_record(constraint, fields, it, lookup, entry_name) }
+            end
+
+            def derive_anonymous_record(constraint, fields, lookup, entry_name)
+              keys = fields.keys.map(&:to_s)
+
+              [:anon_record_constructor, keys]
+                .then { derive_record(constraint, fields.to_a, it, lookup, entry_name) }
+            end
+
+            def derive_record(constraint, fields, constructor_ref, lookup, entry_name)
               field_deps = fields.map do |_, field_type|
                 Type.constraint(INTERFACE, field_type, nil)
               end
@@ -79,9 +92,6 @@ module Jade
                 impl
               end
 
-              constructor_ref = [:raw,
-                "#{Codegen::Helpers.to_qualified(struct_sym.qualified_name)}.method(:[]).curry(#{fields.size})"
-              ]
               seed = [:call, [:stdlib_fn, 'Decode.succeed'], [constructor_ref]]
 
               body = fields.each_with_index.reduce(seed) do |acc, ((field_name, _), idx)|

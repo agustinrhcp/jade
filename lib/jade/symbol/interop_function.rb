@@ -6,7 +6,7 @@ module Jade
       :params,
       :return_type,
       :interop_module_name,
-      :expected_type
+      :decoders, # { ok: impl_or_pass, err: impl_or_pass } | nil
     ) do
       include Base
 
@@ -14,5 +14,7 @@ module Jade
         ValueRef[module_name, name]
       end
     end
+
+    InteropFunction::PASS = :pass
   end
 end

@@ -88,15 +88,24 @@ module Jade
       end
     end
 
-    Guarded = Data.define(:task, :ok_type, :err_type) do
+    Decoded = Data.define(:task, :ok_decoder, :err_decoder) do
       include Task
 
       def run
         case task.run
         in Jade::Result::Ok[value]
-          Jade::Result::Ok[Jade::Interop::Guard.guard(value, ok_type)]
+          Jade::Result::Ok[decode(ok_decoder, value)]
         in Jade::Result::Err[error]
-          Jade::Result::Err[Jade::Interop::Guard.guard(error, err_type)]
+          Jade::Result::Err[decode(err_decoder, error)]
+        end
+      end
+
+      private
+
+      def decode(decoder, value)
+        case Jade::Decode::Runner.run(decoder, value)
+        in Jade::Result::Ok[v]  then v
+        in Jade::Result::Err[e] then fail Jade::Interop::DecodeError.new(e, value)
         end
       end
     end

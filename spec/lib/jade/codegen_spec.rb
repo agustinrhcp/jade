@@ -315,7 +315,11 @@ module Jade
         JADE
       end
 
-      it { is_expected.to include "Jade::Runtime.task_call(Jade::Date, :today, \"int\", \"never\").call()" }
+      it 'emits a task_call with the resolved decoders' do
+        expect(subject).to include 'Jade::Runtime.task_call(Jade::Date, :today,'
+        expect(subject).to include "Jade::Runtime.intr('Decode.int').call()"
+        expect(subject).to include 'Jade::Decode::Desc::Pass[]'
+      end
     end
 
     describe 'struct declaration' do

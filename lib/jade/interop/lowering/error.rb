@@ -27,15 +27,6 @@ module Jade
         end
       end
 
-      class UnionError < Error
-        def initialize(union_name)
-          @union_name = union_name
-        end
-
-        def message
-          "Union (#{@union_name}) cannot be lowered for interop"
-        end
-      end
     end
   end
 end
