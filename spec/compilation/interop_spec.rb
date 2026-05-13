@@ -88,7 +88,7 @@ module Jade
           .to be_ok(have_attributes(year: 2026, month: 1, day: 31))
       end
 
-      context 'when expecting a type variable' do
+      context 'when expecting a type variable in a return-position-only caller' do
         let(:with_interop_source) do
           <<~JADE
             module WithInterop exposing (today)
@@ -103,9 +103,9 @@ module Jade
           JADE
         end
 
-        it 'fails' do
-          expect { test_compiler.require('with_interop', with_interop_source) }
-            .to raise_error(RuntimeError, /Type param \(a\) cannot be lowered for interop/)
+        it 'compiles but raises NotCallableFromRuby — no value to dispatch on' do
+          test_compiler.require('with_interop', with_interop_source)
+          expect { WithInterop.today.call() }.to raise_error(Jade::Interop::NotCallableFromRuby)
         end
       end
 
@@ -570,6 +570,233 @@ module Jade
       it 'raises when the decoder rejects the value' do
         expect { WithInterop.bogus.call().run }
           .to raise_error(Jade::Interop::DecodeError, /unknown status: weird/)
+      end
+    end
+
+    context 'polymorphic ports' do
+      module TestPolyPort
+        extend Jade::Port
+
+        task(:fetch_patient) { |t| t.ok({ name: 'Alice', age: 31 }) }
+        task(:fetch_bad)     { |t| t.ok({ name: 'Alice' }) }
+        task(:echo)          { |t, x| t.ok(x) }
+      end
+
+      let(:with_interop_source) do
+        <<~JADE
+          module WithInterop exposing (bad, echo_patient, patient)
+
+          struct Patient = {
+            name: String,
+            age: Int
+          }
+
+          uses Jade::TestPolyPort with
+            fetch_patient : Task(a, Never),
+            fetch_bad : Task(a, Never),
+            echo : Patient -> Task(a, a)
+          end
+
+          def patient() -> Task(Patient, Never)
+            fetch_patient()
+          end
+
+          def bad() -> Task(Patient, Never)
+            fetch_bad()
+          end
+
+          def echo_patient(p: Patient) -> Task(Patient, Patient)
+            echo(p)
+          end
+        JADE
+      end
+
+      before { test_compiler.require('with_interop', with_interop_source) }
+
+      it 'decodes a polymorphic port with the caller-side concrete type' do
+        result = WithInterop.patient.call().run
+        expect(result).to be_ok
+        expect(result._1).to look_like(:Patient, name: 'Alice', age: 31)
+      end
+
+      it 'raises DecodeError when the stub data does not match the caller type' do
+        expect { WithInterop.bad.call().run }
+          .to raise_error(Jade::Interop::DecodeError)
+      end
+
+      it 'dedupes the Decodable constraint when the same var appears in both arms' do
+        p = WithInterop::Patient[name: 'Cara', age: 22]
+        result = WithInterop.echo_patient.call(p).run
+        expect(result).to be_ok
+        expect(result._1).to look_like(:Patient, name: 'Cara', age: 22)
+      end
+
+      context 'both arms polymorphic: Task(a, e)' do
+        module TestPolyBothArms
+          extend Jade::Port
+
+          task(:try_fetch_ok)  { |t| t.ok({ name: 'Dan', age: 11 }) }
+          task(:try_fetch_err) { |t| t.err(42) }
+        end
+
+        let(:both_arms_source) do
+          <<~JADE
+            module BothArms exposing (parse_err, parse_ok)
+
+            struct Patient = {
+              name: String,
+              age: Int
+            }
+
+            uses Jade::TestPolyBothArms with
+              try_fetch_ok : Task(a, e),
+              try_fetch_err : Task(a, e)
+            end
+
+            def parse_ok() -> Task(Patient, Int)
+              try_fetch_ok()
+            end
+
+            def parse_err() -> Task(Patient, Int)
+              try_fetch_err()
+            end
+          JADE
+        end
+
+        before { test_compiler.require('both_arms', both_arms_source) }
+
+        it 'decodes the ok arm into the caller-side ok type' do
+          result = BothArms.parse_ok.call().run
+          expect(result).to be_ok
+          expect(result._1).to look_like('BothArms::Patient', name: 'Dan', age: 11)
+        end
+
+        it 'decodes the err arm into the caller-side err type' do
+          result = BothArms.parse_err.call().run
+          expect(result).to be_err(42)
+        end
+      end
+
+      context 'nested-var arm (tier-2): Maybe(a)' do
+        module TestPolyMaybe
+          extend Jade::Port
+
+          task(:fetch_some) { |t| t.ok({ name: 'Alice', age: 31 }) }
+          task(:fetch_none) { |t| t.ok(nil) }
+        end
+
+        let(:maybe_source) do
+          <<~JADE
+            module MaybeNested exposing (none, some)
+
+            struct Patient = {
+              name: String,
+              age: Int
+            }
+
+            uses Jade::TestPolyMaybe with
+              fetch_some : Task(Maybe(a), Never),
+              fetch_none : Task(Maybe(a), Never)
+            end
+
+            def some() -> Task(Maybe(Patient), Never)
+              fetch_some()
+            end
+
+            def none() -> Task(Maybe(Patient), Never)
+              fetch_none()
+            end
+          JADE
+        end
+
+        before { test_compiler.require('maybe_nested', maybe_source) }
+
+        it 'composes Decode.nullable around the caller-side decoder' do
+          result = MaybeNested.some.call().run
+          expect(result).to be_ok
+          expect(result._1).to look_like(:Just, look_like('MaybeNested::Patient', name: 'Alice', age: 31))
+        end
+
+        it 'decodes nil as Nothing' do
+          result = MaybeNested.none.call().run
+          expect(result).to be_ok
+          expect(result._1).to look_like(:Nothing)
+        end
+      end
+
+      context 'doubly nested arm (tier-2): List(Maybe(a))' do
+        module TestPolyListMaybe
+          extend Jade::Port
+
+          task(:fetch_list_maybe) { |t| t.ok([{ name: 'A', age: 1 }, nil, { name: 'C', age: 3 }]) }
+        end
+
+        let(:doubly_source) do
+          <<~JADE
+            module DoublyNested exposing (fetch)
+
+            struct Patient = {
+              name: String,
+              age: Int
+            }
+
+            uses Jade::TestPolyListMaybe with
+              fetch_list_maybe : Task(List(Maybe(a)), Never)
+            end
+
+            def fetch() -> Task(List(Maybe(Patient)), Never)
+              fetch_list_maybe()
+            end
+          JADE
+        end
+
+        it 'composes Decode.list and Decode.nullable around the caller-side decoder' do
+          test_compiler.require('doubly_nested', doubly_source)
+          result = DoublyNested.fetch.call().run
+          expect(result).to be_ok
+          expect(result._1.length).to eql 3
+          expect(result._1[0]).to look_like(:Just, look_like('DoublyNested::Patient', name: 'A', age: 1))
+          expect(result._1[1]).to look_like(:Nothing)
+          expect(result._1[2]).to look_like(:Just, look_like('DoublyNested::Patient', name: 'C', age: 3))
+        end
+      end
+
+      context 'nested-var arm (tier-2): List(a)' do
+        module TestPolyList
+          extend Jade::Port
+
+          task(:fetch_list) do |t|
+            t.ok([{ name: 'Alice', age: 31 }, { name: 'Bob', age: 42 }])
+          end
+        end
+
+        let(:nested_source) do
+          <<~JADE
+            module Nested exposing (fetch)
+
+            struct Patient = {
+              name: String,
+              age: Int
+            }
+
+            uses Jade::TestPolyList with
+              fetch_list : Task(List(a), Never)
+            end
+
+            def fetch() -> Task(List(Patient), Never)
+              fetch_list()
+            end
+          JADE
+        end
+
+        it 'composes Decode.list around the caller-side decoder' do
+          test_compiler.require('nested', nested_source)
+          result = Nested.fetch.call().run
+          expect(result).to be_ok
+          expect(result._1.length).to eql 2
+          expect(result._1[0]).to look_like('Nested::Patient', name: 'Alice', age: 31)
+          expect(result._1[1]).to look_like('Nested::Patient', name: 'Bob', age: 42)
+        end
       end
     end
 

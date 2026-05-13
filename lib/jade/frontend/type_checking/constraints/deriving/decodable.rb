@@ -109,8 +109,16 @@ module Jade
               Ok[implementation(constraint, body, resolved_deps)]
             end
 
+            # Free-var inner constraints fall back to the constraint marker
+            # itself — codegen later resolves it from the caller's dict env.
+            # Without this, `Decodable(List(a))` with `a` free would bail
+            # with UnresolvedConstraint.
             def resolve_dep(dep, lookup, entry_name)
-              lookup.call(dep)
+              lookup
+                .call(dep)
+                .on_err(Error::UnresolvedConstraint) {
+                  dep.type.is_a?(Type::Var) ? Ok[dep] : Err[it]
+                }
             end
 
             def implementation(constraint, body, deps)

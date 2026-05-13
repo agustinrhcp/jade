@@ -57,8 +57,41 @@ module Jade
               symbol.params,
               symbol.return_type,
               interop_mod_name.name,
+              constraints: implicit_decodable_constraints(symbol.return_type),
             )
             .then { [it, lifted_errors] }
+        end
+
+        # Free type variables anywhere under the return TypeApplication's
+        # arms get an implicit Decodable constraint. Ports resolve these
+        # to dict markers (bare arms) or partial impls (nested arms) in
+        # port_resolution.rb. Non-port shapes yield [].
+        def implicit_decodable_constraints(return_type)
+          case return_type
+          in Symbol::TypeApplication(args:)
+            args
+              .flat_map { collect_var_names(it) }
+              .uniq
+              .map { ['Decode.Decodable', it] }
+          else
+            []
+          end
+        end
+
+        def collect_var_names(type_sym)
+          case type_sym
+          in Symbol::Variable(name:)
+            [name]
+
+          in Symbol::TypeApplication(args:)
+            args.flat_map { collect_var_names(it) }
+
+          in Symbol::RecordType(fields:)
+            fields.values.flat_map { collect_var_names(it) }
+
+          else
+            []
+          end
         end
       end
     end

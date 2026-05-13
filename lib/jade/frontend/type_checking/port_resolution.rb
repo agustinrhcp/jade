@@ -46,8 +46,15 @@ module Jade
         def resolve_port(interop_fn, entry, registry)
           interop_fn.return_type => Symbol::TypeApplication(args: [ok_sym, err_sym])
 
-          ok, ok_errors = resolve_arm(ok_sym, interop_fn, :ok, entry, registry)
-          err, err_errors = resolve_arm(err_sym, interop_fn, :err, entry, registry)
+          # Single Type.from_symbol on the whole return so a var that appears
+          # in both arms gets the same Type::Var id. PortDecoder relies on
+          # those ids to build the call-site synthetic dict_env.
+          Type
+            .from_symbol(interop_fn.return_type, registry, VarGen.new)
+            .first => Type::Application(args: [ok_type, err_type])
+
+          ok, ok_errors = resolve_arm(ok_sym, ok_type, interop_fn, :ok, entry, registry)
+          err, err_errors = resolve_arm(err_sym, err_type, interop_fn, :err, entry, registry)
 
           [
             interop_fn.with(decoders: { ok:, err: }),
@@ -55,17 +62,30 @@ module Jade
           ]
         end
 
-        def resolve_arm(type_sym, interop_fn, arm, entry, registry)
+        def resolve_arm(type_sym, type, interop_fn, arm, entry, registry)
           return [Symbol::InteropFunction::PASS, []] if pass_through?(type_sym)
 
-          type = Type
-            .from_symbol(type_sym, registry, VarGen.new)
-            .first
+          case type
+          in Type::Var(name:)
+            constraint_index_for(interop_fn, name)
+              .then { [Symbol::InteropFunction::Dict.new(constraint_index: it), []] }
 
-          Type
-            .constraint('Decode.Decodable', type, nil)
-            .then { Constraints.resolve(it, registry, entry.name) }
-            .then { decoder_result(it, interop_fn, arm, entry, type) }
+          else
+            # Concrete OR compound-with-free-var. Resolve succeeds with a
+            # partial Implementation (marker deps for free vars) thanks to
+            # the deriver fallback in decodable.rb.
+            Type
+              .constraint('Decode.Decodable', type, nil)
+              .then { Constraints.resolve(it, registry, entry.name) }
+              .then { decoder_result(it, interop_fn, arm, entry, type) }
+          end
+        end
+
+        def constraint_index_for(interop_fn, var_name)
+          interop_fn
+            .constraints
+            .index { |_iface, name| name == var_name }
+            .tap { fail "no Decodable constraint for #{var_name.inspect}" if it.nil? }
         end
 
         def decoder_result(constraint_result, interop_fn, arm, entry, type)
@@ -75,7 +95,7 @@ module Jade
 
           in Err
             Error::PortNotDecodable
-              .new(entry, nil, port_name: interop_fn.name, arm:, type:)
+              .new(entry, nil, port_name: interop_fn.name, arm:, type:, reason: :no_impl)
               .then { [nil, [it]] }
           end
         end

@@ -9,7 +9,7 @@ module Jade
         def resolve(constraint, registry, entry_name)
           if constraint.type in Type::Var
             Error::UnresolvedConstraint
-              .new(entry_name, constraint.origin.range, constraint:)
+              .new(entry_name, constraint.origin&.range, constraint:)
               .then { return Err[it] }
           end
 
@@ -46,18 +46,27 @@ module Jade
         # An origin's dictionaries can be touched by multiple inference frames:
         # the call's own callee constraints attach here, and outer frames
         # may also attach when args bubble up concretely. Dedup so a concrete
-        # impl supersedes a prior var-typed marker for the same interface.
+        # impl supersedes a prior var-typed marker for the same interface,
+        # but leave other concrete impls alone — distinct constraint slots
+        # (e.g. Task(a, e) with two Decodable constraints) need their own
+        # entries.
         def attach_dictionary(constraint, impl)
           constraint => Type::Constraint(
             interface: iface,
             origin: { dictionaries: dicts },
           )
 
-          if impl.is_a?(Symbol::Implementation)
-            dicts.reject! { same_iface?(it, iface) }
-            dicts << impl
-          elsif dicts.none? { same_iface?(it, iface) && marker_matches?(it, impl) }
-            dicts << impl
+          case impl
+          in Symbol::Implementation
+            dicts
+              .reject { it.is_a?(Type::Constraint) && same_iface?(it, iface) }
+              .then { dicts.replace(it + [impl]) }
+
+          in Type::Constraint if dicts.none? { same_iface?(it, iface) && marker_matches?(it, impl) }
+            dicts.replace(dicts + [impl])
+
+          else
+            # marker for same (iface, var) already present — no-op
           end
         end
 
@@ -89,7 +98,6 @@ module Jade
         def solve_at_call_site(constraint, registry, entry_name)
           resolve(constraint, registry, entry_name)
             .map { |impl| attach_dictionary(constraint, impl); [] }
-            .on_err(Error::UnresolvedConstraint) { Ok[[]] }
             .on_err(Error::MissingImplementation) { Ok[[it]] }
             .on_err(Error::DerivationFailed) { Ok[[it]] }
             .with_default([])
