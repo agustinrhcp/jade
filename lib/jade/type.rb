@@ -137,7 +137,7 @@ module Jade
 
         [Type.function(args, ret_type), ret_cs + arg_cs + extra_cs, var_map]
 
-      in Symbol::FunctionType | Symbol::InteropFunction
+      in Symbol::FunctionType
         # Same as function and stdlib but without keyed params.
         # Use var_map (not {}) so inline function type vars share the outer scope's bindings.
         args, arg_cs, local_map = symbol
@@ -149,6 +149,24 @@ module Jade
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
           .then { |(t, c, updated_map)| [Type.function(args, t), c, updated_map] }
+
+      in Symbol::InteropFunction
+        # Like FunctionType, plus implicit Decodable constraints on var arms
+        # (see Symbol::InteropFunction#constraints).
+        args, arg_cs, args_map = symbol
+          .params
+          .reduce([[], [], var_map]) do |(types, cs, local_map), sym|
+            from_symbol_r(sym, registry, var_gen, local_map)
+              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
+          end
+
+        ret_type, ret_cs, full_map = from_symbol_r(symbol.return_type, registry, var_gen, args_map)
+
+        extra_cs = symbol.constraints.map { |iface, var_name|
+          Type.constraint(iface, full_map.fetch(var_name), nil)
+        }
+
+        [Type.function(args, ret_type), ret_cs + arg_cs + extra_cs, full_map]
 
       in Symbol::InterfaceFunction
         # Same as function and stdlib but without keyed params.

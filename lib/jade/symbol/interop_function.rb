@@ -6,7 +6,8 @@ module Jade
       :params,
       :return_type,
       :interop_module_name,
-      :decoders, # { ok: impl_or_pass, err: impl_or_pass } | nil
+      :constraints, # [[iface_qname, var_name]] — implicit Decodable on var arms
+      :decoders, # { ok: impl_or_pass_or_dict, err: ... } | nil
     ) do
       include Base
 
@@ -16,5 +17,6 @@ module Jade
     end
 
     InteropFunction::PASS = :pass
+    InteropFunction::Dict = Data.define(:constraint_index)
   end
 end

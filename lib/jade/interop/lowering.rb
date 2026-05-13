@@ -5,14 +5,15 @@ module Jade
     module Lowering
       extend self
 
-      # Walks a port's return type and returns the kinds of types that can
-      # never have a Decodable instance: bare type variables and function
-      # types. Everything else is permitted at this phase; the real
-      # decodability check happens at codegen via Constraints.resolve.
+      # Walks a port's return type and returns the kinds of types that
+      # can never have a Decodable instance: function types. Bare type
+      # variables are permitted at top-level arms (PortResolution turns
+      # them into late-bound Dict markers) and rejected at nested
+      # positions (PortResolution's compound-var check fires).
       def validate(symbol, registry, entry)
         case symbol
-        in Symbol::Variable(name:)
-          [TypeParamError.new(name)]
+        in Symbol::Variable
+          []
 
         in Symbol::Function(name:)
           [FunctionError.new(name)]

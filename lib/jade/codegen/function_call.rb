@@ -16,19 +16,50 @@ module Jade
           .then { "#{generate_callee(callee, args, registry, dictionaries)}.call(#{it})" }
       end
 
-      # Turns a Symbol::Implementation into a `{fn_name => ruby_code}` hash by
-      # walking its deps + functions. Public because PortDecoder needs it to
+      # Walks an Implementation tree to emit per-function ruby code as a
+      # `{fn_name => ruby_code}` hash. Public because PortDecoder needs it to
       # emit a port's pre-resolved decoder; otherwise an internal helper.
       def generate_impl_dispatch(impl, registry)
-        dep_dispatches = impl
-          .deps
-          .map { |dep| generate_impl_dispatch(dep, registry) }
-
         impl
-          .functions
-          .transform_values do |fn|
-            generate_impl_fn(fn, dep_dispatches, impl.functions, registry)
+          .deps
+          .map { |dep| dispatch_for_dep(dep, registry) }
+          .then do |dep_dispatches|
+            impl.functions.transform_values do |fn|
+              generate_impl_fn(fn, dep_dispatches, impl.functions, registry)
+            end
           end
+      end
+
+      # An Implementation's dep is one of two dictionary-slot shapes: a
+      # concrete Implementation (recurse to a `{fn_name => ruby_code}` hash)
+      # or a Type::Constraint(Var) marker for a free-var dep that's late-bound
+      # from the caller's dict env (emit the raw dict reference as a String —
+      # build_impl_arg threads it into the impl_arg slot without re-wrapping).
+      def dispatch_for_dep(dep, registry)
+        case dep
+        in Symbol::Implementation
+          generate_impl_dispatch(dep, registry)
+
+        in Type::Constraint(type: Type::Var)
+          dispatch_value(dep, registry)
+        end
+      end
+
+      # Resolves a dictionary entry (Symbol::Implementation or Type::Constraint)
+      # to a Ruby expression evaluating to a dict hash. Public because
+      # PortDecoder uses it to emit per-call decoder lookups for polymorphic
+      # ports.
+      def dispatch_value(entry, registry)
+        case entry
+        in Type::Constraint(interface:, type: Type::Var)
+          Codegen.dict_env[[interface, canonical_var_id(entry.type)]]
+
+        in Symbol::Implementation
+          generate_impl_dispatch(entry, registry)
+            .map { |k, v| "#{k.inspect} => #{v}" }
+            .join(', ')
+            .then { "{ #{it} }" }
+        end
       end
 
       private
@@ -83,7 +114,7 @@ module Jade
         in Symbol::InteropFunction
           registry
             .lookup(callee.symbol.to_ref)
-            .then { PortDecoder.task_call(it, registry) }
+            .then { PortDecoder.task_call(it, registry, dictionaries) }
 
         in Symbol::StdlibFunction => symbol if symbol.constraints.any?
           dictionaries
@@ -147,21 +178,6 @@ module Jade
           .each_with_index
           .filter_map { |c, i| dispatch_value(dictionaries[i], registry) if c.type.is_a?(Type::Var) }
           .join(', ')
-      end
-
-      # Resolves a dictionary entry (Symbol::Implementation or Type::Constraint)
-      # to a Ruby expression evaluating to a dict hash.
-      def dispatch_value(entry, registry)
-        case entry
-        in Type::Constraint(interface:, type: Type::Var)
-          Codegen.dict_env[[interface, canonical_var_id(entry.type)]]
-
-        in Symbol::Implementation
-          generate_impl_dispatch(entry, registry)
-            .map { |k, v| "#{k.inspect} => #{v}" }
-            .join(', ')
-            .then { "{ #{it} }" }
-        end
       end
 
       # Returns a codegen-time hash of fn_name => ruby_code for the entry.
@@ -240,8 +256,15 @@ module Jade
 
       def build_impl_arg(dep_dispatches)
         entries = dep_dispatches.map { |dispatch|
-          fns = dispatch.map { |fn_name, code| "#{fn_name.inspect} => #{code}" }.join(', ')
-          "{ #{fns} }"
+          case dispatch
+          in String
+            dispatch
+          in Hash
+            dispatch
+              .map { |fn_name, code| "#{fn_name.inspect} => #{code}" }
+              .join(', ')
+              .then { "{ #{it} }" }
+          end
         }
         "[#{entries.join(', ')}]"
       end

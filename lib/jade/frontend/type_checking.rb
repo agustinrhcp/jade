@@ -40,6 +40,7 @@ module Jade
             b_entry_name == entry_name
           end
           .reject { |k, _| interface_function?(k, registry) }
+          .reject { |k, _| interop_function?(k, registry) }
           .values
           .flat_map(&:constraints)
           .flat_map { Constraints.solve_at_finalize(it, registry, entry_name) }
@@ -61,6 +62,16 @@ module Jade
           .value_ref(module_parts.join('.'), name)
           .then { registry.lookup(it) }
           .is_a?(Symbol::InterfaceFunction)
+      end
+
+      # Polymorphic-port constraints represent caller requirements
+      # (resolved at each call site), not body obligations to verify here.
+      def interop_function?(qname, registry)
+        *module_parts, name = qname.split('.')
+        Symbol
+          .value_ref(module_parts.join('.'), name)
+          .then { registry.lookup(it) }
+          .is_a?(Symbol::InteropFunction)
       end
 
       def check_repl(node, registry, env = Env.new)
