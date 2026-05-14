@@ -169,13 +169,19 @@ module Jade
       end
 
       # Returns a codegen-time hash of fn_name => ruby_code for the entry.
-      # For Implementation, inlines functions. For a Var Constraint marker, we
-      # can't enumerate fn names at compile time, so callers must use
-      # dispatch_lookup instead.
+      # For Implementation, inlines functions. For a Var Constraint marker we
+      # don't know the fn names at compile time — return {}; callers that
+      # actually consume the dispatch must use dispatch_lookup instead. The
+      # empty hash is correct for Ruby-block intrinsics that declare a
+      # constraint for type-system honesty but never inspect the impl
+      # (Dict's `Eq k`, etc.).
       def dispatch_dict(entry, registry)
         case entry
         in Symbol::Implementation
           generate_impl_dispatch(entry, registry)
+
+        in Type::Constraint
+          {}
         end
       end
 
@@ -221,6 +227,13 @@ module Jade
 
         in Symbol::StdlibFunction
           fn.codegen
+
+        # Ruby-block intrinsic that declares a constraint for type-system
+        # honesty but doesn't consume the dict at runtime (Dict ops use Ruby
+        # `==`, etc.). The dispatches are dropped — the block sees only the
+        # data args, same as the no-constraint path.
+        in String
+          fn
 
         in Symbol::StdlibImplementation
           sibling_dispatch = sibling_fns

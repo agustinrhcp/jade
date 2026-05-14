@@ -70,6 +70,19 @@ module Jade
 
         'Tuple.first'       => ->(t)           { "#{t}._1" },
         'Tuple.second'      => ->(t)           { "#{t}._2" },
+
+        'Dict.empty'      => ->()           { "Jade::Dict::Dict[{}]" },
+        'Dict.singleton'  => ->(k, v)       { "Jade::Dict::Dict[{ #{k} => #{v} }]" },
+        'Dict.is_empty'   => ->(d)          { "#{d}.hash.empty?" },
+        'Dict.size'       => ->(d)          { "#{d}.hash.size" },
+        'Dict.member'     => ->(d, k)       { "#{d}.hash.key?(#{k})" },
+        'Dict.insert'     => ->(d, k, v)    { "Jade::Dict::Dict[#{d}.hash.merge(#{k} => #{v})]" },
+        'Dict.keys'       => ->(d)          { "#{d}.hash.keys" },
+        'Dict.values'     => ->(d)          { "#{d}.hash.values" },
+        'Dict.to_list'    => ->(d)          { "#{d}.hash.map { |k, v| Jade::Tuple::Tuple2[k, v] }" },
+        'Dict.from_list'  => ->(pairs)      { "Jade::Dict::Dict[#{pairs}.each_with_object({}) { |p, h| h[p._1] = p._2 }]" },
+        'Dict.union'      => ->(l, r)       { "Jade::Dict::Dict[#{r}.hash.merge(#{l}.hash)]" },
+        'Dict.dict_eq'    => ->(a, b)       { "(#{a}.hash == #{b}.hash)" },
       }.freeze
 
       # Native block form is 2-3× faster than `&lambda` — Ruby skips
@@ -136,6 +149,13 @@ module Jade
         Task.run
         Task.sequence
         Task.succeed
+        Dict.get
+        Dict.remove
+        Dict.update
+        Dict.map
+        Dict.filter
+        Dict.fold
+        Dict.merge
       ].to_set.freeze
 
       def for(qualified_name)

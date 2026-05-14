@@ -244,7 +244,7 @@ module Jade
         type(:lparen) >>
           comma_sequence(record_field) >>
           type(:rparen)
-      ).map { |(lparen, fields, rparen)| KeyedCallPostfix[lparen, fields.items, rparen] }
+      ).map { |(lparen, fields, rparen)| KeyedCallPostfix[lparen, fields, rparen] }
     }
 
     parser(:function_call_arg) { placeholder | lazy { expression } }

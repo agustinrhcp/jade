@@ -21,8 +21,8 @@ module Jade
 
           def patient_params() -> Params(Field)
             Decode.Params.empty
-            |> Decode.Params.string("name", Name)
-            |> Decode.Params.int("age", Age)
+              |> Decode.Params.string("name", Name)
+              |> Decode.Params.int("age", Age)
           end
 
           def parse_fields(json: String) -> Result(List(Field), DecodeError)
@@ -67,10 +67,10 @@ module Jade
 
           def patient_params() -> Params(Field)
             Decode.Params.empty
-            |> Decode.Params.string("name", Name)
-            |> Decode.Params.int("age", Age)
-            |> Decode.Params.default("name", Name("anon"))
-            |> Decode.Params.default("age", Age(0))
+              |> Decode.Params.string("name", Name)
+              |> Decode.Params.int("age", Age)
+              |> Decode.Params.default("name", Name("anon"))
+              |> Decode.Params.default("age", Age(0))
           end
 
           def parse_fields(json: String) -> Result(List(Field), DecodeError)
@@ -151,14 +151,14 @@ module Jade
 
           def address_params() -> Params(AddressField)
             Decode.Params.empty
-            |> Decode.Params.string("line1", Line1)
-            |> Decode.Params.string("line2", Line2)
+              |> Decode.Params.string("line1", Line1)
+              |> Decode.Params.string("line2", Line2)
           end
 
           def patient_params() -> Params(Field)
             Decode.Params.empty
-            |> Decode.Params.string("name", Name)
-            |> Decode.Params.nested("address", Address, address_params)
+              |> Decode.Params.string("name", Name)
+              |> Decode.Params.nested("address", Address, address_params)
           end
 
           def parse(json: String) -> Result(List(Field), DecodeError)

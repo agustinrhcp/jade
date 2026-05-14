@@ -51,18 +51,18 @@ module Jade
 
           def column(table_name_or_alias: String, column_name: String, type_: a) -> Expr(a)
             sql = [table_name_or_alias, column_name]
-            |> List.filter((part) -> { part
-            |> String.is_empty
-            |> Basics.not })
-            |> String.join(".")
+              |> List.filter((part) -> { part
+              |> String.is_empty
+              |> Basics.not })
+              |> String.join(".")
 
             Expr(sql, type_)
           end
 
           def from(table_: Table(a), select_fn: a -> QueryOptions) -> Query
             Query(From(table_.alias_), table_.alias_
-            |> table_.columns
-            |> select_fn)
+              |> table_.columns
+              |> select_fn)
           end
         JADE
       end

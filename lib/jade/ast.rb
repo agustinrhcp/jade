@@ -319,10 +319,11 @@ module Jade
     end
 
     def keyed_call
-      ->(callee, lparen, fields, rparen) do
+      ->(callee, lparen, fields_list, rparen) do
         KeyedCall.new(
           callee:,
-          fields:,
+          fields: fields_list.items,
+          trailing_comma: fields_list.trailing_comma,
           range: lparen.range.begin..rparen.range.end,
         )
       end

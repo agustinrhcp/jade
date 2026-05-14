@@ -10,7 +10,7 @@ module Jade
     describe 'construction with kwargs' do
       let(:source) do
         <<~JADE
-          module M exposing(make)
+          module M exposing (make)
 
           type Stuff
             = V1(Int)
@@ -113,9 +113,11 @@ module Jade
     describe 'single-field keyed variant' do
       let(:source) do
         <<~JADE
-          module M exposing(make_credit, get_id)
+          module M exposing (get_id, make_credit)
 
-          type Source = CreditSource(credit_id: Int) | ReceiptSource(receipt_id: Int)
+          type Source
+            = CreditSource(credit_id: Int)
+            | ReceiptSource(receipt_id: Int)
 
           def make_credit(id: Int) -> Source
             CreditSource(credit_id: id)
@@ -152,7 +154,7 @@ module Jade
     describe 'variant equality' do
       let(:source) do
         <<~JADE
-          module M exposing(make)
+          module M exposing (make)
 
           type Stuff = V(paid_amount: Int, tax_amount: Int)
 
@@ -178,7 +180,7 @@ module Jade
       context 'when a kwarg field is missing' do
         let(:source) do
           <<~JADE
-            module M exposing(make)
+            module M exposing (make)
 
             type Stuff = V(paid_amount: Int, tax_amount: Int)
 
@@ -197,7 +199,7 @@ module Jade
       context 'when a kwarg field has the wrong type' do
         let(:source) do
           <<~JADE
-            module M exposing(make)
+            module M exposing (make)
 
             type Stuff = V(paid_amount: Int, tax_amount: Int)
 

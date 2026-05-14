@@ -10,6 +10,7 @@ require 'jade/stdlib/task'
 require 'jade/stdlib/decode'
 require 'jade/stdlib/decode/params'
 require 'jade/stdlib/encode'
+require 'jade/stdlib/dict'
 require 'jade/stdlib/calendar'
 require 'jade/stdlib/clock'
 
@@ -17,19 +18,26 @@ module Jade
   module Stdlib
     extend self
 
-    INTRINSICS = %w[Basics String List Tuple Char Task Decode Encode].freeze
+    INTRINSICS = %w[
+      Basics String List Tuple Char Task
+      Decode Encode
+      Dict
+    ].freeze
     COMPILED = %w[Maybe Result Decode.Params Calendar Clock].freeze
-    TOPLEVELS = (INTRINSICS + COMPILED.map { it.split('.', 2).first }).to_set.freeze
+    TOPLEVELS = (INTRINSICS + COMPILED).map { it.split('.', 2).first }.to_set.freeze
     STDLIBS = [
       Stdlib::Basics, Stdlib::Maybe, Stdlib::List, Stdlib::Char,
       Stdlib::Tuple, Stdlib::String, Stdlib::Result, Stdlib::Task,
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
+      Stdlib::Dict,
       Stdlib::Calendar, Stdlib::Clock,
     ]
     # Loaded into the registry but not auto-imported into user modules.
-    # Users must `import Decode` / `import Decode.Params` / `import Encode` / `import Calendar` / `import Clock` explicitly.
+    # Users must `import Decode` / `import Decode.Params` / `import Encode` /
+    # `import Dict` / `import Calendar` / `import Clock` explicitly.
     EXTENSIONS = [
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
+      Stdlib::Dict,
       Stdlib::Calendar, Stdlib::Clock,
     ]
 

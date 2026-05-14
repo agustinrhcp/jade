@@ -23,6 +23,10 @@ module Jade
         in AST::TypeApplication(constructor: AST::TypeVar(type: name), args:)
           Symbol.partial_application(Symbol.var(name, nil), args.map(&method(:to_symbol)), nil)
 
+        in AST::TypeApplication(constructor: AST::QualifiedTypeName(path:), args:)
+          *mod_parts, type_name = path
+          Symbol.type_application(Symbol.type_ref(mod_parts.join('.'), type_name), args.map(&method(:to_symbol)), nil)
+
         in AST::TypeApplication(constructor:, args:)
           Symbol.type_application(Symbol.type_ref(*qualify(constructor.type)), args.map(&method(:to_symbol)), nil)
 
@@ -57,6 +61,9 @@ module Jade
 
         in 'Params'
           'Decode.Params'
+
+        in 'Dict'
+          'Dict'
 
         end
           .then { [it, type] }
