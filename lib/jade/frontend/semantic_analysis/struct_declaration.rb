@@ -9,7 +9,7 @@ module Jade
           node => AST::StructDeclaration(symbol:)
 
           unbound_var_errors = validate_no_unbound_vars(symbol, registry, entry)
-          annotation_errors = validate_type_symbol(symbol, registry)
+          annotation_errors = validate_type_symbol(symbol, registry, entry)
 
           Result[scope, unbound_var_errors + annotation_errors]
         end

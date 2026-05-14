@@ -13,7 +13,7 @@ module Jade
           (
             interface
               .functions
-              .flat_map { validate_type_symbol(it, registry) } +
+              .flat_map { validate_type_symbol(it, registry, entry) } +
                 validate_type_param_used(interface, registry, entry)
           )
             .then { Result[scope, it] }

@@ -11,6 +11,10 @@ module Jade
           def message
             "Port `#{@fn_name}` must return a Task type, e.g. `#{@fn_name}: Task(Ok, Err)`"
           end
+
+          def label
+            "must return a Task"
+          end
         end
       end
     end

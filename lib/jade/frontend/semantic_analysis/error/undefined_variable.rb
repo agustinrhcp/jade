@@ -11,6 +11,10 @@ module Jade
           def message
             "Undefined variable #{@var_ref}"
           end
+
+          def label
+            "undefined"
+          end
         end
       end
     end

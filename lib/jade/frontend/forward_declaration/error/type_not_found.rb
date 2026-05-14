@@ -11,6 +11,10 @@ module Jade
           def message
             "Type `#{@name}` is not defined"
           end
+
+          def label
+            "not found"
+          end
         end
       end
     end

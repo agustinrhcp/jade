@@ -9,14 +9,26 @@ module Jade
 
     let(:source) do
       <<~JADE
-        module Decoding exposing(run_string, run_int, run_field, run_missing,
-                                 run_nullable_present, run_nullable_nil,
-                                 run_optional_absent, run_optional_present,
-                                 run_wrong_type, run_list, run_map2)
+        module Decoding exposing (
+          run_field,
+          run_int,
+          run_list,
+          run_map2,
+          run_missing,
+          run_nullable_nil,
+          run_nullable_present,
+          run_optional_absent,
+          run_optional_present,
+          run_string,
+          run_wrong_type,
+        )
 
-        import Decode exposing(DecodeError)
+        import Decode exposing (DecodeError)
 
-        struct Point = { x: Int, y: Int }
+        struct Point = {
+          x: Int,
+          y: Int
+        }
 
         def run_string(json: String) -> Result(String, DecodeError)
           Decode.decode_string(Decode.string, json)
@@ -62,6 +74,7 @@ module Jade
           decoder = Decode.succeed(Point(_, _))
             |> Decode.required("x", Decode.int)
             |> Decode.required("y", Decode.int)
+
           Decode.decode_string(decoder, json)
         end
       JADE
@@ -208,11 +221,15 @@ module Jade
     context 'pipeline API (succeed / and_map / required / optional)' do
       let(:source) do
         <<~JADE
-          module Pipeline exposing(person_from_json, person_with_default_from_json)
+          module Pipeline exposing (person_from_json, person_with_default_from_json)
 
-          import Decode exposing(Decoder, DecodeError)
+          import Decode exposing (DecodeError, Decoder)
 
-          struct Person = { name: String, age: Int, nickname: String }
+          struct Person = {
+            name: String,
+            age: Int,
+            nickname: String
+          }
 
           def person_decoder() -> Decoder(Person)
             Decode.succeed(Person(_, _, _))
@@ -348,11 +365,13 @@ module Jade
     context 'patch body: absent fields decoded into a list of variants' do
       let(:source) do
         <<~JADE
-          module Patch exposing(parse_updates)
+          module Patch exposing (parse_updates)
 
-          import Decode exposing(Value, DecodeError)
+          import Decode exposing (DecodeError, Value)
 
-          type Update = SetName(String) | SetAge(Int)
+          type Update
+            = SetName(String)
+            | SetAge(Int)
 
           def name_update(s: String) -> Update
             SetName(s)
@@ -381,6 +400,7 @@ module Jade
             decoder = Decode.succeed(make_pair(_, _))
               |> Decode.and_map(Decode.optional_field("name", Decode.map(name_update, Decode.string)))
               |> Decode.and_map(Decode.optional_field("age", Decode.map(age_update, Decode.int)))
+
             Decode.decode(decoder, value)
           end
         JADE

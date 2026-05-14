@@ -15,6 +15,10 @@ module Jade
               .join("\n")
             "Pattern match is not exhaustive. Missing cases:\n#{patterns_str}"
           end
+
+          def label
+            "non-exhaustive pattern match"
+          end
         end
       end
     end

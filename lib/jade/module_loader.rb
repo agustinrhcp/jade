@@ -9,6 +9,8 @@ require 'jade/codegen'
 require 'jade/module_loader/dependency_resolver'
 require 'jade/module_loader/dependency_graph'
 require 'jade/module_loader/topological_sort'
+require 'jade/diagnostics'
+require 'jade/diagnostics/renderer'
 
 require 'jade/stdlib'
 
@@ -56,8 +58,12 @@ module Jade
             .map { Codegen.generate_entry(it, acc.update_module(it)) }
             .map { acc.update_module(it) }
             .on_err do
-              errors = Array(it).map(&:message).join(', ')
-              fail("Compilation error: #{errors}")
+              it
+                .reduce(Diagnostics::List.empty) { _1.add(_2.to_diagnostic(acc)) }
+                .then do |diagnostics|
+                  $stderr.puts Diagnostics::Renderer.new.render_all(diagnostics)
+                  raise CompilationError, diagnostics.items.map(&:message).join(", ")
+                end
             end => Ok(new)
 
           new
@@ -67,7 +73,15 @@ module Jade
     def load_(source, registry, entry: false)
       Lexer.tokenize(source)
         .then { Parsing.parse(it, entry: source.uri) }
-        .on_err { |err| raise "Parse error: #{err.message}" } => Ok([ast, comments])
+        .on_err do |err|
+          Diagnostics::List
+            .empty
+            .error(err.message, source:, span: err.span, label: err.label)
+            .then { err.notes.reduce(it) { |d, ann| d.public_send(ann.kind, ann.message) } }
+            .then { $stderr.puts Diagnostics::Renderer.new.render_all(it) }
+
+          raise CompilationError, err.message
+        end => Ok([ast, comments])
 
       ast = Frontend::CommentAttacher.attach(ast, comments, source)
 

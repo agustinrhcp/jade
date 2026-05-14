@@ -12,6 +12,10 @@ module Jade
           def message
             "#{@module_name} does not a expose `#{@name}`"
           end
+
+          def label
+            "not exposed by #{@module_name}"
+          end
         end
       end
     end

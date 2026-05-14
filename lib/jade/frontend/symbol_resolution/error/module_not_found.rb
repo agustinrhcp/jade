@@ -11,6 +11,10 @@ module Jade
           def message
             "I cannot find a `#{@name}` module"
           end
+
+          def label
+            "not found"
+          end
         end
       end
     end

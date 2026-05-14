@@ -8,6 +8,7 @@ module Jade
     include_context 'with test compiler'
 
     def shape_source(module_name, body)
+      indented_body = body.lines.map.with_index { |l, i| i.zero? ? l : "  #{l}" }.join
       <<~JADE
         module #{module_name} exposing (wrapped)
 
@@ -24,7 +25,7 @@ module Jade
         end
 
         def wrapped(value: a) -> String
-          #{body}
+          #{indented_body}
         end
       JADE
     end
@@ -36,7 +37,12 @@ module Jade
     end
 
     it 'propagates through a list literal' do
-      out = compiled_for('PropList', '[encode(value)] |> List.length |> (n) -> { "x" }')
+      body = <<~JADE.strip
+        [encode(value)]
+          |> List.length
+          |> (n) -> { "x" }
+      JADE
+      out = compiled_for('PropList', body)
       expect(out).to include('__wrapped__impl__')
       expect(out).to include('__dict0__')
     end
@@ -47,17 +53,34 @@ module Jade
     end
 
     it 'propagates through a record literal' do
-      out = compiled_for('PropRec', '{ a: encode(value) } |> (r) -> { r.a }')
+      body = <<~JADE.strip
+        { a: encode(value) } |> (r) -> {
+          r.a
+        }
+      JADE
+      out = compiled_for('PropRec', body)
       expect(out).to include('__wrapped__impl__')
     end
 
     it 'propagates through an if-then-else branch' do
-      out = compiled_for('PropIf', 'if True then encode(value) else "x" end')
+      body = <<~JADE.strip
+        if True then
+          encode(value)
+        else
+          "x"
+        end
+      JADE
+      out = compiled_for('PropIf', body)
       expect(out).to include('__wrapped__impl__')
     end
 
     it 'propagates through a case-of branch' do
-      out = compiled_for('PropCase', "case value of _ then encode(value) end")
+      body = <<~JADE.strip
+        case value
+        of _ then encode(value)
+        end
+      JADE
+      out = compiled_for('PropCase', body)
       expect(out).to include('__wrapped__impl__')
     end
 
@@ -79,7 +102,7 @@ module Jade
 
         struct Box(a) = {
           value: String,
-          tag: String,
+          tag: String
         }
 
         def wrapped(value: a) -> Box(a)
@@ -111,7 +134,7 @@ module Jade
 
         struct Box(a) = {
           values: List(String),
-          tag: String,
+          tag: String
         }
 
         def wrapped(value: a) -> Box(a)

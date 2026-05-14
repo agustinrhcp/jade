@@ -54,7 +54,7 @@ module Jade
 
       let(:source) do
         <<~JADE
-          module HoleCtor exposing (just_holed, build_first)
+          module HoleCtor exposing (build_first, just_holed)
 
           type Pair(a, b) = Pair(a, b)
 

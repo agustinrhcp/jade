@@ -95,12 +95,14 @@ module Jade
     context 'multi-arg variant via inner pipeline' do
       let(:source) do
         <<~JADE
-          module MultiArg exposing(parse)
+          module MultiArg exposing (parse)
 
-          import Decode exposing(DecodeError)
-          import Decode.Params exposing(Params)
+          import Decode exposing (DecodeError)
+          import Decode.Params exposing (Params)
 
-          type Field = Coords(Int, Int) | Name(String)
+          type Field
+            = Coords(Int, Int)
+            | Name(String)
 
           def coords_decoder() -> Decode.Decoder(Field)
             Decode.succeed(Coords(_, _))

@@ -14,6 +14,10 @@ module Jade
             "`#{@type_name}` type needs #{@expected}" +
               " argument#{@expected > 1 ? 's' : ''} but got #{@actual}"
           end
+
+          def label
+            "expected #{@expected} argument#{@expected > 1 ? 's' : ''}, got #{@actual}"
+          end
         end
       end
     end
