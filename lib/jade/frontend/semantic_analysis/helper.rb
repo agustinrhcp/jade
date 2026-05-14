@@ -77,35 +77,35 @@ module Jade
           end
         end
 
-        def validate_type_symbol(symbol, registry)
+        def validate_type_symbol(symbol, registry, entry)
           case symbol
           in Symbol::Union(variants:, type_params:)
-            variants.flat_map { validate_type_symbol(it, registry) } +
-              type_params.flat_map { validate_type_symbol(it, registry) }
+            variants.flat_map { validate_type_symbol(it, registry, entry) } +
+              type_params.flat_map { validate_type_symbol(it, registry, entry) }
 
           in Symbol::Constructor(args:)
-            args.flat_map { validate_type_symbol(it, registry) }
+            args.flat_map { validate_type_symbol(it, registry, entry) }
 
           in Symbol::TypeRef
             registry.lookup(symbol)
-              .then { validate_type_symbol(it, registry) }
+              .then { validate_type_symbol(it, registry, entry) }
 
           in Symbol::ValueRef
             registry.lookup(symbol)
-              .then { validate_type_symbol(it, registry) }
+              .then { validate_type_symbol(it, registry, entry) }
 
           in Symbol::Variable
             []
 
           in Symbol::PartialApplication(constructor:, args:)
-            args.flat_map { validate_type_symbol(it, registry) }
+            args.flat_map { validate_type_symbol(it, registry, entry) }
 
           in Symbol::TypeApplication(constructor:, args:)
             constructor_symbol = registry.lookup(constructor)
 
             if constructor_symbol.type_params.size != args.size
               [Error::TypeArgsMismatch.new(
-                  nil,
+                  entry&.name,
                   symbol.span,
                   type_name: constructor.name,
                   expected: constructor_symbol.type_params.size,
@@ -113,24 +113,24 @@ module Jade
               )]
             else
               []
-            end + args.flat_map { validate_type_symbol(it, registry) }
+            end + args.flat_map { validate_type_symbol(it, registry, entry) }
 
           in Symbol::FunctionType | Symbol::InterfaceFunction | Symbol::InteropFunction
-            validate_type_symbol(symbol.return_type, registry) +
-              symbol.params.flat_map { validate_type_symbol(it, registry) }
+            validate_type_symbol(symbol.return_type, registry, entry) +
+              symbol.params.flat_map { validate_type_symbol(it, registry, entry) }
 
           in Symbol::Function(params:, return_type:)
-            validate_type_symbol(return_type, registry) +
-              params.values.flat_map { validate_type_symbol(it, registry) }
+            validate_type_symbol(return_type, registry, entry) +
+              params.values.flat_map { validate_type_symbol(it, registry, entry) }
 
           in Symbol::RecordType(fields:)
             fields.reduce([]) do |acc, (k, v)|
-              acc + validate_type_symbol(v, registry)
+              acc + validate_type_symbol(v, registry, entry)
             end
 
           in Symbol::Struct(type_params:, record_type:)
-            validate_type_symbol(record_type, registry) +
-              type_params.flat_map { validate_type_symbol(it, registry) }
+            validate_type_symbol(record_type, registry, entry) +
+              type_params.flat_map { validate_type_symbol(it, registry, entry) }
           end
         end
       end

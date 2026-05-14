@@ -13,6 +13,10 @@ module Jade
           def message
             "Arity mismatch, #{@constructor} expects #{@expected_arity} patterns but found #{@actual_arity}"
           end
+
+          def label
+            "expected #{@expected_arity} pattern#{@expected_arity > 1 ? 's' : ''}, got #{@actual_arity}"
+          end
         end
       end
     end

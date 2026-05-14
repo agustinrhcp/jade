@@ -10,6 +10,10 @@ module Jade
           def message
             "List rest pattern must be a name (e.g. `xs`) or wildcard (`_`)"
           end
+
+          def label
+            "invalid rest pattern"
+          end
         end
       end
     end

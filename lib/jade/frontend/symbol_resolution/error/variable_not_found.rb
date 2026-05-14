@@ -14,6 +14,10 @@ module Jade
           def message
             "I cannot find a `#{@name}` variable"
           end
+
+          def label
+            "not found"
+          end
         end
       end
     end

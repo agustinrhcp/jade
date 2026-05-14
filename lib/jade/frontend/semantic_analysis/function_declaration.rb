@@ -8,7 +8,7 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::FunctionDeclaration(name:, body:, params:, symbol:)
 
-          annotation_errors = validate_type_symbol(symbol, registry)
+          annotation_errors = validate_type_symbol(symbol, registry, entry)
 
           params
             .reduce(Result[scope, []]) do |acc, param|

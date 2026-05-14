@@ -17,7 +17,7 @@ module Jade
           end
 
           implements Show(Int) with
-            show : int_show
+            show: int_show
           end
 
           def int_show(n: Int) -> String
@@ -41,7 +41,7 @@ module Jade
           end
 
           implements Show(Int) with
-            show : int_show
+            show: int_show
           end
 
           def int_show(n: Int) -> String
@@ -71,11 +71,11 @@ module Jade
           end
 
           implements Show(Int) with
-            show : int_show
+            show: int_show
           end
 
           implements Show(String) with
-            show : str_show
+            show: str_show
           end
 
           def int_show(n: Int) -> String
@@ -114,7 +114,7 @@ module Jade
           end
 
           implements Show(Int) with
-            show : int_show
+            show: int_show
           end
 
           def int_show(n: Int) -> String

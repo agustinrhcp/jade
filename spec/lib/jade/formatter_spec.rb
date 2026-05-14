@@ -760,6 +760,103 @@ module Jade
       end
     end
 
+    context 'interface declaration' do
+      context 'single function' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            interface Show(a) with
+              show : a -> String
+            end
+          JADE
+        end
+
+        it { is_expected.to include "interface Show(a) with" }
+        it { is_expected.to include "  show : a -> String" }
+        it { is_expected.to include "end" }
+      end
+
+      context 'multiple functions' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            interface Default(a) with
+              default : a,
+              alt : a -> a
+            end
+          JADE
+        end
+
+        it { is_expected.to include "interface Default(a) with" }
+        it { is_expected.to include "  default : a" }
+        it { is_expected.to include "  alt : a -> a" }
+      end
+    end
+
+    context 'placeholder' do
+      context 'single placeholder' do
+        let(:text) { "add(_, 5)" }
+        it { is_expected.to eql "add(_, 5)" }
+      end
+
+      context 'multiple placeholders' do
+        let(:text) { "Pair(_, _)" }
+        it { is_expected.to eql "Pair(_, _)" }
+      end
+    end
+
+    context 'list pattern' do
+      context 'empty' do
+        let(:text) do
+          <<~JADE.strip
+            case xs
+            of [] then 0
+            end
+          JADE
+        end
+
+        it { is_expected.to include "of [] then 0" }
+      end
+
+      context 'cons with rest' do
+        let(:text) do
+          <<~JADE.strip
+            case xs
+            of [head | tail] then 1
+            end
+          JADE
+        end
+
+        it { is_expected.to include "of [head | tail] then 1" }
+      end
+
+      context 'multiple heads with rest' do
+        let(:text) do
+          <<~JADE.strip
+            case xs
+            of [a, b | rest] then 2
+            end
+          JADE
+        end
+
+        it { is_expected.to include "of [a, b | rest] then 2" }
+      end
+
+      context 'wildcard rest' do
+        let(:text) do
+          <<~JADE.strip
+            case xs
+            of [a | _] then 1
+            end
+          JADE
+        end
+
+        it { is_expected.to include "of [a | _] then 1" }
+      end
+    end
+
     context 'idempotency — formatting twice yields the same result' do
       let(:text) do
         <<~JADE.strip

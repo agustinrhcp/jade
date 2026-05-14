@@ -11,6 +11,10 @@ module Jade
           def message
             "Variable #{@name} shadows existing variable"
           end
+
+          def label
+            "shadows existing variable"
+          end
         end
       end
     end

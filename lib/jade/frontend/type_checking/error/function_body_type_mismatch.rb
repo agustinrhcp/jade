@@ -12,6 +12,10 @@ module Jade
             "There's a problem with the body of `#{@function_name}` definition: " ++
               "it returns #{@actual} but its signature says it should be #{@expected}"
           end
+
+          def label
+            "returns #{@actual}, expected #{@expected}"
+          end
         end
       end
     end

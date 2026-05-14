@@ -11,6 +11,10 @@ module Jade
           def message
             "Duplicate function definition `#{@name}`"
           end
+
+          def label
+            "already defined"
+          end
         end
       end
     end

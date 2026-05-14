@@ -60,6 +60,10 @@ module Jade
       def message
         "#{context_prefix}Unexpected token #{actual.value.inspect}, expected #{expected}"
       end
+
+      def label
+        "unexpected #{@actual.value.inspect}"
+      end
     end
 
     class InvalidOperatorError < Error

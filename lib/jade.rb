@@ -11,6 +11,8 @@ require 'jade/interop'
 require 'jade/stdlib'
 
 module Jade
+  class CompilationError < RuntimeError; end
+
   extend self
 
   def setup(&block)
@@ -20,5 +22,7 @@ module Jade
   def require(path)
     @compiler ||= Compiler.new
     @compiler.require(path)
+  rescue CompilationError
+    exit 1
   end
 end

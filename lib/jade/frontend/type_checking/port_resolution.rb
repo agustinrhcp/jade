@@ -77,7 +77,7 @@ module Jade
             Type
               .constraint('Decode.Decodable', type, nil)
               .then { Constraints.resolve(it, registry, entry.name) }
-              .then { decoder_result(it, interop_fn, arm, entry, type) }
+              .then { decoder_result(it, interop_fn, arm, entry, type, span_of(type_sym, interop_fn)) }
           end
         end
 
@@ -88,15 +88,23 @@ module Jade
             .tap { fail "no Decodable constraint for #{var_name.inspect}" if it.nil? }
         end
 
-        def decoder_result(constraint_result, interop_fn, arm, entry, type)
+        def decoder_result(constraint_result, interop_fn, arm, entry, type, span)
           case constraint_result
           in Ok[impl]
             [impl, []]
 
           in Err
             Error::PortNotDecodable
-              .new(entry, nil, port_name: interop_fn.name, arm:, type:, reason: :no_impl)
+              .new(entry, span, port_name: interop_fn.name, arm:, type:)
               .then { [nil, [it]] }
+          end
+        end
+
+        def span_of(type_sym, interop_fn)
+          case type_sym
+          in Symbol::TypeApplication(span:) then span
+          in Symbol::Variable(decl_span:) then decl_span
+          else interop_fn.return_type.span
           end
         end
 

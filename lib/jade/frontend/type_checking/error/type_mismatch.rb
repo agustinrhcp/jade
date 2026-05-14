@@ -12,6 +12,10 @@ module Jade
           def message
             "Expected #{@expected} but got #{@actual}"
           end
+
+          def label
+            "expected #{@expected}, got #{@actual}"
+          end
         end
       end
     end

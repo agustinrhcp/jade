@@ -126,6 +126,23 @@ module Jade
       in AST::InteropFunction(name:, type:)
         "#{name} : #{format_type(type)}"
 
+      in AST::InterfaceDeclaration(name:, type_param:, functions:)
+        fns_str =
+          functions
+            .map { format_node(it, indent: indent + 1) }
+            .join(",\n")
+
+        [
+          "interface #{name}(#{type_param.name}) with".then(&and_indent(indent)),
+          fns_str,
+          "end".then(&and_indent(indent)),
+        ]
+          .join("\n")
+
+      in AST::InterfaceFunctionDecl(name:, type:)
+        "#{name} : #{format_type(type)}"
+          .then(&and_indent(indent))
+
       # Variable binding (let-style)
 
       in AST::Assign(pattern:, expression:)
@@ -261,6 +278,10 @@ module Jade
         else
           inline.then(&and_indent(indent))
         end
+
+      in AST::Placeholder
+        "_"
+          .then(&and_indent(indent))
 
       in AST::MemberAccess(target:, name:)
         "#{format_node(target)}.#{name.name}"

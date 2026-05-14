@@ -8,21 +8,24 @@ module Jade
 
     it 'attaches constraint when return type wraps the type variable in a struct' do
       test_compiler.require('repro', <<~JADE)
-        module Repro exposing(wrapped)
+        module Repro exposing (wrapped)
 
         interface Encoder(a) with
           encode : a -> String
         end
 
         implements Encoder(Int) with
-          encode : encode_int
+          encode: encode_int
         end
 
         def encode_int(n: Int) -> String
           "int"
         end
 
-        struct Box(a) = { value: String, tag: String }
+        struct Box(a) = {
+          value: String,
+          tag: String
+        }
 
         def wrapped(value: a) -> Box(a)
           Box(encode(value), "tag")
@@ -38,21 +41,40 @@ module Jade
 
     it 'attaches constraints when two where-clauses on the same type variable are used in separate inner calls' do
       test_compiler.require('repro', <<~JADE)
-        module Repro exposing(call_both)
+        module Repro exposing (call_both)
 
-        interface A(x) with f : x -> Int end
-        interface B(x) with g : x -> Int end
+        interface A(x) with
+          f : x -> Int
+        end
 
-        implements A(Int) with f : f_int end
-        implements B(Int) with g : g_int end
+        interface B(x) with
+          g : x -> Int
+        end
 
-        def f_int(n: Int) -> Int 1 end
-        def g_int(n: Int) -> Int 2 end
-        def add(a: Int, b: Int) -> Int a + b end
+        implements A(Int) with
+          f: f_int
+        end
+
+        implements B(Int) with
+          g: g_int
+        end
+
+        def f_int(n: Int) -> Int
+          1
+        end
+
+        def g_int(n: Int) -> Int
+          2
+        end
+
+        def add(a: Int, b: Int) -> Int
+          a + b
+        end
 
         def both(value: x) -> Int
           fx = f(value)
           gx = add(g(value), 0)
+
           fx + gx
         end
 
@@ -73,14 +95,14 @@ module Jade
 
     it 'dispatches encoder when constrained var is nested in an arg constructor' do
       test_compiler.require('repro_nested', <<~JADE)
-        module ReproNested exposing(roundtrip, encode_maybe)
+        module ReproNested exposing (encode_maybe, roundtrip)
 
         interface Encoder(a) with
           encode : a -> String
         end
 
         implements Encoder(Int) with
-          encode : encode_int
+          encode: encode_int
         end
 
         def encode_int(n: Int) -> String
@@ -88,7 +110,7 @@ module Jade
         end
 
         implements Encoder(Maybe(a)) with
-          encode : encode_maybe
+          encode: encode_maybe
         end
 
         def encode_maybe(m: Maybe(a)) -> String
@@ -120,14 +142,14 @@ module Jade
 
     it 'unboxes the constrained var through List, Tuple, nested Maybe, and structs' do
       test_compiler.require('repro_deep', <<~JADE)
-        module ReproDeep exposing(encode_list, encode_double, encode_box, encode_tup)
+        module ReproDeep exposing (encode_box, encode_double, encode_list, encode_tup)
 
         interface Encoder(a) with
           encode : a -> String
         end
 
         implements Encoder(Int) with
-          encode : encode_int
+          encode: encode_int
         end
 
         def encode_int(n: Int) -> String
@@ -135,7 +157,7 @@ module Jade
         end
 
         implements Encoder(Maybe(a)) with
-          encode : encode_maybe
+          encode: encode_maybe
         end
 
         def encode_maybe(m: Maybe(a)) -> String
@@ -190,14 +212,24 @@ module Jade
 
     it 'dispatches inner-element dict for List(a) args with a body constraint on a' do
       test_compiler.require('list_show', <<~JADE)
-        module ListShow exposing(go)
+        module ListShow exposing (go)
 
-        interface Show(a) with show : a -> String end
-        implements Show(Int) with show : show_int end
-        def show_int(n: Int) -> String "n" end
+        interface Show(a) with
+          show : a -> String
+        end
+
+        implements Show(Int) with
+          show: show_int
+        end
+
+        def show_int(n: Int) -> String
+          "n"
+        end
 
         def join_shows(xs: List(a)) -> String
-          xs |> List.map((x) -> { show(x) }) |> String.join(", ")
+          xs
+            |> List.map((x) -> { show(x) })
+            |> String.join(", ")
         end
 
         def go() -> String
@@ -210,7 +242,7 @@ module Jade
 
     it 'raises a clear error when an unboxable constraint is called from Ruby' do
       test_compiler.require('repro_unsupported', <<~JADE)
-        module ReproUnsupported exposing(apply_then_encode, default_value)
+        module ReproUnsupported exposing (apply_then_encode, default_value)
 
         interface Encoder(a) with
           encode : a -> String

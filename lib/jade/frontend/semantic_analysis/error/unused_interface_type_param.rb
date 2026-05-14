@@ -13,6 +13,10 @@ module Jade
             "Interface `#{@interface}` declares type parameter `#{@type_param}` " \
               "but no function uses it: there is nothing to dispatch on"
           end
+
+          def label
+            "unused type parameter `#{@type_param}`"
+          end
         end
       end
     end

@@ -9,7 +9,7 @@ module Jade
           node => AST::InteropImportDeclaration(functions:)
 
           type_errors = functions
-            .flat_map { validate_type_symbol(it.symbol, registry) }
+            .flat_map { validate_type_symbol(it.symbol, registry, entry) }
 
           task_errors = functions
             .flat_map { |fn| task_shape_errors(fn, entry) }

@@ -11,6 +11,10 @@ module Jade
           def message
             "I cannot find a `#{@name}` constructor"
           end
+
+          def label
+            "not found"
+          end
         end
       end
     end

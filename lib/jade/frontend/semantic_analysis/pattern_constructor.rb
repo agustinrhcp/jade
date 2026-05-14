@@ -12,7 +12,7 @@ module Jade
 
           if symbol.args.size != patterns.size
             return Error::ConstructorPatternArityMismatch
-              .new(entry&.name, nil, constructor:, expected_arity: symbol.args.size, actual_arity: patterns.size)
+              .new(entry&.name, node.range, constructor:, expected_arity: symbol.args.size, actual_arity: patterns.size)
               .then { Result[scope, [it]] }
           end
 
