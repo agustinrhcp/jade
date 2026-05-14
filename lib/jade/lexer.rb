@@ -91,15 +91,15 @@ module Jade
         when scanner.scan(INVALID_OP_REGEX)
           tokens << tok(:invalid_op, scanner)
 
-        when scanner.scan(SYMBOLS_REGEX)
-          type = SYMBOLS.fetch(scanner.matched)
-          tokens << tok(type, scanner)
-
         when scanner.scan(/\A#[^\n]*/)
           tokens << tok(:comment, scanner)
 
-        when scanner.scan(/\A[a-z_][a-z0-9_]*/)
+        when scanner.scan(/\A[a-z][a-z0-9_]*|\A_[a-z0-9_]+/)
           type = KEYWORDS.include?(scanner.matched) ? scanner.matched.to_sym : :identifier
+          tokens << tok(type, scanner)
+
+        when scanner.scan(SYMBOLS_REGEX)
+          type = SYMBOLS.fetch(scanner.matched)
           tokens << tok(type, scanner)
 
         when scanner.scan(/\A(True|False)\b/)

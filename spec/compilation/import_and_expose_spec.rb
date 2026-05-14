@@ -353,8 +353,8 @@ module Jade
             int = Exposing.id(12)
             string = Exposing.id("12")
             int_from_string = string
-            |> String.to_int
-            |> Maybe.with_default(0)
+              |> String.to_int
+              |> Maybe.with_default(0)
 
             int + int_from_string
           end

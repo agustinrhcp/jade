@@ -74,3 +74,15 @@ This should fail, Int has no vars
 ### Interop part II - Tasks
 
 Interop must return a Task
+
+
+### Dict: boundary unbox for `Dict(k, v)`
+
+`Dict` ops carry `Eq k` (concrete and Jade-internal polymorphic uses work).
+The boundary wrapper for a user-written polymorphic fn with a `Dict(k, v)` arg
+falls through `unbox_nominal` (Dict is a no-variant union with no destructurable
+shape from the type alone) and emits the `NotCallableFromRuby` raise. To make
+those wrappers callable from Ruby too, `unbox` would need a hook for opaque
+stdlib types backed by a native Ruby class — for Dict, "extract a sample key
+via `dict.hash.keys.first`, dispatch on its class, fall back to `{}` when
+empty." Same shape as `unbox_list`'s `[head, *] then ...; [] then {}` pattern.

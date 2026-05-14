@@ -22,21 +22,21 @@ module Jade
 
         def int_to_r_times_2(int: Int) -> Result(Int, String)
           int
-          |> int_to_r
-          |> Result.map((n) -> { n * 2 })
+            |> int_to_r
+            |> Result.map((n) -> { n * 2 })
         end
 
         def int_to_r_times_2_to_r(int: Int) -> Result(Int, String)
           int
-          |> int_to_r
-          |> Result.map((n) -> { n * 2 })
-          |> Result.and_then(int_to_r)
+            |> int_to_r
+            |> Result.map((n) -> { n * 2 })
+            |> Result.and_then(int_to_r)
         end
 
         def int_to_r_to_maybe(int: Int) -> Maybe(Int)
           int
-          |> int_to_r
-          |> Result.to_maybe
+            |> int_to_r
+            |> Result.to_maybe
         end
       JADE
     end

@@ -70,6 +70,40 @@ module Jade
 
         'Tuple.first'       => ->(t)           { "#{t}._1" },
         'Tuple.second'      => ->(t)           { "#{t}._2" },
+
+        'Bytes.empty'        => ->()            { "Jade::Bytes::Bytes[String.new(encoding: Encoding::BINARY)]" },
+        'Bytes.width'        => ->(b)           { "#{b}.bin.bytesize" },
+        'Bytes.to_list'      => ->(b)           { "#{b}.bin.bytes" },
+        'Bytes.from_string'  => ->(s)           { "Jade::Bytes::Bytes[#{s}.b]" },
+        'Bytes.to_string'    => ->(b)           { "#{b}.bin.dup.force_encoding(Encoding::UTF_8).then { it.valid_encoding? ? Jade::Maybe::Just[it] : Jade::Maybe::Nothing[] }" },
+        'Bytes.bytes_eq'     => ->(a, b)        { "(#{a}.bin == #{b}.bin)" },
+        'Bytes.bytes_append' => ->(a, b)        { "Jade::Bytes::Bytes[#{a}.bin + #{b}.bin]" },
+
+        'Bytes.Encode.encode'         => ->(e)    { "Jade::Bytes::Bytes[#{e}.bin]" },
+        'Bytes.Encode.signed_int8'    => ->(n)    { "Jade::Bytes::Encode::Encoder[[#{n}].pack('c')]" },
+        'Bytes.Encode.unsigned_int8'  => ->(n)    { "Jade::Bytes::Encode::Encoder[[#{n}].pack('C')]" },
+        'Bytes.Encode.signed_int16'   => ->(e, n) { "Jade::Bytes::Encode::Encoder[[#{n}].pack(#{e}.is_a?(Jade::Bytes::LE) ? 's<' : 's>')]" },
+        'Bytes.Encode.unsigned_int16' => ->(e, n) { "Jade::Bytes::Encode::Encoder[[#{n}].pack(#{e}.is_a?(Jade::Bytes::LE) ? 'S<' : 'S>')]" },
+        'Bytes.Encode.signed_int32'   => ->(e, n) { "Jade::Bytes::Encode::Encoder[[#{n}].pack(#{e}.is_a?(Jade::Bytes::LE) ? 'l<' : 'l>')]" },
+        'Bytes.Encode.unsigned_int32' => ->(e, n) { "Jade::Bytes::Encode::Encoder[[#{n}].pack(#{e}.is_a?(Jade::Bytes::LE) ? 'L<' : 'L>')]" },
+        'Bytes.Encode.float32'        => ->(e, f) { "Jade::Bytes::Encode::Encoder[[#{f}].pack(#{e}.is_a?(Jade::Bytes::LE) ? 'e' : 'g')]" },
+        'Bytes.Encode.float64'        => ->(e, f) { "Jade::Bytes::Encode::Encoder[[#{f}].pack(#{e}.is_a?(Jade::Bytes::LE) ? 'E' : 'G')]" },
+        'Bytes.Encode.string'         => ->(s)    { "Jade::Bytes::Encode::Encoder[#{s}.b]" },
+        'Bytes.Encode.bytes'          => ->(b)    { "Jade::Bytes::Encode::Encoder[#{b}.bin]" },
+        'Bytes.Encode.sequence'       => ->(es)   { "Jade::Bytes::Encode::Encoder[#{es}.map(&:bin).join]" },
+
+        'Dict.empty'      => ->()           { "Jade::Dict::Dict[{}]" },
+        'Dict.singleton'  => ->(k, v)       { "Jade::Dict::Dict[{ #{k} => #{v} }]" },
+        'Dict.is_empty'   => ->(d)          { "#{d}.hash.empty?" },
+        'Dict.size'       => ->(d)          { "#{d}.hash.size" },
+        'Dict.member'     => ->(d, k)       { "#{d}.hash.key?(#{k})" },
+        'Dict.insert'     => ->(d, k, v)    { "Jade::Dict::Dict[#{d}.hash.merge(#{k} => #{v})]" },
+        'Dict.keys'       => ->(d)          { "#{d}.hash.keys" },
+        'Dict.values'     => ->(d)          { "#{d}.hash.values" },
+        'Dict.to_list'    => ->(d)          { "#{d}.hash.map { |k, v| Jade::Tuple::Tuple2[k, v] }" },
+        'Dict.from_list'  => ->(pairs)      { "Jade::Dict::Dict[#{pairs}.each_with_object({}) { |p, h| h[p._1] = p._2 }]" },
+        'Dict.union'      => ->(l, r)       { "Jade::Dict::Dict[#{r}.hash.merge(#{l}.hash)]" },
+        'Dict.dict_eq'    => ->(a, b)       { "(#{a}.hash == #{b}.hash)" },
       }.freeze
 
       # Native block form is 2-3× faster than `&lambda` — Ruby skips
@@ -136,6 +170,29 @@ module Jade
         Task.run
         Task.sequence
         Task.succeed
+        Bytes.from_list
+        Bytes.Decode.decode
+        Bytes.Decode.succeed
+        Bytes.Decode.fail
+        Bytes.Decode.map
+        Bytes.Decode.and_then
+        Bytes.Decode.signed_int8
+        Bytes.Decode.unsigned_int8
+        Bytes.Decode.signed_int16
+        Bytes.Decode.unsigned_int16
+        Bytes.Decode.signed_int32
+        Bytes.Decode.unsigned_int32
+        Bytes.Decode.float32
+        Bytes.Decode.float64
+        Bytes.Decode.string
+        Bytes.Decode.bytes
+        Dict.get
+        Dict.remove
+        Dict.update
+        Dict.map
+        Dict.filter
+        Dict.fold
+        Dict.merge
       ].to_set.freeze
 
       def for(qualified_name)

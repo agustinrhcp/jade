@@ -22,6 +22,32 @@ module Jade
     LT = Data.define()
   end
 
+  module Bytes
+    Bytes = Data.define(:bin) do
+      def to_s = "Bytes(#{bin.bytesize})"
+    end
+
+    LE = Data.define()
+    BE = Data.define()
+
+    module Encode
+      Encoder = Data.define(:bin)
+    end
+
+    module Decode
+      Decoder = Data.define(:run)
+    end
+  end
+
+  module Dict
+    Dict = Data.define(:hash) do
+      def to_s
+        pairs = hash.map { |k, v| "#{k}: #{v}" }.join(', ')
+        "Dict(#{pairs})"
+      end
+    end
+  end
+
   module Runtime
     extend self
     extend Interop::Runtime
@@ -43,6 +69,10 @@ module Jade
       require "jade/stdlib/task"
       require "jade/stdlib/decode"
       require "jade/stdlib/encode"
+      require "jade/stdlib/bytes"
+      require "jade/stdlib/bytes/encode"
+      require "jade/stdlib/bytes/decode"
+      require "jade/stdlib/dict"
     end
 
     def intr(name)
