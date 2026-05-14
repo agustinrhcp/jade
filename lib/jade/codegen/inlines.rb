@@ -171,6 +171,8 @@ module Jade
         Task.sequence
         Task.succeed
         Bytes.from_list
+        Bytes.bytes_encoder
+        Bytes.bytes_decoder
         Bytes.Decode.decode
         Bytes.Decode.succeed
         Bytes.Decode.fail

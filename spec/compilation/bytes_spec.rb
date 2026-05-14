@@ -12,7 +12,9 @@ module Jade
           append,
           bad_list,
           bad_string,
+          decode_bytes,
           empty_width,
+          encode_bytes,
           eq,
           roundtrip_list,
           roundtrip_string,
@@ -21,6 +23,8 @@ module Jade
         )
 
         import Bytes exposing (Endianness(..))
+        import Decode exposing (DecodeError)
+        import Encode
 
         def empty_width() -> Int
           Bytes.width(Bytes.empty())
@@ -83,6 +87,14 @@ module Jade
           of BE then "big"
           end
         end
+
+        def encode_bytes(b: Bytes) -> String
+          Encode.encode_to_string(Encode.encode(b))
+        end
+
+        def decode_bytes(json: String) -> Result(Bytes, DecodeError)
+          Decode.from_json(json)
+        end
       JADE
     end
 
@@ -129,6 +141,16 @@ module Jade
     it 'matches on Endianness variants' do
       expect(Pepe.which_end.call(Jade::Bytes::LE[])).to eql 'little'
       expect(Pepe.which_end.call(Jade::Bytes::BE[])).to eql 'big'
+    end
+
+    it 'roundtrips through JSON via Encodable/Decodable (base64)' do
+      json = Pepe.encode_bytes.call(Jade::Bytes::Bytes['hi'])
+      expect(json).to eql '"aGk="'
+      expect(Pepe.decode_bytes.call(json)).to be_ok(Jade::Bytes::Bytes['hi'])
+    end
+
+    it 'rejects invalid base64' do
+      expect(Pepe.decode_bytes.call('"not base64!"')).to be_err
     end
   end
 end

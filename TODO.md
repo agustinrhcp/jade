@@ -76,6 +76,28 @@ This should fail, Int has no vars
 Interop must return a Task
 
 
+### `case Decode.from_json(...) of Ok(b) ...` loses the Decodable dispatch
+
+```jade
+def f(json: String) -> Maybe(Bytes)
+  case Decode.from_json(json)   # codegen emits impl_arg = [{}]
+  of Ok(b)  then Just(b)
+  of Err(_) then Nothing
+  end
+end
+```
+
+When the result of a constrained call is destructured by a `case`/`Ok(b)`
+pattern, the binding-from-pattern type doesn't propagate back to the call's
+constraint resolution — the dictionary slot ends up empty (`[{}]`), and the
+runtime crashes with `undefined method 'desc' for nil`. Workaround: declare
+the function's return type as `Result(Bytes, DecodeError)` so the constraint
+resolves at the signature level (`def f(s) -> Result(Bytes, DecodeError); Decode.from_json(s); end`).
+
+Fix probably lives in inference/pattern.rb where pattern bindings flow back
+into the parent expression's expected type.
+
+
 ### Dict: boundary unbox for `Dict(k, v)`
 
 `Dict` ops carry `Eq k` (concrete and Jade-internal polymorphic uses work).

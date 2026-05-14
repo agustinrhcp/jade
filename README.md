@@ -387,7 +387,7 @@ Pass a class constant or `'Module::Name'` string when the short name is ambiguou
 | `Task` | `succeed`, `fail`, `map`, `and_then`, `on_error`, `sequence` |
 | `Decode` | `string`, `int`, `float`, `bool`, `list`, `field`, `at`, `succeed`, `required`, `optional`, ... |
 | `Encode` | `string`, `int`, `float`, `bool`, `list`, `object`, plus `Encodable` derivation for user types |
-| `Bytes` | opaque `Bytes` type, `Endianness`, `width`, `empty`, `from_list`/`to_list`, `from_string`/`to_string`, `Eq`/`Appendable` |
+| `Bytes` | opaque `Bytes` type, `Endianness`, `width`, `empty`, `from_list`/`to_list`, `from_string`/`to_string`, `Eq`/`Appendable`/`Encodable`/`Decodable` (base64 over JSON) |
 | `Bytes.Encode` | `Encoder`, `encode`, `signed_int8`/`16`/`32`, `unsigned_int8`/`16`/`32`, `float32`/`64`, `string`, `bytes`, `sequence` |
 | `Bytes.Decode` | `Decoder a`, `decode`, primitives matching `Bytes.Encode`, plus `succeed`, `fail`, `map`, `and_then` |
 | `Dict` | `Dict(k, v)`, `empty`, `singleton`, `get`, `member`, `insert`, `update`, `remove`, `size`, `is_empty`, `keys`, `values`, `to_list`, `from_list`, `map`, `filter`, `fold`, `union`, `merge` |

@@ -1,3 +1,4 @@
+require 'base64'
 require 'jade/stdlib/intrinsics'
 
 module Jade
@@ -8,6 +9,8 @@ module Jade
       import Basics
       import Maybe
       import List
+      import Decode
+      import Encode
 
       union :Bytes
 
@@ -19,6 +22,8 @@ module Jade
 
       implementation('Eq',         'Bytes', '(==)' => 'bytes_eq')
       implementation('Appendable', 'Bytes', '(++)' => 'bytes_append')
+      implementation('Decodable',  'Bytes', 'decoder' => 'bytes_decoder')
+      implementation('Encodable',  'Bytes', 'encoder' => 'bytes_encoder')
 
       function(
         :empty,
@@ -80,6 +85,30 @@ module Jade
         { a: 'Bytes', b: 'Bytes' },
         'Bytes',
       ) { |a, b| Jade::Bytes::Bytes[a.bin + b.bin] }
+
+      function(
+        'bytes_encoder',
+        { b: 'Bytes' },
+        'Value',
+      ) { |b| ::Base64.strict_encode64(b.bin) }
+
+      function(
+        'bytes_decoder',
+        {},
+        'Decoder(Bytes)',
+      ) {
+        Jade::Decode::Decoder[
+          Jade::Decode::Desc::AndThen[
+            ->(s) {
+              decoded = ::Base64.strict_decode64(s) rescue nil
+              decoded \
+                ? Jade::Decode::Decoder[Jade::Decode::Desc::Succeed[Jade::Bytes::Bytes[decoded]]]
+                : Jade::Decode::Decoder[Jade::Decode::Desc::Fail["invalid base64"]]
+            },
+            Jade::Decode::Desc::Str[],
+          ]
+        ]
+      }
     end
   end
 end
