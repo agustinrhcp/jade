@@ -225,9 +225,9 @@ module Jade
         if operator.value == '|>'
           chain = collect_pipe_chain(node)
           if chain.length > 2
-            indent_str = INDENT * indent
+            cont_str = INDENT * (indent + 1)
             head = format_node(chain.first, indent:)
-            tail = chain[1..].map { "#{indent_str}|> #{format_node(it)}" }
+            tail = chain[1..].map { "#{cont_str}|> #{format_node(it)}" }
             ([head] + tail).join("\n")
           else
             "#{format_node(left)} |> #{format_node(right)}"
@@ -245,6 +245,18 @@ module Jade
 
         if trailing_comma || too_long?(inline, indent)
           inner = args_strs.map { "#{it.then(&and_indent(indent + 1))}," }.join("\n")
+          "#{callee_str.then(&and_indent(indent))}(\n#{inner}\n#{INDENT * indent})"
+        else
+          inline.then(&and_indent(indent))
+        end
+
+      in AST::KeyedCall(callee:, fields:, trailing_comma:)
+        callee_str = format_node(callee)
+        field_strs = fields.map { "#{it.key}: #{format_node(it.value)}" }
+        inline     = "#{callee_str}(#{field_strs.join(', ')})"
+
+        if trailing_comma || too_long?(inline, indent)
+          inner = field_strs.map { "#{it.then(&and_indent(indent + 1))}," }.join("\n")
           "#{callee_str.then(&and_indent(indent))}(\n#{inner}\n#{INDENT * indent})"
         else
           inline.then(&and_indent(indent))

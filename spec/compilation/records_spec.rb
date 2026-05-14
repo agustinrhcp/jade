@@ -551,16 +551,19 @@ module Jade
       describe 'construction forms (catalogue)' do
         let(:working_source) do
           <<~JADE
-            module Forms exposing (
-              positional,
-              kwargs,
-              update,
-              nested
-            )
+            module Forms exposing (kwargs, nested, positional, update)
 
-            struct Address = { street: String, city: String }
+            struct Address = {
+              street: String,
+              city: String
+            }
+
             struct Wrapper = { addr: Address }
-            struct Person  = { name: String, age: Int }
+
+            struct Person = {
+              name: String,
+              age: Int
+            }
 
             def positional() -> Person
               Person("Paul", 55)
@@ -572,6 +575,7 @@ module Jade
 
             def update() -> Person
               base = Person("Paul", 55)
+
               { base | age: 56 }
             end
 
@@ -617,12 +621,21 @@ module Jade
       end
 
       describe 'kwargs validation' do
-        let(:base_struct) do
-          'struct Person = { name: String, age: Int }'
-        end
-
         def compile(body)
-          test_compiler.require('m', "module M exposing (f)\n#{base_struct}\ndef f() -> Person\n  #{body}\nend\n")
+          source = <<~JADE
+            module M exposing (f)
+
+            struct Person = {
+              name: String,
+              age: Int
+            }
+
+            def f() -> Person
+              #{body}
+            end
+          JADE
+
+          test_compiler.require('m', source)
         end
 
         it 'rejects unknown fields with a pointed error' do
@@ -643,9 +656,11 @@ module Jade
         it 'rejects kwargs syntax on a regular function call' do
           source = <<~JADE
             module M exposing (f)
+
             def add(a: Int, b: Int) -> Int
               a + b
             end
+
             def f() -> Int
               add(a: 1, b: 2)
             end
