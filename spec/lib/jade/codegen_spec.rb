@@ -62,7 +62,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "finish = \"Hei\"; spanish = \"Hola\"; spanish" }
+      it { is_expected.to eql "finish = \"Hei\"\nspanish = \"Hola\"\nspanish" }
     end
 
     context 'function' do
@@ -74,7 +74,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "def add; ->(a, b) { a }; end" }
+      it { is_expected.to eql "def add\n  ->(a, b) { a }\nend" }
     end
 
     context 'function call' do
@@ -87,7 +87,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "def add; ->(a, b) { Jade::Runtime.intr('Basics.int_add').call(a, b) }; end; __Test__.add.call(1, 2)" }
+      it { is_expected.to eql "def add\n  ->(a, b) { (a + b) }\nend\n__Test__.add.call(1, 2)" }
     end
 
     context 'type def' do
@@ -100,12 +100,10 @@ module Jade
       end
 
       it 'emits Data classes with sibling-aware predicates' do
-        expect(subject).to include 'Just = Data.define(:_1) do'
-        expect(subject).to include 'def just?; true'
-        expect(subject).to include 'def nothing?; false'
-        expect(subject).to include 'Nothing = Data.define do'
-        expect(subject).to include 'def just?; false'
-        expect(subject).to include 'def nothing?; true'
+        expect(subject).to include "Just = Data.define(:_1) do\n"
+        expect(subject).to include "def just?; true; end"
+        expect(subject).to include "def nothing?; false; end"
+        expect(subject).to include "Nothing = Data.define do\n"
       end
 
       context 'and reference' do
@@ -133,7 +131,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "def is_empty; ->(str) { Jade::Runtime.intr('String.is_empty').call(str) }; end" }
+      it { is_expected.to eql "def is_empty\n  ->(str) { str.empty? }\nend" }
     end
 
     context 'module' do
@@ -147,8 +145,17 @@ module Jade
         JADE
       end
 
-      it { is_expected.to include "require 'jade/runtime'; require_relative 'maybe'; require_relative 'result';"}
-      it { is_expected.to include "module Test; extend self; def hello; ->(str) { Jade::Runtime.intr('String.is_empty').call(str) }; end; end" }
+      it { is_expected.to include "require 'jade/runtime'\nrequire_relative 'maybe'\nrequire_relative 'result'"}
+      it do
+        is_expected.to include(
+          "module Test\n" \
+          "  extend self\n\n" \
+          "  def hello\n" \
+          "    ->(str) { str.empty? }\n" \
+          "  end\n" \
+          "end"
+        )
+      end
     end
 
     context 'if then else' do
@@ -162,7 +169,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "if (Jade::Runtime.intr('String.is_empty').call(\"\")) then; 1; else; 2; end" }
+      it { is_expected.to eql "if (\"\".empty?)\n  1\nelse\n  2\nend" }
     end
 
     context 'case of' do
@@ -175,7 +182,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "case 1; in 1 then 1; in _ then 2; end" }
+      it { is_expected.to eql "case 1\nin 1 then 1\nin _ then 2\nend" }
 
       context 'with variable binding branches' do
         let(:text) do
@@ -187,7 +194,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "case 1; in 1 then 1; in x then x; end" }
+        it { is_expected.to eql "case 1\nin 1 then 1\nin x then x\nend" }
       end
 
       context 'with constructor branches' do
@@ -203,7 +210,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to include "in __Test__::Nothing then 0; in __Test__::Just(x) then x; end" }
+        it { is_expected.to include "in __Test__::Nothing then 0\nin __Test__::Just(x) then x\nend" }
       end
 
       context 'with record pattern' do
@@ -238,7 +245,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to include "->(__p0__) { __p0__ => __Test__::Box(x); x }" }
+        it { is_expected.to include "->(__p0__) {\n  __p0__ => __Test__::Box(x)\n  x\n}" }
       end
 
       context 'with a wildcard param' do
@@ -253,17 +260,13 @@ module Jade
     end
 
     describe 'infix and groupings' do
-      subject { super().gsub('Jade::Runtime.intr', '') }
-
       let(:text) do
         <<~JADE
           1 * 2 + 3 * 4
         JADE
       end
 
-      subject { super().gsub('Jade::Runtime.intr', '') }
-
-      it { is_expected.to eql "('Basics.int_add').call(('Basics.int_mul').call(1, 2), ('Basics.int_mul').call(3, 4))" }
+      it { is_expected.to eql "((1 * 2) + (3 * 4))" }
 
       context 'with grouping' do
         let(:text) do
@@ -273,7 +276,7 @@ module Jade
         end
 
 
-        it { is_expected.to eql "('Basics.int_mul').call(('Basics.int_mul').call(1, (('Basics.int_add').call(2, 3))), 4)" }
+        it { is_expected.to eql "((1 * ((2 + 3))) * 4)" }
       end
     end
 
@@ -287,7 +290,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "Data.define(:a, :b)[\"hello\", 42]" }
+      it { is_expected.to eql "Jade::Runtime.record(:a, :b)[\"hello\", 42]" }
     end
 
     describe 'record access' do
@@ -300,7 +303,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "Data.define(:a, :b)[\"hello\", 42].a" }
+      it { is_expected.to eql "Jade::Runtime.record(:a, :b)[\"hello\", 42].a" }
     end
 
     describe 'using an interop import' do
@@ -333,7 +336,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql 'Person = Data.define(:name, :age); __Test__::Person.method(:[]).call("Guybrush", 28)' }
+      it { is_expected.to eql "Person = Data.define(:name, :age)\n__Test__::Person.method(:[]).call(\"Guybrush\", 28)" }
     end
 
     describe 'tuple' do
@@ -377,7 +380,7 @@ module Jade
         end
 
 
-        it { is_expected.to eql "Jade::Runtime.intr('Basics.not').call(false)" }
+        it { is_expected.to eql "(!false)" }
       end
     end
 
@@ -390,7 +393,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "record_w_fn = Data.define(:some_fn)[->(n) { Jade::Runtime.intr('Basics.int_add').call(n, 2) }]; record_w_fn.some_fn.call(1)" }
+      it { is_expected.to eql "record_w_fn = Jade::Runtime.record(:some_fn)[->(n) { (n + 2) }]\nrecord_w_fn.some_fn.call(1)" }
     end
 
     describe 'eq constraint' do
@@ -401,7 +404,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "Jade::Runtime.intr('Basics.int_eq').call(1, 2); Jade::Runtime.intr('Basics.bool_eq').call(false, true)" }
+      it { is_expected.to eql "(1 == 2)\n(false == true)" }
 
       context 'using != (free constrained function)' do
         let(:text) do
@@ -410,7 +413,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "->(impl_arg) { ->(one, other) { !(impl_arg[0]['(==)'].call(one, other)) } }.call([{ \"(==)\" => Jade::Runtime.intr('Basics.int_eq') }]).call(1, 2)" }
+        it { is_expected.to eql "(1 != 2)" }
       end
 
       context 'without implementation' do
@@ -424,8 +427,8 @@ module Jade
           end
 
           it('is derived') { is_expected.to include("impl_arg[0]['(==)'].call(l0, r0)") }
-          it { is_expected.to start_with "def test; ->() { ->(impl_arg) { ->(one, other) { " }
-          it { is_expected.to end_with ".call(Jade::Maybe::Nothing[], Jade::Maybe::Just.method(:[]).call(1)) }; end" }
+          it { is_expected.to start_with "def test\n  ->() {\n    ->(impl_arg) {\n      ->(one, other) {\n" }
+          it { is_expected.to end_with ".call(Jade::Maybe::Nothing[], Jade::Maybe::Just.method(:[]).call(1))\n  }\nend" }
 
           context 'when calling !=' do
             let(:text) do
@@ -436,7 +439,7 @@ module Jade
               JADE
             end
 
-            it { is_expected.to start_with "def test; ->() { ->(impl_arg) { ->(one, other) { !" }
+            it { is_expected.to start_with "def test\n  ->() {\n    ->(impl_arg) { ->(one, other) { !" }
           end
 
           context 'with a type with different type params per variant' do
@@ -449,7 +452,7 @@ module Jade
             end
 
             it('is derived') { is_expected.to include("impl_arg[0]['(==)'].call(l0, r0)") }
-            it { is_expected.to start_with "def test; ->() { ->(impl_arg) { ->(one, other) { " }
+            it { is_expected.to start_with "def test\n  ->() {\n    ->(impl_arg) { ->(one, other) { !" }
           end
         end
 
@@ -469,8 +472,8 @@ module Jade
           end
 
           it('is derived') { is_expected.to include("impl_arg[0]['(==)'].call(one.salute, other.salute) && impl_arg[1]['(==)'].call(one.n, other.n)") }
-          it { is_expected.to start_with "def test; ->() { ->(impl_arg) { ->(one, other) { " }
-          it { is_expected.to end_with ".call(Data.define(:n, :salute)[1, \"Hola\"], Data.define(:n, :salute)[2, \"Hei\"]) }; end" }
+          it { is_expected.to start_with "def test\n  ->() { ->(impl_arg) { ->(one, other) { " }
+          it { is_expected.to end_with ".call(Jade::Runtime.record(:n, :salute)[1, \"Hola\"], Jade::Runtime.record(:n, :salute)[2, \"Hei\"]) }\nend" }
         end
       end
 
@@ -487,7 +490,7 @@ module Jade
           end
 
           it 'generates a def wrapping the lambda' do
-            is_expected.to include("def __impl_Eq_Pepe_x28x3dx3dx29__; ->(pepe, other_pepe) { true }; end")
+            is_expected.to include("def __impl_Eq_Pepe_x28x3dx3dx29__\n  ->(pepe, other_pepe) { true }\nend")
           end
         end
 
@@ -505,7 +508,7 @@ module Jade
           end
 
           it 'generates a def with inlined call site dispatch' do
-            is_expected.to include("def __impl_Eq_Person_x28x3dx3dx29__; ->(one, other) { Jade::Runtime.intr('Basics.int_eq').call(one.id, other.id) }; end")
+            is_expected.to include("def __impl_Eq_Person_x28x3dx3dx29__\n  ->(one, other) { (one.id == other.id) }\nend")
           end
         end
 
@@ -530,30 +533,28 @@ module Jade
     end
 
     describe 'comparable constraint' do
-      let(:lt_dict) { "[{ \"compare\" => Jade::Runtime.intr('Basics.int_compare') }]" }
-
       context '(<)' do
         let(:text) { "1 < 2" }
 
-        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Jade::Basics::LT() then true; in _ then false; end } }.call(#{lt_dict}).call(1, 2)" }
+        it { is_expected.to eql "(1 < 2)" }
       end
 
       context '(>)' do
         let(:text) { "1 > 2" }
 
-        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Jade::Basics::GT() then true; in _ then false; end } }.call(#{lt_dict}).call(1, 2)" }
+        it { is_expected.to eql "(1 > 2)" }
       end
 
       context '(<=)' do
         let(:text) { "1 <= 2" }
 
-        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Jade::Basics::GT() then false; in _ then true; end } }.call(#{lt_dict}).call(1, 2)" }
+        it { is_expected.to eql "(1 <= 2)" }
       end
 
       context '(>=)' do
         let(:text) { "1 >= 2" }
 
-        it { is_expected.to eql "->(impl_arg) { ->(a, b) { case impl_arg[0]['compare'].call(a, b); in Jade::Basics::LT() then false; in _ then true; end } }.call(#{lt_dict}).call(1, 2)" }
+        it { is_expected.to eql "(1 >= 2)" }
       end
     end
   end

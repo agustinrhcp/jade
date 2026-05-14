@@ -53,13 +53,12 @@ module Jade
     end
 
     def requires(name)
-      return "" if COMPILED.include?(name)
+      return [] if COMPILED.include?(name)
 
       prefix = '../' * name.count('.')
       COMPILED
         .map { it.downcase.tr('.', '/') }
-        .map { "require_relative '#{prefix}#{it}'; "}
-        .join("")
+        .map { "require_relative '#{prefix}#{it}'" }
     end
 
     PRIVATE_CONSTRUCTORS = %w[Tuple.Tuple2 Tuple.Tuple3 Tuple.Tuple4].freeze

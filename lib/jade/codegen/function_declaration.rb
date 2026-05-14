@@ -24,7 +24,8 @@ module Jade
 
         impl_def = (param_names + dict_params)
           .join(', ')
-          .then { "def #{target}; ->(#{it}) { #{body_code} }; end" }
+          .then { Pretty.lambda(it, body_code) }
+          .then { Pretty.block("def #{target}", it) }
 
         return impl_def if var_cs.empty?
 
@@ -32,7 +33,7 @@ module Jade
         # calls — Ruby or runtime dispatch) computes the dict from the live
         # value; the impl-synthetic takes the dict as an arg so Jade-internal
         # callers can supply an inline dict and skip the lookup.
-        "#{wrapper(name, param_names, var_cs, symbol, registry)}; #{impl_def}"
+        "#{wrapper(name, param_names, var_cs, symbol, registry)}#{Pretty.newline(2)}#{impl_def}"
       end
 
       private
@@ -54,18 +55,15 @@ module Jade
         # a return-position-only var, which the wrapper can't dispatch on.
         args = fn_type.is_a?(Type::Function) ? fn_type.args : []
 
-        dict_lookups = var_cs
+        var_cs
           .map do |c|
             dict_lookup_for(c, args, param_names, registry) ||
               unsupported_boundary_raise(symbol, c, args)
           end
-
-        (param_names + dict_lookups)
+          .then { (param_names + it) }
           .join(', ')
-          .then do
-            "def #{name}; ->(#{param_names.join(', ')}) " \
-              "{ #{fn_impl_synthetic_name(name)}.call(#{it}) }; end"
-          end
+          .then { "#{fn_impl_synthetic_name(name)}.call(#{it})" }
+          .then { Pretty.block("def #{name}", Pretty.lambda(param_names.join(', '), it)) }
       end
 
       def dict_lookup_for(c, args, param_names, registry)

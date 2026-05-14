@@ -28,6 +28,8 @@ module Jade
 
     INTRINSICS = {}
     IMPLEMENTATIONS = {}
+    IMPL_CACHE = {}
+    RECORD_CLASSES = {}
     @booted = false
 
     def boot!
@@ -52,15 +54,33 @@ module Jade
       INTRINSICS[name] = block
     end
 
-    def register_impl(interface_name, ruby_class, functions)
-      IMPLEMENTATIONS[[interface_name, ruby_class]] = functions
+    # Memoized class for anonymous record literals. Without this, every
+    # `{a: 1, b: 2}` expression evaluated in a hot loop would call
+    # `Data.define(:a, :b)` and allocate a fresh anonymous class, defeating
+    # YJIT's inline cache on every subsequent property access.
+    def record(*keys)
+      RECORD_CLASSES[keys] ||= Data.define(*keys)
     end
 
+    def register_impl(interface_name, ruby_class, functions)
+      IMPLEMENTATIONS[[interface_name, ruby_class]] = functions
+      IMPL_CACHE.clear
+    end
+
+    # Returns a hash of fn_name => callable for the impl of `interface_name`
+    # on `value`'s class. Results are cached: the same key returns the same
+    # hash object across calls, so a hot polymorphic call site doesn't
+    # re-allocate per invocation. Cache is invalidated whenever
+    # `register_impl` adds or replaces an entry.
     def impl_for(interface_name, value)
       boot!
-      IMPLEMENTATIONS[[interface_name, value.class]]
-        .then { it || fail("No implementation of #{interface_name} for #{value.class}") }
-        .transform_values { |v| v.is_a?(::String) ? intr(v) : v }
+      key = [interface_name, value.class]
+      IMPL_CACHE[key] ||= begin
+        raw = IMPLEMENTATIONS[key] || fail("No implementation of #{interface_name} for #{value.class}")
+        raw.any? { |_, v| v.is_a?(::String) } \
+          ? raw.transform_values { |v| v.is_a?(::String) ? intr(v) : v }
+          : raw
+      end
     end
   end
 end

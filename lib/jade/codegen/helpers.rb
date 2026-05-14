@@ -26,6 +26,13 @@ module Jade
         Codegen.generate(node, registry)
       end
 
+      def resolve_callee_symbol(callee, registry)
+        case callee.symbol
+        in Symbol::ValueRef => ref then registry.lookup(ref)
+        in symbol then symbol
+        end
+      end
+
       def param_synthetic_name(index)
         "__p#{index}__"
       end
