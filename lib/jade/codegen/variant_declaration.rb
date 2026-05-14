@@ -9,8 +9,8 @@ module Jade
 
         sibling_names
           .map { |s| "def #{predicate_name(s)}; #{s == name}; end" }
-          .join('; ')
-          .then { "#{name} = #{data_define(fields_for(args))} do; #{it}; end" }
+          .join("\n")
+          .then { Pretty.block("#{name} = #{data_define(fields_for(args))} do", it) }
       end
 
       private

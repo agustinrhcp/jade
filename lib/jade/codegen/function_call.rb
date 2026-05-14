@@ -10,15 +10,16 @@ module Jade
         variant_sym = keyed_variant_constructor(callee, registry)
         return generate_keyed_variant_call(variant_sym, args, registry) if variant_sym
 
+        Inline.try_for(callee, args, dictionaries, registry)
+          .then { return it if it }
+
         [generate_many(args, registry), generate_dict_args(callee, dictionaries, registry)]
           .reject(&:empty?)
           .join(', ')
           .then { "#{generate_callee(callee, args, registry, dictionaries)}.call(#{it})" }
       end
 
-      # Walks an Implementation tree to emit per-function ruby code as a
-      # `{fn_name => ruby_code}` hash. Public because PortDecoder needs it to
-      # emit a port's pre-resolved decoder; otherwise an internal helper.
+      # Public because PortDecoder needs it to emit a port's pre-resolved decoder.
       def generate_impl_dispatch(impl, registry)
         impl
           .deps
@@ -55,28 +56,15 @@ module Jade
           Codegen.dict_env[[interface, canonical_var_id(entry.type)]]
 
         in Symbol::Implementation
-          generate_impl_dispatch(entry, registry)
-            .map { |k, v| "#{k.inspect} => #{v}" }
-            .join(', ')
-            .then { "{ #{it} }" }
+          Pretty.hash(generate_impl_dispatch(entry, registry))
         end
       end
 
       private
 
-      # If the callee resolves to a constructor whose single arg is a record
-      # type, returns the resolved Symbol::Constructor. Used to emit
-      # field-spread construction for keyed variants whose runtime class
-      # carries the record fields directly.
       def keyed_variant_constructor(callee, registry)
-        resolved =
-          case callee.symbol
-          in Symbol::ValueRef => ref then registry.lookup(ref)
-          in symbol then symbol
-          end
-
-        case resolved
-        in Symbol::Constructor(args: [Symbol::RecordType])
+        case resolve_callee_symbol(callee, registry)
+        in Symbol::Constructor(args: [Symbol::RecordType]) => resolved
           resolved
 
         else
@@ -223,11 +211,10 @@ module Jade
         in Symbol::DerivedFunction(params:, body:)
           inner = params.empty? \
             ? emit(body, registry)
-            : "->(#{params.join(', ')}) { #{emit(body, registry)} }"
+            : Pretty.lambda(params.join(', '), emit(body, registry))
           return inner if dep_dispatches.empty?
 
-          impl_arg = build_impl_arg(dep_dispatches)
-          "->(impl_arg) { #{inner} }.call(#{impl_arg})"
+          Pretty.lambda("impl_arg", inner) + ".call(#{build_impl_arg(dep_dispatches)})"
 
         in Symbol::StdlibFunction if fn.params.empty?
           "#{fn.codegen}.call()"
@@ -239,9 +226,7 @@ module Jade
           sibling_dispatch = sibling_fns
             .reject { |_, sib| sib.is_a?(Symbol::StdlibImplementation) }
             .transform_values { |sib| generate_impl_fn(sib, dep_dispatches, sibling_fns, registry) }
-          params = fn.params.join(', ')
-          body = build_std_impl_str(fn.body, sibling_dispatch, registry)
-          "->(#{params}) { #{body} }"
+          Pretty.lambda(fn.params.join(', '), build_std_impl_str(fn.body, sibling_dispatch, registry))
 
         in Symbol::ValueRef
           registry.lookup(fn).then { generate_impl_fn(it, dep_dispatches, sibling_fns, registry) }
@@ -255,28 +240,15 @@ module Jade
       end
 
       def build_impl_arg(dep_dispatches)
-        entries = dep_dispatches.map { |dispatch|
-          case dispatch
-          in String
-            dispatch
-          in Hash
-            dispatch
-              .map { |fn_name, code| "#{fn_name.inspect} => #{code}" }
-              .join(', ')
-              .then { "{ #{it} }" }
-          end
-        }
-        "[#{entries.join(', ')}]"
+        dep_dispatches
+          .map { it.is_a?(String) ? it : Pretty.hash(it) }
+          .then { Pretty.array(it) }
       end
 
       # Stdlib intrinsics implementation language.
 
       def generate_stdlib_implementation(symbol, registry, dispatch)
-        symbol
-          .params
-          .join(', ')
-          .then { "->(#{it})" }
-          .then { "#{it} { #{build_std_impl_str(symbol.body, dispatch, registry)} }" }
+        Pretty.lambda(symbol.params.join(', '), build_std_impl_str(symbol.body, dispatch, registry))
       end
 
       def build_std_impl_str(body, dispatch, registry)

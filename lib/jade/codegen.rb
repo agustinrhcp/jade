@@ -1,4 +1,7 @@
 require 'jade/codegen/helpers'
+require 'jade/codegen/pretty'
+require 'jade/codegen/inlines'
+require 'jade/codegen/inline'
 
 require 'jade/codegen/emitter'
 
@@ -40,17 +43,23 @@ module Jade
 
     def generate_entry(entry, registry)
       generate(entry.ast, registry)
-        .then { entry.entry ? "#{load_path} #{it}" : it }
+        .then { entry.entry ? "#{load_path}\n#{it}" : it }
         .then { entry.with(generated: it) }
     end
 
     def generate(node, registry, depth: 0)
       case node
       in AST::Module(name:, body:)
-        qualified = to_qualified(name)
-        body_str  = generate(body, registry, depth: name.count('.'))
-        namespace = namespace_setup(name)
-        "require 'jade/runtime'; #{Stdlib.requires(name)}#{namespace}module #{qualified}; extend self; #{body_str}; end"
+        preamble = [
+          "require 'jade/runtime'",
+          *Stdlib.requires(name),
+          *namespace_setup_lines(name),
+        ].reject(&:empty?).join(Pretty.newline)
+
+        ["extend self", *module_body_chunks(body.expressions, registry, name.count('.'))]
+          .join(Pretty.newline(2))
+          .then { Pretty.block("module #{to_qualified(name)}", it) }
+          .then { [preamble, it].reject(&:empty?).join(Pretty.newline(2)) }
 
       in AST::ImportDeclaration(module_name:)
         entry = registry.get(module_name)
@@ -63,7 +72,7 @@ module Jade
         end
 
       in AST::InteropImportDeclaration(module: mod)
-        "begin; require '#{mod.name.gsub('::', '/').downcase}'; rescue LoadError; end"
+        Pretty.block("begin", "require '#{mod.name.gsub('::', '/').downcase}'\nrescue LoadError")
 
       in AST::Implementation
         Implementation.generate(node, registry)
@@ -71,15 +80,14 @@ module Jade
       in AST::Body(expressions:)
         expressions
           .map { generate(it, registry, depth:) }
-          .join("; ")
+          .reject(&:empty?)
+          .join("\n")
 
-      in AST::VariableReference(symbol:, name:)
-        symbol = symbol.is_a?(Symbol::ValueRef) ? registry.lookup(symbol) : symbol
-
-        case symbol
-        in Symbol::InteropFunction
+      in AST::VariableReference(symbol: ref, name:)
+        case ref.is_a?(Symbol::ValueRef) ? registry.lookup(ref) : ref
+        in Symbol::InteropFunction => sym
           registry
-            .lookup(symbol.to_ref)
+            .lookup(sym.to_ref)
             .then { PortDecoder.task_call(it, registry) }
 
         in Symbol::StdlibFunction(codegen:, params:) if params.empty?
@@ -88,7 +96,7 @@ module Jade
         in Symbol::StdlibFunction(codegen:)
           codegen
 
-        in Symbol::Function if symbol.params.empty?
+        in Symbol::Function(params:) if params.empty?
           "#{name}.call()"
 
         else
@@ -126,7 +134,7 @@ module Jade
       in AST::TypeDeclaration(variants:)
         variants
           .map { VariantDeclaration.generate(it, variants.map(&:name)) }
-          .join('; ')
+          .join(Pretty.newline(2))
 
       in AST::StructDeclaration(name:, record_type:)
         record_type
@@ -157,13 +165,27 @@ module Jade
         end
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)
-        "if (#{generate(condition, registry)}) then; #{generate(if_branch, registry)}; else; #{generate(else_branch, registry)}; end"
+        [
+          "if (#{generate(condition, registry)})",
+          Pretty.indent(generate(if_branch, registry)),
+          "else",
+          Pretty.indent(generate(else_branch, registry)),
+          "end",
+        ].join(Pretty.newline)
 
       in AST::CaseOf(expression:, branches:)
-        "case #{generate(expression, registry)}; " + generate_many(branches, registry, "") + "end"
+        branches
+          .map { generate(it, registry) }
+          .join("\n")
+          .then { "case #{generate(expression, registry)}\n#{it}\nend" }
 
       in AST::CaseOfBranch(pattern:, body:)
-        "in #{generate(pattern, registry)} then #{generate(body, registry)}; "
+        pat  = generate(pattern, registry)
+        body = generate(body, registry)
+
+        Pretty.multiline?(body) \
+          ? "in #{pat} then\n#{Pretty.indent(body)}"
+          : "in #{pat} then #{body}"
 
       in AST::Pattern::Literal(literal:)
         generate(literal, registry)
@@ -189,9 +211,7 @@ module Jade
           in nil then []
           end
 
-        (patterns.map { generate(it, registry) } + rest_part)
-          .join(', ')
-          .then { "[#{it}]" }
+        Pretty.array(patterns.map { generate(it, registry) } + rest_part)
 
       in AST::Pattern::Constructor
         Pattern::Constructor.generate(node, registry)
@@ -199,24 +219,24 @@ module Jade
       in AST::Lambda(params:, body:)
         param_strs = params.zip(0..).map { |p, i| param_name(p, i) }
 
-        destructures = params
+        params
           .zip(0..)
-          .filter_map { |p, i| "#{param_synthetic_name(i)} => #{generate(p, registry)}; " unless simple_pattern?(p) }
-          .join
-
-        "->(#{param_strs.join(', ')}) { #{destructures}#{generate(body, registry)} }"
+          .filter_map { |p, i| "#{param_synthetic_name(i)} => #{generate(p, registry)}" unless simple_pattern?(p) }
+          .then { (it + [generate(body, registry)]).join("\n") }
+          .then { Pretty.lambda(param_strs.join(', '), it) }
 
       in AST::Grouping(expression:)
         "(#{generate(expression, registry)})"
 
       in AST::List(items:)
-        "[#{generate_many(items, registry)}]"
+        Pretty.array(items.map { generate(it, registry) })
 
       in AST::RecordLiteral(fields:)
-        fields_sorted = fields.sort_by { it.key }
+        sorted = fields.sort_by { it.key }
+        keys   = sorted.map { ":#{it.key}" }.join(', ')
+        values = generate_many(sorted.map(&:value), registry)
 
-        data_define(fields.map(&:key).sort) +
-          "[#{generate_many(fields_sorted.map(&:value), registry)}]"
+        "Jade::Runtime.record(#{keys})[#{values}]"
 
       in AST::RecordField(key:, value:)
         "#{key}: #{generate(value, registry)}"
@@ -254,28 +274,34 @@ module Jade
     end
 
     def relative_require(import_path, current_depth)
-      prefix = '../' * current_depth
-      "#{prefix}#{import_path}"
+      "#{'../' * current_depth}#{import_path}"
     end
 
-    def namespace_setup(name)
+    def namespace_setup_lines(name)
       parts = name.split('.')
-      prefixes = (0...parts.length - 1)
+      (0...parts.length - 1)
         .map { parts[0..it].join('::') }
+        .then { |prefixes| Stdlib.stdlib_name?(name) ? ['Jade'] + prefixes.map { "Jade::#{it}" } : prefixes }
+        .map { "module #{it}; end" }
+    end
 
-      if Stdlib.stdlib_name?(name)
-        (['Jade'] + prefixes.map { "Jade::#{it}" })
-          .map { "module #{it}; end; " }
-          .join
-      else
-        prefixes
-          .map { "module #{it}; end; " }
-          .join
-      end
+    def module_body_chunks(expressions, registry, depth)
+      expressions
+        .chunk_while { |a, b| import?(a) && import?(b) }
+        .filter_map do |group|
+          group
+            .map { generate(it, registry, depth:) }
+            .reject(&:empty?)
+            .then { it.empty? ? nil : it.join("\n") }
+        end
+    end
+
+    def import?(node)
+      node.is_a?(AST::ImportDeclaration) || node.is_a?(AST::InteropImportDeclaration)
     end
 
     def load_path
-      return '$LOAD_PATH.unshift(File.expand_path("lib"));'
+      '$LOAD_PATH.unshift(File.expand_path("lib"))'
     end
 
     def lower_to_ruby(value)
@@ -284,15 +310,13 @@ module Jade
         value.dump
 
       in Array
-        value
-          .map { |v| lower_to_ruby(v) }.join(", ")
-          .then { "[#{it}]" }
+        Pretty.array(value.map { lower_to_ruby(it) })
 
       in Hash
         value
           .map { |k, v| "#{lower_to_ruby(k)} => #{lower_to_ruby(v)}" }
           .join(", ")
-          .then { "{ #{it}}" }
+          .then { "{ #{it} }" }
       end
     end
   end

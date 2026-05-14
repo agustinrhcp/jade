@@ -27,8 +27,8 @@ module Jade
           branches
             .map { [:case_branch, *it] }
             .map { emit(it) }
-            .join('; ')
-            .then { "case #{emit(subject)}; #{it}; end" }
+            .join("\n")
+            .then { "case #{emit(subject)}\n#{it}\nend" }
 
         in [:case_branch, pattern, body]
           body

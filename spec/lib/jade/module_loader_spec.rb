@@ -44,7 +44,7 @@ module Jade
       subject { super().get('Test.Path') }
 
       its(:ast) { is_expected.to_not be_nil }
-      its(:generated) { is_expected.to eql "$LOAD_PATH.unshift(File.expand_path(\"lib\")); require_relative 'test/pepe.rb'" }
+      its(:generated) { is_expected.to eql "$LOAD_PATH.unshift(File.expand_path(\"lib\"))\nrequire_relative 'test/pepe.rb'" }
     end
 
     describe '.emit' do

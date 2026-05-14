@@ -11,11 +11,11 @@ module Jade
 
         method_defs = functions
           .filter_map { generate_function(it, registry, interface, type_name) }
-          .join("; ")
+          .join(Pretty.newline(2))
 
         registrations = generate_registrations(symbol, registry)
 
-        [method_defs, registrations].reject(&:empty?).join("; ")
+        [method_defs, registrations].reject(&:empty?).join(Pretty.newline(2))
       end
 
       private
@@ -41,11 +41,11 @@ module Jade
 
         return "" if fn_map.empty?
 
-        fn_map_str = fn_map.map { |k, v| "#{k.inspect} => #{v}" }.join(', ')
+        fn_map_str = Pretty.hash(fn_map)
 
         ruby_classes
-          .map { "Jade::Runtime.register_impl(#{iface_qname.inspect}, #{it}, { #{fn_map_str} })" }
-          .join("; ")
+          .map { "Jade::Runtime.register_impl(#{iface_qname.inspect}, #{it}, #{fn_map_str})" }
+          .join(Pretty.newline)
       end
 
       def generate_function(impl_fn, registry, interface, type_name)
@@ -56,7 +56,7 @@ module Jade
           fn_name = impl_synthetic_name(interface, type_name, fn_name)
 
           generate_node(fn, registry)
-            .then { "def #{fn_name}; #{it}; end" }
+            .then { Pretty.block("def #{fn_name}", it) }
 
         in AST::VariableReference
           nil
