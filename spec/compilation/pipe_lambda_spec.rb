@@ -24,9 +24,7 @@ module Jade
         end
 
         def chained(n: Int) -> Int
-          n
-          |> (m) -> { m * 2 }
-          |> (m) -> { m + 1 }
+          n |> (m) -> { m * 2 } |> (m) -> { m + 1 }
         end
       JADE
     end

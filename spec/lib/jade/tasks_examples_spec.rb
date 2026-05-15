@@ -214,9 +214,7 @@ describe 'auto-generated predicates for user-defined unions' do
     test_compiler.require('shapes', <<~JADE)
       module Shapes exposing (Shape(..))
 
-      type Shape
-        = Circle(Float)
-        | Rectangle(Float, Float)
+      type Shape = Circle(Float) | Rectangle(Float, Float)
     JADE
   end
 
@@ -238,9 +236,7 @@ describe 'snake_case predicate names for multi-word variants' do
     test_compiler.require('events', <<~JADE)
       module Events exposing (Event(..))
 
-      type Event
-        = UserSignedUp(String)
-        | OrderPlaced(Int)
+      type Event = UserSignedUp(String) | OrderPlaced(Int)
     JADE
   end
 

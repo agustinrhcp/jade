@@ -411,47 +411,62 @@ module Jade
     end
 
     context 'type declaration' do
-      context 'simple enum' do
+      context 'short variants stay inline' do
         let(:text) do
           <<~JADE.strip
             module Foo exposing (..)
 
-            type Color
-              = Red
-              | Green
-              | Blue
+            type Color = Red | Green | Blue
           JADE
         end
 
-        it { is_expected.to include "type Color\n  = Red\n  | Green\n  | Blue" }
+        it { is_expected.to include "type Color = Red | Green | Blue" }
       end
 
-      context 'variant with args' do
+      context 'variant with args, inline when it fits' do
         let(:text) do
           <<~JADE.strip
             module Foo exposing (..)
 
-            type Shape
-              = Circle(Int)
-              | Rect(Int, Int)
+            type Shape = Circle(Int) | Rect(Int, Int)
           JADE
         end
 
-        it { is_expected.to include "type Shape\n  = Circle(Int)\n  | Rect(Int, Int)" }
+        it { is_expected.to include "type Shape = Circle(Int) | Rect(Int, Int)" }
       end
 
-      context 'with type params' do
+      context 'with type params, inline when it fits' do
         let(:text) do
           <<~JADE.strip
             module Foo exposing (..)
 
-            type Maybe(a)
-              = Just(a)
-              | Nothing
+            type Maybe(a) = Just(a) | Nothing
           JADE
         end
 
-        it { is_expected.to include "type Maybe(a)\n  = Just(a)\n  | Nothing" }
+        it { is_expected.to include "type Maybe(a) = Just(a) | Nothing" }
+      end
+
+      context 'falls back to multi-line when variants are long' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            type Event
+              = OneThingHappened(Int, String, Bool)
+              | AnotherThingHappened(Int, Int, Int)
+              | YetAnotherThing(String)
+          JADE
+        end
+
+        it do
+          is_expected.to include <<~JADE.strip
+            type Event
+              = OneThingHappened(Int, String, Bool)
+              | AnotherThingHappened(Int, Int, Int)
+              | YetAnotherThing(String)
+          JADE
+        end
       end
     end
 

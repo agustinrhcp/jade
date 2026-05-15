@@ -15,14 +15,10 @@ module Jade
           import Decode exposing (DecodeError)
           import Decode.Params exposing (Params)
 
-          type Field
-            = Name(String)
-            | Age(Int)
+          type Field = Name(String) | Age(Int)
 
           def patient_params() -> Params(Field)
-            Decode.Params.empty
-            |> Decode.Params.string("name", Name)
-            |> Decode.Params.int("age", Age)
+            Decode.Params.empty |> Decode.Params.string("name", Name) |> Decode.Params.int("age", Age)
           end
 
           def parse_fields(json: String) -> Result(List(Field), DecodeError)
@@ -61,9 +57,7 @@ module Jade
           import Decode exposing (DecodeError)
           import Decode.Params exposing (Params)
 
-          type Field
-            = Name(String)
-            | Age(Int)
+          type Field = Name(String) | Age(Int)
 
           def patient_params() -> Params(Field)
             Decode.Params.empty
@@ -141,13 +135,9 @@ module Jade
           import Decode exposing (DecodeError)
           import Decode.Params exposing (Params)
 
-          type AddressField
-            = Line1(String)
-            | Line2(String)
+          type AddressField = Line1(String) | Line2(String)
 
-          type Field
-            = Name(String)
-            | Address(List(AddressField))
+          type Field = Name(String) | Address(List(AddressField))
 
           def address_params() -> Params(AddressField)
             Decode.Params.empty

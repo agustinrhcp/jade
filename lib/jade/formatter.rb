@@ -55,18 +55,18 @@ module Jade
       in AST::TypeDeclaration(name:, type_params:, variants:)
         params_str = type_params.empty? ? "" : "(#{type_params.map(&:name).join(', ')})"
         header = "type #{name}#{params_str}"
+        variants_strs = variants.map { format_node(it) }
+        inline = "#{header} = #{variants_strs.join(' | ')}"
 
-        if variants.size == 1
-          "#{header} = #{format_node(variants.first)}"
-            .then(&and_indent(indent))
+        if variants.size == 1 || !too_long?(inline, indent)
+          inline.then(&and_indent(indent))
         else
           inner = INDENT * (indent + 1)
-          variants_str = variants
-            .map { format_node(it) }
+          multi = variants_strs
             .map.with_index { |v, i| "#{inner}#{i == 0 ? '=' : '|'} #{v}" }
             .join("\n")
 
-          "#{and_indent(indent).call(header)}\n#{variants_str}"
+          "#{and_indent(indent).call(header)}\n#{multi}"
         end
 
       in AST::VariantDeclaration(name:, args:)
@@ -192,9 +192,11 @@ module Jade
           body.expressions.first.leading_comments.empty? &&
           !block_expr
 
-        if single_expr
-          "of #{pat_str} then #{format_node(body.expressions.first)}"
-            .then(&and_indent(indent))
+        inline_body = single_expr ? format_node(body.expressions.first) : nil
+        inline = "of #{pat_str} then #{inline_body}" if inline_body
+
+        if inline && !inline_body.include?("\n") && !too_long?(inline, indent)
+          inline.then(&and_indent(indent))
         else
           [
             "of #{pat_str} then".then(&and_indent(indent)),
@@ -224,14 +226,15 @@ module Jade
       in AST::InfixApplication(left:, operator:, right:)
         if operator.value == '|>'
           chain = collect_pipe_chain(node)
-          if chain.length > 2
+          inline = chain.map { format_node(it) }.join(' |> ')
+
+          if too_long?(inline, indent)
             indent_str = INDENT * indent
             head = format_node(chain.first, indent:)
             tail = chain[1..].map { "#{indent_str}|> #{format_node(it)}" }
             ([head] + tail).join("\n")
           else
-            "#{format_node(left)} |> #{format_node(right)}"
-              .then(&and_indent(indent))
+            inline.then(&and_indent(indent))
           end
         else
           "#{format_node(left)} #{operator.value} #{format_node(right)}"

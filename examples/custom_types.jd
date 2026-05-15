@@ -1,9 +1,6 @@
 module CustomTypes exposing (area, describe, perimeter)
 
-type Shape
-  = Circle(Float)
-  | Rectangle(Float, Float)
-  | Triangle(Float, Float, Float)
+type Shape = Circle(Float) | Rectangle(Float, Float) | Triangle(Float, Float, Float)
 
 def area(shape: Shape) -> Float
   case shape

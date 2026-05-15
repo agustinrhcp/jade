@@ -538,9 +538,7 @@ module Jade
 
       let(:text) do
         <<~JADE
-          type Maybe(a)
-            = Just(a)
-            | Nothing
+          type Maybe(a) = Just(a) | Nothing
         JADE
       end
 
@@ -559,9 +557,7 @@ module Jade
       context 'followed by a constructor expression on the next line' do
         let(:text) do
           <<~JADE
-            type Maybe(a)
-              = Just(a)
-              | Nothing
+            type Maybe(a) = Just(a) | Nothing
             (Just(1))
           JADE
         end

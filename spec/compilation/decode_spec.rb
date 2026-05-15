@@ -175,9 +175,7 @@ module Jade
 
           import Decode exposing (DecodeError)
 
-          type Id
-            = StringId(String)
-            | IntId(Int)
+          type Id = StringId(String) | IntId(Int)
 
           def id_from_json(json: String) -> Result(Id, DecodeError)
             string_id = Decode.map(StringId, Decode.string)

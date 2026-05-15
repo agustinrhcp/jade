@@ -93,9 +93,7 @@ module Jade
     context 'type def' do
       let(:text) do
         <<~JADE
-          type Maybe(a)
-            = Just(a)
-            | Nothing
+          type Maybe(a) = Just(a) | Nothing
         JADE
       end
 
@@ -111,9 +109,7 @@ module Jade
       context 'and reference' do
         let(:text) do
           <<~JADE
-            type Maybe(a)
-              = Just(a)
-              | Nothing
+            type Maybe(a) = Just(a) | Nothing
             Just(12)
           JADE
         end
@@ -193,9 +189,7 @@ module Jade
       context 'with constructor branches' do
         let(:text) do
           <<~JADE
-            type Maybe(a)
-              = Just(a)
-              | Nothing
+            type Maybe(a) = Just(a) | Nothing
             case Just(1)
             of Nothing then 0
             of Just(x) then x

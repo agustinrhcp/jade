@@ -14,9 +14,7 @@ module Jade
 
     let(:pepe_source_code) do
       <<~JADE
-        type Pepe
-          = Lala
-          | Coco
+        type Pepe = Lala | Coco
       JADE
     end
 

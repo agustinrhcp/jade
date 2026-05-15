@@ -144,9 +144,7 @@ module Jade
       context 'non-exhaustive constructor pattern' do
         let(:text) do
           <<~JADE
-            type Maybe(a)
-              = Just(a)
-              | Nothing
+            type Maybe(a) = Just(a) | Nothing
 
             Just(x) = Just(1)
           JADE
@@ -273,9 +271,7 @@ module Jade
       context 'with a non-exhaustive constructor pattern' do
         let(:text) do
           <<~JADE
-            type Maybe(a)
-              = Just(a)
-              | Nothing
+            type Maybe(a) = Just(a) | Nothing
 
             fn = (Just(x)) -> { x }
           JADE
@@ -463,9 +459,7 @@ module Jade
     context 'a function declaration with a type var' do
       let(:text) do
         <<~JADE
-          type Maybe(a)
-            = Just(a)
-            | Nothing
+          type Maybe(a) = Just(a) | Nothing
           def pepe(maybe: Maybe(Int), default: Int) -> Int
             case maybe
             of Nothing then default
@@ -584,9 +578,7 @@ module Jade
 
       let(:text) do
         <<~JADE
-          type Maybe(a)
-            = Just(a)
-            | Nothing
+          type Maybe(a) = Just(a) | Nothing
         JADE
       end
 
@@ -638,9 +630,7 @@ module Jade
     context 'type def and reference' do
       let(:text) do
         <<~JADE
-          type Maybe(a)
-            = Just(a)
-            | Nothing
+          type Maybe(a) = Just(a) | Nothing
           Just
         JADE
       end
@@ -832,9 +822,7 @@ module Jade
     context 'case of with constructor' do
       let(:text) do
         <<~JADE
-          type Maybe(a)
-            = Just(a)
-            | Nothing
+          type Maybe(a) = Just(a) | Nothing
           case Just(1)
           of Nothing then 0
           of Just(x) then x
@@ -862,9 +850,7 @@ module Jade
     describe 'function declaration with lambda' do
       let(:text) do
         <<~JADE
-          type Maybe(a)
-            = Just(a)
-            | Nothing
+          type Maybe(a) = Just(a) | Nothing
           def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
             case maybe
             of Just(something) then Just(fn(something))
@@ -898,9 +884,7 @@ module Jade
         <<~JADE
           module Imported exposing (MyType, my_function)
 
-          type MyType
-            = MyType
-            | SomeOtherType(String)
+          type MyType = MyType | SomeOtherType(String)
 
           def my_function(thing: MyType) -> String
             case thing
@@ -925,9 +909,7 @@ module Jade
           <<~JADE
             module Imported exposing (MyType(..), my_function)
 
-            type MyType
-              = MyType
-              | SomeOtherType(String)
+            type MyType = MyType | SomeOtherType(String)
 
             def my_function(thing: MyType) -> String
               case thing

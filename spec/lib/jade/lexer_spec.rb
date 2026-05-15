@@ -209,9 +209,7 @@ module Jade
     context 'type def' do
       let(:text) do
         <<~JADE
-          type Maybe(a)
-            = Just(a)
-            | Nothing
+          type Maybe(a) = Just(a) | Nothing
         JADE
       end
 

@@ -249,9 +249,7 @@ module Jade
       context 'type def and reference' do
         let(:text) do
           <<~JADE
-            type Maybe(a)
-              = Just(a)
-              | Nothing
+            type Maybe(a) = Just(a) | Nothing
             Just
           JADE
         end
@@ -268,9 +266,7 @@ module Jade
         describe 'and call' do
           let(:text) do
             <<~JADE
-              type Maybe(a)
-                = Just(a)
-                | Nothing
+              type Maybe(a) = Just(a) | Nothing
               Just(12)
             JADE
           end
@@ -282,9 +278,7 @@ module Jade
         describe 'and call with different type application' do
           let(:text) do
             <<~JADE
-              type Maybe(a)
-                = Just(a)
-                | Nothing
+              type Maybe(a) = Just(a) | Nothing
               Just(12)
               Just("Hello")
             JADE
@@ -297,9 +291,7 @@ module Jade
         describe 'and call with wrong params' do
           let(:text) do
             <<~JADE
-              type Maybe(a)
-                = Just(a, a)
-                | Nothing
+              type Maybe(a) = Just(a, a) | Nothing
               Just(12, "Hello")
             JADE
           end
@@ -445,9 +437,7 @@ module Jade
         context 'with constructor pattern' do
           let(:text) do
             <<~JADE
-              type Maybe(a)
-                = Just(a)
-                | Nothing
+              type Maybe(a) = Just(a) | Nothing
               case Just(1)
               of Nothing then 0
               of Just(x) then x
@@ -610,9 +600,7 @@ module Jade
         context 'with non-exhaustive constructor pattern param' do
           let(:text) do
             <<~JADE
-              type Maybe(a)
-                = Just(a)
-                | Nothing
+              type Maybe(a) = Just(a) | Nothing
 
               fn = (Just(x)) -> { x }
             JADE

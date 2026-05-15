@@ -24,24 +24,30 @@ module Jade
 
       def code
         <<~JADE
-          module Result exposing(Result(..), map, and_then, with_default, to_maybe, from_maybe, map_error, on_error, sequence)
+          module Result exposing (
+            Result(..),
+            and_then,
+            from_maybe,
+            map,
+            map_error,
+            on_error,
+            sequence,
+            to_maybe,
+            with_default,
+          )
 
           type Result(value, error) = Ok(value) | Err(error)
 
           def map(result: Result(a, e), fn: a -> b) -> Result(b, e)
             case result
-            of Ok(something) then
-              something |> fn |> Ok
-
+            of Ok(something) then something |> fn |> Ok
             of Err(error) then Err(error)
             end
           end
 
           def and_then(result: Result(a, e), fn: a -> Result(b, e)) -> Result(b, e)
             case result
-            of Ok(something) then
-              something |> fn
-
+            of Ok(something) then something |> fn
             of Err(error) then Err(error)
             end
           end
@@ -75,11 +81,16 @@ module Jade
           end
 
           def sequence(results: List(Result(a, e))) -> Result(List(a), e)
-            List.fold(results, Ok([]), (acc, result) -> {
-              list <- acc
-              value <- result
-              Ok(list ++ [value])
-            })
+            List.fold(
+              results,
+              Ok([]),
+              (acc, result) -> {
+                list <- acc
+                value <- result
+
+                Ok(list ++ [value])
+              },
+            )
           end
 
           def on_error(result: Result(a, e), fn: e -> Result(a, f)) -> Result(a, f)

@@ -512,9 +512,7 @@ module Jade
 
           import Decode exposing (Decodable, Decoder)
 
-          type Status
-            = Active
-            | Inactive
+          type Status = Active | Inactive
 
           def status_decoder() -> Decoder(Status)
             Decode.and_then(

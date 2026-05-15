@@ -39,9 +39,7 @@ module Jade
         <<~JADE
           module M exposing (total)
 
-          type Stuff
-            = V1(Int)
-            | V2(paid_amount: Int, tax_amount: Int)
+          type Stuff = V1(Int) | V2(paid_amount: Int, tax_amount: Int)
 
           def total(s: Stuff) -> Int
             case s

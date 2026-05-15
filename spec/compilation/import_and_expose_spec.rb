@@ -11,9 +11,7 @@ module Jade
       <<~JADE
         module Exposing exposing (MyType(..), my_function)
 
-        type MyType
-          = MyType
-          | SomeOtherType(String)
+        type MyType = MyType | SomeOtherType(String)
 
         def my_function(thing: MyType) -> String
           case thing
@@ -120,9 +118,7 @@ module Jade
           <<~JADE
             module Exposing exposing (MyType, my_function)
 
-            type MyType
-              = MyType
-              | SomeOtherType(String)
+            type MyType = MyType | SomeOtherType(String)
 
             def my_function(thing: MyType) -> String
               case thing
@@ -169,9 +165,7 @@ module Jade
         <<~JADE
           module Exposing exposing (MyType, my_function)
 
-          type MyType
-            = MyType
-            | SomeOtherType(String)
+          type MyType = MyType | SomeOtherType(String)
 
           def my_function(thing: MyType) -> String
             case thing
@@ -205,9 +199,7 @@ module Jade
         <<~JADE
           module Exposing exposing (MyType(..), my_function)
 
-          type MyType
-            = MyType
-            | SomeOtherType(String)
+          type MyType = MyType | SomeOtherType(String)
 
           def my_function(thing: MyType) -> String
             case thing
@@ -352,9 +344,7 @@ module Jade
           def hello() -> Int
             int = Exposing.id(12)
             string = Exposing.id("12")
-            int_from_string = string
-            |> String.to_int
-            |> Maybe.with_default(0)
+            int_from_string = string |> String.to_int |> Maybe.with_default(0)
 
             int + int_from_string
           end

@@ -24,7 +24,7 @@ module Jade
 
       def code
         <<~JADE
-          module Maybe exposing(Maybe(..), with_default, map, and_then)
+          module Maybe exposing (Maybe(..), and_then, map, with_default)
 
           type Maybe(a) = Just(a) | Nothing
 
@@ -37,18 +37,14 @@ module Jade
 
           def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
             case maybe
-            of Just(something) then
-              something |> fn |> Just
-
+            of Just(something) then something |> fn |> Just
             of Nothing then maybe
             end
           end
 
           def and_then(maybe: Maybe(a), fn: a -> Maybe(b)) -> Maybe(b)
             case maybe
-            of Just(something) then
-              something |> fn
-
+            of Just(something) then something |> fn
             of Nothing then Nothing
             end
           end
