@@ -164,14 +164,18 @@ module Jade
         end
       end
 
-      # Returns a codegen-time hash of fn_name => ruby_code for the entry.
-      # For Implementation, inlines functions. For a Var Constraint marker, we
-      # can't enumerate fn names at compile time, so callers must use
-      # dispatch_lookup instead.
+      # Resolves a dictionary entry to either a codegen-time hash
+      # (Implementation, fn_name => ruby_code) or a runtime reference string
+      # (Var Constraint marker, the enclosing fn's dict param). `build_impl_arg`
+      # handles both shapes.
       def dispatch_dict(entry, registry)
         case entry
         in Symbol::Implementation
           generate_impl_dispatch(entry, registry)
+
+        in Type::Constraint(interface:, type: Type::Var)
+          Codegen.dict_env[[interface, canonical_var_id(entry.type)]] ||
+            fail("no dict in scope for #{interface}")
         end
       end
 
@@ -239,11 +243,20 @@ module Jade
       end
 
       def build_impl_arg(dep_dispatches)
-        entries = dep_dispatches.map { |dispatch|
-          fns = dispatch.map { |fn_name, code| "#{fn_name.inspect} => #{code}" }.join(', ')
-          "{ #{fns} }"
-        }
-        "[#{entries.join(', ')}]"
+        dep_dispatches
+          .map { |dispatch|
+            case dispatch
+            in Hash
+              dispatch
+                .map { |fn_name, code| "#{fn_name.inspect} => #{code}" }
+                .join(', ')
+                .then { "{ #{it} }" }
+            in String
+              dispatch
+            end
+          }
+          .join(', ')
+          .then { "[#{it}]" }
       end
 
       # Stdlib intrinsics implementation language.
