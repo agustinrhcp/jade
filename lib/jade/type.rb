@@ -64,9 +64,9 @@ module Jade
       AnonymousRecord[fields, row_var]
     end
 
-    def constraint(interface_id, type, origin)
+    def constraint(interface_id, type, origin, index: :unindex)
       fail unless interface_id in String
-      Constraint[interface_id, type, origin]
+      Constraint[interface_id, type, origin, index]
     end
 
     private
