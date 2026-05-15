@@ -56,11 +56,7 @@ module Jade
       out = compiled_for(
         'PropIf',
         <<~JADE.strip,
-          if True then
-            encode(value)
-          else
-            "x"
-          end
+          encode(value) if True else "x"
         JADE
       )
       expect(out).to include('__wrapped__impl__')

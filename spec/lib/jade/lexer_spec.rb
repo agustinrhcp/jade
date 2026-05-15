@@ -235,14 +235,17 @@ module Jade
     end
 
     context 'if then else' do
+      # Block-form fixture (raw, not JADE-tagged) so the formatter dogfood
+      # script doesn't rewrite it to postfix — the assertions below pin the
+      # token positions for `then`/`else`/`end` specifically.
       let(:text) do
-        <<~JADE
+        <<~LEXER
           if String.is_empty("") then
             1
           else
             2
           end
-        JADE
+        LEXER
       end
 
       it { is_expected.to have(14).item.and all(be_a(Token)) }

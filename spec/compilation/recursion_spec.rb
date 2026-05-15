@@ -17,11 +17,7 @@ module Jade
           module Fact exposing (fact)
 
           def fact(n: Int) -> Int
-            if n == 0 then
-              1
-            else
-              n * fact(n - 1)
-            end
+            1 if n == 0 else n * fact(n - 1)
           end
         JADE
       end
@@ -41,11 +37,7 @@ module Jade
           module Fib exposing (fib)
 
           def fib(n: Int) -> Int
-            if (n <= 1) then
-              n
-            else
-              fib(n - 1) + fib(n - 2)
-            end
+            n if (n <= 1) else fib(n - 1) + fib(n - 2)
           end
         JADE
       end

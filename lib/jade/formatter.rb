@@ -10,7 +10,7 @@ module Jade
 
     private
 
-    def format_node(node, indent: 0)
+    def format_node(node, indent: 0, body_statement: false)
       leading  = format_leading_comments(node, indent)
       trailing = format_trailing_comment(node)
 
@@ -28,9 +28,13 @@ module Jade
             .map { |tok| "#{INDENT * indent}#{tok.value}" }
             .join("\n")
         else
+          formatted = expressions.each_with_index.map { |expr, i|
+            format_node(expr, indent:, body_statement: i.positive?)
+          }
           expressions
-            .chunk_while { |a, b| binding?(a) == binding?(b) }
-            .map { |group| group.map { format_node(it, indent:) }.join("\n") }
+            .each_with_index
+            .chunk_while { |(a, _), (b, _)| binding?(a) == binding?(b) }
+            .map { |group| group.map { |_, i| formatted[i] }.join("\n") }
             .join("\n\n")
         end
 
@@ -174,14 +178,28 @@ module Jade
       # Expressions
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)
-        [
-          "if #{format_node(condition)} then".then(&and_indent(indent)),
-          format_node(if_branch, indent: indent + 1),
-          "else".then(&and_indent(indent)),
-          format_node(else_branch, indent: indent + 1),
-          "end".then(&and_indent(indent)),
-        ]
-          .join("\n")
+        cond_str = format_node(condition)
+        if_inline = inline_body(if_branch)
+        else_inline = inline_body(else_branch)
+        postfix = "#{if_inline} if #{cond_str} else #{else_inline}" if if_inline && else_inline
+
+        # When this IfThenElse is a non-first body statement, refuse postfix if
+        # the if-branch starts with `(` or `[`: the parser chains the preceding
+        # statement into it as a function/index call.
+        unsafe_in_body = body_statement && if_inline && if_inline.start_with?('(', '[')
+
+        if postfix && !too_long?(postfix, indent) && !unsafe_in_body
+          postfix.then(&and_indent(indent))
+        else
+          [
+            "if #{cond_str} then".then(&and_indent(indent)),
+            format_node(if_branch, indent: indent + 1),
+            "else".then(&and_indent(indent)),
+            format_node(else_branch, indent: indent + 1),
+            "end".then(&and_indent(indent)),
+          ]
+            .join("\n")
+        end
 
       in AST::CaseOf(expression:, branches:)
         branches_str =
@@ -543,6 +561,21 @@ module Jade
     def inline_lambda_body?(body)
       body.expressions.length == 1 &&
         INLINE_LAMBDA_BODY.any? { body.expressions.first.is_a?(it) }
+    end
+
+    # For if/then/else postfix collapse: returns the body's single expression
+    # formatted, or nil if it can't be inlined (multi-expression, comments,
+    # or a nested block expression like another if/case).
+    def inline_body(body)
+      return nil unless body.expressions.length == 1
+      return nil unless body.leading_comments.empty?
+      return nil unless body.expressions.first.leading_comments.empty?
+
+      expr = body.expressions.first
+      return nil if expr.is_a?(AST::CaseOf) || expr.is_a?(AST::IfThenElse)
+
+      formatted = format_node(expr)
+      formatted.include?("\n") ? nil : formatted
     end
 
     def format_delimited(strs, open, close, trailing_comma, indent)

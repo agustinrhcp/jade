@@ -309,11 +309,7 @@ module Jade
       context 'if then else' do
         let(:text) do
           <<~JADE
-            if String.is_empty("") then
-              1
-            else
-              2
-            end
+            1 if String.is_empty("") else 2
           JADE
         end
 
@@ -323,11 +319,7 @@ module Jade
         context 'when the condition is not a boolean' do
           let(:text) do
             <<~JADE
-              if "" then
-                1
-              else
-                2
-              end
+              1 if "" else 2
             JADE
           end
 
@@ -345,11 +337,7 @@ module Jade
         context 'when the branches have different types' do
           let(:text) do
             <<~JADE
-              if String.is_empty("") then
-                1
-              else
-                "two"
-              end
+              1 if String.is_empty("") else "two"
             JADE
           end
 
@@ -485,11 +473,7 @@ module Jade
             let(:text) do
               <<~JADE
                 def f(x: a) -> a
-                  if True then
-                    x
-                  else
-                    1
-                  end
+                  x if True else 1
                 end
               JADE
             end

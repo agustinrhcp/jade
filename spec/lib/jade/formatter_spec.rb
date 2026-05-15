@@ -155,35 +155,26 @@ module Jade
     end
 
     context 'if/then/else' do
-      let(:text) do
-        <<~JADE.strip
-          if x == 0 then
-            1
-          else
-            2
-          end
-        JADE
+      context 'block form input with short bodies collapses to postfix' do
+        let(:text) do
+          <<~JADE.strip
+            1 if x == 0 else 2
+          JADE
+        end
+
+        it { is_expected.to eql "1 if x == 0 else 2" }
       end
 
-      it do
-        is_expected.to eql <<~JADE.strip
-          if x == 0 then
-            1
-          else
-            2
-          end
-        JADE
+      context 'postfix input round-trips' do
+        let(:text) { "1 if x == 0 else 2" }
+        it { is_expected.to eql "1 if x == 0 else 2" }
       end
 
-      context 'nested inside a function body' do
+      context 'nested inside a function body, postfix when it fits' do
         let(:text) do
           <<~JADE.strip
             def abs(x: Int) -> Int
-              if x < 0 then
-                0 - x
-              else
-                x
-              end
+              0 - x if x < 0 else x
             end
           JADE
         end
@@ -191,11 +182,55 @@ module Jade
         it do
           is_expected.to eql <<~JADE.strip
             def abs(x: Int) -> Int
-              if x < 0 then
-                0 - x
-              else
-                x
-              end
+              0 - x if x < 0 else x
+            end
+          JADE
+        end
+      end
+
+      context 'falls back to block form when the postfix line is too long' do
+        let(:text) do
+          <<~JADE.strip
+            if some_very_long_condition_that_definitely_goes_beyond_the_line_limit_yes_indeed_for_real_now then
+              a
+            else
+              b
+            end
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            if some_very_long_condition_that_definitely_goes_beyond_the_line_limit_yes_indeed_for_real_now then
+              a
+            else
+              b
+            end
+          JADE
+        end
+      end
+
+      context 'falls back to block form when a branch has multiple expressions' do
+        let(:text) do
+          <<~JADE.strip
+            if x == 0 then
+              y = 1
+
+              y
+            else
+              2
+            end
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            if x == 0 then
+              y = 1
+
+              y
+            else
+              2
             end
           JADE
         end

@@ -150,11 +150,7 @@ module Jade
     context 'if then else' do
       let(:text) do
         <<~JADE
-          if String.is_empty("") then
-            1
-          else
-            2
-          end
+          1 if String.is_empty("") else 2
         JADE
       end
 

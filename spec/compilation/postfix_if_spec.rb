@@ -12,22 +12,14 @@ module Jade
         module M exposing (abs, classify, double_if_big, mixed_with_block, sign)
 
         def abs(n: Int) -> Int
-          if n < 0 then
-            0 - n
-          else
-            n
-          end
+          0 - n if n < 0 else n
         end
 
         def sign(n: Int) -> Int
           if n < 0 then
             0 - 1
           else
-            if n > 0 then
-              1
-            else
-              0
-            end
+            1 if n > 0 else 0
           end
         end
 
@@ -35,31 +27,19 @@ module Jade
           if n == 0 then
             "zero"
           else
-            if n < 0 then
-              "negative"
-            else
-              "positive"
-            end
+            "negative" if n < 0 else "positive"
           end
         end
 
         def double_if_big(n: Int, big: Bool) -> Int
-          if big then
-            n * 2
-          else
-            n
-          end
+          n * 2 if big else n
         end
 
         def mixed_with_block(n: Int) -> Int
           if n == 0 then
             42
           else
-            if n > 10 then
-              n * 2
-            else
-              n
-            end
+            n * 2 if n > 10 else n
           end
         end
       JADE
@@ -106,47 +86,27 @@ module Jade
         )
 
         def in_call_arg(b: Bool) -> Int
-          List.length(if b then
-            [1, 2, 3]
-          else
-            []
-          end)
+          List.length([1, 2, 3] if b else [])
         end
 
         def in_list(b: Bool) -> List(Int)
-          [1, if b then
-            2
-          else
-            99
-          end, 3]
+          [1, 2 if b else 99, 3]
         end
 
         def in_record(b: Bool) -> { x: Int, y: Int }
           {
             x: 1,
-            y: if b then
-              2
-            else
-              99
-            end,
+            y: 2 if b else 99,
           }
         end
 
         def multiline(n: Int) -> Int
-          if n > 0 then
-            n * 2
-          else
-            0 - n
-          end
+          n * 2 if n > 0 else 0 - n
         end
 
         def block_if_with_postfix_tail(n: Int) -> Int
           if n > 0 then
-            if n == 0 then
-              100
-            else
-              200
-            end
+            100 if n == 0 else 200
           else
             0 - 1
           end
@@ -156,25 +116,13 @@ module Jade
           if n > 0 then
             1
           else
-            if n == 0 then
-              0
-            else
-              0 - 1
-            end
+            0 if n == 0 else 0 - 1
           end
         end
 
         def in_let(b: Bool) -> Int
-          x = if b then
-            1
-          else
-            2
-          end
-          y = if b then
-            10
-          else
-            20
-          end
+          x = 1 if b else 2
+          y = 10 if b else 20
 
           x + y
         end
