@@ -873,6 +873,26 @@ module Jade
           JADE
         end
       end
+
+      context 'leading comment on a function with a qualified type name' do
+        let(:text) do
+          <<~JADE.strip
+            # makes a date
+            def today(y: Calendar.Date) -> Calendar.Date
+              y
+            end
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            # makes a date
+            def today(y: Calendar.Date) -> Calendar.Date
+              y
+            end
+          JADE
+        end
+      end
     end
   end
 end
