@@ -154,6 +154,23 @@ module Jade
         "#{name}: #{format_node(fn)}"
           .then(&and_indent(indent))
 
+      in AST::InterfaceDeclaration(name:, type_param:, functions:)
+        header = "interface #{name}(#{type_param.name}) with"
+        fns_str = functions
+          .map { format_node(it, indent: indent + 1) }
+          .join("\n")
+
+        [
+          header.then(&and_indent(indent)),
+          fns_str,
+          "end".then(&and_indent(indent)),
+        ]
+          .join("\n")
+
+      in AST::InterfaceFunctionDecl(name:, type:)
+        "#{name} : #{format_type(type)}"
+          .then(&and_indent(indent))
+
       # Expressions
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)
@@ -514,9 +531,9 @@ module Jade
 
     INLINE_LAMBDA_BODY = [
       AST::Literal, AST::CharLiteral, AST::VariableReference, AST::ConstructorReference,
-      AST::FunctionCall, AST::RecordAccess, AST::InfixApplication, AST::RecordLiteral,
-      AST::List, AST::Tuple, AST::Grouping, AST::RecordUpdate, AST::RecordUpdateSugar,
-      AST::RecordAccessSugar,
+      AST::FunctionCall, AST::RecordAccess, AST::MemberAccess, AST::QualifiedAccess,
+      AST::InfixApplication, AST::RecordLiteral, AST::List, AST::Tuple, AST::Grouping,
+      AST::RecordUpdate, AST::RecordUpdateSugar, AST::RecordAccessSugar,
     ].freeze
 
     def too_long?(line, indent)

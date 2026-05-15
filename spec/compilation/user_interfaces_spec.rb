@@ -17,7 +17,7 @@ module Jade
           end
 
           implements Show(Int) with
-            show : int_show
+            show: int_show
           end
 
           def int_show(n: Int) -> String
@@ -41,7 +41,7 @@ module Jade
           end
 
           implements Show(Int) with
-            show : int_show
+            show: int_show
           end
 
           def int_show(n: Int) -> String
@@ -71,11 +71,11 @@ module Jade
           end
 
           implements Show(Int) with
-            show : int_show
+            show: int_show
           end
 
           implements Show(String) with
-            show : str_show
+            show: str_show
           end
 
           def int_show(n: Int) -> String
@@ -114,7 +114,7 @@ module Jade
           end
 
           implements Show(Int) with
-            show : int_show
+            show: int_show
           end
 
           def int_show(n: Int) -> String
@@ -135,6 +135,41 @@ module Jade
         test_compiler.require('show_test', source)
 
         expect(ShowTest.show_int_via_helper.call(42)).to eql 'int'
+      end
+    end
+
+    context 'inline lambda in an implementation' do
+      let(:source) do
+        <<~JADE
+          module InlineImpl exposing (show_int, show_str)
+
+          interface Show(a) with
+            show : a -> String
+          end
+
+          implements Show(Int) with
+            show: (n) -> { "int" }
+          end
+
+          implements Show(String) with
+            show: (s) -> { "str" }
+          end
+
+          def show_int(n: Int) -> String
+            show(n)
+          end
+
+          def show_str(s: String) -> String
+            show(s)
+          end
+        JADE
+      end
+
+      it 'compiles and dispatches' do
+        test_compiler.require('inline_impl', source)
+
+        expect(InlineImpl.show_int.call(42)).to eql 'int'
+        expect(InlineImpl.show_str.call('hi')).to eql 'str'
       end
     end
   end

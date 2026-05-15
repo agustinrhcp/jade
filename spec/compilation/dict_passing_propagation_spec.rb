@@ -8,6 +8,7 @@ module Jade
     include_context 'with test compiler'
 
     def shape_source(module_name, body)
+      indented = body.lines.each_with_index.map { |line, i| i == 0 ? line : "  #{line}" }.join
       <<~JADE
         module #{module_name} exposing (wrapped)
 
@@ -24,7 +25,7 @@ module Jade
         end
 
         def wrapped(value: a) -> String
-          #{body}
+          #{indented}
         end
       JADE
     end
@@ -52,12 +53,28 @@ module Jade
     end
 
     it 'propagates through an if-then-else branch' do
-      out = compiled_for('PropIf', 'if True then encode(value) else "x" end')
+      out = compiled_for(
+        'PropIf',
+        <<~JADE.strip,
+          if True then
+            encode(value)
+          else
+            "x"
+          end
+        JADE
+      )
       expect(out).to include('__wrapped__impl__')
     end
 
     it 'propagates through a case-of branch' do
-      out = compiled_for('PropCase', "case value of _ then encode(value) end")
+      out = compiled_for(
+        'PropCase',
+        <<~JADE.strip,
+          case value
+          of _ then encode(value)
+          end
+        JADE
+      )
       expect(out).to include('__wrapped__impl__')
     end
 
@@ -79,7 +96,7 @@ module Jade
 
         struct Box(a) = {
           value: String,
-          tag: String,
+          tag: String
         }
 
         def wrapped(value: a) -> Box(a)
@@ -111,7 +128,7 @@ module Jade
 
         struct Box(a) = {
           values: List(String),
-          tag: String,
+          tag: String
         }
 
         def wrapped(value: a) -> Box(a)
