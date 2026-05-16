@@ -44,30 +44,30 @@ module Jade
             end
 
             def string(p: Params(a), key: String, ctor: String -> a) -> Params(a)
-              accept(p, key, Decode.map(ctor, Decode.string))
+              accept(p, key, Decode.map(Decode.string, ctor))
             end
 
             def int(p: Params(a), key: String, ctor: Int -> a) -> Params(a)
-              accept(p, key, Decode.map(ctor, Decode.int))
+              accept(p, key, Decode.map(Decode.int, ctor))
             end
 
             def float(p: Params(a), key: String, ctor: Float -> a) -> Params(a)
-              accept(p, key, Decode.map(ctor, Decode.float))
+              accept(p, key, Decode.map(Decode.float, ctor))
             end
 
             def bool(p: Params(a), key: String, ctor: Bool -> a) -> Params(a)
-              accept(p, key, Decode.map(ctor, Decode.bool))
+              accept(p, key, Decode.map(Decode.bool, ctor))
             end
 
             def nested(p: Params(a), key: String, ctor: List(b) -> a, sub: Params(b)) -> Params(a)
-              accept(p, key, Decode.map(ctor, collect(sub)))
+              accept(p, key, Decode.map(collect(sub), ctor))
             end
 
             def collect(p: Params(a)) -> Decoder(List(a))
               case p
               of Params(accs, defs) then
                 decoders = List.map(accs, (acc) -> { accept_to_decoder(defs, acc) })
-                Decode.map(filter_justs, Decode.sequence(decoders))
+                Decode.map(Decode.sequence(decoders), filter_justs)
               end
             end
 
@@ -82,7 +82,7 @@ module Jade
             end
 
             def with_default(decoder: Decoder(Maybe(a)), v: a) -> Decoder(Maybe(a))
-              Decode.map((m) -> { maybe_or_just(m, v) }, decoder)
+              Decode.map(decoder, (m) -> { maybe_or_just(m, v) })
             end
 
             def maybe_or_just(m: Maybe(a), v: a) -> Maybe(a)

@@ -75,7 +75,7 @@ module Jade
           end
 
           context 'when a matching implementation exists' do
-            let(:constraint) { Type.constraint('__Iface__.Eq', Type.int, origin) }
+            let(:constraint) { Type.constraint('__Iface__.Eq', Type.int, origin, index: 0) }
 
             subject { described_class.solve_at_call_site(constraint, registry, entry_name) }
 

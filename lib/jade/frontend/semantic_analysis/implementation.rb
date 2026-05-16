@@ -7,14 +7,16 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::Implementation(interface:, applied_type:, extends:, functions:)
 
-          type_name  = applied_type.constructor.type
+          type_sym = lookup_applied_type(applied_type, entry)
           make_error = ->(klass, **kw) { klass.new(entry.name, node.range, **kw) }
 
-          unless entry.defined_types.key?(interface) || entry.defined_types.key?(type_name)
+          type_is_local = entry.defined_types.key?(local_type_name(applied_type))
+
+          unless entry.defined_types.key?(interface) || type_is_local
             make_error.(
               Error::OrphanImplementation,
               interface: entry.lookup_type(interface).qname,
-              type:      entry.lookup_type(type_name).qname,
+              type:      type_sym.qname,
             ).then { return Result[scope, [it]] }
           end
 
@@ -22,9 +24,6 @@ module Jade
             .lookup_type(interface)
             .to_ref
             .then { registry.lookup(it) }
-
-          type_sym = entry
-            .lookup_type(type_name)
 
           extends_errors = extends
             .flat_map do |iface_name|
@@ -70,6 +69,23 @@ module Jade
         end
 
         private
+
+        def lookup_applied_type(applied_type, entry)
+          case applied_type.constructor
+          in AST::TypeName(type:)
+            entry.lookup_type(type)
+          in AST::QualifiedTypeName(path:)
+            *module_parts, type_name = path
+            entry.lookup_qualified_type(module_parts.join('.'), type_name)
+          end
+        end
+
+        def local_type_name(applied_type)
+          case applied_type.constructor
+          in AST::TypeName(type:) then type
+          in AST::QualifiedTypeName then nil
+          end
+        end
 
         def parameterized_interface?(iface_sym)
           iface_sym.functions.any? { contains_partial_application?(it) }

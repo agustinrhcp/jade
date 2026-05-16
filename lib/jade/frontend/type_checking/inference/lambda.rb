@@ -15,6 +15,7 @@ module Jade
               .unify_result(
                 Result.init(Type.function(params_types, state.fresh)),
                 expected.type,
+                &type_error(state, node)
               )
               .first
 
@@ -61,7 +62,20 @@ module Jade
               .function(params_types, body_result.type)
               .then { Result.init(it, body_result.constraints) }
               .apply(exhaustiveness_state.env.substitution)
-              .then { exhaustiveness_state.unify_result(it, expected.type) }
+              .then { exhaustiveness_state.unify_result(it, expected.type, &type_error(exhaustiveness_state, node)) }
+          end
+
+          private
+
+          def type_error(state, node)
+            ->(e) do
+              Error::TypeMismatch.new(
+                state.env.entry_name,
+                node.range,
+                expected: e.expected,
+                actual: e.actual,
+              )
+            end
           end
         end
       end

@@ -193,8 +193,8 @@ module Jade
             | IntId(Int)
 
           def id_from_json(json: String) -> Result(Id, DecodeError)
-            string_id = Decode.map(StringId, Decode.string)
-            int_id = Decode.map(IntId, Decode.int)
+            string_id = Decode.map(Decode.string, StringId)
+            int_id = Decode.map(Decode.int, IntId)
             decoder = Decode.one_of([string_id, int_id])
 
             Decode.decode_string(decoder, json)
@@ -398,8 +398,8 @@ module Jade
 
           def parse_updates(value: Value) -> Result(List(Update), DecodeError)
             decoder = Decode.succeed(make_pair(_, _))
-              |> Decode.and_map(Decode.optional_field("name", Decode.map(name_update, Decode.string)))
-              |> Decode.and_map(Decode.optional_field("age", Decode.map(age_update, Decode.int)))
+              |> Decode.and_map(Decode.optional_field("name", Decode.map(Decode.string, name_update)))
+              |> Decode.and_map(Decode.optional_field("age", Decode.map(Decode.int, age_update)))
 
             Decode.decode(decoder, value)
           end

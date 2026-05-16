@@ -168,20 +168,20 @@ module Jade
           .join(', ')
       end
 
-      # Returns a codegen-time hash of fn_name => ruby_code for the entry.
-      # For Implementation, inlines functions. For a Var Constraint marker we
-      # don't know the fn names at compile time — return {}; callers that
-      # actually consume the dispatch must use dispatch_lookup instead. The
-      # empty hash is correct for Ruby-block intrinsics that declare a
-      # constraint for type-system honesty but never inspect the impl
-      # (Dict's `Eq k`, etc.).
+      # Resolves a dictionary entry to either a codegen-time hash (for
+      # Implementation, `fn_name => ruby_code`) or a runtime reference string
+      # (for a Var Constraint marker — the enclosing fn's dict param).
+      # `build_impl_arg` handles both shapes; the `in String` body of
+      # `generate_impl_fn` ignores dispatches entirely so Ruby-block intrinsics
+      # (Dict's `Eq k`, etc.) aren't affected.
       def dispatch_dict(entry, registry)
         case entry
         in Symbol::Implementation
           generate_impl_dispatch(entry, registry)
 
-        in Type::Constraint
-          {}
+        in Type::Constraint(interface:, type: Type::Var)
+          Codegen.dict_env[[interface, canonical_var_id(entry.type)]] ||
+            fail("no dict in scope for #{interface}")
         end
       end
 

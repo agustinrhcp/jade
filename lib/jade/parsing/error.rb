@@ -57,8 +57,25 @@ module Jade
         super
       end
 
+      def hint
+        return leading_pipe_hint if leading_pipe_in_type_decl?
+        nil
+      end
+
       def message
-        "#{context_prefix}Unexpected token #{actual.value.inspect}, expected #{expected}"
+        "#{context_prefix}Unexpected token #{actual.value.inspect}, expected #{expected}#{" #{hint}" if hint}"
+      end
+
+      private
+
+      def leading_pipe_in_type_decl?
+        actual.type == :pipe &&
+          expected == :constant &&
+          @context.include?('type declaration')
+      end
+
+      def leading_pipe_hint
+        "(leading `|` isn't supported — write `type Foo = A | B` with no `|` before the first variant)"
       end
 
       def label

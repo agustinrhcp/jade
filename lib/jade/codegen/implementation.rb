@@ -7,7 +7,11 @@ module Jade
       def generate(node, registry)
         node => AST::Implementation(symbol:, interface:, applied_type:, functions:)
 
-        type_name = applied_type.constructor.type
+        type_name =
+          case applied_type.constructor
+          in AST::TypeName(type:) then type
+          in AST::QualifiedTypeName(path:) then path.last
+          end
 
         method_defs = functions
           .filter_map { generate_function(it, registry, interface, type_name) }

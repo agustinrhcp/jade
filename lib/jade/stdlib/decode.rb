@@ -91,9 +91,9 @@ module Jade
 
       function(
         'map',
-        { fn: 'a -> b', decoder: 'Decoder(a)' },
+        { decoder: 'Decoder(a)', fn: 'a -> b' },
         'Decoder(b)',
-      ) { |fn, decoder|
+      ) { |decoder, fn|
         Jade::Decode::Decoder[Jade::Decode::Desc::Map[fn, decoder.desc]]
       }
 

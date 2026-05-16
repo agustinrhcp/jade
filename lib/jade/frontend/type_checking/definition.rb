@@ -3,7 +3,11 @@ module Jade
     module TypeChecking
 
       StructDef = Data.define(:name, :type_params, :body)
-      TypeDef = Data.define(:name, :type_params, :constructors)
+      TypeDef = Data.define(:name, :type_params, :constructors) do
+        def opaque?
+          constructors.empty?
+        end
+      end
       ConstructorDef = Data.define(:name, :parent_name, :args)
       InterfaceDef = Data.define(:name)
 

@@ -132,5 +132,39 @@ module Jade
         expect(PatternBind.head_id.call([c1, c2])).to eql 1
       end
     end
+
+  end
+
+  describe 'Pattern analysis on opaque types' do
+    include_context 'with test compiler'
+
+    it "doesn't crash on let-binding over a cross-module struct with a Decode.Value field" do
+      test_compiler.require('opaque_lib', <<~JADE)
+        module OpaqueLib exposing (T(..), make)
+
+        import Decode exposing (Value)
+        import Encode exposing (int)
+
+        struct T = { v: Value }
+
+        def make() -> T
+          T(int(1))
+        end
+      JADE
+
+      test_compiler.require('opaque_app', <<~JADE)
+        module OpaqueApp exposing (go)
+
+        import OpaqueLib exposing (T, make)
+
+        def go() -> T
+          a = make()
+
+          a
+        end
+      JADE
+
+      expect(OpaqueApp.go.call).to be_a(OpaqueLib::T)
+    end
   end
 end

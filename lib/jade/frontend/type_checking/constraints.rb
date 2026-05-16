@@ -34,7 +34,7 @@ module Jade
 
           if Deriving.derivable?(constraint.interface)
             Deriving
-              .derive(constraint, registry, entry_name) { resolve(it, registry, entry_name) } 
+              .derive(constraint, registry, entry_name) { resolve(it, registry, entry_name) }
               .then { return it }
           end
 
@@ -45,46 +45,19 @@ module Jade
 
         # An origin's dictionaries can be touched by multiple inference frames:
         # the call's own callee constraints attach here, and outer frames
-        # may also attach when args bubble up concretely. Dedup so a concrete
-        # impl supersedes a prior var-typed marker for the same interface,
-        # but leave other concrete impls alone — distinct constraint slots
-        # (e.g. Task(a, e) with two Decodable constraints) need their own
-        # entries.
+        # also attach when args bubble up concretely.
         def attach_dictionary(constraint, impl)
           constraint => Type::Constraint(
-            interface: iface,
             origin: { dictionaries: dicts },
+            index:,
           )
 
-          case impl
-          in Symbol::Implementation
-            dicts
-              .reject { it.is_a?(Type::Constraint) && same_iface?(it, iface) }
-              .then { dicts.replace(it + [impl]) }
+          fail "constraint missing index: #{constraint}" if index == :unindex
 
-          in Type::Constraint if dicts.none? { same_iface?(it, iface) && marker_matches?(it, impl) }
-            dicts.replace(dicts + [impl])
+          return if dicts[index].is_a?(Symbol::Implementation) &&
+                    impl.is_a?(Type::Constraint)
 
-          else
-            # marker for same (iface, var) already present — no-op
-          end
-        end
-
-        def same_iface?(entry, iface)
-          dict_iface(entry) == iface
-        end
-
-        def dict_iface(entry)
-          case entry
-          in Type::Constraint(interface:) then interface
-          in Symbol::Implementation(interface:) then interface.qualified_name
-          end
-        end
-
-        def marker_matches?(entry, impl)
-          entry in Type::Constraint(type: Type::Var(id:)) and
-            impl.type.is_a?(Type::Var) and
-            impl.type.id == id
+          dicts[index] = impl
         end
 
         def solve_at_finalize(constraint, registry, entry_name)

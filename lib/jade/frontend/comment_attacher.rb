@@ -21,14 +21,16 @@ module Jade
           .to_h
           .reject { |field, _| SKIP_FIELDS.include?(field) }
           .values
-          .select { |val| val.is_a?(Array) || val.is_a?(AST::Node) }
-          .flat_map do |val|
-            case val
-            in Array     then val.flat_map { collect_nodes(it) }
-            in AST::Node then collect_nodes(val)
-            end
-          end
+          .flat_map { walk_collect(it) }
           .then { [node, *it] }
+      end
+
+      def walk_collect(val)
+        case val
+        in AST::Node then collect_nodes(val)
+        in Array     then val.flat_map { walk_collect(it) }
+        else              []
+        end
       end
 
       def build_map(comments, sorted_nodes, source)
@@ -80,19 +82,21 @@ module Jade
         rebuilt_children = node
           .to_h
           .reject { |field, _| SKIP_FIELDS.include?(field) }
-          .transform_values do |val|
-            case val
-            in Array     then val.map { reattach(it, map) }
-            in AST::Node then reattach(val, map)
-            in _         then val
-            end
-          end
+          .transform_values { walk_reattach(it, map) }
 
         node
           .with(
             **rebuilt_children,
             **((map[node.id]&.to_h || {}).transform_keys { :"#{it}_comments" }),
           )
+      end
+
+      def walk_reattach(val, map)
+        case val
+        in AST::Node then reattach(val, map)
+        in Array     then val.map { walk_reattach(it, map) }
+        else              val
+        end
       end
 
       module CommentEntry

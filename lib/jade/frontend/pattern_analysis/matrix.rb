@@ -138,6 +138,11 @@ module Jade
           else
             type_def = env.lookup_def(type.constructor.name)
 
+            # Type the user can't destructure from here (transitively reached
+            # through an imported struct field, or opaque intrinsic) —
+            # any pattern they can write is trivially exhaustive.
+            return [] if type_def.nil? || type_def.opaque?
+
             type_def
               .constructors
               .map do |con|
