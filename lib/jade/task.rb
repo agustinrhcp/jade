@@ -1,14 +1,5 @@
 require 'jade/tasks'
 
-# Predeclared so the Task variants and Outcome work before stdlib Result is
-# compiled. Stdlib re-assigns these constants on first compile.
-module Jade
-  module Result
-    Ok  = Data.define(:_1) unless const_defined?(:Ok, false)
-    Err = Data.define(:_1) unless const_defined?(:Err, false)
-  end
-end
-
 module Jade
   module Task
     Literal = Data.define(:result) do

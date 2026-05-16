@@ -28,7 +28,11 @@ module Jade
               figure_out_type(entry, applied_type).map { [interface_sym, it] }
             end
             .map do |interface_sym, applied_type_sym|
-              type_name    = applied_type.constructor.type
+              type_name =
+                case applied_type.constructor
+                in AST::TypeName(type:) then type
+                in AST::QualifiedTypeName(path:) then path.last
+                end
               extends_refs = extends.map { entry.lookup_type(it).to_ref }
 
               entry_with_fns, fn_map = functions

@@ -76,6 +76,28 @@ module Jade
             impl_fn => AST::ImplementationFunction(name:, fn:)
 
             case fn
+            in AST::Lambda(params: [])
+              # 0-arg lambda for a non-function field (e.g. `decoder: () -> { ... }`
+              # against `decoder: Decoder(a)`) acts as a thunk: type the body and
+              # unify with expected. Mirrors `from_symbol_r`'s 0-arg collapse for
+              # named `def f() -> T`. Codegen emits a `->()` either way; the
+              # runtime always `.call`s the impl entry.
+              if expected.type.is_a?(Type::Function)
+                check(fn, registry, state, expected).first
+              else
+                body_state, body_result = check(
+                  fn.body,
+                  registry,
+                  state,
+                  Expected.infer(state.fresh),
+                )
+                body_state.unify(
+                  body_result.type,
+                  expected.type,
+                  &mismatch_error(state.env.entry_name, impl_fn, interface_qname, name)
+                )
+              end
+
             in AST::Lambda
               check(fn, registry, state, expected).first
 

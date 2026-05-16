@@ -240,6 +240,30 @@ module Jade
       expect(ListShow.go.call).to eql 'n, n, n'
     end
 
+    it 'threads dict for stdlib DerivedFunction calls in polymorphic helpers' do
+      test_compiler.require('repro_derived', <<~JADE)
+        module ReproDerived exposing (encode_int, encode_str)
+
+        import Encode exposing (encode)
+        import Decode exposing (Value)
+
+        def to_value(value: a) -> Value
+          encode(value)
+        end
+
+        def encode_int(n: Int) -> Value
+          to_value(n)
+        end
+
+        def encode_str(s: String) -> Value
+          to_value(s)
+        end
+      JADE
+
+      expect(ReproDerived.encode_int.call(42)).to eql 42
+      expect(ReproDerived.encode_str.call("hi")).to eql "hi"
+    end
+
     it 'raises a clear error when an unboxable constraint is called from Ruby' do
       test_compiler.require('repro_unsupported', <<~JADE)
         module ReproUnsupported exposing (apply_then_encode, default_value)

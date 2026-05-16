@@ -24,7 +24,7 @@ module Jade
             Symbol
               .function(synth_name, stub_params, stub_return)
               .then { [entry.define(it), Symbol.value_ref(entry.name, synth_name)] }
-            
+
 
           in AST::VariableReference
             [

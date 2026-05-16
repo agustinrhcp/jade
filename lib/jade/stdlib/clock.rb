@@ -237,40 +237,24 @@ module Jade
             (==): instant_eq
           end
 
-          def instant_decoder() -> Decoder(Instant)
-            Decode.string |> Decode.and_then(parse_instant)
-          end
-
           def parse_instant(s: String) -> Decoder(Instant)
             Decode.from_result(from_iso(s))
           end
 
-          def instant_encoder(i: Instant) -> Value
-            Encode.string(to_iso(i))
-          end
-
           implements Decodable(Instant) with
-            decoder: instant_decoder
+            decoder: () -> { Decode.string |> Decode.and_then(parse_instant) }
           end
 
           implements Encodable(Instant) with
-            encoder: instant_encoder
-          end
-
-          def duration_decoder() -> Decoder(Duration)
-            Decode.map(Duration, Decode.int)
-          end
-
-          def duration_encoder(d: Duration) -> Value
-            Encode.int(in_millis(d))
+            encoder: (i) -> { Encode.string(to_iso(i)) }
           end
 
           implements Decodable(Duration) with
-            decoder: duration_decoder
+            decoder: () -> { Decode.map(Decode.int, Duration) }
           end
 
           implements Encodable(Duration) with
-            encoder: duration_encoder
+            encoder: (d) -> { Encode.int(in_millis(d)) }
           end
           JADE
       end

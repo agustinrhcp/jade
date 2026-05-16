@@ -137,5 +137,70 @@ module Jade
         expect(ShowTest.show_int_via_helper.call(42)).to eql 'int'
       end
     end
+
+    context 'inline lambda in an implementation' do
+      let(:source) do
+        <<~JADE
+          module InlineImpl exposing (show_int, show_str)
+
+          interface Show(a) with
+            show : a -> String
+          end
+
+          implements Show(Int) with
+            show: (n) -> { "int" }
+          end
+
+          implements Show(String) with
+            show: (s) -> { "str" }
+          end
+
+          def show_int(n: Int) -> String
+            show(n)
+          end
+
+          def show_str(s: String) -> String
+            show(s)
+          end
+        JADE
+      end
+
+      it 'compiles and dispatches' do
+        test_compiler.require('inline_impl', source)
+
+        expect(InlineImpl.show_int.call(42)).to eql 'int'
+        expect(InlineImpl.show_str.call('hi')).to eql 'str'
+      end
+    end
+
+    context 'implementing for a qualified type' do
+      let(:source) do
+        <<~JADE
+          module QualImpl exposing (tag_today)
+
+          import Calendar
+
+          interface Marker(a) with
+            tag : a -> Int
+          end
+
+          implements Marker(Calendar.Date) with
+            tag: (d) -> {
+              d.year
+            }
+          end
+
+          def tag_today() -> Int
+            tag(Calendar.from_calendar_date(2026, Calendar.Jan, 1))
+          end
+        JADE
+      end
+
+      it 'compiles and dispatches via the qualified type' do
+        test_compiler.require('qual_impl', source)
+
+        expect(QualImpl.tag_today.call).to eql 2026
+      end
+    end
   end
 end

@@ -367,5 +367,37 @@ module Jade
         expect(Importing.hello.call()).to eql 24
       end
     end
+
+    context "constructor error hints at missing `(..)` on imported type" do
+      let(:producer_source) do
+        <<~JADE
+          module Producer exposing (Foo)
+
+          struct Foo = {
+            x: Int,
+            y: Int
+          }
+        JADE
+      end
+
+      let(:consumer_source) do
+        <<~JADE
+          module Consumer exposing (make)
+
+          import Producer exposing (Foo)
+
+          def make() -> Foo
+            Foo(1, 2)
+          end
+        JADE
+      end
+
+      it "tells the user to add `Foo(..)` to Producer's exposing list" do
+        test_compiler.require('producer', producer_source)
+
+        expect { test_compiler.require('consumer', consumer_source) }
+          .to raise_error(/`Foo` is exposed by `Producer` but its constructor is private/)
+      end
+    end
   end
 end

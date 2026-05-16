@@ -9,7 +9,15 @@ module Jade
           node => AST::Implementation(interface:, applied_type:, functions:)
 
           interface_ref = current_entry.lookup_type(interface).to_ref
-          type_ref      = current_entry.lookup_type(applied_type.constructor.type).to_ref
+          type_ref =
+            case applied_type.constructor
+            in AST::TypeName(type:)
+              current_entry.lookup_type(type).to_ref
+            in AST::QualifiedTypeName(path:)
+              *module_parts, type_name = path
+              current_entry
+                .lookup_qualified_type(module_parts.join('.'), type_name)
+            end
 
           impl_symbol = current_entry
             .implementations[[

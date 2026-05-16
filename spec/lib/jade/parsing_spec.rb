@@ -1408,6 +1408,24 @@ module Jade
       it { result => Err(err); expect(err.message).to eq('While parsing type declaration: Unexpected end of input, expected constant') }
     end
 
+    context 'type declaration with leading `|`' do
+      let(:text) do
+        <<~JADE
+          type Foo =
+            | A
+            | B
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it 'hints that the leading `|` form is unsupported' do
+        result => Err(err)
+        expect(err.message).to include('leading `|` isn\'t supported')
+        expect(err.message).to include('type Foo = A | B')
+      end
+    end
+
     context 'incomplete struct declaration' do
       let(:text) do
         <<~JADE

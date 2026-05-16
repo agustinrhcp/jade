@@ -301,24 +301,16 @@ module Jade
             (==): date_eq
           end
 
-          def date_decoder() -> Decoder(Date)
-            Decode.string |> Decode.and_then(parse_date)
-          end
-
           def parse_date(s: String) -> Decoder(Date)
             Decode.from_result(from_iso_string(s))
           end
 
-          def date_encoder(d: Date) -> Value
-            Encode.string(to_iso_string(d))
-          end
-
           implements Decodable(Date) with
-            decoder: date_decoder
+            decoder: () -> { Decode.string |> Decode.and_then(parse_date) }
           end
 
           implements Encodable(Date) with
-            encoder: date_encoder
+            encoder: (d) -> { Encode.string(to_iso_string(d)) }
           end
         JADE
       end
