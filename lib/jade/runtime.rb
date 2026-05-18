@@ -1,5 +1,6 @@
 require 'jade/interop/runtime'
 require 'jade/decode'
+require 'jade/interop/boundary'
 
 module Jade
   module Tuple
@@ -77,11 +78,7 @@ module Jade
       IMPL_CACHE.clear
     end
 
-    # Returns a hash of fn_name => callable for the impl of `interface_name`
-    # on `value`'s class. Results are cached: the same key returns the same
-    # hash object across calls, so a hot polymorphic call site doesn't
-    # re-allocate per invocation. Cache is invalidated whenever
-    # `register_impl` adds or replaces an entry.
+    # Cached per [interface_name, value.class]; `register_impl` invalidates.
     def impl_for(interface_name, value)
       boot!
       key = [interface_name, value.class]

@@ -88,7 +88,7 @@ module Jade
       it 'works because MyType is in scope' do
         expect { test_compiler.require('importing', importing_source) }
           .to_not raise_error
-        expect(Importing.hello.call()).to eql 'My type'
+        expect(Importing.hello).to eql 'My type'
       end
     end
 
@@ -112,7 +112,7 @@ module Jade
       it 'it works because Exposing exposes it' do
         expect { test_compiler.require('importing', importing_source) }
           .to_not raise_error
-        expect(Importing.hello.call()).to eql 'My type'
+        expect(Importing.hello).to eql 'My type'
       end
 
       context 'but when exposing doesnt expose the constructor' do
@@ -160,7 +160,7 @@ module Jade
       it 'works' do
         expect { test_compiler.require('importing', importing_source) }
           .to_not raise_error
-        expect(Importing.hello.call(Exposing::MyType[])).to eql 'My type'
+        expect(Importing::Internal.hello.call(Exposing::MyType[])).to eql 'My type'
       end
     end
 
@@ -270,7 +270,7 @@ module Jade
         it 'works because the constructor is in scope' do
           expect { test_compiler.require('importing', importing_source) }
             .to_not raise_error
-          expect(Importing.hello.call()).to eql 'Hello, Paul'
+          expect(Importing.hello).to eql 'Hello, Paul'
         end
       end
 
@@ -364,7 +364,7 @@ module Jade
       it 'fails because MyType constructors are private' do
         expect { test_compiler.require('importing', importing_source) }
           .to_not raise_error
-        expect(Importing.hello.call()).to eql 24
+        expect(Importing.hello).to eql 24
       end
     end
 

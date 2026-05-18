@@ -34,15 +34,15 @@ module Jade
     before { test_compiler.require('m', source) }
 
     it 'pipes a value into a bare lambda' do
-      expect(M.double.call(7)).to eql 14
+      expect(M.double(7)).to eql 14
     end
 
     it 'supports a multi-statement lambda body after pipe' do
-      expect(M.transform.call(7)).to eql 15
+      expect(M.transform(7)).to eql 15
     end
 
     it 'chains pipes through multiple lambdas' do
-      expect(M.chained.call(7)).to eql 15
+      expect(M.chained(7)).to eql 15
     end
   end
 end

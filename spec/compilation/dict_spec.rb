@@ -157,70 +157,70 @@ module Jade
     let(:dict) { ->(h) { Jade::Dict::Dict[h] } }
 
     it 'starts empty' do
-      expect(Pepe.empty_size.call).to eql 0
+      expect(Pepe.empty_size).to eql 0
     end
 
     it 'sizes after inserts' do
-      expect(Pepe.insert_size.call).to eql 3
+      expect(Pepe.insert_size).to eql 3
     end
 
     it 'gets a value (or Nothing)' do
-      expect(Pepe.add_then_get.call('a')).to be_just(1)
-      expect(Pepe.add_then_get.call('b')).to be_just(2)
-      expect(Pepe.add_then_get.call('z')).to be_nothing
+      expect(Pepe.add_then_get('a')).to eql 1
+      expect(Pepe.add_then_get('b')).to eql 2
+      expect(Pepe.add_then_get('z')).to be_nil
     end
 
     it 'reports membership' do
-      expect(Pepe.missing.call('a')).to be true
-      expect(Pepe.missing.call('z')).to be false
+      expect(Pepe.missing('a')).to be true
+      expect(Pepe.missing('z')).to be false
     end
 
     it 'removes a key (no-op when missing)' do
-      expect(Pepe.remove_key.call('a')).to eql ['b']
-      expect(Pepe.remove_key.call('z')).to eql ['a', 'b']
+      expect(Pepe.remove_key('a')).to eql ['b']
+      expect(Pepe.remove_key('z')).to eql ['a', 'b']
     end
 
     it 'enumerates keys/values/pairs in insertion order' do
-      expect(Pepe.keys_of.call).to eql ['a', 'b']
-      expect(Pepe.values_of.call).to eql [1, 2]
-      expect(Pepe.to_pairs.call).to eql [
+      expect(Pepe.keys_of).to eql ['a', 'b']
+      expect(Pepe.values_of).to eql [1, 2]
+      expect(Pepe::Internal.to_pairs.call).to eql [
         Jade::Tuple::Tuple2['a', 1],
         Jade::Tuple::Tuple2['b', 2],
       ]
     end
 
     it 'rebuilds from a list of pairs (last write wins)' do
-      expect(Pepe.rebuild.call).to eql [
+      expect(Pepe::Internal.rebuild.call).to eql [
         Jade::Tuple::Tuple2['x', 10],
         Jade::Tuple::Tuple2['y', 20],
       ]
     end
 
     it 'maps values, keeping keys' do
-      expect(Pepe.rename_value.call('a')).to be_just('1')
-      expect(Pepe.rename_value.call('b')).to be_just('2')
+      expect(Pepe.rename_value('a')).to eql '1'
+      expect(Pepe.rename_value('b')).to eql '2'
     end
 
     it 'filters by predicate' do
-      expect(Pepe.keep_evens.call).to eql ['b', 'd']
+      expect(Pepe.keep_evens).to eql ['b', 'd']
     end
 
     it 'folds across the dict' do
-      expect(Pepe.fold_sum.call).to eql 6
+      expect(Pepe.fold_sum).to eql 6
     end
 
     it 'union is left-biased' do
-      expect(Pepe.union_left.call).to be_just(1)
+      expect(Pepe.union_left).to eql 1
     end
 
     it 'merge combines overlapping keys with the supplied fn' do
-      expect(Pepe.merge_sum.call('a')).to be_just(3)
-      expect(Pepe.merge_sum.call('b')).to be_just(10)
-      expect(Pepe.merge_sum.call('c')).to be_just(30)
+      expect(Pepe.merge_sum('a')).to eql 3
+      expect(Pepe.merge_sum('b')).to eql 10
+      expect(Pepe.merge_sum('c')).to eql 30
     end
 
     it 'counts a stream of words via update + fold' do
-      result = Pepe.counts.call(%w[a b a c a b])
+      result = Pepe::Internal.counts.call(%w[a b a c a b])
       expect(result.hash).to eql({ 'a' => 3, 'b' => 2, 'c' => 1 })
     end
 
@@ -228,13 +228,13 @@ module Jade
       a = dict.call({ 'x' => 1, 'y' => 2 })
       b = dict.call({ 'y' => 2, 'x' => 1 })
       c = dict.call({ 'x' => 1, 'y' => 3 })
-      expect(Pepe.equal.call(a, b)).to be true
-      expect(Pepe.equal.call(a, c)).to be false
+      expect(Pepe::Internal.equal.call(a, b)).to be true
+      expect(Pepe::Internal.equal.call(a, c)).to be false
     end
 
     it 'threads Eq through a polymorphic helper called at a concrete site' do
-      expect(Pepe.lookup_via_poly.call('hit')).to be_just(7)
-      expect(Pepe.lookup_via_poly.call('miss')).to be_nothing
+      expect(Pepe.lookup_via_poly('hit')).to eql 7
+      expect(Pepe.lookup_via_poly('miss')).to be_nil
     end
   end
 end

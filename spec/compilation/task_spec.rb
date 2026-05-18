@@ -36,23 +36,56 @@ module Jade
     before { test_compiler.require('task_test', source) }
 
     it 'succeed produces an Ok on run' do
-      expect(TaskTest.always_ok.call.run).to be_ok(42)
+      expect(TaskTest.always_ok()).to be_task_ok(42)
     end
 
     it 'fail produces an Err on run' do
-      expect(TaskTest.always_err.call.run).to be_err('oops')
+      expect(TaskTest.always_err()).to be_task_err('oops')
+    end
+
+    it 'wraps success as the literal outcome ["ok", encoded_value]' do
+      expect(TaskTest.always_ok()).to eql ['ok', 42]
+    end
+
+    it 'wraps failure as the literal outcome ["err", encoded_err]' do
+      expect(TaskTest.always_err()).to eql ['err', 'oops']
+    end
+
+    describe 'bang variant' do
+      it 'returns the encoded ok value' do
+        expect(TaskTest.always_ok!).to eql 42
+      end
+
+      it 'unwraps mapped/chained success' do
+        expect(TaskTest.mapped!).to eql 2
+        expect(TaskTest.chained!).to eql 2
+      end
+
+      it 'raises TaskError carrying the encoded err on failure' do
+        expect { TaskTest.always_err! }
+          .to raise_error(Jade::Interop::TaskError) { |e|
+            expect(e.error).to eql 'oops'
+          }
+      end
+
+      it 'raises TaskError on chained failure' do
+        expect { TaskTest.chained_err! }
+          .to raise_error(Jade::Interop::TaskError) { |e|
+            expect(e.error).to eql 'chained error'
+          }
+      end
     end
 
     it 'map transforms the success value' do
-      expect(TaskTest.mapped.call.run).to be_ok(2)
+      expect(TaskTest.mapped()).to be_task_ok(2)
     end
 
     it 'and_then chains tasks' do
-      expect(TaskTest.chained.call.run).to be_ok(2)
+      expect(TaskTest.chained()).to be_task_ok(2)
     end
 
     it 'and_then short-circuits on failure' do
-      expect(TaskTest.chained_err.call.run).to be_err('chained error')
+      expect(TaskTest.chained_err()).to be_task_err('chained error')
     end
 
     context 'sequence' do
@@ -77,19 +110,19 @@ module Jade
       before { test_compiler.require('task_test', source) }
 
       it 'collects all values when all tasks succeed' do
-        expect(TaskTest.all_ok.call.run).to be_ok([1, 2, 3])
+        expect(TaskTest.all_ok()).to be_task_ok([1, 2, 3])
       end
 
       it 'short-circuits on the first failure' do
-        expect(TaskTest.first_fails.call.run).to be_err('first')
+        expect(TaskTest.first_fails()).to be_task_err('first')
       end
 
       it 'short-circuits on any failure' do
-        expect(TaskTest.second_fails.call.run).to be_err('second')
+        expect(TaskTest.second_fails()).to be_task_err('second')
       end
 
       it 'is lazy' do
-        expect(TaskTest.all_ok.call).to be_a(Jade::Task)
+        expect(TaskTest::Internal.all_ok.call).to be_a(Jade::Task)
       end
     end
 
@@ -115,15 +148,15 @@ module Jade
       before { test_compiler.require('task_test', source) }
 
       it 'passes Ok through unchanged' do
-        expect(TaskTest.pass_through.call.run).to be_ok(42)
+        expect(TaskTest.pass_through()).to be_task_ok(42)
       end
 
       it 'recovers from a failed task' do
-        expect(TaskTest.recover.call.run).to be_ok(0)
+        expect(TaskTest.recover()).to be_task_ok(0)
       end
 
       it 'can remap the error' do
-        expect(TaskTest.remap.call.run).to be_err('oops!')
+        expect(TaskTest.remap()).to be_task_err('oops!')
       end
     end
 
@@ -151,33 +184,64 @@ module Jade
       before { test_compiler.require('task_test', source) }
 
       it 'chains successful tasks' do
-        expect(TaskTest.sum.call.run).to be_ok(3)
+        expect(TaskTest.sum()).to be_task_ok(3)
       end
 
       it 'short-circuits on the first failure' do
-        expect(TaskTest.short_circuits.call.run).to be_err('first error')
+        expect(TaskTest.short_circuits()).to be_task_err('first error')
       end
 
       it 'is lazy' do
-        task = TaskTest.sum.call
+        task = TaskTest::Internal.sum.call
         expect(task).to be_a(Jade::Task)
       end
     end
 
     context 'nothing runs until Task.run is called' do
       it 'succeed is lazy' do
-        task = TaskTest.always_ok.call
+        task = TaskTest::Internal.always_ok.call
         expect(task).to be_a(Jade::Task)
       end
 
       it 'map is lazy' do
-        task = TaskTest.mapped.call
+        task = TaskTest::Internal.mapped.call
         expect(task).to be_a(Jade::Task)
       end
 
       it 'and_then is lazy' do
-        task = TaskTest.chained.call
+        task = TaskTest::Internal.chained.call
         expect(task).to be_a(Jade::Task)
+      end
+    end
+
+    context 'Task fn with decodable args at the boundary' do
+      let(:source) do
+        <<~JADE
+          module TaskTest exposing (echo, fail_with)
+
+          def echo(n: Int, xs: List(String)) -> Task(String, String)
+            Task.succeed(String.from_int(n) ++ ":" ++ String.concat(xs))
+          end
+
+          def fail_with(reason: String) -> Task(Int, String)
+            Task.fail(reason)
+          end
+        JADE
+      end
+
+      before { test_compiler.require('task_test', source) }
+
+      it 'decodes args, runs the Task, encodes the ok value' do
+        expect(TaskTest.echo(7, ['a', 'b'])).to eql ['ok', '7:ab']
+        expect(TaskTest.echo!(7, ['a', 'b'])).to eql '7:ab'
+      end
+
+      it 'decodes args, runs the Task, encodes the err value' do
+        expect(TaskTest.fail_with('boom')).to eql ['err', 'boom']
+        expect { TaskTest.fail_with!('boom') }
+          .to raise_error(Jade::Interop::TaskError) { |e|
+            expect(e.error).to eql 'boom'
+          }
       end
     end
   end

@@ -4,6 +4,30 @@ module Jade
       extend self
       extend Helpers
 
+      def generate_boundary_wrapper(node, registry)
+        node => AST::FunctionDeclaration(name:, symbol:)
+
+        entry = registry.get(symbol.module_name)
+        return nil unless entry&.exposed_value(name)
+
+        if !dict_constraints(symbol, registry).empty?
+          return not_exposed_stub(symbol, 'polymorphic — no extractable witness for type variable')
+        end
+
+        fn_type = fn_type_for(symbol, registry)
+        unless Codegen::Boundary.eligible?(fn_type, registry)
+          return not_exposed_stub(symbol, ineligibility_reason(fn_type, registry))
+        end
+
+        args, return_type = Type.signature(fn_type)
+
+        if task_return?(return_type)
+          task_wrapper_pair(name, args, return_type, registry)
+        else
+          eligible_wrapper(name, args, return_type, registry)
+        end
+      end
+
       def generate(node, registry)
         node => AST::FunctionDeclaration(name:, params:, body:, symbol:)
 
@@ -22,197 +46,144 @@ module Jade
 
         target = var_cs.empty? ? name : fn_impl_synthetic_name(name)
 
-        impl_def = (param_names + dict_params)
+        (param_names + dict_params)
           .join(', ')
           .then { Pretty.lambda(it, body_code) }
           .then { Pretty.block("def #{target}", it) }
-
-        return impl_def if var_cs.empty?
-
-        # Two definitions for polymorphic fns: the public wrapper (boundary
-        # calls — Ruby or runtime dispatch) computes the dict from the live
-        # value; the impl-synthetic takes the dict as an arg so Jade-internal
-        # callers can supply an inline dict and skip the lookup.
-        "#{wrapper(name, param_names, var_cs, symbol, registry)}#{Pretty.newline(2)}#{impl_def}"
       end
 
       private
 
+      def eligible_wrapper(name, args, return_type, registry)
+        param_names = args.each_index.map { param_synthetic_name(it) }
+        encoder     = Codegen::Boundary.encoder_for(return_type, registry)
+
+        [
+          *decode_arg_lines(args, param_names, registry),
+          "#{encoder}.call(Internal.#{name}.call#{decoded_call_args(param_names)})",
+        ]
+          .join(Pretty.newline)
+          .then { Pretty.block("def self.#{name}(#{param_names.join(', ')})", it) }
+      end
+
+      def task_wrapper_pair(name, args, task_return, registry)
+        ok_enc, err_enc = Codegen::Boundary.task_arms(task_return, registry)
+        param_names     = args.each_index.map { param_synthetic_name(it) }
+        params_str      = param_names.join(', ')
+
+        run_def  = task_run_def(name, params_str, args, param_names, ok_enc, err_enc, registry)
+        bang_def = task_bang_def(name, params_str, param_names)
+
+        [run_def, bang_def].join(Pretty.newline(2))
+      end
+
+      def task_run_def(name, params_str, args, param_names, ok_enc, err_enc, registry)
+        [
+          *decode_arg_lines(args, param_names, registry),
+          "case Internal.#{name}.call#{decoded_call_args(param_names)}.run",
+          "in Jade::Result::Ok[v]  then [\"ok\",  #{ok_enc}.call(v)]",
+          "in Jade::Result::Err[e] then [\"err\", #{err_enc}.call(e)]",
+          'end',
+        ]
+          .join(Pretty.newline)
+          .then { Pretty.block("def self.#{name}(#{params_str})", it) }
+      end
+
+      def task_bang_def(name, params_str, param_names)
+        [
+          "case #{name}#{paren_or_empty(param_names)}",
+          'in ["ok",  v] then v',
+          'in ["err", e] then raise Jade::Interop::TaskError.new(e)',
+          'end',
+        ]
+          .join(Pretty.newline)
+          .then { Pretty.block("def self.#{name}!(#{params_str})", it) }
+      end
+
+      def task_return?(type)
+        type in Type::Application(constructor: Type::Constructor(name: 'Task.Task'))
+      end
+
+      def decode_arg_lines(args, param_names, registry)
+        args
+          .zip(param_names)
+          .each_with_index.map do |(arg_type, pname), i|
+            Codegen::Boundary.decoder_for(arg_type, registry)
+              .then { "#{decoded_name(i)} = Jade::Interop::Boundary.decode_or_raise(#{it}, #{pname})" }
+          end
+      end
+
+      def decoded_call_args(param_names)
+        param_names
+          .each_index
+          .map { decoded_name(it) }
+          .then { paren_or_empty(it) }
+      end
+
+      def paren_or_empty(items)
+        items.empty? ? '' : "(#{items.join(', ')})"
+      end
+
+      def not_exposed_stub(symbol, reason)
+        "raise Jade::Interop::NotExposed.new(" \
+          "module_name: #{to_qualified(symbol.module_name).inspect}, " \
+          "function_name: #{symbol.name.to_sym.inspect}, " \
+          "hint: #{reason.inspect})"
+          .then { Pretty.block("def self.#{symbol.name}(*)", it) }
+      end
+
+      def ineligibility_reason(fn_type, registry)
+        args, ret = Type.signature(fn_type)
+
+        arg_ineligibility_reason(args, registry) ||
+          return_ineligibility_reason(ret, registry) ||
+          fail("unreachable: eligible? returned false but no specific reason found for #{fn_type}")
+      end
+
+      def arg_ineligibility_reason(args, registry)
+        args.each_with_index do |arg, i|
+          if Codegen::Boundary.decoder_for(arg, registry).nil?
+            return "argument #{i + 1} of type #{arg} has no Decodable instance"
+          end
+        end
+
+        nil
+      end
+
+      def return_ineligibility_reason(ret, registry)
+        case ret
+        in Type::Application(constructor: Type::Constructor(name: 'Task.Task'), args: [ok_t, err_t])
+          if Codegen::Boundary.encoder_for(ok_t, registry).nil?
+            "Task ok arm of type #{ok_t} has no Encodable instance"
+
+          elsif Codegen::Boundary.encoder_for(err_t, registry).nil?
+            "Task err arm of type #{err_t} has no Encodable instance"
+          end
+
+        else
+          if Codegen::Boundary.encoder_for(ret, registry).nil?
+            "return type #{ret} has no Encodable instance"
+          end
+        end
+      end
+
+      def decoded_name(index)
+        "__d#{index}__"
+      end
+
+      def fn_type_for(symbol, registry)
+        registry
+          .get(symbol.module_name)
+          .env
+          .then { it.substitution.apply(it.bindings[symbol.qualified_name].type) }
+      end
+
       def build_dict_env(var_cs)
-        var_cs.each_with_index.with_object({}) do |(c, i), env|
-          env[[c.interface, c.type.id]] = dict_synthetic_name(i)
-        end
-      end
-
-      def wrapper(name, param_names, var_cs, symbol, registry)
-        env = registry.get(symbol.module_name).env
-        fn_type = env
-          .substitution
-          .apply(env.bindings[symbol.qualified_name].type)
-
-        # No-arg fns collapse to their return type (Type.from_symbol_r drops
-        # the Function wrapping). Any constraint on such a fn must reference
-        # a return-position-only var, which the wrapper can't dispatch on.
-        args = fn_type.is_a?(Type::Function) ? fn_type.args : []
-
         var_cs
-          .map do |c|
-            dict_lookup_for(c, args, param_names, registry) ||
-              unsupported_boundary_raise(symbol, c, args)
-          end
-          .then { (param_names + it) }
-          .join(', ')
-          .then { "#{fn_impl_synthetic_name(name)}.call(#{it})" }
-          .then { Pretty.block("def #{name}", Pretty.lambda(param_names.join(', '), it)) }
-      end
-
-      def dict_lookup_for(c, args, param_names, registry)
-        idx = args
-          .index { it.unbound_vars.any? { |v| v.id == c.type.id } }
-
-        return nil unless idx
-
-        unbox(
-          args[idx],
-          c.type.id,
-          param_names[idx],
-          c.interface,
-          registry,
-          0,
-        )
-      end
-
-      # Putting the raise inside the wrapper's lambda body (rather than at
-      # codegen time) keeps Jade-internal callers working — they call the
-      # impl-synthetic directly and never trigger this. Only Ruby boundary
-      # calls hit the wrapper and get the error.
-      def unsupported_boundary_raise(symbol, c, args)
-        cause =
-          if args.none? { it.unbound_vars.any? { |v| v.id == c.type.id } }
-            "type variable #{c.type.name.inspect} does not appear in any argument " \
-              "(return-position polymorphism — no value to dispatch on)"
-          else
-            arg = args.find { it.unbound_vars.any? { |v| v.id == c.type.id } }
-            "argument of type #{arg} cannot be unboxed at the boundary " \
-              "(function-typed args, anonymous records, and unsupported compound " \
-              "shapes carry no extractable witness for #{c.type.name.inspect})"
-          end
-
-        Kernel.warn(
-          "[jade] #{symbol.qualified_name} is not callable from Ruby: #{cause}. " \
-            "The method is still defined but will raise on call."
-        )
-
-        "(raise ::Jade::Interop::NotCallableFromRuby.new(" \
-          "#{symbol.qualified_name.inspect}, #{cause.inspect}))"
-      end
-
-      # Recursively walks the type of an arg that contains `var_id`,
-      # emitting Ruby that destructures down to the var-typed value and
-      # looks up its dict. `depth` keeps locally-bound names from
-      # shadowing across nested case-ofs.
-      #
-      # Empty containers (`Nothing`, `[]`) and slots whose type doesn't
-      # carry the var yield `{}` — the impl's branch for those values
-      # must not consume the dict, which is the natural shape of bodies
-      # that pattern-match before using the inner.
-      def unbox(arg_type, var_id, expr, iface, registry, depth)
-        case arg_type
-        in Type::Var(id:) if id == var_id
-          "Jade::Runtime.impl_for(#{iface.inspect}, #{expr})"
-
-        in Type::Application(constructor: Type::Constructor(name: 'List.List'), args: [elem])
-          unbox_list(elem, var_id, expr, iface, registry, depth)
-
-        in Type::Application(constructor: Type::Constructor(name:), args:) if name.start_with?('Tuple.Tuple')
-          unbox_tuple(name, args, var_id, expr, iface, registry, depth)
-
-        in Type::Application(constructor: Type::Constructor(name:), args:)
-          unbox_nominal(name, args, var_id, expr, iface, registry, depth)
-
-        else
-          nil
-        end
-      end
-
-      def unbox_list(elem_type, var_id, expr, iface, registry, depth)
-        head = "__head#{depth}__"
-        inner = unbox(elem_type, var_id, head, iface, registry, depth + 1)
-
-        "(case #{expr}; in [#{head}, *] then #{inner}; in [] then {}; end)"
-      end
-
-      def unbox_tuple(qname, app_args, var_id, expr, iface, registry, depth)
-        slot = app_args.find_index { |t| t.unbound_vars.any? { |v| v.id == var_id } }
-        return nil unless slot
-
-        bound = "__slot#{depth}__"
-        binders = app_args.each_index.map { |i| i == slot ? bound : '_' }
-        inner = unbox(app_args[slot], var_id, bound, iface, registry, depth + 1)
-
-        "(case #{expr}; in #{to_qualified(qname)}(#{binders.join(', ')}) then #{inner}; end)"
-      end
-
-      def unbox_nominal(qname, app_args, var_id, expr, iface, registry, depth)
-        sym = registry.lookup(Symbol.type_ref_from_qualified_name(qname))
-
-        case sym
-        in Symbol::Union(variants:) if variants.any?
-          unbox_union(sym, variants, app_args, var_id, expr, iface, registry, depth)
-
-        in Symbol::Struct
-          unbox_struct(sym, app_args, var_id, expr, iface, registry, depth)
-
-        else
-          nil
-        end
-      end
-
-      def unbox_union(union, variant_refs, app_args, var_id, expr, iface, registry, depth)
-        param_to_type = union.type_params
           .each_with_index
-          .to_h { |tp, i| [tp.name, app_args[i]] }
-
-        branches = variant_refs.map do |ref|
-          variant_branch(registry.lookup(ref), param_to_type, var_id, iface, registry, depth)
-        end
-
-        "(case #{expr}; #{branches.join('; ')}; end)"
-      end
-
-      def variant_branch(variant, param_to_type, var_id, iface, registry, depth)
-        qualified = to_qualified(variant.qualified_name)
-        slot = variant.args.find_index do |arg|
-          arg.is_a?(Symbol::Variable) &&
-            param_to_type[arg.name]&.unbound_vars&.any? { |v| v.id == var_id }
-        end
-
-        return "in #{qualified} then {}" if slot.nil?
-
-        bound = "__slot#{depth}__"
-        binders = variant.args.each_index.map { |i| i == slot ? bound : '_' }
-        inner = unbox(param_to_type[variant.args[slot].name], var_id, bound, iface, registry, depth + 1)
-
-        "in #{qualified}(#{binders.join(', ')}) then #{inner}"
-      end
-
-      def unbox_struct(struct_sym, app_args, var_id, expr, iface, registry, depth)
-        param_to_type = struct_sym.type_params
-          .each_with_index
-          .to_h { |tp, i| [tp.name, app_args[i]] }
-
-        field_name, field_type_param = struct_sym.record_type.fields.find do |_, ft|
-          ft.is_a?(Symbol::Variable) &&
-            param_to_type[ft.name]&.unbound_vars&.any? { |v| v.id == var_id }
-        end || [nil, nil]
-
-        return nil unless field_name
-
-        bound = "__field#{depth}__"
-        inner = unbox(param_to_type[field_type_param.name], var_id, bound, iface, registry, depth + 1)
-        qualified = to_qualified(struct_sym.qualified_name)
-
-        "(case #{expr}; in #{qualified}(#{field_name}: #{bound}) then #{inner}; end)"
+          .reduce({}) do |env, (c, i)|
+            env.merge([c.interface, c.type.id] => dict_synthetic_name(i))
+          end
       end
     end
   end

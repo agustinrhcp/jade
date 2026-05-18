@@ -47,7 +47,7 @@ module Jade
 
     it 'compiles a diamond where a primitive type is used in the shared module' do
       test_compiler.require('m/b', b)
-      expect(M::B.run.call).to eql 0
+      expect(M::B.run).to eql 0
     end
 
     context 'with import order reversed in B' do
@@ -66,7 +66,7 @@ module Jade
 
       it 'still compiles' do
         test_compiler.require('m/b', b)
-        expect(M::B.run.call).to eql 0
+        expect(M::B.run).to eql 0
       end
     end
   end

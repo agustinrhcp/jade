@@ -31,23 +31,19 @@ module Jade
       before { test_compiler.require('chain_test', source) }
 
       it 'chains two Just values' do
-        result = ChainTest.chain.call(Maybe::Just[3], Maybe::Just[4])
-        expect(result).to be_just(7)
+        expect(ChainTest.chain(3, 4)).to eql 7
       end
 
       it 'short-circuits on the first Nothing' do
-        result = ChainTest.chain.call(Maybe::Nothing[], Maybe::Just[4])
-        expect(result).to be_nothing
+        expect(ChainTest.chain(nil, 4)).to be_nil
       end
 
       it 'short-circuits on the second Nothing' do
-        result = ChainTest.chain.call(Maybe::Just[3], Maybe::Nothing[])
-        expect(result).to be_nothing
+        expect(ChainTest.chain(3, nil)).to be_nil
       end
 
       it 'short-circuits in chain_nothing' do
-        result = ChainTest.chain_nothing.call(Maybe::Just[3])
-        expect(result).to be_nothing
+        expect(ChainTest.chain_nothing(3)).to be_nil
       end
     end
 
@@ -82,22 +78,22 @@ module Jade
       before { test_compiler.require('chain_test', source) }
 
       it 'chains two Ok values' do
-        result = ChainTest.chain.call(3, 4)
+        result = ChainTest::Internal.chain.call(3, 4)
         expect(result).to be_ok(7)
       end
 
       it 'short-circuits on the first Err' do
-        result = ChainTest.chain.call(0, 4)
+        result = ChainTest::Internal.chain.call(0, 4)
         expect(result).to be_err('cannot be zero')
       end
 
       it 'short-circuits on the second Err' do
-        result = ChainTest.chain.call(3, 0)
+        result = ChainTest::Internal.chain.call(3, 0)
         expect(result).to be_err('cannot be zero')
       end
 
       it 'short-circuits on a forced Err' do
-        result = ChainTest.chain_err.call(3, 4)
+        result = ChainTest::Internal.chain_err.call(3, 4)
         expect(result).to be_err('forced')
       end
     end
@@ -149,13 +145,13 @@ module Jade
       before { test_compiler.require('chain_test', source) }
 
       it 'maps over Maybe' do
-        expect(ChainTest.add_one_maybe.call(Maybe::Just[5])).to be_just(6)
-        expect(ChainTest.add_one_maybe.call(Maybe::Nothing[])).to be_nothing
+        expect(ChainTest.add_one_maybe(5)).to eql 6
+        expect(ChainTest.add_one_maybe(nil)).to be_nil
       end
 
       it 'maps over Result' do
-        expect(ChainTest.add_one_result.call(Result::Ok[5])).to be_ok(6)
-        expect(ChainTest.add_one_result.call(Result::Err['oops'])).to be_err('oops')
+        expect(ChainTest::Internal.add_one_result.call(Result::Ok[5])).to be_ok(6)
+        expect(ChainTest::Internal.add_one_result.call(Result::Err['oops'])).to be_err('oops')
       end
     end
   end

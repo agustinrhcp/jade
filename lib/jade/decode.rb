@@ -30,6 +30,7 @@ module Jade
       OneOf    = Data.define(:decoders)
       AndThen  = Data.define(:fn, :d)
       Fail     = Data.define(:msg)
+      Variant  = Data.define(:cases)
     end
 
     module Runner
@@ -179,7 +180,23 @@ module Jade
 
         in Desc::Fail[msg]
           err(Jade::Decode::Custom[msg])
+
+        in Desc::Variant[cases]
+          interp_variant(cases, value)
         end
+      end
+
+      def interp_variant(cases, value)
+        return type_err('Array', value) unless value.is_a?(::Array)
+        return err(Custom["empty variant array"]) if value.empty?
+
+        tag = value.first
+        return type_err('String tag at index 0', tag) unless tag.is_a?(::String)
+
+        inner = cases[tag]
+        return err(Custom["unknown variant: #{tag.inspect}"]) unless inner
+
+        interp(inner, value)
       end
 
       def ok(v)  = Jade::Result::Ok[v]

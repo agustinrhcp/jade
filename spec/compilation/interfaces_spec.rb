@@ -27,12 +27,12 @@ module Jade
 
     it 'returns the value negated' do
       test_compiler.require('interface_test', source)
-      expect(InterfaceTest.int_equality.call(1, 2)).to be false
-      expect(InterfaceTest.int_equality.call(1, 1)).to be true
-      expect(InterfaceTest.int_inequality.call(1, 2)).to be true
-      expect(InterfaceTest.int_inequality.call(1, 1)).to be false
-      expect(InterfaceTest.bool_equality.call(true, false)).to be false
-      expect(InterfaceTest.bool_equality.call(true, true)).to be true
+      expect(InterfaceTest.int_equality(1, 2)).to be false
+      expect(InterfaceTest.int_equality(1, 1)).to be true
+      expect(InterfaceTest.int_inequality(1, 2)).to be true
+      expect(InterfaceTest.int_inequality(1, 1)).to be false
+      expect(InterfaceTest.bool_equality(true, false)).to be false
+      expect(InterfaceTest.bool_equality(true, true)).to be true
     end
 
     context 'equality on functions' do
@@ -72,7 +72,7 @@ module Jade
       it 'propagates constraints through functions' do
         test_compiler.require('interface_test', source)
 
-        expect(InterfaceTest.compare.call(1, 1)).to be true
+        expect(InterfaceTest.compare(1, 1)).to be true
       end
     end
 
@@ -98,8 +98,8 @@ module Jade
       it 'works for ints and bools' do
         test_compiler.require('interface_test', source)
 
-        expect(InterfaceTest.int_eq.call(1, 1)).to be true
-        expect(InterfaceTest.bool_eq.call(true, true)).to be true
+        expect(InterfaceTest.int_eq(1, 1)).to be true
+        expect(InterfaceTest.bool_eq(true, true)).to be true
       end
 
       it 'dispatches Jade-internal polymorphic calls without consulting IMPLEMENTATIONS' do
@@ -111,7 +111,7 @@ module Jade
         })
 
         # int_eq calls poly_eq with a dict it builds inline — no impl_for needed
-        InterfaceTest.int_eq.call(1, 1)
+        InterfaceTest.int_eq(1, 1)
         expect(impl_for_calls).to eq 0
       end
     end
@@ -182,9 +182,9 @@ module Jade
       it 'works' do
         test_compiler.require('interface_test', source)
 
-        expect(InterfaceTest.nothing_eq.call()).to be true
-        expect(InterfaceTest.just_eq.call(1, 2)).to be false
-        expect(InterfaceTest.just_eq.call(1, 1)).to be true
+        expect(InterfaceTest.nothing_eq()).to be true
+        expect(InterfaceTest.just_eq(1, 2)).to be false
+        expect(InterfaceTest.just_eq(1, 1)).to be true
       end
     end
 
@@ -206,8 +206,8 @@ module Jade
       it 'works' do
         test_compiler.require('interface_test', source)
 
-        expect(InterfaceTest.neq.call()).to be false
-        expect(InterfaceTest.eq.call()).to be true
+        expect(InterfaceTest.neq()).to be false
+        expect(InterfaceTest.eq()).to be true
       end
     end
 
@@ -241,8 +241,8 @@ module Jade
       it 'compares all fields' do
         test_compiler.require('interface_test', source)
 
-        expect(InterfaceTest.eq.call()).to be true
-        expect(InterfaceTest.neq.call()).to be false
+        expect(InterfaceTest.eq()).to be true
+        expect(InterfaceTest.neq()).to be false
       end
     end
 
@@ -265,7 +265,7 @@ module Jade
       it 'works' do
         test_compiler.require('interface_test', source)
 
-        expect(InterfaceTest.eq.call()).to be true
+        expect(InterfaceTest.eq()).to be true
       end
 
       context 'when a field has no Eq impl' do
@@ -316,13 +316,13 @@ module Jade
       it 'works' do
         test_compiler.require('interface_test', source)
 
-        person_1 = InterfaceTest.new_person.call(1, "Pepe")
-        person_2 = InterfaceTest.new_person.call(2, "Pepe")
-        person_3 = InterfaceTest.new_person.call(1, "Lala")
+        person_1 = InterfaceTest.new_person(1, "Pepe")
+        person_2 = InterfaceTest.new_person(2, "Pepe")
+        person_3 = InterfaceTest.new_person(1, "Lala")
 
-        expect(InterfaceTest.eq_person.call(person_1, person_3)).to be true
-        expect(InterfaceTest.eq_person.call(person_2, person_3)).to be false
-        expect(InterfaceTest.eq_person.call(person_1, person_2)).to be false
+        expect(InterfaceTest.eq_person(person_1, person_3)).to be true
+        expect(InterfaceTest.eq_person(person_2, person_3)).to be false
+        expect(InterfaceTest.eq_person(person_1, person_2)).to be false
       end
     end
 
@@ -357,13 +357,13 @@ module Jade
       it 'works' do
         test_compiler.require('interface_test', source)
 
-        person_1 = InterfaceTest.new_person.call(1, "Pepe")
-        person_2 = InterfaceTest.new_person.call(2, "Pepe")
-        person_3 = InterfaceTest.new_person.call(1, "Lala")
+        person_1 = InterfaceTest.new_person(1, "Pepe")
+        person_2 = InterfaceTest.new_person(2, "Pepe")
+        person_3 = InterfaceTest.new_person(1, "Lala")
 
-        expect(InterfaceTest.eq_person.call(person_1, person_3)).to be true
-        expect(InterfaceTest.eq_person.call(person_2, person_3)).to be false
-        expect(InterfaceTest.eq_person.call(person_1, person_2)).to be false
+        expect(InterfaceTest.eq_person(person_1, person_3)).to be true
+        expect(InterfaceTest.eq_person(person_2, person_3)).to be false
+        expect(InterfaceTest.eq_person(person_1, person_2)).to be false
       end
     end
 
@@ -415,18 +415,18 @@ module Jade
       it 'works' do
         test_compiler.require('interface_test', source)
 
-        low  = InterfaceTest.new_score.call(1)
-        high = InterfaceTest.new_score.call(5)
-        same = InterfaceTest.new_score.call(1)
+        low  = InterfaceTest.new_score(1)
+        high = InterfaceTest.new_score(5)
+        same = InterfaceTest.new_score(1)
 
-        expect(InterfaceTest.lt.call(low, high)).to  be true
-        expect(InterfaceTest.lt.call(high, low)).to  be false
-        expect(InterfaceTest.gt.call(high, low)).to  be true
-        expect(InterfaceTest.gt.call(low, high)).to  be false
-        expect(InterfaceTest.lte.call(low, same)).to be true
-        expect(InterfaceTest.lte.call(high, low)).to be false
-        expect(InterfaceTest.gte.call(low, same)).to be true
-        expect(InterfaceTest.gte.call(low, high)).to be false
+        expect(InterfaceTest.lt(low, high)).to  be true
+        expect(InterfaceTest.lt(high, low)).to  be false
+        expect(InterfaceTest.gt(high, low)).to  be true
+        expect(InterfaceTest.gt(low, high)).to  be false
+        expect(InterfaceTest.lte(low, same)).to be true
+        expect(InterfaceTest.lte(high, low)).to be false
+        expect(InterfaceTest.gte(low, same)).to be true
+        expect(InterfaceTest.gte(low, high)).to be false
       end
     end
   end

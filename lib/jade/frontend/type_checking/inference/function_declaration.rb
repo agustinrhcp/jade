@@ -18,11 +18,7 @@ module Jade
                 type: fn_type, constraints: fn_constraints,
               }
 
-            arg_types, return_type =
-              case fn_type
-              in Type::Function(args:, return_type:) then [args, return_type]
-              else [[], fn_type]
-              end
+            arg_types, return_type = Type.signature(fn_type)
 
             new_state, body_result = arg_types
               .zip(params)

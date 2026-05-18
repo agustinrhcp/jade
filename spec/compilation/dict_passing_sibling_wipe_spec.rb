@@ -44,7 +44,7 @@ module Jade
         end
       JADE
 
-      expect(ReproWipe.go.call).to eql 'int-str'
+      expect(ReproWipe.go).to eql 'int-str'
     end
   end
 end

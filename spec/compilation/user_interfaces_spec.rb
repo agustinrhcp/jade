@@ -57,7 +57,7 @@ module Jade
       it 'dispatches show to the Int implementation' do
         test_compiler.require('show_test', source)
 
-        expect(ShowTest.show_int.call(42)).to eql 'an int'
+        expect(ShowTest.show_int(42)).to eql 'an int'
       end
     end
 
@@ -99,8 +99,8 @@ module Jade
       it 'dispatches by type' do
         test_compiler.require('show_test', source)
 
-        expect(ShowTest.show_int.call(42)).to eql 'int'
-        expect(ShowTest.show_str.call('hi')).to eql 'str'
+        expect(ShowTest.show_int(42)).to eql 'int'
+        expect(ShowTest.show_str('hi')).to eql 'str'
       end
     end
 
@@ -134,7 +134,7 @@ module Jade
       it 'propagates the Show constraint through helper' do
         test_compiler.require('show_test', source)
 
-        expect(ShowTest.show_int_via_helper.call(42)).to eql 'int'
+        expect(ShowTest.show_int_via_helper(42)).to eql 'int'
       end
     end
 
@@ -168,8 +168,8 @@ module Jade
       it 'compiles and dispatches' do
         test_compiler.require('inline_impl', source)
 
-        expect(InlineImpl.show_int.call(42)).to eql 'int'
-        expect(InlineImpl.show_str.call('hi')).to eql 'str'
+        expect(InlineImpl.show_int(42)).to eql 'int'
+        expect(InlineImpl.show_str('hi')).to eql 'str'
       end
     end
 
@@ -199,7 +199,7 @@ module Jade
       it 'compiles and dispatches via the qualified type' do
         test_compiler.require('qual_impl', source)
 
-        expect(QualImpl.tag_today.call).to eql 2026
+        expect(QualImpl.tag_today).to eql 2026
       end
     end
   end

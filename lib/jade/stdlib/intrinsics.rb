@@ -113,7 +113,7 @@ module Jade
 
         interface_ref = interface ? interface.to_ref : interface_to_ref(interface_name)
         default = interface ? interface.default : {}
-        type_ref = qualified_type_ref(type)
+        type_ref = impl_type_ref(type)
 
         Symbol
           .implementation(
@@ -136,14 +136,13 @@ module Jade
         end
       end
 
-      def qualified_type_ref(type)
-        if type.include?('.')
-          *mod_parts, name = type.split('.')
-          Symbol.type_ref(mod_parts.join('.'), name)
-
-        else
-          Symbol.type_ref(module_name, type)
-        end
+      # Accepts both bare/qualified names ('Int', 'Basics.Int') and full type
+      # expressions with vars ('Maybe(a)', 'Result(a, e)'). The impl record
+      # stores only the constructor ref (matching the forward-declaration
+      # convention at frontend/forward_declaration/implementation.rb:44).
+      def impl_type_ref(type)
+        Symbol.parse(type) => Symbol::TypeApplication(constructor:)
+        constructor
       end
 
       def symbols

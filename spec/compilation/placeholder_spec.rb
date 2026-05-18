@@ -35,15 +35,15 @@ module Jade
       end
 
       it 'fills the trailing hole' do
-        expect(HoleApp.add5.call(10)).to eql 15
+        expect(HoleApp.add5(10)).to eql 15
       end
 
       it 'fills the leading hole' do
-        expect(HoleApp.add5_left.call(10)).to eql 15
+        expect(HoleApp.add5_left(10)).to eql 15
       end
 
       it 'curries when all args are holes' do
-        expect(HoleApp.curried_sum.call(2, 3)).to eql 5
+        expect(HoleApp.curried_sum(2, 3)).to eql 5
       end
     end
 
@@ -69,13 +69,13 @@ module Jade
       end
 
       it 'partially applies a constructor with one hole' do
-        result = HoleCtor.just_holed.call(7)
+        result = HoleCtor::Internal.just_holed.call(7)
         expect(result.send(:_1)).to eql 7
         expect(result.send(:_2)).to eql "fixed"
       end
 
       it 'curries a 2-arg constructor' do
-        result = HoleCtor.build_first.call(7, "ok")
+        result = HoleCtor::Internal.build_first.call(7, "ok")
         expect(result.send(:_1)).to eql 7
         expect(result.send(:_2)).to eql "ok"
       end

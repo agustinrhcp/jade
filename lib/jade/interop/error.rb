@@ -12,18 +12,31 @@ module Jade
       end
     end
 
-    # Raised when Ruby tries to call a Jade function whose signature can't
-    # cross the boundary — typically a polymorphic function whose constrained
-    # type variable has no extractable witness in the args (function-typed
-    # arg, return-position-only var, etc.). Internal Jade callers are
-    # unaffected; they go through the impl-synthetic with an inline dict.
-    class NotCallableFromRuby < Error
-      def initialize(function_qname, cause)
-        super(
-          "Cannot call #{function_qname} from Ruby: #{cause}. " \
-            "Internal Jade callers still work; if Ruby needs this, write a " \
-            "monomorphizing Jade-side wrapper."
-        )
+    # Raised when a Ruby caller invokes a Jade function whose signature
+    # has no public boundary — typically a polymorphic fn, a fn with
+    # function-typed args, or a fn over a type whose Decodable/Encodable
+    # can't be derived. The user's options are to add an explicit
+    # `implements Decodable/Encodable`, restructure the signature with
+    # decodable types, or accept that the fn is Jade-internal only.
+    class NotExposed < Error
+      def initialize(module_name:, function_name:, hint: nil)
+        ["#{module_name}.#{function_name} is not exposed to Ruby.", hint]
+          .compact
+          .join(' ')
+          .then { super(it) }
+      end
+    end
+
+    # Raised by bang-suffixed Task wrappers when the underlying Task ran
+    # to the Err arm. The encoded err value is available on `.error` for
+    # structured handling — pattern-match on it for shape-specific
+    # recovery, or just inspect for logging.
+    class TaskError < Error
+      attr_reader :error
+
+      def initialize(error)
+        @error = error
+        super("Task returned an error: #{error.inspect}")
       end
     end
 

@@ -27,7 +27,7 @@ module Jade
       end
 
       it 'returns the factorial' do
-        expect(Fact.fact.call(10)).to eql 3_628_800
+        expect(Fact.fact(10)).to eql 3_628_800
       end
     end
 
@@ -51,7 +51,7 @@ module Jade
       end
 
       it 'returns the factorial' do
-        expect(Fib.fib.call(10)).to eql 55
+        expect(Fib.fib(10)).to eql 55
       end
     end
   end

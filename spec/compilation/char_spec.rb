@@ -27,22 +27,22 @@ module Jade
     before { test_compiler.require('pepe', source) }
 
     it 'compares chars' do
-      expect(Pepe.is_a.call('a')).to be true
-      expect(Pepe.is_a.call('b')).to be false
+      expect(Pepe::Internal.is_a.call('a')).to be true
+      expect(Pepe::Internal.is_a.call('b')).to be false
     end
 
     it 'converts to code point' do
-      expect(Pepe.code_of.call('a')).to eql 97
-      expect(Pepe.code_of.call('A')).to eql 65
+      expect(Pepe::Internal.code_of.call('a')).to eql 97
+      expect(Pepe::Internal.code_of.call('A')).to eql 65
     end
 
     it 'roundtrips through code point' do
-      expect(Pepe.roundtrip.call('z')).to be_just('z')
+      expect(Pepe::Internal.roundtrip.call('z')).to be_just('z')
     end
 
     it 'parses a char literal' do
       test_compiler.require('lit', "module Lit exposing (c)\n\ndef c() -> Char\n  'x'\nend\n")
-      expect(Lit.c.call).to eql 'x'
+      expect(Lit::Internal.c.call).to eql 'x'
     end
   end
 end

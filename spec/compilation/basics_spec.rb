@@ -29,8 +29,8 @@ module Jade
       end
 
       it 'respect operator precedence and grouping' do
-        expect(Math.example1.call).to eql 7
-        expect(Math.example2.call).to eql 9
+        expect(Math.example1).to eql 7
+        expect(Math.example2).to eql 9
       end
 
       context 'float' do
@@ -45,7 +45,7 @@ module Jade
         end
 
         it 'returns a float' do
-          expect(Math.floats.call).to eql 42.42
+          expect(Math.floats).to eql 42.42
         end
       end
 
@@ -65,8 +65,8 @@ module Jade
         end
 
         it 'returns negative numbers' do
-          expect(Math.neg_int.call).to eql(-1)
-          expect(Math.neg_float.call).to eql(-3.14)
+          expect(Math.neg_int).to eql(-1)
+          expect(Math.neg_float).to eql(-3.14)
         end
       end
 
@@ -82,8 +82,8 @@ module Jade
         end
 
         it 'returns the value negated' do
-          expect(Math.negate.call(true)).to be false
-          expect(Math.negate.call(false)).to be true
+          expect(Math.negate(true)).to be false
+          expect(Math.negate(false)).to be true
         end
       end
     end
@@ -116,25 +116,25 @@ module Jade
       end
 
       it 'picks the smaller of two ints' do
-        expect(Cmp.min_int.call(1, 2)).to eql 1
-        expect(Cmp.min_int.call(2, 1)).to eql 1
-        expect(Cmp.min_int.call(3, 3)).to eql 3
+        expect(Cmp.min_int(1, 2)).to eql 1
+        expect(Cmp.min_int(2, 1)).to eql 1
+        expect(Cmp.min_int(3, 3)).to eql 3
       end
 
       it 'picks the larger of two ints' do
-        expect(Cmp.max_int.call(1, 2)).to eql 2
-        expect(Cmp.max_int.call(2, 1)).to eql 2
-        expect(Cmp.max_int.call(3, 3)).to eql 3
+        expect(Cmp.max_int(1, 2)).to eql 2
+        expect(Cmp.max_int(2, 1)).to eql 2
+        expect(Cmp.max_int(3, 3)).to eql 3
       end
 
       it 'picks the smaller of two floats' do
-        expect(Cmp.min_float.call(1.5, 2.5)).to eql 1.5
-        expect(Cmp.min_float.call(2.5, 1.5)).to eql 1.5
+        expect(Cmp.min_float(1.5, 2.5)).to eql 1.5
+        expect(Cmp.min_float(2.5, 1.5)).to eql 1.5
       end
 
       it 'picks the larger of two floats' do
-        expect(Cmp.max_float.call(1.5, 2.5)).to eql 2.5
-        expect(Cmp.max_float.call(2.5, 1.5)).to eql 2.5
+        expect(Cmp.max_float(1.5, 2.5)).to eql 2.5
+        expect(Cmp.max_float(2.5, 1.5)).to eql 2.5
       end
     end
   end

@@ -70,6 +70,40 @@ module Jade
         JSON.generate(value)
       }
 
+      # Produces `[name, *args]` — the `[name, ...args]`-shape that
+      # boundary Task outcomes use, here generalised so users can encode
+      # their own union variants through the same shape. Pair with
+      # Decode.type_ + Decode.variant on the decode side.
+      function(
+        'variant',
+        { name: 'String', args: 'List(Value)' },
+        'Value',
+      ) { |name, args| [name, *args] }
+
+      function(
+        'tuple',
+        { a_enc: 'a -> Value', b_enc: 'b -> Value', t: 'Tuple2(a, b)' },
+        'Value',
+      ) { |a_enc, b_enc, t| [a_enc.call(t._1), b_enc.call(t._2)] }
+
+      function(
+        'tuple3',
+        { a_enc: 'a -> Value', b_enc: 'b -> Value', c_enc: 'c -> Value', t: 'Tuple3(a, b, c)' },
+        'Value',
+      ) { |a_enc, b_enc, c_enc, t| [a_enc.call(t._1), b_enc.call(t._2), c_enc.call(t._3)] }
+
+      function(
+        'tuple4',
+        {
+          a_enc: 'a -> Value', b_enc: 'b -> Value',
+          c_enc: 'c -> Value', d_enc: 'd -> Value',
+          t: 'Tuple4(a, b, c, d)',
+        },
+        'Value',
+      ) { |a_enc, b_enc, c_enc, d_enc, t|
+        [a_enc.call(t._1), b_enc.call(t._2), c_enc.call(t._3), d_enc.call(t._4)]
+      }
+
       # Constrained — picks the encoder via Encodable.
 
       function(

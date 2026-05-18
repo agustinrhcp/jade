@@ -5,7 +5,13 @@ module Jade
       extend Helpers
 
       def generate(node, registry)
-        node => AST::Implementation(symbol:, interface:, applied_type:, functions:)
+        [generate_defs(node, registry), generate_registrations_for(node, registry)]
+          .reject(&:empty?)
+          .join(Pretty.newline(2))
+      end
+
+      def generate_defs(node, registry)
+        node => AST::Implementation(interface:, applied_type:, functions:)
 
         type_name =
           case applied_type.constructor
@@ -13,13 +19,14 @@ module Jade
           in AST::QualifiedTypeName(path:) then path.last
           end
 
-        method_defs = functions
+        functions
           .filter_map { generate_function(it, registry, interface, type_name) }
           .join(Pretty.newline(2))
+      end
 
-        registrations = generate_registrations(symbol, registry)
-
-        [method_defs, registrations].reject(&:empty?).join(Pretty.newline(2))
+      def generate_registrations_for(node, registry)
+        node => AST::Implementation(symbol:)
+        generate_registrations(symbol, registry)
       end
 
       private
@@ -39,7 +46,7 @@ module Jade
         fn_map = symbol.functions.filter_map { |fn_name, ref|
           next unless ref.is_a?(Symbol::ValueRef)
 
-          thunk = "->(*args) { ::#{to_qualified(ref.module_name)}.#{ref.name}.call(*args) }"
+          thunk = "->(*args) { ::#{to_qualified(ref.module_name)}::Internal.#{ref.name}.call(*args) }"
           [fn_name, thunk]
         }.to_h
 

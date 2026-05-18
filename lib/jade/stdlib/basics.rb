@@ -94,6 +94,12 @@ module Jade
       ) { it }
 
       function(
+        'always',
+        { x: 'a' },
+        'b -> a',
+      ) { |x| ->(_) { x } }
+
+      function(
         'not',
         { a: 'Bool' },
         'Bool',

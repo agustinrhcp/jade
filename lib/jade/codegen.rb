@@ -2,6 +2,7 @@ require 'jade/codegen/helpers'
 require 'jade/codegen/pretty'
 require 'jade/codegen/inlines'
 require 'jade/codegen/inline'
+require 'jade/codegen/boundary'
 
 require 'jade/codegen/emitter'
 
@@ -56,7 +57,19 @@ module Jade
           *namespace_setup_lines(name),
         ].reject(&:empty?).join(Pretty.newline)
 
-        ["extend self", *module_body_chunks(body.expressions, registry, name.count('.'))]
+        outer, inner, wrappers = partition_module_body(body.expressions, registry, name.count('.'))
+
+        inner_module = ["extend self", *inner]
+          .join(Pretty.newline(2))
+          .then { Pretty.block("module Internal", it) }
+
+        [
+          "extend self",
+          *outer,
+          inner_module,
+          *wrappers,
+        ]
+          .reject(&:empty?)
           .join(Pretty.newline(2))
           .then { Pretty.block("module #{to_qualified(name)}", it) }
           .then { [preamble, it].reject(&:empty?).join(Pretty.newline(2)) }
@@ -90,13 +103,13 @@ module Jade
             .lookup(sym.to_ref)
             .then { PortDecoder.task_call(it, registry) }
 
-        in Symbol::StdlibFunction(codegen:, params:) if params.empty?
-          "#{codegen}.call()"
+        in Symbol::StdlibFunction => fn if fn.constant?
+          "#{fn.codegen}.call()"
 
         in Symbol::StdlibFunction(codegen:)
           codegen
 
-        in Symbol::Function(params:) if params.empty?
+        in Symbol::Function => fn if fn.constant?
           "#{name}.call()"
 
         else
@@ -148,17 +161,17 @@ module Jade
 
       in AST::QualifiedAccess(symbol:)
         case registry.lookup(symbol)
-        in Symbol::StdlibFunction(codegen:, params:) if params.empty?
-          "#{codegen}.call()"
+        in Symbol::StdlibFunction => fn if fn.constant?
+          "#{fn.codegen}.call()"
 
         in Symbol::StdlibFunction(codegen:)
           codegen
 
-        in Symbol::Function(module_name:, name:, params:) if params.empty?
-          to_qualified(module_name) + ".#{name}.call()"
+        in Symbol::Function => fn if fn.constant?
+          to_qualified(fn.module_name) + "::Internal.#{fn.name}.call()"
 
-        in Symbol::Function(module_name:, name:)
-          to_qualified(module_name) + ".#{name}"
+        in Symbol::Function => fn
+          to_qualified(fn.module_name) + "::Internal.#{fn.name}"
 
         in Symbol::Constructor => sym
           ConstructorReference.from_symbol(sym)
@@ -265,14 +278,6 @@ module Jade
       pattern.is_a?(AST::Pattern::Binding) || pattern.is_a?(AST::Pattern::Wildcard)
     end
 
-    def generate_many(nodes, registry, sep = ", ")
-      nodes.map do
-        next yield(it) if block_given?
-
-        generate(it, registry)
-      end.join(sep)
-    end
-
     def relative_require(import_path, current_depth)
       "#{'../' * current_depth}#{import_path}"
     end
@@ -285,15 +290,49 @@ module Jade
         .map { "module #{it}; end" }
     end
 
-    def module_body_chunks(expressions, registry, depth)
+    # Splits the module body into three flat lists of pretty-printed chunks:
+    # outer (imports, types, interface decls, impl registrations) goes before
+    # `module Internal`; inner (function defs, impl fn defs) lives inside it;
+    # wrappers (Phase 3 boundary `def self.X(args)`) come after the
+    # singleton-method fallthrough loop so they override the proxies.
+    def partition_module_body(expressions, registry, depth)
       expressions
         .chunk_while { |a, b| import?(a) && import?(b) }
-        .filter_map do |group|
-          group
-            .map { generate(it, registry, depth:) }
-            .reject(&:empty?)
-            .then { it.empty? ? nil : it.join("\n") }
-        end
+        .flat_map { group_chunks(it, registry, depth) }
+        .then { it.empty? ? [[], [], []] : it.transpose.map { |b| b.compact.reject(&:empty?) } }
+    end
+
+    def group_chunks(group, registry, depth)
+      if group.all? { import?(it) }
+        group
+          .map { generate(it, registry, depth:) }
+          .reject(&:empty?)
+          .join("\n")
+          .then { [[it, nil, nil]] }
+      else
+        group.map { generate_for_partition(it, registry, depth) }
+      end
+    end
+
+    def generate_for_partition(node, registry, depth)
+      case node
+      in AST::Implementation
+        [
+          Implementation.generate_registrations_for(node, registry),
+          Implementation.generate_defs(node, registry),
+          nil,
+        ]
+
+      in AST::FunctionDeclaration
+        [
+          nil,
+          generate(node, registry, depth:),
+          FunctionDeclaration.generate_boundary_wrapper(node, registry),
+        ]
+
+      else
+        [generate(node, registry, depth:), nil, nil]
+      end
     end
 
     def import?(node)
@@ -302,22 +341,6 @@ module Jade
 
     def load_path
       '$LOAD_PATH.unshift(File.expand_path("lib"))'
-    end
-
-    def lower_to_ruby(value)
-      case value
-      in String
-        value.dump
-
-      in Array
-        Pretty.array(value.map { lower_to_ruby(it) })
-
-      in Hash
-        value
-          .map { |k, v| "#{lower_to_ruby(k)} => #{lower_to_ruby(v)}" }
-          .join(", ")
-          .then { "{ #{it} }" }
-      end
     end
   end
 end
