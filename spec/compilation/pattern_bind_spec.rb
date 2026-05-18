@@ -25,8 +25,8 @@ module Jade
       end
 
       it 'extracts the field' do
-        expect(PatternBind.get_name.call(Maybe::Just[{ name: 'Alice' }])).to be_just('Alice')
-        expect(PatternBind.get_name.call(Maybe::Nothing[])).to be_nothing
+        expect(PatternBind::Internal.get_name.call(Maybe::Just[{ name: 'Alice' }])).to be_just('Alice')
+        expect(PatternBind::Internal.get_name.call(Maybe::Nothing[])).to be_nothing
       end
     end
 
@@ -44,7 +44,7 @@ module Jade
       end
 
       it 'destructures the tuple' do
-        expect(PatternBind.sum_pair.call(Tuple::Tuple2[3, 4])).to eql 7
+        expect(PatternBind::Internal.sum_pair.call(Tuple::Tuple2[3, 4])).to eql 7
       end
     end
 
@@ -62,7 +62,7 @@ module Jade
       end
 
       it 'destructures the record' do
-        expect(PatternBind.get_name_direct.call({ name: 'Bob', age: 25 })).to eql 'Bob'
+        expect(PatternBind::Internal.get_name_direct.call({ name: 'Bob', age: 25 })).to eql 'Bob'
       end
     end
 
@@ -81,8 +81,8 @@ module Jade
       end
 
       it 'matches empty and non-empty lists' do
-        expect(PatternBind.sum_list.call([])).to eql 0
-        expect(PatternBind.sum_list.call([1, 2, 3])).to eql 6
+        expect(PatternBind.sum_list([])).to eql 0
+        expect(PatternBind.sum_list([1, 2, 3])).to eql 6
       end
     end
 
@@ -101,8 +101,8 @@ module Jade
       end
 
       it 'extracts the first element' do
-        expect(PatternBind.first_or_zero.call([])).to eql 0
-        expect(PatternBind.first_or_zero.call([42, 1, 2])).to eql 42
+        expect(PatternBind.first_or_zero([])).to eql 0
+        expect(PatternBind.first_or_zero([42, 1, 2])).to eql 42
       end
     end
 
@@ -128,8 +128,8 @@ module Jade
       it 'destructures and projects a struct field' do
         c1 = PatternBind::Charge[1, 100]
         c2 = PatternBind::Charge[2, 200]
-        expect(PatternBind.head_id.call([])).to eql 0
-        expect(PatternBind.head_id.call([c1, c2])).to eql 1
+        expect(PatternBind.head_id([])).to eql 0
+        expect(PatternBind.head_id([c1, c2])).to eql 1
       end
     end
 
@@ -164,7 +164,7 @@ module Jade
         end
       JADE
 
-      expect(OpaqueApp.go.call).to be_a(OpaqueLib::T)
+      expect(OpaqueApp::Internal.go.call).to be_a(OpaqueLib::T)
     end
   end
 end

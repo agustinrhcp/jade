@@ -33,8 +33,6 @@ module Jade
       Stdlib::Calendar, Stdlib::Clock,
     ]
     # Loaded into the registry but not auto-imported into user modules.
-    # Users must `import Decode` / `import Decode.Params` / `import Encode` /
-    # `import Dict` / `import Calendar` / `import Clock` explicitly.
     EXTENSIONS = [
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
       Stdlib::Dict,

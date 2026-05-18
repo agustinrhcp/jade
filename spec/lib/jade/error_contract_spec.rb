@@ -3,7 +3,6 @@ require 'spec_helper'
 require 'jade'
 require 'jade/module_loader'
 
-# Force-load every error file so Jade::Error.descendants is exhaustive.
 Dir[File.expand_path('../../../../lib/jade/**/error/*.rb', __FILE__)].each do |f|
   require_relative f
 end
@@ -11,12 +10,7 @@ require 'jade/parsing/error'
 
 module Jade
   describe 'Error contract' do
-    # Every leaf error (no further subclasses) that reaches the diagnostics
-    # renderer should override `label` so the caret gets a useful annotation.
-    # This list is the snapshot of leaves that don't yet — shrink it as you
-    # polish each one. The spec fails if:
-    #   - a new leaf without #label appears (not in the list)
-    #   - a leaf in the list has gained #label (remove it from the list)
+    # Snapshot of leaf errors still missing `#label`; shrink as you polish.
     LABEL_DEBT = %w[
       Jade::Frontend::ForwardDeclaration::Error::BadImport
       Jade::Frontend::ForwardDeclaration::Error::ExposedTypeNotFound

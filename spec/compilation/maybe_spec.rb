@@ -33,15 +33,15 @@ module Jade
     it 'works' do
       test_compiler.require('pepe', pepe_source)
 
-      expect(Pepe.hello.call(Maybe::Just["Hello lala"])).to eql "Hello lala"
-      expect(Pepe.hello.call(Maybe::Nothing[])).to eql "Hello pepe"
+      expect(Pepe.hello("Hello lala")).to eql "Hello lala"
+      expect(Pepe.hello(nil)).to eql "Hello pepe"
 
-      expect(Pepe.sum_maybe.call(Maybe::Nothing[], 1)).to eql 0
-      expect(Pepe.sum_maybe.call(Maybe::Just[10], 1)).to eql 11
+      expect(Pepe.sum_maybe(nil, 1)).to eql 0
+      expect(Pepe.sum_maybe(10, 1)).to eql 11
 
-      expect(Pepe.and_then_test.call(Maybe::Nothing[])).to be_nothing
-      expect(Pepe.and_then_test.call(Maybe::Just[2])).to be_nothing
-      expect(Pepe.and_then_test.call(Maybe::Just[1])).to be_just('ONE')
+      expect(Pepe.and_then_test(nil)).to be_nil
+      expect(Pepe.and_then_test(2)).to be_nil
+      expect(Pepe.and_then_test(1)).to eql 'ONE'
     end
 
     context 'without type arguments' do

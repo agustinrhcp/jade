@@ -21,14 +21,14 @@ module Jade
       before { test_compiler.require('thunk', source) }
 
       it 'calls the thunk and returns its value' do
-        expect(Thunk.run.call(-> { 42 })).to eql 42
+        expect(Thunk::Internal.run.call(-> { 42 })).to eql 42
       end
 
       it 'calls the thunk each time run is invoked' do
         counter = 0
         f = -> { counter += 1; counter }
-        Thunk.run.call(f)
-        expect(Thunk.run.call(f)).to eql 2
+        Thunk::Internal.run.call(f)
+        expect(Thunk::Internal.run.call(f)).to eql 2
       end
     end
 
@@ -49,11 +49,11 @@ module Jade
       before { test_compiler.require('thunk', source) }
 
       it 'calls the first thunk when flag is true' do
-        expect(Thunk.pick.call(true, -> { 1 }, -> { 2 })).to eql 1
+        expect(Thunk::Internal.pick.call(true, -> { 1 }, -> { 2 })).to eql 1
       end
 
       it 'calls the second thunk when flag is false' do
-        expect(Thunk.pick.call(false, -> { 1 }, -> { 2 })).to eql 2
+        expect(Thunk::Internal.pick.call(false, -> { 1 }, -> { 2 })).to eql 2
       end
     end
 
@@ -75,7 +75,7 @@ module Jade
       before { test_compiler.require('thunk', source) }
 
       it 'applies the thunk twice and adds the results' do
-        expect(Thunk.double_thunk.call(-> { 10 })).to eql 20
+        expect(Thunk::Internal.double_thunk.call(-> { 10 })).to eql 20
       end
     end
   end

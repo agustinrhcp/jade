@@ -19,7 +19,6 @@ module Jade
           .then { "#{generate_callee(callee, args, registry, dictionaries)}.call(#{it})" }
       end
 
-      # Public because PortDecoder needs it to emit a port's pre-resolved decoder.
       def generate_impl_dispatch(impl, registry)
         impl
           .deps
@@ -46,10 +45,6 @@ module Jade
         end
       end
 
-      # Resolves a dictionary entry (Symbol::Implementation or Type::Constraint)
-      # to a Ruby expression evaluating to a dict hash. Public because
-      # PortDecoder uses it to emit per-call decoder lookups for polymorphic
-      # ports.
       def dispatch_value(entry, registry)
         case entry
         in Type::Constraint(interface:, type: Type::Var)
@@ -119,7 +114,7 @@ module Jade
           generate_node(callee, registry)
 
         in Symbol::Function => fn_sym
-          to_qualified(fn_sym.module_name) + "." + fn_target_name(fn_sym, registry)
+          to_qualified(fn_sym.module_name) + "::Internal." + fn_target_name(fn_sym, registry)
 
         in Symbol::Constructor => sym
           ConstructorReference.from_symbol(sym)
@@ -168,12 +163,8 @@ module Jade
           .join(', ')
       end
 
-      # Resolves a dictionary entry to either a codegen-time hash (for
-      # Implementation, `fn_name => ruby_code`) or a runtime reference string
-      # (for a Var Constraint marker — the enclosing fn's dict param).
-      # `build_impl_arg` handles both shapes; the `in String` body of
-      # `generate_impl_fn` ignores dispatches entirely so Ruby-block intrinsics
-      # (Dict's `Eq k`, etc.) aren't affected.
+      # Ruby-block intrinsics (Dict's `Eq k`, etc.) ignore dispatches — the
+      # `in String` body of `generate_impl_fn` drops them.
       def dispatch_dict(entry, registry)
         case entry
         in Symbol::Implementation
@@ -222,7 +213,7 @@ module Jade
 
           Pretty.lambda("impl_arg", inner) + ".call(#{build_impl_arg(dep_dispatches)})"
 
-        in Symbol::StdlibFunction if fn.params.empty?
+        in Symbol::StdlibFunction if fn.constant?
           "#{fn.codegen}.call()"
 
         in Symbol::StdlibFunction
@@ -244,11 +235,11 @@ module Jade
         in Symbol::ValueRef
           registry.lookup(fn).then { generate_impl_fn(it, dep_dispatches, sibling_fns, registry) }
 
-        in Symbol::Function => fn if fn.params.empty?
-          "#{to_qualified(fn.module_name)}.#{fn.name}.call()"
+        in Symbol::Function => fn if fn.constant?
+          "#{to_qualified(fn.module_name)}::Internal.#{fn.name}.call()"
 
         in Symbol::Function => fn
-          "#{to_qualified(fn.module_name)}.#{fn.name}"
+          "#{to_qualified(fn.module_name)}::Internal.#{fn.name}"
         end
       end
 

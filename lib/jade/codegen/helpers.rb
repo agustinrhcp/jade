@@ -98,23 +98,6 @@ module Jade
         end
       end
 
-    def lower_to_ruby(value)
-      case value
-      in String
-        value.dump
-
-      in Array
-        value
-          .map { |v| lower_to_ruby(v) }.join(", ")
-          .then { "[#{it}]" }
-
-      in Hash
-        value
-          .map { |k, v| "#{lower_to_ruby(k)} => #{lower_to_ruby(v)}" }
-          .join(", ")
-          .then { "{ #{it}}" }
-      end
-    end
     end
   end
 end

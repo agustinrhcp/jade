@@ -25,7 +25,7 @@ module Jade
       it 'builds a variant carrying the keyed fields directly' do
         expect { test_compiler.require('m', source) }.to_not raise_error
 
-        result = M.make.call
+        result = M::Internal.make.call
         expect(result).to be_a(M::V2).and have_attributes(
           paid_amount: 100,
           tax_amount: 20,
@@ -58,8 +58,8 @@ module Jade
         v1 = M::V1[7]
         v2 = M::V2[100, 20]
 
-        expect(M.total.call(v1)).to eql 7
-        expect(M.total.call(v2)).to eql 120
+        expect(M::Internal.total.call(v1)).to eql 7
+        expect(M::Internal.total.call(v2)).to eql 120
       end
     end
 
@@ -82,7 +82,7 @@ module Jade
         expect { test_compiler.require('m', source) }.to_not raise_error
 
         v = M::V[100, 20]
-        expect(M.paid.call(v)).to eql 100
+        expect(M::Internal.paid.call(v)).to eql 100
       end
     end
 
@@ -105,7 +105,7 @@ module Jade
         expect { test_compiler.require('m', source) }.to_not raise_error
 
         v = M::V[100, 20]
-        bumped = M.bump_paid.call(v)
+        bumped = M::Internal.bump_paid.call(v)
         expect(bumped).to be_a(M::V).and have_attributes(paid_amount: 101, tax_amount: 20)
       end
     end
@@ -135,19 +135,19 @@ module Jade
       before { test_compiler.require('m', source) }
 
       it 'constructs and pattern-matches without an inner record wrapper' do
-        v = M.make_credit.call(42)
+        v = M::Internal.make_credit.call(42)
         expect(v).to be_a(M::CreditSource).and have_attributes(credit_id: 42)
-        expect(M.get_id.call(v)).to eql 42
+        expect(M::Internal.get_id.call(v)).to eql 42
       end
 
       it 'accepts direct positional Ruby construction' do
         v = M::CreditSource[7]
-        expect(M.get_id.call(v)).to eql 7
+        expect(M::Internal.get_id.call(v)).to eql 7
       end
 
       it 'accepts kwarg Ruby construction' do
         v = M::ReceiptSource[receipt_id: 9]
-        expect(M.get_id.call(v)).to eql 9
+        expect(M::Internal.get_id.call(v)).to eql 9
       end
     end
 
@@ -167,9 +167,9 @@ module Jade
       it 'compares structurally across separate constructions' do
         test_compiler.require('m', source)
 
-        a = M.make.call(100, 20)
-        b = M.make.call(100, 20)
-        c = M.make.call(100, 30)
+        a = M::Internal.make.call(100, 20)
+        b = M::Internal.make.call(100, 20)
+        c = M::Internal.make.call(100, 30)
 
         expect(a).to eq b
         expect(a).not_to eq c

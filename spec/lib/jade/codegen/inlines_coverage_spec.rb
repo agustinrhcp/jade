@@ -4,7 +4,6 @@ require 'jade'
 require 'jade/runtime'
 require 'jade/codegen/inlines'
 
-# Force stdlib load so INTRINSICS is fully populated before we iterate.
 Jade::Runtime.boot!
 
 module Jade

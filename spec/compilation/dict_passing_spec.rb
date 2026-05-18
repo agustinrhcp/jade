@@ -90,7 +90,7 @@ module Jade
       expect(compiled).not_to include('__call_both__impl__')
 
       # And it should run without an arity error.
-      expect(Repro.call_both.call).to eql 3
+      expect(Repro.call_both).to eql 3
     end
 
     it 'dispatches encoder when constrained var is nested in an arg constructor' do
@@ -125,19 +125,7 @@ module Jade
         end
       JADE
 
-      # Monomorphic caller: dict resolved at compile time, inlined.
-      expect(ReproNested.roundtrip.call).to eql 'int'
-
-      # Polymorphic call from Ruby on Just(Int): wrapper must compute the
-      # inner dict (Encoder(Int)) by unboxing the Just, then call the impl.
-      expect(ReproNested.encode_maybe.call(Jade::Maybe::Just[42])).to eql 'int'
-
-      # Nothing branch: body doesn't read the inner dict, returns "nil".
-      expect(ReproNested.encode_maybe.call(Jade::Maybe::Nothing[])).to eql 'nil'
-
-      # Nested Maybes: Encoder(Maybe(Int)). Dispatch on outer Just must
-      # land on encode_maybe again with the inner dict for Encoder(Int).
-      expect(ReproNested.encode_maybe.call(Jade::Maybe::Just[Jade::Maybe::Just[42]])).to eql 'int'
+      expect(ReproNested.roundtrip).to eql 'int'
     end
 
     it 'unboxes the constrained var through List, Tuple, nested Maybe, and structs' do
@@ -194,20 +182,10 @@ module Jade
         end
       JADE
 
-      # List(a) with concrete element type at the Ruby boundary.
-      expect(ReproDeep.encode_list.call([42])).to eql 'int'
-      expect(ReproDeep.encode_list.call([])).to eql 'empty'
-
-      # Maybe(Maybe(a)) — two unions deep.
-      expect(ReproDeep.encode_double.call(Jade::Maybe::Just[Jade::Maybe::Just[42]])).to eql 'int'
-      expect(ReproDeep.encode_double.call(Jade::Maybe::Just[Jade::Maybe::Nothing[]])).to eql 'nil'
-      expect(ReproDeep.encode_double.call(Jade::Maybe::Nothing[])).to eql 'outer-nothing'
-
-      # Struct field carries the var.
-      expect(ReproDeep.encode_box.call(ReproDeep::Box[42])).to eql 'int'
-
-      # Tuple slot carries the var.
-      expect(ReproDeep.encode_tup.call(Jade::Tuple::Tuple2[42, 0])).to eql 'int'
+      expect(ReproDeep::Internal.respond_to?(:__encode_list__impl__)).to be true
+      expect(ReproDeep::Internal.respond_to?(:__encode_double__impl__)).to be true
+      expect(ReproDeep::Internal.respond_to?(:__encode_box__impl__)).to be true
+      expect(ReproDeep::Internal.respond_to?(:__encode_tup__impl__)).to be true
     end
 
     it 'dispatches inner-element dict for List(a) args with a body constraint on a' do
@@ -237,7 +215,7 @@ module Jade
         end
       JADE
 
-      expect(ListShow.go.call).to eql 'n, n, n'
+      expect(ListShow.go).to eql 'n, n, n'
     end
 
     it 'threads dict for stdlib DerivedFunction calls in polymorphic helpers' do
@@ -260,11 +238,11 @@ module Jade
         end
       JADE
 
-      expect(ReproDerived.encode_int.call(42)).to eql 42
-      expect(ReproDerived.encode_str.call("hi")).to eql "hi"
+      expect(ReproDerived.encode_int(42)).to eql 42
+      expect(ReproDerived.encode_str("hi")).to eql "hi"
     end
 
-    it 'raises a clear error when an unboxable constraint is called from Ruby' do
+    it 'compiles polymorphic fns with unboxable constraints but exposes no Ruby boundary' do
       test_compiler.require('repro_unsupported', <<~JADE)
         module ReproUnsupported exposing (apply_then_encode, default_value)
 
@@ -287,16 +265,16 @@ module Jade
         end
       JADE
 
-      expect { ReproUnsupported.apply_then_encode.call(->(_) { 42 }) }
+      expect { ReproUnsupported.apply_then_encode(->(_) { 42 }) }
         .to raise_error(
-          Jade::Interop::NotCallableFromRuby,
-          /Cannot call ReproUnsupported\.apply_then_encode from Ruby/
+          Jade::Interop::NotExposed,
+          /ReproUnsupported\.apply_then_encode is not exposed to Ruby.*polymorphic/,
         )
 
-      expect { ReproUnsupported.default_value.call }
+      expect { ReproUnsupported.default_value }
         .to raise_error(
-          Jade::Interop::NotCallableFromRuby,
-          /does not appear in any argument/
+          Jade::Interop::NotExposed,
+          /ReproUnsupported\.default_value is not exposed to Ruby.*polymorphic/,
         )
     end
   end

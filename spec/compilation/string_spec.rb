@@ -21,8 +21,8 @@ module Jade
     end
 
     it 'works' do
-      expect(Pepe.str_to_int.call('1')).to be_just(1)
-      expect(Pepe.str_to_int.call('pepe')).to be_nothing
+      expect(Pepe.str_to_int('1')).to eql 1
+      expect(Pepe.str_to_int('pepe')).to be_nil
     end
   end
 
@@ -60,21 +60,21 @@ module Jade
     before { test_compiler.require('strs', source) }
 
     it 'uncons returns head char' do
-      expect(Strs.first_char.call('abc')).to be_just('a')
-      expect(Strs.first_char.call('')).to be_nothing
+      expect(Strs::Internal.first_char.call('abc')).to be_just('a')
+      expect(Strs::Internal.first_char.call('')).to be_nothing
     end
 
     it 'cons prepends a char' do
-      expect(Strs.prepend.call('x', 'yz')).to eql 'xyz'
+      expect(Strs::Internal.prepend.call('x', 'yz')).to eql 'xyz'
     end
 
     it 'from_char wraps a char as a string' do
-      expect(Strs.single.call('q')).to eql 'q'
+      expect(Strs::Internal.single.call('q')).to eql 'q'
     end
 
     it 'walks a string via repeated uncons' do
-      expect(Strs.walk.call('abc')).to eql ['a', 'b', 'c']
-      expect(Strs.walk.call('')).to eql []
+      expect(Strs::Internal.walk.call('abc')).to eql ['a', 'b', 'c']
+      expect(Strs::Internal.walk.call('')).to eql []
     end
   end
 
@@ -94,7 +94,7 @@ module Jade
     before { test_compiler.require('str_map', source) }
 
     it 'maps over each char' do
-      expect(StrMap.double.call('abc')).to eql 'abc'
+      expect(StrMap.double('abc')).to eql 'abc'
     end
   end
 
@@ -119,8 +119,8 @@ module Jade
       before { test_compiler.require('concat', source) }
 
       it 'concatenates strings' do
-        expect(Concat.greet.call('Alice')).to eql 'Hello, Alice!'
-        expect(Concat.join.call('foo', 'bar', '-')).to eql 'foo-bar'
+        expect(Concat.greet('Alice')).to eql 'Hello, Alice!'
+        expect(Concat.join('foo', 'bar', '-')).to eql 'foo-bar'
       end
     end
 
@@ -138,8 +138,8 @@ module Jade
       before { test_compiler.require('concat', source) }
 
       it 'concatenates lists' do
-        expect(Concat.combine.call([1, 2], [3, 4])).to eql [1, 2, 3, 4]
-        expect(Concat.combine.call([], [1])).to eql [1]
+        expect(Concat.combine([1, 2], [3, 4])).to eql [1, 2, 3, 4]
+        expect(Concat.combine([], [1])).to eql [1]
       end
     end
   end
@@ -172,19 +172,19 @@ module Jade
     before { test_compiler.require('escape', source) }
 
     it 'resolves \\n to a newline character' do
-      expect(Escape.newline.call).to eql "Hello\nWorld"
+      expect(Escape.newline).to eql "Hello\nWorld"
     end
 
     it 'resolves \\t to a tab character' do
-      expect(Escape.tab.call).to eql "col1\tcol2"
+      expect(Escape.tab).to eql "col1\tcol2"
     end
 
     it 'resolves \\\\ to a backslash' do
-      expect(Escape.backslash.call).to eql 'back\slash'
+      expect(Escape.backslash).to eql 'back\slash'
     end
 
     it 'resolves \\" to a double quote' do
-      expect(Escape.quote.call).to eql 'say "hi"'
+      expect(Escape.quote).to eql 'say "hi"'
     end
   end
 end

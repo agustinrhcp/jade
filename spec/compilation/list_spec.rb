@@ -64,30 +64,30 @@ module Jade
     end
 
     it 'works' do
-      expect(Pepe.strs_to_list.call('1', '2')).to eql ["1", "2"]
+      expect(Pepe.strs_to_list('1', '2')).to eql ["1", "2"]
 
-      expect(Pepe.list_length.call([])).to eql 0
-      expect(Pepe.list_length.call(['1', '2'])).to eql 2
-      expect(Pepe.list_length.call([1, 2])).to eql 2
+      expect(Pepe::Internal.list_length.call([])).to eql 0
+      expect(Pepe::Internal.list_length.call(['1', '2'])).to eql 2
+      expect(Pepe::Internal.list_length.call([1, 2])).to eql 2
 
-      expect(Pepe.list_singleton.call(0)).to eql [0]
+      expect(Pepe::Internal.list_singleton.call(0)).to eql [0]
 
-      expect(Pepe.repeat.call(0, 0)).to eql []
-      expect(Pepe.repeat.call(0, 2)).to eql [0, 0]
+      expect(Pepe::Internal.repeat.call(0, 0)).to eql []
+      expect(Pepe::Internal.repeat.call(0, 2)).to eql [0, 0]
 
-      expect(Pepe.range.call(0, 0)).to eql [0]
-      expect(Pepe.range.call(0, 2)).to eql [0, 1, 2]
-      expect(Pepe.range.call(6, 3)).to eql []
+      expect(Pepe.range(0, 0)).to eql [0]
+      expect(Pepe.range(0, 2)).to eql [0, 1, 2]
+      expect(Pepe.range(6, 3)).to eql []
 
-      expect(Pepe.is_empty.call([])).to be true
-      expect(Pepe.is_empty.call([1])).to be false
+      expect(Pepe::Internal.is_empty.call([])).to be true
+      expect(Pepe::Internal.is_empty.call([1])).to be false
 
-      expect(Pepe.maptiply.call([1, 2, 3])).to eql [2, 4, 6]
+      expect(Pepe.maptiply([1, 2, 3])).to eql [2, 4, 6]
 
-      expect(Pepe.maptindexply.call([1, 2, 3])).to eql [0, 2, 6]
+      expect(Pepe.maptindexply([1, 2, 3])).to eql [0, 2, 6]
 
-      expect(Pepe.str_fold.call([], "")).to eql ""
-      expect(Pepe.str_fold.call(["LalaCoco"], "Pepe")).to eql "PepeLalaCoco"
+      expect(Pepe.str_fold([], "")).to eql ""
+      expect(Pepe.str_fold(["LalaCoco"], "Pepe")).to eql "PepeLalaCoco"
     end
 
     context 'sort and sort_by' do
@@ -120,12 +120,12 @@ module Jade
       before { test_compiler.require('sort_test', source) }
 
       it 'sorts ints, floats, strings and supports sort_by' do
-        expect(SortTest.sort_ints.call([3, 1, 2])).to eql [1, 2, 3]
-        expect(SortTest.sort_ints.call([])).to eql []
-        expect(SortTest.sort_floats.call([2.5, 1.1, 3.3])).to eql [1.1, 2.5, 3.3]
-        expect(SortTest.sort_strings.call(['c', 'a', 'b'])).to eql ['a', 'b', 'c']
-        expect(SortTest.sort_by_neg.call([1, 3, 2])).to eql [3, 2, 1]
-        expect(SortTest.sort_by_str_len.call(['ccc', 'a', 'bb'])).to eql ['a', 'bb', 'ccc']
+        expect(SortTest.sort_ints([3, 1, 2])).to eql [1, 2, 3]
+        expect(SortTest.sort_ints([])).to eql []
+        expect(SortTest.sort_floats([2.5, 1.1, 3.3])).to eql [1.1, 2.5, 3.3]
+        expect(SortTest.sort_strings(['c', 'a', 'b'])).to eql ['a', 'b', 'c']
+        expect(SortTest.sort_by_neg([1, 3, 2])).to eql [3, 2, 1]
+        expect(SortTest.sort_by_str_len(['ccc', 'a', 'bb'])).to eql ['a', 'bb', 'ccc']
       end
     end
   end

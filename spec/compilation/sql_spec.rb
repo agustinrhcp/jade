@@ -68,7 +68,7 @@ module Jade
       end
 
       it do
-        expect(Sql.column.call('patients', 'ident', 'string'))
+        expect(Sql::Internal.column.call('patients', 'ident', 'string'))
           .to be_a(Sql::Expr)
           .and have_attributes(to_sql: 'patients.ident')
       end

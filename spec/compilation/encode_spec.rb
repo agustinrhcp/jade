@@ -38,11 +38,11 @@ module Jade
 
       before { test_compiler.require('primitives', source) }
 
-      it { expect(Primitives.s.call).to eql '"hello"' }
-      it { expect(Primitives.i.call).to eql '42' }
-      it { expect(Primitives.f.call).to eql '3.5' }
-      it { expect(Primitives.b.call).to eql 'true' }
-      it { expect(Primitives.n.call).to eql 'null' }
+      it { expect(Primitives.s).to eql '"hello"' }
+      it { expect(Primitives.i).to eql '42' }
+      it { expect(Primitives.f).to eql '3.5' }
+      it { expect(Primitives.b).to eql 'true' }
+      it { expect(Primitives.n).to eql 'null' }
     end
 
     context 'structural — nullable, list, object' do
@@ -75,19 +75,19 @@ module Jade
       before { test_compiler.require('struct', source) }
 
       it 'nullable Just emits the inner encoding' do
-        expect(Structural.maybe_present.call).to eql '"x"'
+        expect(Structural.maybe_present).to eql '"x"'
       end
 
       it 'nullable Nothing emits null' do
-        expect(Structural.maybe_nil.call).to eql 'null'
+        expect(Structural.maybe_nil).to eql 'null'
       end
 
       it 'list emits a JSON array' do
-        expect(Structural.list_of_ints.call).to eql '[1,2,3]'
+        expect(Structural.list_of_ints).to eql '[1,2,3]'
       end
 
       it 'object emits a JSON object with declared fields' do
-        expect(Structural.person_object.call).to eql '{"name":"Pepe","age":30}'
+        expect(Structural.person_object).to eql '{"name":"Pepe","age":30}'
       end
     end
 
@@ -144,34 +144,34 @@ module Jade
       before { test_compiler.require('derived', source) }
 
       it 'encodes Int' do
-        expect(Derived.int_string.call(42)).to eql '42'
+        expect(Derived.int_string(42)).to eql '42'
       end
 
       it 'encodes String' do
-        expect(Derived.str_string.call("hi")).to eql '"hi"'
+        expect(Derived.str_string("hi")).to eql '"hi"'
       end
 
       it 'encodes List(Int)' do
-        expect(Derived.list_string.call([1, 2, 3])).to eql '[1,2,3]'
+        expect(Derived.list_string([1, 2, 3])).to eql '[1,2,3]'
       end
 
       it 'encodes Maybe(Int) Just' do
-        expect(Derived.maybe_just_string.call(Maybe::Just[7])).to eql '7'
+        expect(Derived.maybe_just_string(7)).to eql '7'
       end
 
       it 'encodes Maybe(Int) Nothing as null' do
-        expect(Derived.maybe_nothing_string.call(Maybe::Nothing[])).to eql 'null'
+        expect(Derived.maybe_nothing_string(nil)).to eql 'null'
       end
 
       it 'encodes a struct as a JSON object with declared field names' do
         person = Data.define(:name, :age).new(name: 'Pepe', age: 30)
-        expect(Derived.person_string.call(person)).to eql '{"name":"Pepe","age":30}'
+        expect(Derived.person_string(person)).to eql '{"name":"Pepe","age":30}'
       end
 
       it 'encodes a list of structs' do
         person = Data.define(:name, :age)
         ps = [person.new(name: 'Pepe', age: 30), person.new(name: 'Lala', age: 25)]
-        expect(Derived.people_string.call(ps)).to eql '[{"name":"Pepe","age":30},{"name":"Lala","age":25}]'
+        expect(Derived.people_string(ps)).to eql '[{"name":"Pepe","age":30},{"name":"Lala","age":25}]'
       end
     end
 
@@ -200,7 +200,7 @@ module Jade
 
       it 'encodes and decodes back to the same struct' do
         person = Data.define(:name, :age).new(name: 'Pepe', age: 30)
-        expect(RoundTrip.roundtrip_person.call(person))
+        expect(RoundTrip::Internal.roundtrip_person.call(person))
           .to be_ok(have_attributes(name: 'Pepe', age: 30))
       end
     end
@@ -231,13 +231,13 @@ module Jade
       before { test_compiler.require('boundary', source) }
 
       it 'returns a plain Hash to Ruby callers' do
-        result = Boundary.get_user.call
+        result = Boundary.get_user
         expect(result).to be_a(Hash)
         expect(result).to eq({ 'name' => 'Pepe', 'age' => 30 })
       end
 
       it 'returns a plain Array of Hashes to Ruby callers' do
-        result = Boundary.get_users.call
+        result = Boundary.get_users
         expect(result).to be_a(Array)
         expect(result).to eq([
           { 'name' => 'Pepe', 'age' => 30 },

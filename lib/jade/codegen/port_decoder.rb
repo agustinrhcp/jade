@@ -5,10 +5,8 @@ module Jade
 
       PASS = "Jade::Decode::Decoder[Jade::Decode::Desc::Pass[]]"
 
-      # Emits the full `Jade::Runtime.task_call(...)` callee for a port. Both
-      # codegen sites that reach an InteropFunction (VariableReference and
-      # FunctionCall) come through here. `dictionaries` is the call site's
-      # constraint-attachment list; only used when an arm is a Dict marker.
+      # `dictionaries` is the call site's constraint-attachment list; only
+      # used when an arm is a Dict marker.
       def task_call(interop_fn, registry, dictionaries = [])
         [
           interop_fn.interop_module_name,

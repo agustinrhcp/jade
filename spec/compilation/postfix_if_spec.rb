@@ -68,25 +68,25 @@ module Jade
     before { test_compiler.require('m', source) }
 
     it 'evaluates simple postfix conditions' do
-      expect(M.abs.call(-5)).to eql 5
-      expect(M.abs.call(5)).to eql 5
-      expect(M.double_if_big.call(5, true)).to eql 10
-      expect(M.double_if_big.call(5, false)).to eql 5
+      expect(M.abs(-5)).to eql 5
+      expect(M.abs(5)).to eql 5
+      expect(M.double_if_big(5, true)).to eql 10
+      expect(M.double_if_big(5, false)).to eql 5
     end
 
     it 'cascades right-associatively' do
-      expect(M.sign.call(-3)).to eql(-1)
-      expect(M.sign.call(0)).to eql 0
-      expect(M.sign.call(7)).to eql 1
-      expect(M.classify.call(0)).to eql 'zero'
-      expect(M.classify.call(-2)).to eql 'negative'
-      expect(M.classify.call(2)).to eql 'positive'
+      expect(M.sign(-3)).to eql(-1)
+      expect(M.sign(0)).to eql 0
+      expect(M.sign(7)).to eql 1
+      expect(M.classify(0)).to eql 'zero'
+      expect(M.classify(-2)).to eql 'negative'
+      expect(M.classify(2)).to eql 'positive'
     end
 
     it 'composes inside block-form if/then/else' do
-      expect(M.mixed_with_block.call(0)).to eql 42
-      expect(M.mixed_with_block.call(7)).to eql 7
-      expect(M.mixed_with_block.call(20)).to eql 40
+      expect(M.mixed_with_block(0)).to eql 42
+      expect(M.mixed_with_block(7)).to eql 7
+      expect(M.mixed_with_block(20)).to eql 40
     end
   end
 
@@ -184,34 +184,34 @@ module Jade
     before { test_compiler.require('n', source) }
 
     it 'works inside function call args, lists, records' do
-      expect(N.in_call_arg.call(true)).to eql 3
-      expect(N.in_call_arg.call(false)).to eql 0
-      expect(N.in_list.call(true)).to eql [1, 2, 3]
-      expect(N.in_list.call(false)).to eql [1, 99, 3]
-      expect(N.in_record.call(true).y).to eql 2
-      expect(N.in_record.call(false).y).to eql 99
+      expect(N.in_call_arg(true)).to eql 3
+      expect(N.in_call_arg(false)).to eql 0
+      expect(N.in_list(true)).to eql [1, 2, 3]
+      expect(N.in_list(false)).to eql [1, 99, 3]
+      expect(N::Internal.in_record.call(true).y).to eql 2
+      expect(N::Internal.in_record.call(false).y).to eql 99
     end
 
     it 'spans multiple lines' do
-      expect(N.multiline.call(5)).to eql 10
-      expect(N.multiline.call(-3)).to eql 3
+      expect(N.multiline(5)).to eql 10
+      expect(N.multiline(-3)).to eql 3
     end
 
     it 'attaches a postfix tail to a block-if as the leading expression' do
-      expect(N.block_if_with_postfix_tail.call(0)).to eql(-1)
-      expect(N.block_if_with_postfix_tail.call(5)).to eql 200
-      expect(N.block_if_with_postfix_tail.call(-3)).to eql(-1)
+      expect(N.block_if_with_postfix_tail(0)).to eql(-1)
+      expect(N.block_if_with_postfix_tail(5)).to eql 200
+      expect(N.block_if_with_postfix_tail(-3)).to eql(-1)
     end
 
     it 'allows a block-if as the else branch of postfix' do
-      expect(N.postfix_with_block_else.call(5)).to eql 1
-      expect(N.postfix_with_block_else.call(0)).to eql 0
-      expect(N.postfix_with_block_else.call(-3)).to eql(-1)
+      expect(N.postfix_with_block_else(5)).to eql 1
+      expect(N.postfix_with_block_else(0)).to eql 0
+      expect(N.postfix_with_block_else(-3)).to eql(-1)
     end
 
     it 'works on the right-hand side of let bindings' do
-      expect(N.in_let.call(true)).to eql 11
-      expect(N.in_let.call(false)).to eql 22
+      expect(N.in_let(true)).to eql 11
+      expect(N.in_let(false)).to eql 22
     end
   end
 end

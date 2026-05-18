@@ -60,6 +60,17 @@ module Jade
       Function[args, return_type]
     end
 
+    # Destructures a fn type into [args, return_type], handling the
+    # nullary collapse: a `def f() -> T` has type `T` (not `() -> T`),
+    # because bare `f` in Jade source is auto-invoked. Use this anywhere
+    # you need a uniform view of "what does this fn take and return."
+    def signature(fn_type)
+      case fn_type
+      in Function(args:, return_type:) then [args, return_type]
+      else [[], fn_type]
+      end
+    end
+
     def anonymous_record(fields, row_var)
       AnonymousRecord[fields, row_var]
     end
@@ -99,7 +110,7 @@ module Jade
           .constructor(symbol.qualified_name)
           .then { [it.apply(union_vars), union_cs, union_map] }
 
-      in Symbol::Function if symbol.params.empty?
+      in Symbol::Function if symbol.constant?
         from_symbol_r(symbol.return_type, registry, var_gen, {})
           .then { |(t, c, _)| [t, c, var_map] }
 
@@ -116,7 +127,7 @@ module Jade
           .then { |(t, c, _)| [Type.function(args, t), c + arg_cs] }
           .then { it + [var_map] }
 
-      in Symbol::StdlibFunction if symbol.params.empty? && symbol.constraints.empty?
+      in Symbol::StdlibFunction if symbol.constant?
         from_symbol_r(symbol.return_type, registry, var_gen, {})
           .then { |(t, c, _)| [t, c, var_map] }
 
@@ -151,8 +162,6 @@ module Jade
           .then { |(t, c, updated_map)| [Type.function(args, t), c, updated_map] }
 
       in Symbol::InteropFunction
-        # Like FunctionType, plus implicit Decodable constraints on var arms
-        # (see Symbol::InteropFunction#constraints).
         args, arg_cs, args_map = symbol
           .params
           .reduce([[], [], var_map]) do |(types, cs, local_map), sym|

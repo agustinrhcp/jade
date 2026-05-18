@@ -24,7 +24,7 @@ module Jade
       it 'generates a person with the right attributes' do
         expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-        expect(Pepe.person.call()).to have_attributes(name: 'Paul', age: 55)
+        expect(Pepe::Internal.person.call()).to have_attributes(name: 'Paul', age: 55)
       end
 
       context 'when signature does not match' do
@@ -68,7 +68,7 @@ module Jade
         it 'returns the age' do
           expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-          expect(Pepe.pauls_age.call()).to eql 55
+          expect(Pepe.pauls_age()).to eql 55
         end
 
         context 'sugar acces to a' do
@@ -92,7 +92,7 @@ module Jade
           it 'returns the age' do
             expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-            expect(Pepe.pauls_age.call()).to eql 55
+            expect(Pepe.pauls_age()).to eql 55
           end
         end
 
@@ -144,7 +144,7 @@ module Jade
         it 'updates the record' do
           expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-          expect(Pepe.pauls_birthday.call()).to have_attributes(name: 'Paul', age: 56)
+          expect(Pepe::Internal.pauls_birthday.call()).to have_attributes(name: 'Paul', age: 56)
         end
       end
 
@@ -171,7 +171,7 @@ module Jade
         it 'updates the record' do
           expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-          expect(Pepe.pauls_birthday.call()).to have_attributes(name: 'Paul', age: 56)
+          expect(Pepe::Internal.pauls_birthday.call()).to have_attributes(name: 'Paul', age: 56)
         end
       end
 
@@ -203,8 +203,8 @@ module Jade
         it 'updates the record' do
           expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-          expect(Pepe.pauls_id.call()).to eql(10)
-          expect(Pepe.franks_id.call()).to eql("f10")
+          expect(Pepe.pauls_id()).to eql(10)
+          expect(Pepe.franks_id()).to eql("f10")
         end
       end
 
@@ -239,8 +239,8 @@ module Jade
         it 'updates the record' do
           expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-          expect(Pepe.paul_is_paul.call()).to be true
-          expect(Pepe.frank_is_paul.call()).to be false
+          expect(Pepe.paul_is_paul()).to be true
+          expect(Pepe.frank_is_paul()).to be false
         end
 
         context "with wrong field type" do
@@ -304,7 +304,7 @@ module Jade
       it 'generates a person with the right attributes' do
         expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-        expect(Pepe.person.call()).to have_attributes(name: 'Paul', age: 55)
+        expect(Pepe::Internal.person.call()).to have_attributes(name: 'Paul', age: 55)
       end
 
       context 'accessor' do
@@ -330,7 +330,7 @@ module Jade
         it 'generates a person with the right attributes' do
           expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-          expect(Pepe.pauls_name.call()).to eql('Paul')
+          expect(Pepe.pauls_name()).to eql('Paul')
         end
       end
 
@@ -361,8 +361,8 @@ module Jade
         it 'generates a person with the right attributes' do
           expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-          expect(Pepe.paul.call().id).to eql(1)
-          expect(Pepe.frank.call().id).to eql('f10')
+          expect(Pepe::Internal.paul.call().id).to eql(1)
+          expect(Pepe::Internal.frank.call().id).to eql('f10')
         end
       end
 
@@ -396,8 +396,8 @@ module Jade
         it 'updates the record' do
           expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
 
-          expect(Pepe.paul_is_paul.call()).to be true
-          expect(Pepe.frank_is_paul.call()).to be false
+          expect(Pepe.paul_is_paul()).to be true
+          expect(Pepe.frank_is_paul()).to be false
         end
       end
 
@@ -421,7 +421,7 @@ module Jade
           expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
 
           paul = Pepe::Person['Paul', 55]
-          expect(Pepe.birthday.call(paul)).to eql Pepe::Person['Paul', 56]
+          expect(Pepe::Internal.birthday.call(paul)).to eql Pepe::Person['Paul', 56]
         end
       end
 
@@ -447,7 +447,7 @@ module Jade
 
         it 'allows `paul()` even though `paul` is also a value' do
           expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
-          expect(Pepe.name_of_paul.call()).to eql 'Paul'
+          expect(Pepe.name_of_paul()).to eql 'Paul'
         end
       end
 
@@ -474,7 +474,7 @@ module Jade
 
         it 'instantiates the type parameter from the call result' do
           expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
-          expect(Pepe.query.call()).to eql 42
+          expect(Pepe.query()).to eql 42
         end
       end
 
@@ -544,7 +544,7 @@ module Jade
 
         it 'positional construction with the record as the type-param value' do
           expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
-          expect(Pepe.wrap.call().wrapped.val).to eql(42)
+          expect(Pepe::Internal.wrap.call().wrapped.val).to eql(42)
         end
       end
 
@@ -589,11 +589,11 @@ module Jade
           test_compiler.require('forms', working_source)
 
           expected_person = Forms::Person['Paul', 55]
-          expect(Forms.positional.call).to eql expected_person
-          expect(Forms.kwargs.call).to     eql expected_person
+          expect(Forms::Internal.positional.call).to eql expected_person
+          expect(Forms::Internal.kwargs.call).to     eql expected_person
 
-          expect(Forms.update.call).to eql Forms::Person['Paul', 56]
-          expect(Forms.nested.call).to eql Forms::Wrapper[Forms::Address['Main', 'Paris']]
+          expect(Forms::Internal.update.call).to eql Forms::Person['Paul', 56]
+          expect(Forms::Internal.nested.call).to eql Forms::Wrapper[Forms::Address['Main', 'Paris']]
         end
 
         it 'anonymous record cannot stand in for a nominal struct' do

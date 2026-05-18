@@ -83,57 +83,57 @@ module Jade
     before { test_compiler.require('decoding', source) }
 
     it 'decodes a string' do
-      expect(Decoding.run_string.call('"hello"')).to be_ok("hello")
+      expect(Decoding::Internal.run_string.call('"hello"')).to be_ok("hello")
     end
 
     it 'decodes an int' do
-      expect(Decoding.run_int.call('42')).to be_ok(42)
+      expect(Decoding::Internal.run_int.call('42')).to be_ok(42)
     end
 
     it 'decodes a required field' do
-      expect(Decoding.run_field.call('{"name":"Pepe"}')).to be_ok("Pepe")
+      expect(Decoding::Internal.run_field.call('{"name":"Pepe"}')).to be_ok("Pepe")
     end
 
     it 'returns MissingField for absent required field' do
-      expect(Decoding.run_missing.call('{"name":"Pepe"}')).to be_err(Decode::MissingField["age"])
+      expect(Decoding::Internal.run_missing.call('{"name":"Pepe"}')).to be_err(Decode::MissingField["age"])
     end
 
     it 'nullable decodes a present value' do
-      expect(Decoding.run_nullable_present.call('"hello"')).to be_ok(be_just("hello"))
+      expect(Decoding::Internal.run_nullable_present.call('"hello"')).to be_ok(be_just("hello"))
     end
 
     it 'nullable decodes null to Nothing' do
-      expect(Decoding.run_nullable_nil.call('null')).to be_ok(be_nothing)
+      expect(Decoding::Internal.run_nullable_nil.call('null')).to be_ok(be_nothing)
     end
 
     it 'optional_field returns Nothing for absent key' do
-      expect(Decoding.run_optional_absent.call('{}')).to be_ok(be_nothing)
+      expect(Decoding::Internal.run_optional_absent.call('{}')).to be_ok(be_nothing)
     end
 
     it 'optional_field returns Just for present key' do
-      expect(Decoding.run_optional_present.call('{"x":"hi"}')).to be_ok(be_just("hi"))
+      expect(Decoding::Internal.run_optional_present.call('{"x":"hi"}')).to be_ok(be_just("hi"))
     end
 
     it 'optional_field with null value is an error (key present, wrong type)' do
-      expect(Decoding.run_optional_present.call('{"x":null}'))
+      expect(Decoding::Internal.run_optional_present.call('{"x":null}'))
         .to be_err(be_a(Decode::AtField))
     end
 
     it 'returns WrongType for type mismatch' do
-      expect(Decoding.run_wrong_type.call('"not an int"')).to be_err(Decode::WrongType["Int", "String"])
+      expect(Decoding::Internal.run_wrong_type.call('"not an int"')).to be_err(Decode::WrongType["Int", "String"])
     end
 
     it 'decodes a list' do
-      expect(Decoding.run_list.call('[1,2,3]')).to be_ok([1, 2, 3])
+      expect(Decoding::Internal.run_list.call('[1,2,3]')).to be_ok([1, 2, 3])
     end
 
     it 'map2 decodes multiple fields into a struct' do
-      expect(Decoding.run_map2.call('{"x":3,"y":7}'))
+      expect(Decoding::Internal.run_map2.call('{"x":3,"y":7}'))
         .to be_ok(have_attributes(x: 3, y: 7))
     end
 
     it 'map2 collects errors from both fields' do
-      expect(Decoding.run_map2.call('{}'))
+      expect(Decoding::Internal.run_map2.call('{}'))
         .to be_err(be_a(Decode::Multiple))
     end
 
@@ -167,16 +167,16 @@ module Jade
       before { test_compiler.require('seq_test', source) }
 
       it 'runs each decoder against the same value and collects results' do
-        expect(SeqTest.run_all_ok.call('{"a":1,"b":2}')).to be_ok([1, 2])
+        expect(SeqTest::Internal.run_all_ok.call('{"a":1,"b":2}')).to be_ok([1, 2])
       end
 
       it 'reports the single error when only one decoder fails' do
-        expect(SeqTest.run_one_err.call('{"a":1}'))
+        expect(SeqTest::Internal.run_one_err.call('{"a":1}'))
           .to be_err(be_a(Decode::MissingField))
       end
 
       it 'wraps multiple errors in Multiple' do
-        expect(SeqTest.run_two_err.call('{}'))
+        expect(SeqTest::Internal.run_two_err.call('{}'))
           .to be_err(be_a(Decode::Multiple))
       end
     end
@@ -205,15 +205,15 @@ module Jade
       before { test_compiler.require('one_of_test', source) }
 
       it 'picks the first matching decoder' do
-        expect(OneOfTest.id_from_json.call('"abc"')).to be_ok(OneOfTest::StringId['abc'])
+        expect(OneOfTest::Internal.id_from_json.call('"abc"')).to be_ok(OneOfTest::StringId['abc'])
       end
 
       it 'falls through to the second decoder' do
-        expect(OneOfTest.id_from_json.call('42')).to be_ok(OneOfTest::IntId[42])
+        expect(OneOfTest::Internal.id_from_json.call('42')).to be_ok(OneOfTest::IntId[42])
       end
 
       it 'collects errors from every branch when all fail' do
-        expect(OneOfTest.id_from_json.call('true'))
+        expect(OneOfTest::Internal.id_from_json.call('true'))
           .to be_err(be_a(Decode::Multiple))
       end
     end
@@ -251,26 +251,26 @@ module Jade
       before { test_compiler.require('pipeline', source) }
 
       it 'decodes a struct via the pipeline' do
-        expect(Pipeline.person_from_json.call('{"name":"Pepe","age":30,"nickname":"Pep"}'))
+        expect(Pipeline::Internal.person_from_json.call('{"name":"Pepe","age":30,"nickname":"Pep"}'))
           .to be_ok(have_attributes(name: 'Pepe', age: 30, nickname: 'Pep'))
       end
 
       it 'uses the default when an optional key is missing' do
-        expect(Pipeline.person_from_json.call('{"name":"Pepe","age":30}'))
+        expect(Pipeline::Internal.person_from_json.call('{"name":"Pepe","age":30}'))
           .to be_ok(have_attributes(name: 'Pepe', age: 30, nickname: 'anon'))
       end
 
       it 'uses the default when an optional value is null' do
-        expect(Pipeline.person_from_json.call('{"name":"Pepe","age":30,"nickname":null}'))
+        expect(Pipeline::Internal.person_from_json.call('{"name":"Pepe","age":30,"nickname":null}'))
           .to be_ok(have_attributes(name: 'Pepe', age: 30, nickname: 'anon'))
       end
 
       it 'fails when a required field is missing' do
-        expect(Pipeline.person_from_json.call('{"age":30}')).to be_err
+        expect(Pipeline::Internal.person_from_json.call('{"age":30}')).to be_err
       end
 
       it 'fails when an optional field has the wrong type' do
-        expect(Pipeline.person_from_json.call('{"name":"Pepe","age":30,"nickname":42}'))
+        expect(Pipeline::Internal.person_from_json.call('{"name":"Pepe","age":30,"nickname":42}'))
           .to be_err
       end
     end
@@ -323,37 +323,37 @@ module Jade
       before { test_compiler.require('derived', source) }
 
       it 'decodes Int' do
-        expect(Derived.int_from_json.call('42')).to be_ok(42)
+        expect(Derived::Internal.int_from_json.call('42')).to be_ok(42)
       end
 
       it 'decodes String' do
-        expect(Derived.str_from_json.call('"hi"')).to be_ok('hi')
+        expect(Derived::Internal.str_from_json.call('"hi"')).to be_ok('hi')
       end
 
       it 'decodes List(Int)' do
-        expect(Derived.list_from_json.call('[1,2,3]')).to be_ok([1, 2, 3])
+        expect(Derived::Internal.list_from_json.call('[1,2,3]')).to be_ok([1, 2, 3])
       end
 
       it 'decodes Maybe(Int) — present' do
-        expect(Derived.maybe_from_json.call('7')).to be_ok(be_just(7))
+        expect(Derived::Internal.maybe_from_json.call('7')).to be_ok(be_just(7))
       end
 
       it 'decodes Maybe(Int) — null' do
-        expect(Derived.maybe_from_json.call('null')).to be_ok(be_nothing)
+        expect(Derived::Internal.maybe_from_json.call('null')).to be_ok(be_nothing)
       end
 
       it 'decodes a struct' do
-        expect(Derived.person_from_json.call('{"name":"Pepe","age":30}'))
+        expect(Derived::Internal.person_from_json.call('{"name":"Pepe","age":30}'))
           .to be_ok(have_attributes(name: 'Pepe', age: 30))
       end
 
       it 'fails on missing struct field' do
-        expect(Derived.person_from_json.call('{"name":"Pepe"}')).to be_err
+        expect(Derived::Internal.person_from_json.call('{"name":"Pepe"}')).to be_err
       end
 
       it 'decodes a list of structs' do
         json = '[{"name":"Pepe","age":30},{"name":"Lala","age":25}]'
-        expect(Derived.people_from_json.call(json)).to be_ok(
+        expect(Derived::Internal.people_from_json.call(json)).to be_ok(
           contain_exactly(
             have_attributes(name: 'Pepe', age: 30),
             have_attributes(name: 'Lala', age: 25),
@@ -409,22 +409,22 @@ module Jade
       before { test_compiler.require('patch', source) }
 
       it 'returns an empty list when no fields are present' do
-        result = Patch.parse_updates.call({})
+        result = Patch::Internal.parse_updates.call({})
         expect(result).to be_ok([])
       end
 
       it 'collects only the fields that were provided' do
-        expect(Patch.parse_updates.call({ name: 'Pepe' }))
+        expect(Patch::Internal.parse_updates.call({ name: 'Pepe' }))
           .to be_ok([Patch::SetName['Pepe']])
       end
 
       it 'collects all fields when all are present' do
-        expect(Patch.parse_updates.call({ name: 'Pepe', age: 30 }))
+        expect(Patch::Internal.parse_updates.call({ name: 'Pepe', age: 30 }))
           .to be_ok([Patch::SetName['Pepe'], Patch::SetAge[30]])
       end
 
       it 'fails when a present field has the wrong type' do
-        expect(Patch.parse_updates.call({ name: 42 })).to be_err
+        expect(Patch::Internal.parse_updates.call({ name: 42 })).to be_err
       end
     end
 
@@ -449,17 +449,17 @@ module Jade
       before { test_compiler.require('derived_maybe', source) }
 
       it 'decodes Just when nickname is present' do
-        expect(DerivedMaybe.person_from_json.call('{"name":"Pepe","nickname":"Pep"}'))
+        expect(DerivedMaybe::Internal.person_from_json.call('{"name":"Pepe","nickname":"Pep"}'))
           .to be_ok(have_attributes(name: 'Pepe', nickname: Jade::Maybe::Just['Pep']))
       end
 
       it 'decodes Nothing when nickname is null' do
-        expect(DerivedMaybe.person_from_json.call('{"name":"Pepe","nickname":null}'))
+        expect(DerivedMaybe::Internal.person_from_json.call('{"name":"Pepe","nickname":null}'))
           .to be_ok(have_attributes(name: 'Pepe', nickname: Jade::Maybe::Nothing[]))
       end
 
       it 'fails when nickname key is absent (no optional_field magic)' do
-        expect(DerivedMaybe.person_from_json.call('{"name":"Pepe"}')).to be_err
+        expect(DerivedMaybe::Internal.person_from_json.call('{"name":"Pepe"}')).to be_err
       end
     end
 
@@ -498,8 +498,88 @@ module Jade
       before { test_compiler.require('value_decoding', value_source) }
 
       it 'decodes a Ruby hash coming through a port' do
-        expect(ValueDecoding.handle.call().run)
+        expect(ValueDecoding::Internal.handle.call().run)
           .to be_ok(have_attributes(name: 'Pepe', age: 30))
+      end
+    end
+
+    context 'variant — union decoded from a [name, ...args] array' do
+      let(:source) do
+        <<~JADE
+          module Variants exposing (Shape, area, parse_shape)
+
+          import Decode exposing (DecodeError, Decoder)
+
+          type Shape
+            = Circle(Float)
+            | Square(Float)
+
+          def parse_shape() -> Decoder(Shape)
+            Decode.type_
+              |> Decode.variant("circle", Decode.map(Decode.index(1, Decode.float), Circle))
+              |> Decode.variant("square", Decode.map(Decode.index(1, Decode.float), Square))
+          end
+
+          def area(s: Shape) -> Float
+            case s
+            of Circle(r) then 3.14 * r * r
+            of Square(side) then side * side
+            end
+          end
+        JADE
+      end
+
+      before { test_compiler.require('variants', source) }
+
+      it 'decodes the matching variant' do
+        decoder = Variants::Internal.parse_shape.call
+        expect(Decode::Runner.run(decoder, ['circle', 1.5]))
+          .to be_ok(have_attributes(_1: 1.5))
+        expect(Decode::Runner.run(decoder, ['square', 2.0]))
+          .to be_ok(have_attributes(_1: 2.0))
+      end
+
+      it 'errs on an unknown variant tag' do
+        decoder = Variants::Internal.parse_shape.call
+        expect(Decode::Runner.run(decoder, ['triangle', 1.0]))
+          .to be_err(Decode::Custom['unknown variant: "triangle"'])
+      end
+
+      it 'errs when the value is not an array' do
+        decoder = Variants::Internal.parse_shape.call
+        expect(Decode::Runner.run(decoder, 'not an array'))
+          .to be_err(Decode::WrongType['Array', 'String'])
+      end
+    end
+
+    context 'Encode.variant — the symmetric encode side' do
+      let(:source) do
+        <<~JADE
+          module EncVariants exposing (Shape, encode_shape)
+
+          import Decode exposing (Value)
+          import Encode
+
+          type Shape
+            = Circle(Float)
+            | Square(Float)
+
+          def encode_shape(s: Shape) -> Value
+            case s
+            of Circle(r) then Encode.variant("circle", [Encode.float(r)])
+            of Square(side) then Encode.variant("square", [Encode.float(side)])
+            end
+          end
+        JADE
+      end
+
+      before { test_compiler.require('enc_variants', source) }
+
+      it 'produces [name, ...args] for each variant' do
+        expect(EncVariants::Internal.encode_shape.call(EncVariants::Circle[1.5]))
+          .to eql ['circle', 1.5]
+        expect(EncVariants::Internal.encode_shape.call(EncVariants::Square[2.0]))
+          .to eql ['square', 2.0]
       end
     end
   end

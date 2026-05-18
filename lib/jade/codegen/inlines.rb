@@ -17,6 +17,7 @@ module Jade
 
       INLINES = {
         'Basics.identity'   => ->(a)    { a },
+        'Basics.always'     => ->(x)    { "->(_) { #{x} }" },
         'Basics.int_add'    => ->(a, b) { "(#{a} + #{b})" },
         'Basics.int_sub'    => ->(a, b) { "(#{a} - #{b})" },
         'Basics.int_mul'    => ->(a, b) { "(#{a} * #{b})" },
@@ -96,8 +97,7 @@ module Jade
         'String.map'       => ->(s, params, body)          { "#{s}.chars.map { |#{params}| #{body} }.join" },
       }.freeze
 
-      # Bodies that don't fit a single Ruby expression. Coverage spec enforces
-      # every stdlib intrinsic with a runtime block is in INLINES or here.
+      # Bodies that don't fit a single Ruby expression.
       NO_INLINE = %w[
         Basics.int_compare
         Basics.float_compare
@@ -130,6 +130,11 @@ module Jade
         Decode.sequence
         Decode.string
         Decode.succeed
+        Decode.tuple
+        Decode.tuple3
+        Decode.tuple4
+        Decode.type_
+        Decode.variant
         Encode.bool
         Encode.encode_to_string
         Encode.field
@@ -140,6 +145,10 @@ module Jade
         Encode.nullable
         Encode.object
         Encode.string
+        Encode.tuple
+        Encode.tuple3
+        Encode.tuple4
+        Encode.variant
         Task.and_then
         Task.fail
         Task.from_result

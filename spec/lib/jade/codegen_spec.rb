@@ -87,7 +87,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "def add\n  ->(a, b) { (a + b) }\nend\n__Test__.add.call(1, 2)" }
+      it { is_expected.to eql "def add\n  ->(a, b) { (a + b) }\nend\n__Test__::Internal.add.call(1, 2)" }
     end
 
     context 'type def' do
@@ -146,15 +146,23 @@ module Jade
       end
 
       it { is_expected.to include "require 'jade/runtime'\nrequire_relative 'maybe'\nrequire_relative 'result'"}
-      it do
+
+      it 'wraps function defs in Internal under the outer module' do
         is_expected.to include(
           "module Test\n" \
           "  extend self\n\n" \
-          "  def hello\n" \
-          "    ->(str) { str.empty? }\n" \
-          "  end\n" \
-          "end"
+          "  module Internal\n" \
+          "    extend self\n\n" \
+          "    def hello\n" \
+          "      ->(str) { str.empty? }\n" \
+          "    end\n" \
+          "  end"
         )
+      end
+
+      it 'emits the boundary wrapper for eligible fns' do
+        is_expected.to include("def self.hello(__p0__)")
+        is_expected.to include("Jade::Interop::Boundary.decode_or_raise")
       end
     end
 
