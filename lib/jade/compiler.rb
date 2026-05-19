@@ -9,9 +9,9 @@ module Jade
     def require(path)
       target = File.expand_path("#{build_root}/#{path}.rb", config.project_root)
 
-      unless File.exist?(target)
+      if needs_rebuild?(target)
         ModuleLoader
-          .load(config.source_root.first, path + '.jd')
+          .load(config.source_root.first, path + '.jd', cache_dir: cache_root)
           .then { ModuleLoader.emit(it, path: build_root) }
       end
 
@@ -28,13 +28,27 @@ module Jade
       File.expand_path(config.build_dir, config.project_root)
     end
 
+    def cache_root
+      File.expand_path(config.cache_dir, config.project_root)
+    end
+
+    def needs_rebuild?(target)
+      return true unless File.exist?(target)
+
+      target_mtime = File.mtime(target)
+      Dir
+        .glob(File.join(config.source_root.first, '**/*.jd'))
+        .any? { |src| File.mtime(src) > target_mtime }
+    end
+
     class Config
-      attr_accessor :project_root, :source_root, :build_dir
+      attr_accessor :project_root, :source_root, :build_dir, :cache_dir
 
       def initialize
         @project_root = Dir.pwd
         @source_root = []
         @build_dir   = ".jade/build"
+        @cache_dir   = ".jade/cache"
       end
 
       def source_root=(root)

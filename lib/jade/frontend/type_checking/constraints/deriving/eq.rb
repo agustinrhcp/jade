@@ -37,17 +37,6 @@ module Jade
                     lookup.call(dep) => Ok[resolved]; resolved
                   }
 
-                  # This registers the derived function (or template)
-                  #  under registry.implementations.
-                  # A possible enhancement is to add it to the entry
-                  #  the function is for instead. That way, for ==
-                  #  we can genrate def ==. The main advantage of
-                  #  this would be generated code in function calls. Instead
-                  #  of a ton of lambdas, it would be just ==.call(other)
-                  registry.implementations.merge!(
-                    [constraint.interface, constructor.name] => impl
-                  )
-
                   Symbol::Implementation.new(
                     module_name: nil,
                     interface: Symbol.type_ref_from_qualified_name(constraint.interface),

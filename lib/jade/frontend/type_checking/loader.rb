@@ -56,11 +56,12 @@ module Jade
           in Symbol::ValueRef
             return env if env.bindings[sym.qualified_name]
 
-            registry
-              .get(sym.module_name)
-              .env
+            upstream_env = registry.get(sym.module_name)&.env
+            return env unless upstream_env
+
+            upstream_env
               .bindings[sym.qualified_name]
-              .then { env.bind(sym.qualified_name, it) }
+              &.then { env.bind(sym.qualified_name, it) } || env
 
           in Symbol::TypeRef
             return env if env.lookup_def(sym.qualified_name)

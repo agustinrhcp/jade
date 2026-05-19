@@ -10,7 +10,8 @@ module Jade
     :env,
     :generated,
     :implementations,
-    :entry
+    :entry,
+    :diagnostics,
   ) do
 
     def self.empty(name)
@@ -26,6 +27,7 @@ module Jade
         env: nil,
         implementations: {},
         entry: false,
+        diagnostics: Diagnostics::List.empty,
       )
     end
 
@@ -116,7 +118,26 @@ module Jade
       source.uri.gsub('.jd', '.rb')
     end
 
+    # Source spans are stripped so unrelated edits (e.g. whitespace) shifting
+    # one definition's span don't bust caches for consumers of others.
+    def interface_digest
+      Digest::SHA256.hexdigest(Marshal.dump(interface_snapshot))
+    end
+
     private
+
+    def interface_snapshot
+      value_names = exposes.filter_map { it.is_a?(Symbol::ValueRef) ? it.name : nil }.sort
+      type_names  = exposes.filter_map { it.is_a?(Symbol::TypeRef)  ? it.name : nil }.sort
+
+      [
+        value_names,
+        type_names,
+        value_names.map { ModuleLoader::Normalize.apply(defined_values[it]) },
+        type_names .map { ModuleLoader::Normalize.apply(defined_types[it])  },
+        implementations.keys.sort.map { [it, ModuleLoader::Normalize.apply(implementations[it])] },
+      ]
+    end
 
     def add_implementation(symbol)
       symbol

@@ -73,15 +73,6 @@ module Jade
                   its(:interface) { is_expected.to eql Symbol::TypeRef['Basics', 'Eq'] }
                   its(:type) { is_expected.to eql Symbol::TypeRef['Basics', 'Int'] }
                 end
-
-                it 'adds the template to the registry' do
-                  key = ['Basics.Eq', 'Maybe.Maybe']
-                  expect { subject }
-                    .to change { registry.implementations[key] }
-                    .from(nil)
-
-                  expect(registry.implementations[key]).to be_a Symbol::ImplementationTemplate
-                end
               end
             end
 
