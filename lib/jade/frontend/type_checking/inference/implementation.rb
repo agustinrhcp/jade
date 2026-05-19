@@ -11,14 +11,6 @@ module Jade
 
             impl = node.symbol
 
-            # TODO: This is not the only place we registry things!
-            # Register so constraint solving can find this implementation
-            registry
-              .implementations
-              .merge!(
-                [impl.interface.qualified_name, impl.type.qualified_name] => impl
-              )
-
             interface_sym   = registry.lookup(impl.interface)
             interface_qname = impl.interface.qualified_name
 

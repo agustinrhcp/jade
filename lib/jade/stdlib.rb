@@ -101,7 +101,7 @@ module Jade
       STDLIBS
         .reduce(registry) do |acc, stdlib|
           stdlib.generate_entry(acc)
-          registry.add_module(stdlib.entry)
+          acc.add_module(stdlib.entry)
         end
     end
   end

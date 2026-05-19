@@ -1,16 +1,17 @@
 module Jade
   Source = Data.define(:uri, :text, :line_starts) do
-    def self.load(source_root, uri)
-      new(uri, File.read(File.join(source_root, uri)))
+    def self.load(source_root, uri, overlays: {})
+      text = overlays[uri] || File.read(File.join(source_root, uri))
+      new(uri, text)
     end
 
-    def self.load_from_module_name(source_root, name)
+    def self.load_from_module_name(source_root, name, overlays: {})
       name.split('.')
         .compact
         .map { snake_case(it) }
         .then { |(*rest, last)| rest + [last + '.jd'] }
         .then { File.join(*it) }
-        .then { load(source_root, it) }
+        .then { load(source_root, it, overlays:) }
     end
 
     def initialize(uri:, text:, line_starts: calculate_line_starts(text))

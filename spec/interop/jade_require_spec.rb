@@ -23,7 +23,7 @@ describe 'requiring jade from a ruby file' do
 
     load_calls = 0
     Jade::ModuleLoader.singleton_class.prepend(Module.new {
-      define_method(:load) { |*a| load_calls += 1; super(*a) }
+      define_method(:load) { |*a, **kw| load_calls += 1; super(*a, **kw) }
     })
 
     Jade::Compiler.new(&config_block).require('required')
