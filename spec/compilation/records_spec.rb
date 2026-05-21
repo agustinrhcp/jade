@@ -12,12 +12,11 @@ module Jade
         <<~JADE
           module Pepe exposing (person)
 
-          def person() -> { name: String, age: Int }
+          def person -> { name: String, age: Int }
             {
               name: "Paul",
               age: 55,
             }
-          end
         JADE
       end
 
@@ -32,12 +31,11 @@ module Jade
           <<~JADE
             module Pepe exposing (person)
 
-            def person() -> { name: String, age: Float }
+            def person -> { name: String, age: Float }
               {
                 name: "Paul",
                 age: 55,
               }
-            end
           JADE
         end
 
@@ -52,16 +50,15 @@ module Jade
           <<~JADE
             module Pepe exposing (paul, pauls_age)
 
-            def paul() -> { name: String, age: Int }
+            def paul -> { name: String, age: Int }
               {
                 name: "Paul",
                 age: 55,
               }
-            end
 
-            def pauls_age() -> Int
+
+            def pauls_age -> Int
               paul.age
-            end
           JADE
         end
 
@@ -76,16 +73,15 @@ module Jade
             <<~JADE
               module Pepe exposing (paul, pauls_age)
 
-              def paul() -> { name: String, age: Int }
+              def paul -> { name: String, age: Int }
                 {
                   name: "Paul",
                   age: 55,
                 }
-              end
 
-              def pauls_age() -> Int
+
+              def pauls_age -> Int
                 paul |> .age
-              end
             JADE
           end
 
@@ -101,16 +97,15 @@ module Jade
             <<~JADE
               module Pepe exposing (paul, pauls_age)
 
-              def paul() -> { name: String, age: Int }
+              def paul -> { name: String, age: Int }
                 {
                   name: "Paul",
                   age: 55,
                 }
-              end
 
-              def pauls_age() -> Int
+
+              def pauls_age -> Int
                 paul.ate
-              end
             JADE
           end
 
@@ -126,18 +121,17 @@ module Jade
           <<~JADE
             module Pepe exposing (paul, pauls_birthday)
 
-            def paul() -> { name: String, age: Int }
+            def paul -> { name: String, age: Int }
               {
                 name: "Paul",
                 age: 55,
               }
-            end
 
-            def pauls_birthday() -> { name: String, age: Int }
+
+            def pauls_birthday -> { name: String, age: Int }
               paul_before_today = paul
 
               { paul_before_today | age: paul_before_today.age + 1 }
-            end
           JADE
         end
 
@@ -153,18 +147,17 @@ module Jade
           <<~JADE
             module Pepe exposing (paul, pauls_birthday)
 
-            def paul() -> { name: String, age: Int }
+            def paul -> { name: String, age: Int }
               {
                 name: "Paul",
                 age: 55,
               }
-            end
 
-            def pauls_birthday() -> { name: String, age: Int }
+
+            def pauls_birthday -> { name: String, age: Int }
               paul_before_today = paul
 
               paul_before_today |> .age=(paul_before_today.age + 1)
-            end
           JADE
         end
 
@@ -182,21 +175,20 @@ module Jade
 
             def id(rec: { a | id: id }) -> id
               rec.id
-            end
 
-            def pauls_id() -> Int
+
+            def pauls_id -> Int
               {
                 name: "Paul",
                 id: 10,
               } |> id
-            end
 
-            def franks_id() -> String
+
+            def franks_id -> String
               {
                 name: "Paul",
                 id: "f10",
               } |> id
-            end
           JADE
         end
 
@@ -215,24 +207,22 @@ module Jade
 
             def is_paul(person: { name: String, id: Int }) -> Bool
               case person
-              of { name: "Paul" } then True
-              of _ then False
-              end
-            end
+              of { name: "Paul" } -> True
+              of _ -> False
 
-            def paul_is_paul() -> Bool
+
+            def paul_is_paul -> Bool
               {
                 name: "Paul",
                 id: 10,
               } |> is_paul
-            end
 
-            def frank_is_paul() -> Bool
+
+            def frank_is_paul -> Bool
               {
                 name: "Frank",
                 id: 20,
               } |> is_paul
-            end
           JADE
         end
 
@@ -250,10 +240,8 @@ module Jade
 
               def is_paul(person: { name: String, id: Int }) -> Bool
                 case person
-                of { name: 1 } then True
-                of _ then False
-                end
-              end
+                of { name: 1 } -> True
+                of _ -> False
             JADE
           end
 
@@ -270,10 +258,8 @@ module Jade
 
               def is_paul(person: { name: String, id: Int }) -> Bool
                 case person
-                of { name: Just("Pepe") } then True
-                of _ then False
-                end
-              end
+                of { name: Just("Pepe") } -> True
+                of _ -> False
             JADE
           end
 
@@ -295,9 +281,9 @@ module Jade
             age: Int
           }
 
-          def person() -> Person
+
+          def person -> Person
             Person("Paul", 55)
-          end
         JADE
       end
 
@@ -317,13 +303,13 @@ module Jade
               age: Int
             }
 
+
             def named(thing: { a | name: String }) -> String
               thing.name
-            end
 
-            def pauls_name() -> String
+
+            def pauls_name -> String
               Person("Paul", 55) |> named()
-            end
           JADE
         end
 
@@ -344,17 +330,17 @@ module Jade
               id: a
             }
 
-            def paul() -> Person(Int)
-              Person("Paul", 1)
-            end
 
-            def frank() -> Person(String)
+            def paul -> Person(Int)
+              Person("Paul", 1)
+
+
+            def frank -> Person(String)
               Person("Frank", "f10")
-            end
+
 
             def identified(ided: { a | id: id }) -> id
               ided.id
-            end
           JADE
         end
 
@@ -376,20 +362,19 @@ module Jade
               id: Int
             }
 
+
             def is_paul(person: Person) -> Bool
               case person
-              of { name: "Paul" } then True
-              of _ then False
-              end
-            end
+              of { name: "Paul" } -> True
+              of _ -> False
 
-            def paul_is_paul() -> Bool
+
+            def paul_is_paul -> Bool
               Person("Paul", 10) |> is_paul
-            end
 
-            def frank_is_paul() -> Bool
+
+            def frank_is_paul -> Bool
               Person("Frank", 20) |> is_paul
-            end
           JADE
         end
 
@@ -411,9 +396,9 @@ module Jade
               age: Int
             }
 
+
             def birthday(p: Person) -> Person
               p |> .age=(p.age + 1)
-            end
           JADE
         end
 
@@ -435,13 +420,13 @@ module Jade
               age: Int
             }
 
-            def paul() -> Person
-              Person("Paul", 55)
-            end
 
-            def name_of_paul() -> String
+            def paul -> Person
+              Person("Paul", 55)
+
+
+            def name_of_paul -> String
               paul().name
-            end
           JADE
         end
 
@@ -458,17 +443,17 @@ module Jade
 
             struct Table(c) = { val: c }
 
+
             def get_val(t: Table(c)) -> c
               t.val
-            end
 
-            def persons() -> Table(Int)
+
+            def persons -> Table(Int)
               Table(42)
-            end
 
-            def query() -> Int
+
+            def query -> Int
               get_val(persons())
-            end
           JADE
         end
 
@@ -488,12 +473,12 @@ module Jade
               age: Int
             }
 
-            def paul() -> Person
+
+            def paul -> Person
               Person({
                 name: "Paul",
                 age: 55,
               })
-            end
           JADE
         end
 
@@ -513,13 +498,13 @@ module Jade
               age: Int
             }
 
-            def paul() -> Person
-              Person("Paul", 55)
-            end
 
-            def older_paul() -> Person
+            def paul -> Person
+              Person("Paul", 55)
+
+
+            def older_paul -> Person
               Person({ paul | age: 56 })
-            end
           JADE
         end
 
@@ -536,9 +521,9 @@ module Jade
 
             struct Wrapper(a) = { wrapped: a }
 
-            def wrap() -> Wrapper({ val: Int })
+
+            def wrap -> Wrapper({ val: Int })
               Wrapper({ val: 42 })
-            end
           JADE
         end
 
@@ -558,30 +543,32 @@ module Jade
               city: String
             }
 
+
             struct Wrapper = { addr: Address }
+
 
             struct Person = {
               name: String,
               age: Int
             }
 
-            def positional() -> Person
+
+            def positional -> Person
               Person("Paul", 55)
-            end
 
-            def kwargs() -> Person
+
+            def kwargs -> Person
               Person(name: "Paul", age: 55)
-            end
 
-            def update() -> Person
+
+            def update -> Person
               base = Person("Paul", 55)
 
               { base | age: 56 }
-            end
 
-            def nested() -> Wrapper
+
+            def nested -> Wrapper
               Wrapper(Address("Main", "Paris"))
-            end
           JADE
         end
 
@@ -605,14 +592,15 @@ module Jade
               city: String
             }
 
+
             struct Wrapper = { addr: Address }
 
-            def bad() -> Wrapper
+
+            def bad -> Wrapper
               Wrapper({
                 street: "Main",
                 city: "Paris",
               })
-            end
           JADE
 
           expect { test_compiler.require('forms_bad', source) }
@@ -630,9 +618,9 @@ module Jade
               age: Int
             }
 
-            def f() -> Person
+
+            def f -> Person
               #{body}
-            end
           JADE
 
           test_compiler.require('m', source)
@@ -659,11 +647,10 @@ module Jade
 
             def add(a: Int, b: Int) -> Int
               a + b
-            end
 
-            def f() -> Int
+
+            def f -> Int
               add(a: 1, b: 2)
-            end
           JADE
           expect { test_compiler.require('m_bad', source) }
             .to raise_error(RuntimeError, /Keyword-argument syntax is only valid/)

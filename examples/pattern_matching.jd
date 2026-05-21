@@ -2,20 +2,17 @@ module PatternMatching exposing (describe_list, fibonacci, sum)
 
 def describe_list(list: List(Int)) -> String
   case List.length(list)
-  of 0 then "empty"
-  of 1 then "one element"
-  of _ then "multiple elements"
-  end
-end
+  of 0 -> "empty"
+  of 1 -> "one element"
+  of _ -> "multiple elements"
+
 
 def sum(list: List(Int)) -> Int
   List.fold(list, 0, (acc, x) -> { acc + x })
-end
+
 
 def fibonacci(n: Int) -> Int
   case n
-  of 0 then 0
-  of 1 then 1
-  of _ then fibonacci(n - 1) + fibonacci(n - 2)
-  end
-end
+  of 0 -> 0
+  of 1 -> 1
+  of _ -> fibonacci(n - 1) + fibonacci(n - 2)

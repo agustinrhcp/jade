@@ -105,7 +105,6 @@ module Jade
         Source.new(uri: 'multi.jd', text: <<~JADE)
           def add(a: Int, b: Int) -> Int
             a + "hello"
-          end
         JADE
       end
 
@@ -132,9 +131,8 @@ module Jade
     describe 'multi-line span' do
       let(:source) do
         Source.new(uri: 'block.jd', text: <<~JADE)
-          def pauls_age() -> Int
+          def pauls_age -> Int
             42
-          end
         JADE
       end
 
@@ -148,22 +146,20 @@ module Jade
           error: wrong return type
             --> block.jd:1:1
             |
-          1 | def pauls_age() -> Int
-            | ^^^^^^^^^^^^^^^^^^^^^^
+          1 | def pauls_age -> Int
+            | ^^^^^^^^^^^^^^^^^^^^
           2 |   42
-          3 | end
-            | ^^^ declared here
+            | ^^^^ declared here
             |
         TEXT
       end
 
       it 'shows the annotation under the last line' do
-        expect(output).to include('^^^ declared here')
+        expect(output).to include('^^^^ declared here')
       end
 
       it 'shows all subsequent lines as context' do
         expect(output).to include('  42')
-        expect(output).to include('end')
       end
     end
   end

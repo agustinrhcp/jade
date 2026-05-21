@@ -177,7 +177,6 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a
-          end
         JADE
       end
 
@@ -189,9 +188,8 @@ module Jade
       context 'without arguments' do
         let(:text) do
           <<~JADE
-            def two() -> Int
+            def two -> Int
               2
-            end
           JADE
         end
 
@@ -206,7 +204,6 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Pepe.Lala
             a + b
-          end
         JADE
       end
 
@@ -229,10 +226,8 @@ module Jade
         <<~JADE
           def map(result: Result(a, e), fn: a -> b) -> Result(b, e)
             case result
-            of Ok(something) then Just(fn(somethig))
-            of _ then result
-            end
-          end
+            of Ok(something) -> Just(fn(somethig))
+            of _ -> result
         JADE
       end
 
@@ -246,10 +241,8 @@ module Jade
         <<~JADE
           def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
             case maybe
-            of Just(something) then fn(somethig)
-            of Nothing then maybe
-            end
-          end
+            of Just(something) -> fn(somethig)
+            of Nothing -> maybe
         JADE
       end
 
@@ -271,10 +264,8 @@ module Jade
           <<~JADE
             def and_then(maybe: Maybe(a), fn: a -> Maybe(b)) -> Maybe(b)
               case maybe
-              of Just(something) then fn(something)
-              of Nothing then Nothing
-              end
-            end
+              of Just(something) -> fn(something)
+              of Nothing -> Nothing
           JADE
         end
 
@@ -306,7 +297,6 @@ module Jade
         <<~JADE
           def run(f: () -> Int) -> Int
             f()
-          end
         JADE
       end
 
@@ -332,7 +322,6 @@ module Jade
           <<~JADE
             def something(tuple: (Int, String)) -> Int
               1
-            end
           JADE
         end
 
@@ -355,7 +344,6 @@ module Jade
           <<~JADE
             def something(a: Int) -> (String, Int)
               1
-            end
           JADE
         end
 
@@ -376,7 +364,6 @@ module Jade
           <<~JADE
             def something(a: Int) -> (String, Int, Bool)
               1
-            end
           JADE
         end
 
@@ -719,7 +706,6 @@ module Jade
         <<~JADE
           def is_empty(str: String) -> String
             String.is_empty(str)
-          end
         JADE
       end
 
@@ -747,7 +733,6 @@ module Jade
 
           def hello(str: String) -> Bool
             String.is_empty(str)
-          end
         JADE
       end
 
@@ -772,7 +757,6 @@ module Jade
 
             def hello(str: String) -> Bool
               String.is_empty(str)
-            end
           JADE
         end
 
@@ -786,11 +770,7 @@ module Jade
 
       let(:text) do
         <<~JADE
-          if String.is_empty("") then
-            1
-          else
-            2
-          end
+          if String.is_empty("") then 1 else 2
         JADE
       end
 
@@ -975,9 +955,8 @@ module Jade
       let(:text) do
         <<~JADE
           case 1
-          of 1 then 1
-          of _ then 2
-          end
+          of 1 -> 1
+          of _ -> 2
         JADE
       end
 
@@ -1004,9 +983,8 @@ module Jade
         let(:text) do
           <<~JADE
             case Just(1)
-            of Nothing then 0
-            of Just(x) then x
-            end
+            of Nothing -> 0
+            of Just(x) -> x
           JADE
         end
 
@@ -1034,8 +1012,7 @@ module Jade
         let(:text) do
           <<~JADE
             case { name: "Pepe" }
-            of { name: } then name
-            end
+            of { name: } -> name
           JADE
         end
 
@@ -1062,8 +1039,7 @@ module Jade
           let(:text) do
             <<~JADE
               case { name: "Pepe" }
-              of { name: } then name
-              end
+              of { name: } -> name
             JADE
           end
 
@@ -1147,11 +1123,10 @@ module Jade
       context 'with operation' do
         let(:text) do
           <<~JADE
-            def pauls_birthday() -> Person
+            def pauls_birthday -> Person
               paul_before_today = paul()
 
               { paul_before_today | age: paul_before_today.age + 1 }
-            end
           JADE
         end
 
@@ -1197,12 +1172,11 @@ module Jade
 
       let(:text) do
         <<~JADE
-          def add() -> { name: String, age: Int }
+          def add -> { name: String, age: Int }
             {
               name: "Paul",
               age: 55,
             }
-          end
         JADE
       end
 
@@ -1238,7 +1212,6 @@ module Jade
           <<~JADE
             def name(thing: { a | name: String }) -> String
               thing.name
-            end
           JADE
         end
 
@@ -1268,7 +1241,6 @@ module Jade
         <<~JADE
           uses Jade::Date with
             today : Int
-          end
         JADE
       end
 
@@ -1289,7 +1261,6 @@ module Jade
             uses Jade::Date with
               today : Int,
               today_plus_days : Int -> Int
-            end
           JADE
         end
 
@@ -1347,7 +1318,6 @@ module Jade
         <<~JADE
           implements Eq(Pepe) with
             (==): eq_pepe
-          end
         JADE
       end
 
@@ -1380,7 +1350,7 @@ module Jade
 
       include_examples 'a committed parse error'
 
-      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected lparen') }
+      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected arrow') }
     end
 
     context 'function declaration without return type after ->' do
@@ -1393,7 +1363,7 @@ module Jade
 
       include_examples 'a committed parse error'
 
-      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected lbrace') }
+      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected end of input, expected lbrace') }
     end
 
     context 'incomplete type declaration' do
@@ -1464,7 +1434,7 @@ module Jade
         expect(result).to be_error
       end
 
-      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected lparen') }
+      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected arrow') }
     end
   end
 end

@@ -20,7 +20,6 @@ module Jade
             { name: } <- m
 
             Just(name)
-          end
         JADE
       end
 
@@ -39,7 +38,6 @@ module Jade
             f = ((a, b)) -> { a + b }
 
             f(pair)
-          end
         JADE
       end
 
@@ -57,7 +55,6 @@ module Jade
             f = ({ name: }) -> { name }
 
             f(person)
-          end
         JADE
       end
 
@@ -73,10 +70,8 @@ module Jade
 
           def sum_list(list: List(Int)) -> Int
             case list
-            of [] then 0
-            of [x | xs] then x + sum_list(xs)
-            end
-          end
+            of [] -> 0
+            of [x | xs] -> x + sum_list(xs)
         JADE
       end
 
@@ -93,10 +88,8 @@ module Jade
 
           def first_or_zero(list: List(Int)) -> Int
             case list
-            of [] then 0
-            of [x | _] then x
-            end
-          end
+            of [] -> 0
+            of [x | _] -> x
         JADE
       end
 
@@ -116,12 +109,11 @@ module Jade
             due_cents: Int
           }
 
+
           def head_id(xs: List(Charge)) -> Int
             case xs
-            of [] then 0
-            of [c | rest] then c.id
-            end
-          end
+            of [] -> 0
+            of [c | rest] -> c.id
         JADE
       end
 
@@ -145,11 +137,12 @@ module Jade
         import Decode exposing (Value)
         import Encode exposing (int)
 
+
         struct T = { v: Value }
 
-        def make() -> T
+
+        def make -> T
           T(int(1))
-        end
       JADE
 
       test_compiler.require('opaque_app', <<~JADE)
@@ -157,11 +150,11 @@ module Jade
 
         import OpaqueLib exposing (T, make)
 
-        def go() -> T
+
+        def go -> T
           a = make()
 
           a
-        end
       JADE
 
       expect(OpaqueApp::Internal.go.call).to be_a(OpaqueLib::T)

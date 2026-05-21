@@ -1,3 +1,5 @@
+require 'jade/diagnostics'
+
 module Jade
   module Parsing
     module Combinators
@@ -21,7 +23,20 @@ module Jade
       end
 
       def at_least_one(parser, separated_by: none.skip)
-        parser >> ((separated_by >> sequence(parser, separated_by:)) | none.map { [] })
+        tail = separated_by >> sequence(parser, separated_by:)
+        parser >> optional(tail, default: [])
+      end
+
+      # Consume `parser` if it matches; if not, drop the slot from the
+      # surrounding `>>` tuple (no value, no failure).
+      def maybe(parser)
+        (parser | none).skip
+      end
+
+      # Consume `parser` if it matches; otherwise inject `default` as the
+      # value. Keeps tuple arity stable in `>>` chains.
+      def optional(parser, default: nil)
+        parser | none.map { default }
       end
 
       def sequence(parser, separated_by: none.skip)
@@ -39,12 +54,14 @@ module Jade
         inner = sequence(parser, separated_by: type(:comma).skip)
         P.new do |state|
           inner.call(state).and_then do |(items, state1)|
-            if !state1.eof? && state1.current.type == :comma
-              [true, state1.advance]
-            else
-              [false, state1]
-            end
-              .then { Ok[[CommaList.new(items:, trailing_comma: it[0]), it[1]]] }
+            trailing, state2 =
+              if !state1.eof? && state1.current.type == :comma
+                [true, state1.advance]
+              else
+                [false, state1]
+              end
+
+            Ok[[CommaList.new(items:, trailing_comma: trailing), state2]]
           end
         end
       end
@@ -52,6 +69,36 @@ module Jade
       parser(:empty_comma_list) { none.map { CommaList.empty } }
 
       parser(:none) { P.new { |state| Ok[[nil, state]] } }
+
+
+      # Tolerant counterpart of `sequence`. Strict mode (the default) behaves
+      # identically; tolerant mode records a diagnostic and resumes at the
+      # next sync token instead of failing.
+      def recovering_sequence(parser, sync_types:)
+        P.new { recovering_step(parser, sync_types, it, []) }
+      end
+
+      def recovering_step(parser, sync_types, state, results)
+        return Ok[[results, state]] if state.eof?
+
+        case parser.call(state)
+        in Ok([value, next_state])
+          recovering_step(parser, sync_types, next_state, [*results, value])
+
+        in Err([err, err_state]) unless state.tolerant
+          err.committed? ? Err[[err, err_state]] : Ok[[results, state]]
+
+        in Err([err, err_state])
+          # Always advance at least one token so termination is guaranteed
+          # even when sync_types isn't ahead.
+          moved_past = err.committed? && err_state.position > state.position
+          recovered = (moved_past ? err_state : state.advance)
+            .skip_until(sync_types)
+            .add_diagnostic(err.to_diagnostic)
+
+          recovering_step(parser, sync_types, recovered, results)
+        end
+      end
 
       def skip(parser)
         parser.map { |_| :skip }
@@ -125,8 +172,17 @@ module Jade
         end
       end
 
-      State = Data.define(:tokens, :position, :entry, :context_stack) do
-        def initialize(tokens:, entry:, position: 0, context_stack: [])
+      State = Data.define(
+        :tokens, :position, :entry, :context_stack, :tolerant, :diagnostics
+      ) do
+        def initialize(
+          tokens:,
+          entry:,
+          position: 0,
+          context_stack: [],
+          tolerant: false,
+          diagnostics: Diagnostics::List.empty
+        )
           super
         end
 
@@ -135,11 +191,21 @@ module Jade
         end
 
         def advance(n = 1)
-          with(tokens:, position: position + n)
+          with(position: position + n)
         end
 
         def eof?
           position >= tokens.length
+        end
+
+        def add_diagnostic(diagnostic)
+          with(diagnostics: diagnostics.add(diagnostic))
+        end
+
+        def skip_until(sync_types)
+          (position...tokens.length)
+            .find { sync_types.include?(tokens[it].type) }
+            .then { with(position: it || tokens.length) }
         end
       end
 

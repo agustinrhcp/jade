@@ -31,13 +31,36 @@ module Jade
       end
     end
 
-    def parse(tokens, entry:, parser: program)
-      comments = tokens.select { it.type == :comment }
+    # Tokens that start a top-level declaration. The recovering parser skips
+    # to one of these (or EOF) when it can't make progress in tolerant mode.
+    TOP_LEVEL_SYNC = %i[def type struct import uses implements interface module].freeze
 
-      parser
-        .call(State.new(tokens: tokens.reject { it.type == :comment }, entry:))
-        .map { [it.first, comments] }
-        .map_error(&:first)
+    def parse(tokens, entry:, parser: program, tolerant: false)
+      comments = tokens.select { it.type == :comment }
+      state = State.new(
+        tokens:    tokens.reject { it.type == :comment },
+        entry:,
+        tolerant:,
+      )
+
+      result = parser.call(state)
+
+      if tolerant
+        # Tolerant mode: always Ok. Returns (ast, comments, diagnostics).
+        case result
+        in Ok([ast, end_state])
+          Ok[[ast, comments, end_state.diagnostics]]
+
+        in Err([err, err_state])
+          diagnostics = err_state.diagnostics.add(error_to_diagnostic(err))
+          Ok[[nil, comments, diagnostics]]
+        end
+      else
+        # Strict mode: existing behavior — Ok([ast, comments]) or Err(err).
+        result
+          .map { [it.first, comments] }
+          .map_error(&:first)
+      end
     end
 
     parser(:module_) {
@@ -53,7 +76,23 @@ module Jade
 
     parser(:program) { module_ | program_body }
 
-    parser(:program_body) { sequence(declaration | statement).map(&AST.body) }
+    # In tolerant mode, parse failures inside the program body are absorbed:
+    # the failing item is replaced with a diagnostic and parsing resumes at
+    # the next top-level keyword (or EOF). In strict mode, behaves like
+    # `sequence(declaration | statement)`.
+    parser(:program_body) {
+      (declaration | statement).then { |item|
+        P.new do |state|
+          (
+            state.tolerant ?
+              recovering_sequence(item, sync_types: TOP_LEVEL_SYNC) :
+              sequence(item)
+          )
+            .map(&AST.body)
+            .call(state)
+        end
+      }
+    }
 
     parser(:statement) { bind | assign | expression }
 
@@ -65,7 +104,7 @@ module Jade
     parser(:expression) {
       (
         (case_of | if_then_else | lambda | infix_expression) >>
-          (postfix_if_tail | none.map { [nil, nil] })
+          optional(postfix_if_tail, default: [nil, nil])
       ).map(&AST.maybe_postfix_if)
     }
 
@@ -99,27 +138,33 @@ module Jade
         end
     }
 
+    # Lambdas: `(p, q) -> { body }` or bare `-> { body }` for nullary.
+    # Both arms produce [lead_token, params_list] so the AST builder is uniform.
     parser(:lambda) {
       (
-        type(:lparen) >>
-          (comma_sequence(assignment_pattern) | empty_comma_list) >>
-          type(:rparen).skip >>
-          type(:arrow).skip >>
+        (
+          (type(:lparen) >>
+            (comma_sequence(assignment_pattern) | empty_comma_list) >>
+            type(:rparen).skip >>
+            type(:arrow).skip) |
+          type(:arrow).map { [it, Parsing::Combinators::CommaList.empty] }
+        ) >>
           type(:lbrace).skip >>
           body >>
           type(:rbrace)
       ).map(&AST.lambda)
     }
 
+    # Single-expression form only: `if c then EXPR else EXPR`. No `end`,
+    # no greedy else-body to absorb trailing statements.
     parser(:if_then_else) {
       (
         type(:if) >>
           lazy { expression } >>
           type(:then).skip >>
-          body >>
+          lazy { expression }.map { AST::Body.new(expressions: [it], range: it.range) } >>
           type(:else).skip >>
-          body >>
-          type(:end)
+          lazy { expression }.map { AST::Body.new(expressions: [it], range: it.range) }
       ).map(&AST.if_then_else)
     }
 
@@ -127,13 +172,12 @@ module Jade
       (
         type(:case) >>
           lazy { expression } >>
-          sequence(case_of_branch).map { [it] } >>
-          type(:end)
+          sequence(case_of_branch).map { [it] }
       ).map(&AST.case_of)
     }
 
     parser(:case_of_branch) {
-      (type(:of) >> pattern >> type(:then).skip >> body).map(&AST.case_of_branch)
+      (type(:of) >> pattern >> type(:arrow).skip >> body).map(&AST.case_of_branch)
     }
 
     parser(:pattern) {
@@ -168,8 +212,9 @@ module Jade
     }
 
     parser(:keyed_pattern) {
-      sequence(record_field_pattern, separated_by: type(:comma).skip)
-        .map(&AST.keyed_pattern)
+      fields = sequence(record_field_pattern, separated_by: type(:comma).skip)
+
+      (fields >> maybe(type(:comma))).map(&AST.keyed_pattern)
     }
 
     parser(:record_pattern) {
@@ -257,12 +302,14 @@ module Jade
     }
 
     parser(:import_declaration) {
+      alias_clause = (type(:as).skip >> constant).map(&AST.expose_as)
+
       (
         type(:import) >>
           (
             module_name >>
-            ((type(:as).skip >> constant).map(&AST.expose_as) | none.map { [nil] }) >>
-            (exposing | none.map { [[]] })
+            optional(alias_clause, default: [nil]) >>
+            optional(exposing, default: [[]])
           ).commit
       ).map(&AST.import_declaration)
        .context("import declaration")
@@ -293,18 +340,21 @@ module Jade
 
     parser(:expose_type) { constant.map(&AST.expose_type) }
 
+    # Function declarations: `def f(p, q) -> T ...` or nullary `def f -> T ...`.
     parser(:function_declaration) {
       (
         type(:def) >>
           (
             identifier >>
-            type(:lparen).skip >>
-            (comma_sequence(param) | empty_comma_list) >>
-            type(:rparen).skip >>
+            (
+              (type(:lparen).skip >>
+                (comma_sequence(param) | empty_comma_list) >>
+                type(:rparen).skip) |
+              empty_comma_list
+            ) >>
             type(:arrow).skip >>
             type_expression >>
-            sequence(statement).map(&AST.body) >>
-            type(:end)
+            sequence(statement).map(&AST.body)
           ).commit
       ).map(&AST.function_declaration)
        .context("function declaration")
@@ -430,7 +480,7 @@ module Jade
     parser(:interop_import_declaration) {
       (
         type(:uses) >>
-          (interop_module_name >> type(:with) >> interop_functions >> type(:end).skip)
+          (interop_module_name >> type(:with) >> interop_functions >> none.skip)
             .commit
       ).map(&AST.interop_import_declaration)
        .context("interop import declaration")
@@ -444,8 +494,9 @@ module Jade
     }
 
     parser(:interop_functions) {
-      at_least_one(interop_function, separated_by: type(:comma).skip)
-        .map { [it] }
+      fns = at_least_one(interop_function, separated_by: type(:comma).skip)
+
+      (fns >> maybe(type(:comma))).map { [it] }
     }
 
     parser(:interop_function) {
@@ -454,6 +505,15 @@ module Jade
     }
 
     parser(:implementation) {
+      extends_list =
+        type(:extends).skip >>
+        at_least_one(constant, separated_by: type(:comma).skip) >>
+        maybe(type(:comma))
+
+      fns =
+        at_least_one(implementation_function, separated_by: type(:comma).skip) >>
+        maybe(type(:comma))
+
       (
         type(:implements) >>
           (
@@ -461,18 +521,19 @@ module Jade
             type(:lparen).skip >>
             type_application >>
             type(:rparen).skip >>
-            (type(:extends).skip >> at_least_one(constant, separated_by: type(:comma).skip) | none.map { [] })
-              .map { [it] } >>
+            optional(extends_list, default: []).map { [it] } >>
             type(:with).skip >>
-            (at_least_one(implementation_function, separated_by: type(:comma).skip) | none.map { [] })
-              .map { [it] } >>
-            type(:end).skip
+            optional(fns, default: []).map { [it] }
           ).commit
       ).map(&AST.implementation)
        .context("implementation")
     }
 
     parser(:interface_declaration) {
+      fns =
+        at_least_one(interface_function_decl, separated_by: type(:comma).skip) >>
+        maybe(type(:comma))
+
       (
         type(:interface) >>
           (
@@ -481,9 +542,7 @@ module Jade
             type_param >>
             type(:rparen).skip >>
             type(:with).skip >>
-            (at_least_one(interface_function_decl, separated_by: type(:comma).skip) | none.map { [] })
-              .map { [it] } >>
-            type(:end).skip
+            optional(fns, default: []).map { [it] }
           ).commit
       ).map(&AST.interface_declaration)
        .context("interface declaration")

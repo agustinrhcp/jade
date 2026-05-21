@@ -6,9 +6,10 @@ struct Person = {
   email: String
 }
 
+
 def birthday(person: Person) -> Person
   { person | age: person.age + 1 }
-end
+
 
 def full_name(first: String, last: String) -> { full: String, length: Int }
   name = first ++ " " ++ last
@@ -17,7 +18,7 @@ def full_name(first: String, last: String) -> { full: String, length: Int }
     full: name,
     length: String.length(name),
   }
-end
+
 
 def update_email(person: Person, new_email: String) -> Person
   { name:, age: } = person
@@ -27,4 +28,3 @@ def update_email(person: Person, new_email: String) -> Person
     age: age,
     email: new_email,
   }
-end

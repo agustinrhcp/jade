@@ -110,8 +110,7 @@ module Jade
         .on_err do |err|
           Diagnostics::List
             .empty
-            .error(err.message, source:, span: err.span, label: err.label)
-            .then { err.notes.reduce(it) { |d, ann| d.public_send(ann.kind, ann.message) } }
+            .add(err.to_diagnostic(source: source))
             .then { $stderr.puts Diagnostics::Renderer.new.render_all(it) }
 
           raise CompilationError, err.message

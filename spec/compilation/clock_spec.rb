@@ -38,97 +38,108 @@ module Jade
         import Clock exposing (Duration, Instant)
         import Calendar exposing (Date, Month(..))
 
-        def now() -> Task(Instant, Never)
-          Clock.now
-        end
 
-        def epoch() -> Instant
+        def now -> Task(Instant, Never)
+          Clock.now
+
+
+        def epoch -> Instant
           Clock.epoch
-        end
+
 
         def at_ms(n: Int) -> Instant
           Clock.add(Clock.epoch, Clock.millis(n))
-        end
+
 
         def since_epoch_ms(i: Instant) -> Int
           Clock.diff(Clock.epoch, i) |> Clock.in_millis
-        end
+
 
         def ms_to(n: Int) -> Duration
           Clock.millis(n)
-        end
+
 
         def to_ms(d: Duration) -> Int
           Clock.in_millis(d)
-        end
+
 
         def sec_to(n: Int) -> Duration
           Clock.seconds(n)
-        end
+
 
         def to_sec(d: Duration) -> Int
           Clock.in_seconds(d)
-        end
+
 
         def min_to(n: Int) -> Duration
           Clock.minutes(n)
-        end
+
 
         def to_min(d: Duration) -> Int
           Clock.in_minutes(d)
-        end
+
 
         def hr_to(n: Int) -> Duration
           Clock.hours(n)
-        end
+
 
         def to_hr(d: Duration) -> Int
           Clock.in_hours(d)
-        end
+
 
         def day_to(n: Int) -> Duration
           Clock.days(n)
-        end
+
 
         def to_day(d: Duration) -> Int
           Clock.in_days(d)
-        end
 
-        def parts(d: Duration) -> { days: Int, hours: Int, minutes: Int, seconds: Int, millis: Int }
+
+        def parts(d: Duration) -> {
+          days: Int,
+          hours: Int,
+          minutes: Int,
+          seconds: Int,
+          millis: Int,
+        }
           Clock.parts(d)
-        end
 
-        def time_of_day(i: Instant) -> { hour: Int, minute: Int, second: Int, millisecond: Int }
+
+        def time_of_day(i: Instant) -> {
+          hour: Int,
+          minute: Int,
+          second: Int,
+          millisecond: Int,
+        }
           Clock.at_time(i)
-        end
+
 
         def advance(i: Instant, d: Duration) -> Instant
           Clock.add(i, d)
-        end
+
 
         def span(a: Instant, b: Instant) -> Duration
           Clock.diff(a, b)
-        end
+
 
         def iso(i: Instant) -> String
           Clock.to_iso(i)
-        end
+
 
         def parse_iso(s: String) -> Result(Instant, String)
           Clock.from_iso(s)
-        end
+
 
         def to_date(i: Instant) -> Date
           Clock.on_date(i)
-        end
+
 
         def before(a: Instant, b: Instant) -> Bool
           a < b
-        end
+
 
         def equal(a: Instant, b: Instant) -> Bool
           a == b
-        end
       JADE
     end
 
@@ -284,31 +295,37 @@ module Jade
     describe 'Encodable / Decodable' do
       let(:source) do
         <<~JADE
-          module Json exposing (duration_from_json, duration_to_json, instant_from_json, instant_to_json, make_duration)
+          module Json exposing (
+            duration_from_json,
+            duration_to_json,
+            instant_from_json,
+            instant_to_json,
+            make_duration,
+          )
 
           import Clock exposing (Duration, Instant)
           import Encode
           import Decode exposing (DecodeError)
 
+
           def make_duration(ms: Int) -> Duration
             Clock.millis(ms)
-          end
+
 
           def instant_to_json(i: Instant) -> String
             Encode.encode_to_string(Encode.encode(i))
-          end
+
 
           def instant_from_json(s: String) -> Result(Instant, DecodeError)
             Decode.from_json(s)
-          end
+
 
           def duration_to_json(d: Duration) -> String
             Encode.encode_to_string(Encode.encode(d))
-          end
+
 
           def duration_from_json(s: String) -> Result(Duration, DecodeError)
             Decode.from_json(s)
-          end
         JADE
       end
 

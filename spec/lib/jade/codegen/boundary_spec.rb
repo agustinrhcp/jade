@@ -271,15 +271,16 @@ module Jade
 
           import Decode exposing (Decodable, Decoder)
 
+
           struct Wrapper = { name: String }
+
 
           implements Decodable(Wrapper) with
             decoder: my_decoder
-          end
 
-          def my_decoder() -> Decoder(Wrapper)
+
+          def my_decoder -> Decoder(Wrapper)
             Decode.map(Decode.field("name", Decode.string), Wrapper)
-          end
         JADE
       end
 

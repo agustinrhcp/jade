@@ -30,125 +30,124 @@ module Jade
 
         import Dict exposing (Dict)
 
-        def empty_size() -> Int
-          Dict.size(Dict.empty())
-        end
 
-        def insert_size() -> Int
+        def empty_size -> Int
+          Dict.size(Dict.empty())
+
+
+        def insert_size -> Int
           Dict.singleton("a", 1)
             |> Dict.insert("b", 2)
             |> Dict.insert("c", 3)
             |> Dict.size
-        end
+
 
         def add_then_get(key: String) -> Maybe(Int)
           Dict.singleton("a", 1)
             |> Dict.insert("b", 2)
             |> Dict.get(key)
-        end
+
 
         def missing(key: String) -> Bool
           Dict.singleton("a", 1) |> Dict.member(key)
-        end
+
 
         def remove_key(key: String) -> List(String)
           Dict.singleton("a", 1)
             |> Dict.insert("b", 2)
             |> Dict.remove(key)
             |> Dict.keys
-        end
 
-        def keys_of() -> List(String)
+
+        def keys_of -> List(String)
           Dict.singleton("a", 1)
             |> Dict.insert("b", 2)
             |> Dict.keys
-        end
 
-        def values_of() -> List(Int)
+
+        def values_of -> List(Int)
           Dict.singleton("a", 1)
             |> Dict.insert("b", 2)
             |> Dict.values
-        end
 
-        def to_pairs() -> List((String, Int))
+
+        def to_pairs -> List((String, Int))
           Dict.singleton("a", 1)
             |> Dict.insert("b", 2)
             |> Dict.to_list
-        end
 
-        def rebuild() -> List((String, Int))
+
+        def rebuild -> List((String, Int))
           [("x", 10), ("y", 20)]
             |> Dict.from_list
             |> Dict.to_list
-        end
+
 
         def rename_value(key: String) -> Maybe(String)
           Dict.singleton("a", 1)
             |> Dict.insert("b", 2)
             |> Dict.map((_k, v) -> { String.from_int(v) })
             |> Dict.get(key)
-        end
 
-        def keep_evens() -> List(String)
+
+        def keep_evens -> List(String)
           Dict.singleton("a", 1)
             |> Dict.insert("b", 2)
             |> Dict.insert("c", 3)
             |> Dict.insert("d", 4)
             |> Dict.filter((_k, v) -> { mod(v, 2) == 0 })
             |> Dict.keys
-        end
 
-        def fold_sum() -> Int
+
+        def fold_sum -> Int
           Dict.singleton("a", 1)
             |> Dict.insert("b", 2)
             |> Dict.insert("c", 3)
             |> Dict.fold(0, (_k, v, acc) -> { acc + v })
-        end
 
-        def union_left() -> Maybe(Int)
+
+        def union_left -> Maybe(Int)
           left = Dict.singleton("a", 1)
           right = Dict.singleton("a", 99) |> Dict.insert("b", 2)
 
           Dict.union(left, right) |> Dict.get("a")
-        end
+
 
         def merge_sum(key: String) -> Maybe(Int)
           left = Dict.singleton("a", 1) |> Dict.insert("b", 10)
           right = Dict.singleton("a", 2) |> Dict.insert("c", 30)
 
           Dict.merge(left, right, (l, r) -> { l + r }) |> Dict.get(key)
-        end
+
 
         def counts(words: List(String)) -> Dict(String, Int)
           List.fold(words, Dict.empty(), (acc, word) -> { bump(acc, word) })
-        end
+
 
         def bump(acc: Dict(String, Int), word: String) -> Dict(String, Int)
           Dict.update(acc, word, (m) -> { incr(m) })
-        end
+
 
         def incr(m: Maybe(Int)) -> Maybe(Int)
           case m
-          of Just(n) then Just(n + 1)
-          of Nothing then Just(1)
-          end
-        end
+          of Just(n) -> Just(n + 1)
+          of Nothing -> Just(1)
+
 
         def equal(a: Dict(String, Int), b: Dict(String, Int)) -> Bool
           dict_eq(a, b)
-        end
+
 
         def dict_eq(a: Dict(String, Int), b: Dict(String, Int)) -> Bool
           a == b
-        end
+
 
         def lookup_via_poly(key: String) -> Maybe(Int)
           poly_get(Dict.singleton("hit", 7), key)
-        end
+
 
         def poly_get(d: Dict(k, v), key: k) -> Maybe(v)
           Dict.get(d, key)
-        end
       JADE
     end
 

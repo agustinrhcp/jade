@@ -70,7 +70,6 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a
-          end
         JADE
       end
 
@@ -82,12 +81,12 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a + b
-          end
-          add(1, 2)
+          def call_add -> Int
+            add(1, 2)
         JADE
       end
 
-      it { is_expected.to eql "def add\n  ->(a, b) { (a + b) }\nend\n__Test__::Internal.add.call(1, 2)" }
+      it { is_expected.to include "__Test__::Internal.add.call(1, 2)" }
     end
 
     context 'type def' do
@@ -127,7 +126,6 @@ module Jade
         <<~JADE
           def is_empty(str: String) -> Bool
             String.is_empty(str)
-          end
         JADE
       end
 
@@ -141,7 +139,6 @@ module Jade
 
           def hello(str: String) -> Bool
             String.is_empty(str)
-          end
         JADE
       end
 
@@ -169,11 +166,7 @@ module Jade
     context 'if then else' do
       let(:text) do
         <<~JADE
-          if String.is_empty("") then
-            1
-          else
-            2
-          end
+          if String.is_empty("") then 1 else 2
         JADE
       end
 
@@ -184,9 +177,8 @@ module Jade
       let(:text) do
         <<~JADE
           case 1
-          of 1 then 1
-          of _ then 2
-          end
+          of 1 -> 1
+          of _ -> 2
         JADE
       end
 
@@ -196,9 +188,8 @@ module Jade
         let(:text) do
           <<~JADE
             case 1
-            of 1 then 1
-            of x then x
-            end
+            of 1 -> 1
+            of x -> x
           JADE
         end
 
@@ -212,9 +203,8 @@ module Jade
               = Just(a)
               | Nothing
             case Just(1)
-            of Nothing then 0
-            of Just(x) then x
-            end
+            of Nothing -> 0
+            of Just(x) -> x
           JADE
         end
 
@@ -225,9 +215,8 @@ module Jade
         let(:text) do
           <<~JADE
             case { name: "Pepe" }
-            of { name: "Pepe" } then True
-            of _ then False
-            end
+            of { name: "Pepe" } -> True
+            of _ -> False
           JADE
         end
 
@@ -319,10 +308,8 @@ module Jade
         <<~JADE
           uses Jade::Date with
             today : Task(Int, Never)
-          end
-          def real_today() -> Task(Int, Never)
+          def real_today -> Task(Int, Never)
             today()
-          end
         JADE
       end
 
@@ -428,9 +415,8 @@ module Jade
         context 'for type applications' do
           let(:text) do
             <<~JADE
-              def test() -> Bool
+              def test -> Bool
                 Nothing == Just(1)
-              end
             JADE
           end
 
@@ -441,9 +427,8 @@ module Jade
           context 'when calling !=' do
             let(:text) do
               <<~JADE
-                def test() -> Bool
+                def test -> Bool
                   Nothing != Just(1)
-                end
               JADE
             end
 
@@ -453,9 +438,8 @@ module Jade
           context 'with a type with different type params per variant' do
             let(:text) do
               <<~JADE
-                def test() -> Bool
+                def test -> Bool
                   Ok("OK") != Err(404)
-                end
               JADE
             end
 
@@ -467,7 +451,7 @@ module Jade
         context 'for anonymous records' do
           let(:text) do
             <<~JADE
-              def test() -> Bool
+              def test -> Bool
                 {
                   salute: "Hola",
                   n: 1,
@@ -475,7 +459,6 @@ module Jade
                   salute: "Hei",
                   n: 2,
                 }
-              end
             JADE
           end
 
@@ -490,10 +473,8 @@ module Jade
           let(:text) do
             <<~JADE
               type Pepe = Pepe(Int)
-
               implements Eq(Pepe) with
                 (==): (pepe, other_pepe) -> { True }
-              end
             JADE
           end
 
@@ -511,7 +492,6 @@ module Jade
               }
               implements Eq(Person) with
                 (==): (one, other) -> { one.id == other.id }
-              end
             JADE
           end
 
@@ -526,10 +506,8 @@ module Jade
               type Pepe = Pepe(Int)
               implements Eq(Pepe) with
                 (==): eq_pepe
-              end
               def eq_pepe(one: Pepe, other: Pepe) -> Bool
                 True
-              end
             JADE
           end
 

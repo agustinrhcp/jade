@@ -13,20 +13,21 @@ module Jade
 
         def hello(maybe: Maybe(String)) -> String
           Maybe.with_default(maybe, "Hello pepe")
-        end
+
 
         def sum_maybe(maybe: Maybe(Int), n: Int) -> Int
           Maybe.with_default(Maybe.map(maybe, (m) -> { m + n }), 0)
-        end
+
 
         def and_then_test(n: Maybe(Int)) -> Maybe(String)
-          Maybe.and_then(n, (int) -> {
-            case int
-            of 1 then Just("ONE")
-            of _ then Nothing
-            end
-          })
-        end
+          Maybe.and_then(
+            n,
+            (int) -> {
+              case int
+              of 1 -> Just("ONE")
+              of _ -> Nothing
+            },
+          )
       JADE
     end
 
@@ -49,9 +50,8 @@ module Jade
         <<~JADE
           module Pepe exposing (nott)
 
-          def nott() -> Maybe
+          def nott -> Maybe
             Nothing
-          end
         JADE
       end
 

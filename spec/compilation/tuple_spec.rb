@@ -13,27 +13,25 @@ module Jade
 
         def make_pair(a: Int, b: String) -> (Int, String)
           (a, b)
-        end
+
 
         def get_first(pair: (Int, String)) -> Int
           Tuple.first(pair)
-        end
+
 
         def get_second(pair: (Int, String)) -> String
           Tuple.second(pair)
-        end
+
 
         def swap(pair: (Int, String)) -> (String, Int)
           (Tuple.second(pair), Tuple.first(pair))
-        end
+
 
         def pattern_matching(int: Int, str: String) -> Int
           case (int, str)
-          of (1, "1") then 1
-          of (2, "2") then 2
-          of _ then 0
-          end
-        end
+          of (1, "1") -> 1
+          of (2, "2") -> 2
+          of _ -> 0
       JADE
     end
 

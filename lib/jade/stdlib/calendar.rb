@@ -20,298 +20,344 @@ module Jade
 
       def code
         <<~JADE
-          module Calendar exposing(Date, Month(..), Weekday(..), Unit(..),
-                                   today, from_calendar_date,
-                                   year, month, day, weekday,
-                                   month_to_int, month_from_int,
-                                   weekday_to_int, weekday_from_int,
-                                   to_iso_string, from_iso_string,
-                                   to_rata_die, from_rata_die,
-                                   add, diff)
+          module Calendar exposing (
+            Date,
+            Month(..),
+            Unit(..),
+            Weekday(..),
+            add,
+            day,
+            diff,
+            from_calendar_date,
+            from_iso_string,
+            from_rata_die,
+            month,
+            month_from_int,
+            month_to_int,
+            to_iso_string,
+            to_rata_die,
+            today,
+            weekday,
+            weekday_from_int,
+            weekday_to_int,
+            year,
+          )
 
-          import Decode exposing(Decoder, Decodable, Value)
-          import Encode exposing(Encodable)
+          import Decode exposing (Decodable, Decoder, Value)
+          import Encode exposing (Encodable)
 
-          type Month   = Jan | Feb | Mar | Apr | May | Jun
-                       | Jul | Aug | Sep | Oct | Nov | Dec
 
-          type Weekday = Mon | Tue | Wed | Thu | Fri | Sat | Sun
+          type Month
+            = Jan
+            | Feb
+            | Mar
+            | Apr
+            | May
+            | Jun
+            | Jul
+            | Aug
+            | Sep
+            | Oct
+            | Nov
+            | Dec
 
-          type Unit    = Years | Months | Weeks | Days
 
-          struct Date  = { year: Int, month: Month, day: Int }
+          type Weekday
+            = Mon
+            | Tue
+            | Wed
+            | Thu
+            | Fri
+            | Sat
+            | Sun
+
+
+          type Unit
+            = Years
+            | Months
+            | Weeks
+            | Days
+
+
+          struct Date = {
+            year: Int,
+            month: Month,
+            day: Int
+          }
+
 
           uses Jade::Calendar::Runtime with
-            today_raw: Task({ year: Int, month: Int, day: Int }, Never)
-          end
+            today_raw : Task({ year: Int, month: Int, day: Int }, Never)
 
-          def today() -> Task(Date, Never)
+
+          def today -> Task(Date, Never)
             raw <- today_raw()
+
             Task.succeed(Date(raw.year, month_from_int(raw.month), raw.day))
-          end
+
 
           def from_calendar_date(y: Int, m: Month, d: Int) -> Date
             Date(y, m, d)
-          end
+
 
           def year(d: Date) -> Int
             d.year
-          end
+
 
           def month(d: Date) -> Month
             d.month
-          end
+
 
           def day(d: Date) -> Int
             d.day
-          end
+
 
           def month_to_int(m: Month) -> Int
             case m
-            of Jan then 1
-            of Feb then 2
-            of Mar then 3
-            of Apr then 4
-            of May then 5
-            of Jun then 6
-            of Jul then 7
-            of Aug then 8
-            of Sep then 9
-            of Oct then 10
-            of Nov then 11
-            of Dec then 12
-            end
-          end
+            of Jan -> 1
+            of Feb -> 2
+            of Mar -> 3
+            of Apr -> 4
+            of May -> 5
+            of Jun -> 6
+            of Jul -> 7
+            of Aug -> 8
+            of Sep -> 9
+            of Oct -> 10
+            of Nov -> 11
+            of Dec -> 12
+
 
           def month_from_int(i: Int) -> Month
             case i
-            of 1  then Jan
-            of 2  then Feb
-            of 3  then Mar
-            of 4  then Apr
-            of 5  then May
-            of 6  then Jun
-            of 7  then Jul
-            of 8  then Aug
-            of 9  then Sep
-            of 10 then Oct
-            of 11 then Nov
-            of 12 then Dec
-            of _  then Jan
-            end
-          end
+            of 1 -> Jan
+            of 2 -> Feb
+            of 3 -> Mar
+            of 4 -> Apr
+            of 5 -> May
+            of 6 -> Jun
+            of 7 -> Jul
+            of 8 -> Aug
+            of 9 -> Sep
+            of 10 -> Oct
+            of 11 -> Nov
+            of 12 -> Dec
+            of _ -> Jan
+
 
           def weekday_to_int(w: Weekday) -> Int
             case w
-            of Mon then 1
-            of Tue then 2
-            of Wed then 3
-            of Thu then 4
-            of Fri then 5
-            of Sat then 6
-            of Sun then 7
-            end
-          end
+            of Mon -> 1
+            of Tue -> 2
+            of Wed -> 3
+            of Thu -> 4
+            of Fri -> 5
+            of Sat -> 6
+            of Sun -> 7
+
 
           def weekday_from_int(i: Int) -> Weekday
             case i
-            of 1 then Mon
-            of 2 then Tue
-            of 3 then Wed
-            of 4 then Thu
-            of 5 then Fri
-            of 6 then Sat
-            of 7 then Sun
-            of _ then Mon
-            end
-          end
+            of 1 -> Mon
+            of 2 -> Tue
+            of 3 -> Wed
+            of 4 -> Thu
+            of 5 -> Fri
+            of 6 -> Sat
+            of 7 -> Sun
+            of _ -> Mon
+
 
           def days_in_month(y: Int, m: Month) -> Int
             case m
-            of Jan then 31
-            of Feb then if is_leap(y) then 29 else 28 end
-            of Mar then 31
-            of Apr then 30
-            of May then 31
-            of Jun then 30
-            of Jul then 31
-            of Aug then 31
-            of Sep then 30
-            of Oct then 31
-            of Nov then 30
-            of Dec then 31
-            end
-          end
+            of Jan -> 31
+            of Feb -> if is_leap(y) then 29 else 28
+            of Mar -> 31
+            of Apr -> 30
+            of May -> 31
+            of Jun -> 30
+            of Jul -> 31
+            of Aug -> 31
+            of Sep -> 30
+            of Oct -> 31
+            of Nov -> 30
+            of Dec -> 31
+
 
           def is_leap(y: Int) -> Bool
             (mod(y, 4) == 0) && ((mod(y, 100) != 0) || (mod(y, 400) == 0))
-          end
+
 
           def days_before_year(y: Int) -> Int
             n = y - 1
+
             n * 365 + n / 4 - n / 100 + n / 400
-          end
+
 
           def days_before_month(y: Int, m: Month) -> Int
             mi = month_to_int(m)
-            base = case mi
-                   of 1  then 0
-                   of 2  then 31
-                   of 3  then 59
-                   of 4  then 90
-                   of 5  then 120
-                   of 6  then 151
-                   of 7  then 181
-                   of 8  then 212
-                   of 9  then 243
-                   of 10 then 273
-                   of 11 then 304
-                   of 12 then 334
-                   of _  then 0
-                   end
-            if mi > 2 && is_leap(y) then base + 1 else base end
-          end
+            base = (case mi
+            of 1 -> 0
+            of 2 -> 31
+            of 3 -> 59
+            of 4 -> 90
+            of 5 -> 120
+            of 6 -> 151
+            of 7 -> 181
+            of 8 -> 212
+            of 9 -> 243
+            of 10 -> 273
+            of 11 -> 304
+            of 12 -> 334
+            of _ -> 0)
+
+            if mi > 2 && is_leap(y) then base + 1 else base
+
 
           def to_rata_die(d: Date) -> Int
             days_before_year(d.year) + days_before_month(d.year, d.month) + d.day
-          end
+
 
           def weekday(d: Date) -> Weekday
             weekday_from_int(mod(to_rata_die(d) - 1, 7) + 1)
-          end
+
 
           def pad_to(s: String, width: Int) -> String
             len = String.length(s)
-            if len < width then String.repeat("0", width - len) ++ s else s end
-          end
+
+            if len < width then String.repeat("0", width - len) ++ s else s
+
 
           def to_iso_string(d: Date) -> String
             pad_to(String.from_int(d.year), 4)
-              ++ "-" ++ pad_to(String.from_int(month_to_int(d.month)), 2)
-              ++ "-" ++ pad_to(String.from_int(d.day), 2)
-          end
+              ++ "-"
+              ++ pad_to(String.from_int(month_to_int(d.month)), 2)
+              ++ "-"
+              ++ pad_to(String.from_int(d.day), 2)
+
 
           def from_iso_string(s: String) -> Result(Date, String)
             case String.split(s, "-")
-            of [y, m, day_str] then
+            of [y, m, day_str] -> (
               case (String.to_int(y), String.to_int(m), String.to_int(day_str))
-              of (Just(yi), Just(mi), Just(di)) then
+              of (Just(yi), Just(mi), Just(di)) ->
                 Ok(from_calendar_date(yi, month_from_int(mi), di))
-              of _ then Err("invalid ISO date: " ++ s)
-              end
-            of _ then Err("invalid ISO date: " ++ s)
-            end
-          end
+              of _ -> Err("invalid ISO date: " ++ s)
+            )
+            of _ -> Err("invalid ISO date: " ++ s)
+
 
           def add(d: Date, unit: Unit, n: Int) -> Date
             case unit
-            of Days   then add_days(d, n)
-            of Weeks  then add_days(d, n * 7)
-            of Months then add_months(d, n)
-            of Years  then add_months(d, n * 12)
-            end
-          end
+            of Days -> add_days(d, n)
+            of Weeks -> add_days(d, n * 7)
+            of Months -> add_months(d, n)
+            of Years -> add_months(d, n * 12)
+
 
           def add_days(d: Date, n: Int) -> Date
             from_rata_die(to_rata_die(d) + n)
-          end
+
 
           def add_months(d: Date, n: Int) -> Date
             total = month_to_int(d.month) - 1 + n
             new_year = d.year + total / 12
             new_month = month_from_int(mod(total, 12) + 1)
-            from_calendar_date(new_year, new_month, min(d.day, days_in_month(new_year, new_month)))
-          end
+
+            from_calendar_date(
+              new_year,
+              new_month,
+              min(d.day, days_in_month(new_year, new_month)),
+            )
+
 
           def min(a: Int, b: Int) -> Int
-            if a < b then a else b end
-          end
+            if a < b then a else b
+
 
           def diff(a: Date, b: Date, unit: Unit) -> Int
             case unit
-            of Days   then to_rata_die(b) - to_rata_die(a)
-            of Weeks  then (to_rata_die(b) - to_rata_die(a)) / 7
-            of Months then calendar_months(a, b)
-            of Years  then calendar_months(a, b) / 12
-            end
-          end
+            of Days -> to_rata_die(b) - to_rata_die(a)
+            of Weeks -> (to_rata_die(b) - to_rata_die(a)) / 7
+            of Months -> calendar_months(a, b)
+            of Years -> calendar_months(a, b) / 12
+
 
           def calendar_months(a: Date, b: Date) -> Int
             raw = (b.year - a.year) * 12 + (month_to_int(b.month) - month_to_int(a.month))
+
             if raw > 0 && b.day < a.day then raw - 1
             else if raw < 0 && b.day > a.day then raw + 1
             else raw
-            end end
-          end
+
 
           def from_rata_die(rd: Int) -> Date
             y = bump_year(rd, (rd - 1) / 366 + 1)
             doy = rd - days_before_year(y)
+
             case search_month(y, doy, 12)
-            of (m, d) then from_calendar_date(y, m, d)
-            end
-          end
+            of (m, d) -> from_calendar_date(y, m, d)
+
 
           def bump_year(rd: Int, y: Int) -> Int
-            if days_before_year(y + 1) < rd then bump_year(rd, y + 1) else y end
-          end
+            if days_before_year(y + 1) < rd then bump_year(rd, y + 1) else y
+
 
           def search_month(y: Int, doy: Int, mi: Int) -> (Month, Int)
             m = month_from_int(mi)
             offset = days_before_month(y, m)
-            if doy > offset then (m, doy - offset) else search_month(y, doy, mi - 1) end
-          end
+
+            if doy > offset then (m, doy - offset) else search_month(y, doy, mi - 1)
+
 
           def compare_month(a: Month, b: Month) -> Ordering
             compare(month_to_int(a), month_to_int(b))
-          end
+
 
           def month_eq(a: Month, b: Month) -> Bool
             month_to_int(a) == month_to_int(b)
-          end
+
 
           implements Comparable(Month) with
             compare: compare_month
-          end
+
 
           implements Eq(Month) with
             (==): month_eq
-          end
+
 
           def compare_date(a: Date, b: Date) -> Ordering
             case compare(a.year, b.year)
-            of EQ then
+            of EQ -> (
               case compare_month(a.month, b.month)
-              of EQ then compare(a.day, b.day)
-              of o then o
-              end
-            of o then o
-            end
-          end
+              of EQ -> compare(a.day, b.day)
+              of o -> o
+            )
+            of o -> o
+
 
           def date_eq(a: Date, b: Date) -> Bool
             a.year == b.year && a.month == b.month && a.day == b.day
-          end
+
 
           implements Comparable(Date) with
             compare: compare_date
-          end
+
 
           implements Eq(Date) with
             (==): date_eq
-          end
+
 
           def parse_date(s: String) -> Decoder(Date)
             Decode.from_result(from_iso_string(s))
-          end
+
 
           implements Decodable(Date) with
-            decoder: () -> { Decode.string |> Decode.and_then(parse_date) }
-          end
+            decoder: -> { Decode.string |> Decode.and_then(parse_date) }
+
 
           implements Encodable(Date) with
             encoder: (d) -> { Encode.string(to_iso_string(d)) }
-          end
         JADE
       end
     end

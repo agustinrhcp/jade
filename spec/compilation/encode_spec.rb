@@ -14,25 +14,25 @@ module Jade
 
           import Encode
 
-          def s() -> String
+
+          def s -> String
             Encode.encode_to_string(Encode.string("hello"))
-          end
 
-          def i() -> String
+
+          def i -> String
             Encode.encode_to_string(Encode.int(42))
-          end
 
-          def f() -> String
+
+          def f -> String
             Encode.encode_to_string(Encode.float(3.5))
-          end
 
-          def b() -> String
+
+          def b -> String
             Encode.encode_to_string(Encode.bool(True))
-          end
 
-          def n() -> String
+
+          def n -> String
             Encode.encode_to_string(Encode.null)
-          end
         JADE
       end
 
@@ -52,23 +52,26 @@ module Jade
 
           import Encode
 
-          def maybe_present() -> String
+
+          def maybe_present -> String
             Encode.encode_to_string(Encode.nullable(Encode.string, Just("x")))
-          end
 
-          def maybe_nil() -> String
+
+          def maybe_nil -> String
             Encode.encode_to_string(Encode.nullable(Encode.string, Nothing))
-          end
 
-          def list_of_ints() -> String
+
+          def list_of_ints -> String
             Encode.encode_to_string(Encode.list(Encode.int, [1, 2, 3]))
-          end
 
-          def person_object() -> String
-            pairs = [Encode.field("name", Encode.string, "Pepe"), Encode.field("age", Encode.int, 30)]
+
+          def person_object -> String
+            pairs = [
+              Encode.field("name", Encode.string, "Pepe"),
+              Encode.field("age", Encode.int, 30),
+            ]
 
             Encode.encode_to_string(Encode.object(pairs))
-          end
         JADE
       end
 
@@ -106,38 +109,39 @@ module Jade
 
           import Encode
 
+
           struct Person = {
             name: String,
             age: Int
           }
 
+
           def int_string(i: Int) -> String
             Encode.encode_to_string(Encode.encode(i))
-          end
+
 
           def str_string(s: String) -> String
             Encode.encode_to_string(Encode.encode(s))
-          end
+
 
           def list_string(xs: List(Int)) -> String
             Encode.encode_to_string(Encode.encode(xs))
-          end
+
 
           def maybe_just_string(m: Maybe(Int)) -> String
             Encode.encode_to_string(Encode.encode(m))
-          end
+
 
           def maybe_nothing_string(m: Maybe(Int)) -> String
             Encode.encode_to_string(Encode.encode(m))
-          end
+
 
           def person_string(p: Person) -> String
             Encode.encode_to_string(Encode.encode(p))
-          end
+
 
           def people_string(ps: List(Person)) -> String
             Encode.encode_to_string(Encode.encode(ps))
-          end
         JADE
       end
 
@@ -183,16 +187,17 @@ module Jade
           import Encode
           import Decode exposing (DecodeError)
 
+
           struct Person = {
             name: String,
             age: Int
           }
 
+
           def roundtrip_person(p: Person) -> Result(Person, DecodeError)
             json = Encode.encode_to_string(Encode.encode(p))
 
             Decode.from_json(json)
-          end
         JADE
       end
 
@@ -213,18 +218,19 @@ module Jade
           import Encode
           import Decode exposing (Value)
 
+
           struct Person = {
             name: String,
             age: Int
           }
 
-          def get_user() -> Value
-            Encode.encode(Person("Pepe", 30))
-          end
 
-          def get_users() -> Value
+          def get_user -> Value
+            Encode.encode(Person("Pepe", 30))
+
+
+          def get_users -> Value
             Encode.encode([Person("Pepe", 30), Person("Lala", 25)])
-          end
         JADE
       end
 

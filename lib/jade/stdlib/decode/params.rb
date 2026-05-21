@@ -21,99 +21,109 @@ module Jade
 
         def code
           <<~JADE
-            module Decode.Params exposing(Params(..), empty, accept, default, string, int, float, bool, nested, collect)
+            module Decode.Params exposing (
+              Params(..),
+              accept,
+              bool,
+              collect,
+              default,
+              empty,
+              float,
+              int,
+              nested,
+              string,
+            )
 
-            import Decode exposing(Decoder)
+            import Decode exposing (Decoder)
+
 
             type Params(a) = Params(List((String, Decoder(a))), List((String, a)))
 
-            def empty() -> Params(a)
+
+            def empty -> Params(a)
               Params([], [])
-            end
+
 
             def accept(p: Params(a), key: String, decoder: Decoder(a)) -> Params(a)
               case p
-              of Params(accs, defs) then Params(accs ++ [(key, decoder)], defs)
-              end
-            end
+              of Params(accs, defs) -> Params(accs ++ [(key, decoder)], defs)
+
 
             def default(p: Params(a), key: String, value: a) -> Params(a)
               case p
-              of Params(accs, defs) then Params(accs, defs ++ [(key, value)])
-              end
-            end
+              of Params(accs, defs) -> Params(accs, defs ++ [(key, value)])
+
 
             def string(p: Params(a), key: String, ctor: String -> a) -> Params(a)
               accept(p, key, Decode.map(Decode.string, ctor))
-            end
+
 
             def int(p: Params(a), key: String, ctor: Int -> a) -> Params(a)
               accept(p, key, Decode.map(Decode.int, ctor))
-            end
+
 
             def float(p: Params(a), key: String, ctor: Float -> a) -> Params(a)
               accept(p, key, Decode.map(Decode.float, ctor))
-            end
+
 
             def bool(p: Params(a), key: String, ctor: Bool -> a) -> Params(a)
               accept(p, key, Decode.map(Decode.bool, ctor))
-            end
 
-            def nested(p: Params(a), key: String, ctor: List(b) -> a, sub: Params(b)) -> Params(a)
+
+            def nested(
+              p: Params(a),
+              key: String,
+              ctor: List(b) -> a,
+              sub: Params(b),
+            ) -> Params(a)
               accept(p, key, Decode.map(collect(sub), ctor))
-            end
+
 
             def collect(p: Params(a)) -> Decoder(List(a))
               case p
-              of Params(accs, defs) then
+              of Params(accs, defs) ->
                 decoders = List.map(accs, (acc) -> { accept_to_decoder(defs, acc) })
-                Decode.map(Decode.sequence(decoders), filter_justs)
-              end
-            end
 
-            def accept_to_decoder(defs: List((String, a)), acc: (String, Decoder(a))) -> Decoder(Maybe(a))
+                Decode.map(Decode.sequence(decoders), filter_justs)
+
+
+            def accept_to_decoder(
+              defs: List((String, a)),
+              acc: (String, Decoder(a)),
+            ) -> Decoder(Maybe(a))
               key = Tuple.first(acc)
               decoder = Tuple.second(acc)
               raw = Decode.optional_field(key, decoder)
+
               case lookup_default(defs, key)
-              of Just(v) then with_default(raw, v)
-              of Nothing then raw
-              end
-            end
+              of Just(v) -> with_default(raw, v)
+              of Nothing -> raw
+
 
             def with_default(decoder: Decoder(Maybe(a)), v: a) -> Decoder(Maybe(a))
               Decode.map(decoder, (m) -> { maybe_or_just(m, v) })
-            end
+
 
             def maybe_or_just(m: Maybe(a), v: a) -> Maybe(a)
               case m
-              of Just(_) then m
-              of Nothing then Just(v)
-              end
-            end
+              of Just(_) -> m
+              of Nothing -> Just(v)
+
 
             def filter_justs(maybes: List(Maybe(a))) -> List(a)
               List.and_then(maybes, maybe_to_list)
-            end
+
 
             def maybe_to_list(m: Maybe(a)) -> List(a)
               case m
-              of Just(x) then [x]
-              of Nothing then []
-              end
-            end
+              of Just(x) -> [x]
+              of Nothing -> []
+
 
             def lookup_default(defs: List((String, a)), key: String) -> Maybe(a)
               case defs
-              of [] then Nothing
-              of [(k, v) | rest] then
-                if k == key then
-                  Just(v)
-                else
-                  lookup_default(rest, key)
-                end
-              end
-            end
+              of [] -> Nothing
+              of [(k, v) | rest] -> if k == key then Just(v) else lookup_default(rest, key)
           JADE
         end
       end

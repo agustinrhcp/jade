@@ -13,7 +13,7 @@ module Jade
 
         def double(n: Int) -> Int
           n |> (m) -> { m * 2 }
-        end
+
 
         def transform(n: Int) -> Int
           n |> (m) -> {
@@ -21,13 +21,12 @@ module Jade
 
             x + 1
           }
-        end
+
 
         def chained(n: Int) -> Int
           n
             |> (m) -> { m * 2 }
             |> (m) -> { m + 1 }
-        end
       JADE
     end
 

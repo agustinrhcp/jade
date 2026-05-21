@@ -12,7 +12,6 @@ module Jade
 
         def str_to_int(str: String) -> Maybe(Int)
           String.to_int(str)
-        end
       JADE
     end
 
@@ -35,25 +34,22 @@ module Jade
 
         def first_char(s: String) -> Maybe(Char)
           case String.uncons(s)
-          of Just((c, _)) then Just(c)
-          of Nothing then Nothing
-          end
-        end
+          of Just((c, _)) -> Just(c)
+          of Nothing -> Nothing
+
 
         def prepend(c: Char, s: String) -> String
           String.cons(c, s)
-        end
+
 
         def single(c: Char) -> String
           String.from_char(c)
-        end
+
 
         def walk(s: String) -> List(Char)
           case String.uncons(s)
-          of Just((c, rest)) then [c] ++ walk(rest)
-          of Nothing then []
-          end
-        end
+          of Just((c, rest)) -> [c] ++ walk(rest)
+          of Nothing -> []
       JADE
     end
 
@@ -87,7 +83,6 @@ module Jade
 
         def double(s: String) -> String
           String.map(s, (c) -> { c })
-        end
       JADE
     end
 
@@ -108,11 +103,10 @@ module Jade
 
           def greet(name: String) -> String
             "Hello, " ++ name ++ "!"
-          end
+
 
           def join(a: String, b: String, sep: String) -> String
             a ++ sep ++ b
-          end
         JADE
       end
 
@@ -131,7 +125,6 @@ module Jade
 
           def combine(a: List(Int), b: List(Int)) -> List(Int)
             a ++ b
-          end
         JADE
       end
 
@@ -151,21 +144,20 @@ module Jade
       <<~'JADE'
         module Escape exposing (backslash, newline, quote, tab)
 
-        def newline() -> String
+        def newline -> String
           "Hello\nWorld"
-        end
 
-        def tab() -> String
+
+        def tab -> String
           "col1\tcol2"
-        end
 
-        def backslash() -> String
+
+        def backslash -> String
           "back\\slash"
-        end
 
-        def quote() -> String
+
+        def quote -> String
           "say \"hi\""
-        end
       JADE
     end
 

@@ -29,86 +29,84 @@ module Jade
 
         import Calendar exposing (Date, Month(..), Unit(..), Weekday(..))
 
-        def today() -> Task(Date, Never)
+
+        def today -> Task(Date, Never)
           Calendar.today
-        end
+
 
         def build(y: Int, m: Month, d: Int) -> Date
           Calendar.from_calendar_date(y, m, d)
-        end
+
 
         def year_of(d: Date) -> Int
           Calendar.year(d)
-        end
+
 
         def month_of(d: Date) -> Month
           Calendar.month(d)
-        end
+
 
         def day_of(d: Date) -> Int
           Calendar.day(d)
-        end
+
 
         def describe_month(m: Month) -> String
           case m
-          of Jan then "January"
-          of Feb then "February"
-          of Mar then "March"
-          of Apr then "April"
-          of May then "May"
-          of Jun then "June"
-          of Jul then "July"
-          of Aug then "August"
-          of Sep then "September"
-          of Oct then "October"
-          of Nov then "November"
-          of Dec then "December"
-          end
-        end
+          of Jan -> "January"
+          of Feb -> "February"
+          of Mar -> "March"
+          of Apr -> "April"
+          of May -> "May"
+          of Jun -> "June"
+          of Jul -> "July"
+          of Aug -> "August"
+          of Sep -> "September"
+          of Oct -> "October"
+          of Nov -> "November"
+          of Dec -> "December"
+
 
         def before(a: Date, b: Date) -> Bool
           a < b
-        end
+
 
         def equal(a: Date, b: Date) -> Bool
           a == b
-        end
+
 
         def month_round_trip(i: Int) -> Int
           Calendar.month_to_int(Calendar.month_from_int(i))
-        end
+
 
         def weekday_of(d: Date) -> Weekday
           Calendar.weekday(d)
-        end
+
 
         def describe_weekday(w: Weekday) -> String
           case w
-          of Mon then "Monday"
-          of Tue then "Tuesday"
-          of Wed then "Wednesday"
-          of Thu then "Thursday"
-          of Fri then "Friday"
-          of Sat then "Saturday"
-          of Sun then "Sunday"
-          end
-        end
+          of Mon -> "Monday"
+          of Tue -> "Tuesday"
+          of Wed -> "Wednesday"
+          of Thu -> "Thursday"
+          of Fri -> "Friday"
+          of Sat -> "Saturday"
+          of Sun -> "Sunday"
+
 
         def iso(d: Date) -> String
           Calendar.to_iso_string(d)
-        end
+
 
         def parse_iso(s: String) -> Result(Date, String)
           Calendar.from_iso_string(s)
-        end
+
 
         def shift(d: Date, unit: Unit, n: Int) -> Date
           Calendar.add(d, unit, n)
-        end
+
 
         def span(a: Date, b: Date, unit: Unit) -> Int
           Calendar.diff(a, b, unit)
-        end
       JADE
     end
 
@@ -276,13 +274,13 @@ module Jade
           import Encode
           import Decode exposing (DecodeError)
 
+
           def date_to_json(d: Date) -> String
             Encode.encode_to_string(Encode.encode(d))
-          end
+
 
           def date_from_json(s: String) -> Result(Date, DecodeError)
             Decode.from_json(s)
-          end
         JADE
       end
 

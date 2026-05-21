@@ -15,19 +15,20 @@ module Jade
           import Decode exposing (DecodeError)
           import Decode.Params exposing (Params)
 
+
           type Field
             = Name(String)
             | Age(Int)
 
-          def patient_params() -> Params(Field)
+
+          def patient_params -> Params(Field)
             Decode.Params.empty
               |> Decode.Params.string("name", Name)
               |> Decode.Params.int("age", Age)
-          end
+
 
           def parse_fields(json: String) -> Result(List(Field), DecodeError)
             Decode.decode_string(Decode.Params.collect(patient_params), json)
-          end
         JADE
       end
 
@@ -61,21 +62,22 @@ module Jade
           import Decode exposing (DecodeError)
           import Decode.Params exposing (Params)
 
+
           type Field
             = Name(String)
             | Age(Int)
 
-          def patient_params() -> Params(Field)
+
+          def patient_params -> Params(Field)
             Decode.Params.empty
               |> Decode.Params.string("name", Name)
               |> Decode.Params.int("age", Age)
               |> Decode.Params.default("name", Name("anon"))
               |> Decode.Params.default("age", Age(0))
-          end
+
 
           def parse_fields(json: String) -> Result(List(Field), DecodeError)
             Decode.decode_string(Decode.Params.collect(patient_params), json)
-          end
         JADE
       end
 
@@ -100,25 +102,26 @@ module Jade
           import Decode exposing (DecodeError)
           import Decode.Params exposing (Params)
 
+
           type Field
             = Coords(Int, Int)
             | Name(String)
 
-          def coords_decoder() -> Decode.Decoder(Field)
+
+          def coords_decoder -> Decode.Decoder(Field)
             Decode.succeed(Coords(_, _))
               |> Decode.required("x", Decode.int)
               |> Decode.required("y", Decode.int)
-          end
 
-          def field_params() -> Params(Field)
+
+          def field_params -> Params(Field)
             Decode.Params.empty
               |> Decode.Params.string("name", Name)
               |> Decode.Params.accept("coords", coords_decoder)
-          end
+
 
           def parse(json: String) -> Result(List(Field), DecodeError)
             Decode.decode_string(Decode.Params.collect(field_params), json)
-          end
         JADE
       end
 
@@ -143,29 +146,31 @@ module Jade
           import Decode exposing (DecodeError)
           import Decode.Params exposing (Params)
 
+
           type AddressField
             = Line1(String)
             | Line2(String)
+
 
           type Field
             = Name(String)
             | Address(List(AddressField))
 
-          def address_params() -> Params(AddressField)
+
+          def address_params -> Params(AddressField)
             Decode.Params.empty
               |> Decode.Params.string("line1", Line1)
               |> Decode.Params.string("line2", Line2)
-          end
 
-          def patient_params() -> Params(Field)
+
+          def patient_params -> Params(Field)
             Decode.Params.empty
               |> Decode.Params.string("name", Name)
               |> Decode.Params.nested("address", Address, address_params)
-          end
+
 
           def parse(json: String) -> Result(List(Field), DecodeError)
             Decode.decode_string(Decode.Params.collect(patient_params), json)
-          end
         JADE
       end
 

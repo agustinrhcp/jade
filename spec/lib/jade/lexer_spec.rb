@@ -184,7 +184,7 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a
-          end
+            end
         JADE
       end
 
@@ -203,7 +203,7 @@ module Jade
       its([11]) { is_expected.to be_token.of_type(:arrow).with('->').at(24...26) }
       its([12]) { is_expected.to be_token.of_type(:constant).with('Int').at(27...30) }
       its([13]) { is_expected.to be_token.of_type(:identifier).with('a').at(33...34) }
-      its([14]) { is_expected.to be_token.of_type(:end).at(35...38) }
+      its([14]) { is_expected.to be_token.of_type(:identifier).with('end').at(37...40) }
     end
 
     context 'type def' do
@@ -227,7 +227,7 @@ module Jade
 
           def hello(str: String) -> Bool
             String.is_empty(str)
-          end
+            end
         JADE
       end
 
@@ -239,10 +239,7 @@ module Jade
     context 'if then else' do
       let(:text) do
         <<~JADE
-          if String.is_empty("") then
-            1
-          else
-            2
+          if String.is_empty("") then 1 else 2
           end
         JADE
       end
@@ -250,7 +247,7 @@ module Jade
       it { is_expected.to have(14).item.and all(be_a(Token)) }
       its([0])  { is_expected.to be_token.of_type(:if).at(0...2) }
       its([9])  { is_expected.to be_token.of_type(:then).at(23...27) }
-      its([11])  { is_expected.to be_token.of_type(:else).at(32...36) }
+      its([11])  { is_expected.to be_token.of_type(:else).at(30...34) }
     end
 
     context 'case of' do
@@ -266,7 +263,7 @@ module Jade
       its([0])  { is_expected.to be_token.of_type(:case).at(0...4) }
       its([2])  { is_expected.to be_token.of_type(:of).at(7...9) }
       its([3])  { is_expected.to be_token.of_type(:wildcard).at(10...11) }
-      its([6])  { is_expected.to be_token.of_type(:end).at(19...22) }
+      its([6])  { is_expected.to be_token.of_type(:identifier).with('end').at(19...22) }
     end
 
     context 'comments' do

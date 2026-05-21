@@ -16,15 +16,14 @@ module Jade
         <<~JADE
           module Math exposing (example1, example2)
 
-          def example1() -> Int
+          def example1 -> Int
             pepe = Just(1)
 
             1 + 2 * 3
-          end
 
-          def example2() -> Int
+
+          def example2 -> Int
             (1 + 2) * 3
-          end
         JADE
       end
 
@@ -38,9 +37,8 @@ module Jade
           <<~JADE
             module Math exposing (floats)
 
-            def floats() -> Float
+            def floats -> Float
               42.42
-            end
           JADE
         end
 
@@ -54,13 +52,12 @@ module Jade
           <<~JADE
             module Math exposing (neg_float, neg_int)
 
-            def neg_int() -> Int
+            def neg_int -> Int
               -1
-            end
 
-            def neg_float() -> Float
+
+            def neg_float -> Float
               -3.14
-            end
           JADE
         end
 
@@ -77,7 +74,6 @@ module Jade
 
             def negate(a: Bool) -> Bool
               not(a)
-            end
           JADE
         end
 
@@ -99,19 +95,18 @@ module Jade
 
           def min_int(a: Int, b: Int) -> Int
             min(a, b)
-          end
+
 
           def max_int(a: Int, b: Int) -> Int
             max(a, b)
-          end
+
 
           def min_float(a: Float, b: Float) -> Float
             min(a, b)
-          end
+
 
           def max_float(a: Float, b: Float) -> Float
             max(a, b)
-          end
         JADE
       end
 
