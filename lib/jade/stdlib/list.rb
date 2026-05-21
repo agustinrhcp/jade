@@ -51,6 +51,12 @@ module Jade
         'Int',
       ) { |list| list.length }
 
+      function(
+        :reverse,
+        { list: 'List(a)' },
+        'List(a)',
+      ) { |list| list.reverse }
+
       # Transform
 
       function(

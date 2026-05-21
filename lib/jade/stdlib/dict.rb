@@ -73,7 +73,7 @@ module Jade
         constraints: [['Basics.Eq', 'k']],
       ) do |dict, key|
         dict.hash.key?(key) \
-          ? Jade::Dict::Dict[dict.hash.reject { |k, _| k == key }]
+          ? Jade::Dict::Dict[dict.hash.except(key)]
           : dict
       end
 
@@ -86,7 +86,7 @@ module Jade
         current = dict.hash.key?(key) ? Jade::Maybe::Just[dict.hash[key]] : Jade::Maybe::Nothing[]
         case fn.call(current)
         in Jade::Maybe::Just[v] then Jade::Dict::Dict[dict.hash.merge(key => v)]
-        in Jade::Maybe::Nothing then Jade::Dict::Dict[dict.hash.reject { |k, _| k == key }]
+        in Jade::Maybe::Nothing then Jade::Dict::Dict[dict.hash.except(key)]
         end
       end
 

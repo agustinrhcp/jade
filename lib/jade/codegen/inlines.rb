@@ -53,6 +53,7 @@ module Jade
         'List.range'        => ->(lo, hi)      { "(#{lo}..#{hi}).to_a" },
         'List.is_empty'     => ->(xs)          { "#{xs}.empty?" },
         'List.length'       => ->(xs)          { "#{xs}.length" },
+        'List.reverse'      => ->(xs)          { "#{xs}.reverse" },
         'List.tail'         => ->(xs)          { "#{xs}.drop(1)" },
         'List.map'          => ->(xs, fn)      { "#{xs}.map(&#{fn})" },
         'List.and_then'     => ->(xs, fn)      { "#{xs}.flat_map(&#{fn})" },
@@ -78,6 +79,7 @@ module Jade
         'Dict.size'       => ->(d)          { "#{d}.hash.size" },
         'Dict.member'     => ->(d, k)       { "#{d}.hash.key?(#{k})" },
         'Dict.insert'     => ->(d, k, v)    { "Jade::Dict::Dict[#{d}.hash.merge(#{k} => #{v})]" },
+        'Dict.remove'     => ->(d, k)       { "Jade::Dict::Dict[#{d}.hash.except(#{k})]" },
         'Dict.keys'       => ->(d)          { "#{d}.hash.keys" },
         'Dict.values'     => ->(d)          { "#{d}.hash.values" },
         'Dict.to_list'    => ->(d)          { "#{d}.hash.map { |k, v| Jade::Tuple::Tuple2[k, v] }" },
@@ -159,7 +161,6 @@ module Jade
         Task.sequence
         Task.succeed
         Dict.get
-        Dict.remove
         Dict.update
         Dict.map
         Dict.filter
