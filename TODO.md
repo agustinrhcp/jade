@@ -74,3 +74,123 @@ This should fail, Int has no vars
 ### Interop part II - Tasks
 
 Interop must return a Task
+
+
+### Formatter: inline lambda in nested call gets broken across lines
+
+A single-expression lambda passed as a nested call argument gets reflowed
+onto multiple lines, even when the whole expression would fit:
+
+```jade
+String.join(List.map(xs, (w) -> { w.sql }), " AND ")
+```
+
+becomes
+
+```jade
+String.join(List.map(xs, (w) -> {
+  w.sql
+}), " AND ")
+```
+
+Triggered when the lambda is in any nested call (not just `List.map`).
+Repro:
+
+```bash
+cat <<'EOF' | bin/jade-fmt
+module Foo exposing (bar)
+
+def bar(xs: List(Expr)) -> String
+  String.join(List.map(xs, (w) -> { w.sql }), " AND ")
+EOF
+```
+
+`jade-fmt --check` returns 0 on the broken output, so the formatter is
+self-consistent — the rendering rule is just wrong for this shape.
+
+
+### Formatter: trailing `end` after single-expression def
+
+After the "drop end" syntax change, the formatter still emits a trailing
+`end` for single-expression def bodies in some cases:
+
+```jade
+def select(make: a -> b) -> Selector(a -> b)
+  Selector([], [])
+  end
+```
+
+`jade-fmt --check` accepts this output but the parser later rejects it
+("Undefined variable end"). Seen on freshly-reformatted heredoc fixtures
+inside `.rb` specs. Workaround: post-strip standalone `end` lines from
+heredoc bodies before re-running the formatter.
+
+
+### Type inference: polymorphic helper destabilizes Hindley-Milner inference
+
+Adding a polymorphic helper `(List(a), a -> List(Value)) -> List(Value)`
+to `Sql.Query` made `from(persons)` in an *unrelated* App module fail
+with `expected (Table(a, a)) -> Q(a) but found (Table(PersonsCols,
+MaybePersonsCols)) -> Q(a)`. `from`'s declared signature is
+`Table(c, m) -> Q(c)` — the `c` and `m` should not unify. Removing the
+helper restores correct inference.
+
+Symptom: `from`'s type params get over-unified at App's call sites even
+though App doesn't import or use the new helper. Suggests something in
+the Sql.Query module's overall inferred shape leaks into how `from` is
+exported / instantiated.
+
+
+### Type inference: two zero-arg defs referencing each other
+
+After the "zero-arg refs as bare values" change, this fails to compile:
+
+```jade
+def named_paul -> Q(PersonsCols)
+  from(persons) |> where(named_paul_pred)
+
+def named_paul_pred -> Expr(Bool)
+  p = columns(persons, "p")
+  p.name |> eq(to_expr("Paul"))
+```
+
+with `Function call mismatch, expected (Table(a, a)) -> Q(a) but found
+(Table(PersonsCols, MaybePersonsCols)) -> Q(a)`. Inlining the predicate
+into `named_paul` compiles fine.
+
+
+### Sql.Uuid: short (Base64) display form
+
+UUID's 36-char canonical form is too noisy for URLs / admin UIs / logs.
+Add `Sql.Uuid.to_b64(u) -> String` and `from_b64(s) -> Maybe(Uuid)` that
+round-trip the 16 raw bytes through url-safe Base64 (no padding) — 22
+chars instead of 36, same v7 time-ordering preserved.
+
+Implementing this in pure Jade is ~150 LOC because Jade has no bit ops
+and no String-Bytes interop. Wait for the `bytes-decodable` branch to
+land (adds `Bytes`, `Bytes.Encode`, `Bytes.Decode` stdlib modules with
+Base64 codecs). Then `Sql.Uuid.to_b64` collapses to:
+
+```jade
+def to_b64(u: Uuid) -> String
+  Uuid(s) = u
+  s |> String.replace("-", "") |> Bytes.from_hex |> Bytes.to_base64
+```
+
+Prereqs:
+- `bytes-decodable` merged to master.
+- Add `Bytes.from_hex(String) -> Maybe(Bytes)` and `Bytes.to_hex(Bytes) -> String`.
+- Add `Bytes.to_url_safe_base64(Bytes) -> String` and `from_url_safe_base64(String) -> Maybe(Bytes)` (the existing Encodable uses standard base64 with `+/`; url-safe needs `-_`).
+
+
+### jade-sql: round-trip test for schema generator output
+
+The schema generator (`jade:schema` rake task) emits a `schema.jd` file
+from `db/structure.sql`. There are unit tests asserting the generated
+*string* contains the expected substrings, but nothing asserts the
+output actually compiles. A compiler/formatter change can silently
+break the generator for real users.
+
+When jade-sql moves to its own gem, add an integration spec:
+generate from a multi-table fixture SQL, feed through `test_compiler`,
+assert it compiles, and that a simple `from(persons) |> to_sql` works.

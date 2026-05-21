@@ -1,0 +1,156 @@
+module Sql exposing (
+  Assignment(..),
+  Expr(..),
+  Identified,
+  Renderable,
+  Selector(..),
+  SqlMapper,
+  Table,
+  TableRef(..),
+  aliased,
+  and,
+  assign,
+  column,
+  columns,
+  eq,
+  field,
+  is_not_null,
+  is_null,
+  maybe_columns,
+  nullable,
+  pk_values,
+  render,
+  select,
+  set_,
+  table,
+  to_assigns,
+  to_expr,
+)
+
+import Encode exposing (Encodable, encode)
+import Decode exposing (Value)
+
+
+struct Expr(a) = {
+  sql: String,
+  params: List(Value)
+}
+
+
+struct Selector(a) = {
+  columns_sql: List(String),
+  params: List(Value)
+}
+
+
+def select(make: a -> b) -> Selector(a -> b)
+  Selector([], [])
+
+
+def field(s: Selector(a -> b), e: Expr(a)) -> Selector(b)
+  Selector(s.columns_sql ++ [e.sql], s.params ++ e.params)
+
+
+struct Table(c, m) = {
+  name: String,
+  alias_: String,
+  cols: String -> c,
+  maybe_cols: String -> m,
+  pk_columns: List(String)
+}
+
+
+struct TableRef = {
+  name: String,
+  alias_: String
+}
+
+
+struct Assignment = {
+  col: String,
+  value_sql: String,
+  params: List(Value)
+}
+
+
+def set_(col: Expr(a), value: Expr(a)) -> Assignment
+  Assignment(strip_alias(col.sql), value.sql, value.params)
+
+
+def assign(col: String, value: a) -> Assignment
+  Assignment(col, "?", [encode(value)])
+
+
+def strip_alias(sql: String) -> String
+  parts = String.split(sql, ".")
+
+  case parts
+  of [] -> sql
+  of [name] -> name
+  of [_ | rest] -> String.join(rest, ".")
+
+
+interface SqlMapper(a) with
+  to_assigns : a -> List(Assignment)
+
+
+implements SqlMapper(List(Assignment)) with
+  to_assigns: (a) -> { a }
+
+
+interface Identified(a) with
+  pk_values : a -> List(Value)
+
+
+interface Renderable(r) with
+  render : r -> (String, List(Value))
+
+
+def column(alias_: String, name: String) -> Expr(a)
+  Expr(alias_ ++ "." ++ name, [])
+
+
+def to_expr(value: a) -> Expr(a)
+  Expr("?", [encode(value)])
+
+
+def eq(left: Expr(a), right: Expr(a)) -> Expr(Bool)
+  Expr(left.sql ++ " = " ++ right.sql, left.params ++ right.params)
+
+
+def is_null(e: Expr(a)) -> Expr(Bool)
+  Expr(e.sql ++ " IS NULL", e.params)
+
+
+def is_not_null(e: Expr(a)) -> Expr(Bool)
+  Expr(e.sql ++ " IS NOT NULL", e.params)
+
+
+def nullable(e: Expr(a)) -> Expr(Maybe(a))
+  Expr(e.sql, e.params)
+
+
+def and(left: Expr(Bool), right: Expr(Bool)) -> Expr(Bool)
+  Expr(left.sql ++ " AND " ++ right.sql, left.params ++ right.params)
+
+
+def table(
+  name: String,
+  alias_: String,
+  cols: String -> c,
+  maybe_cols: String -> m,
+  pk_columns: List(String),
+) -> Table(c, m)
+  Table(name, alias_, cols, maybe_cols, pk_columns)
+
+
+def columns(t: Table(c, m), alias_: String) -> c
+  alias_ |> t.cols
+
+
+def maybe_columns(t: Table(c, m), alias_: String) -> m
+  alias_ |> t.maybe_cols
+
+
+def aliased(t: Table(c, m), alias_: String) -> Table(c, m)
+  Table(t.name, alias_, t.cols, t.maybe_cols, t.pk_columns)
