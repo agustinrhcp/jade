@@ -372,9 +372,8 @@ module Jade
       context 'inside a function declaration' do
         let(:text) do
           <<~JADE
-            def pepe() -> Int
+            def pepe -> Int
               2 * 2 + 3 * 3
-            end
           JADE
         end
 
@@ -403,7 +402,6 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a
-          end
         JADE
       end
 
@@ -439,7 +437,6 @@ module Jade
         <<~JADE
           def run(f: () -> Int) -> Int
             f()
-          end
         JADE
       end
 
@@ -468,10 +465,8 @@ module Jade
             | Nothing
           def pepe(maybe: Maybe(Int), default: Int) -> Int
             case maybe
-            of Nothing then default
-            of Just(x) then x
-            end
-          end
+            of Nothing -> default
+            of Just(x) -> x
         JADE
       end
 
@@ -485,11 +480,8 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a
-          end
-
           def add(a: Int, b: Int) -> Int
             a
-          end
         JADE
       end
 
@@ -504,9 +496,8 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a + b
-          end
-
-          add(1, 2)
+          def call_add -> Int
+            add(1, 2)
         JADE
       end
 
@@ -522,7 +513,7 @@ module Jade
       context 'the body expressions' do
         subject { super().expressions }
         its([0]) { is_expected.to be_a(AST::FunctionDeclaration) }
-        its([1]) { is_expected.to be_a(AST::FunctionCall) }
+        its([1]) { is_expected.to be_a(AST::FunctionDeclaration) }
       end
     end
 
@@ -680,7 +671,6 @@ module Jade
 
           def hello(str: String) -> Bool
             String.is_empty(str)
-          end
         JADE
       end
 
@@ -712,7 +702,6 @@ module Jade
 
             def hello(str: String) -> Bool
               String.is_empty(str)
-            end
           JADE
         end
 
@@ -729,7 +718,6 @@ module Jade
 
             def hello(str: String) -> Bool
               String.is_empty(str)
-            end
           JADE
         end
 
@@ -745,7 +733,6 @@ module Jade
 
               def hello(str: String) -> Bool
                 String.is_empty(str)
-              end
             JADE
           end
 
@@ -762,11 +749,7 @@ module Jade
 
       let(:text) do
         <<~JADE
-          if String.is_empty("") then
-            1
-          else
-            2
-          end
+          if String.is_empty("") then 1 else 2
         JADE
       end
 
@@ -779,9 +762,8 @@ module Jade
       let(:text) do
         <<~JADE
           case 1
-          of 1 then 1
-          of _ then 2
-          end
+          of 1 -> 1
+          of _ -> 2
         JADE
       end
 
@@ -791,9 +773,8 @@ module Jade
         let(:text) do
           <<~JADE
             case 1
-            of 1 then 1
-            of x then x
-            end
+            of 1 -> 1
+            of x -> x
           JADE
         end
 
@@ -804,8 +785,7 @@ module Jade
         let(:text) do
           <<~JADE
             case { name: "Pepe" }
-            of { name: } then name
-            end
+            of { name: } -> name
           JADE
         end
 
@@ -816,8 +796,7 @@ module Jade
         let(:text) do
           <<~JADE
             case { name: "Pepe" }
-            of { name: Just(name) } then name
-            end
+            of { name: Just(name) } -> name
           JADE
         end
 
@@ -836,9 +815,8 @@ module Jade
             = Just(a)
             | Nothing
           case Just(1)
-          of Nothing then 0
-          of Just(x) then x
-          end
+          of Nothing -> 0
+          of Just(x) -> x
         JADE
       end
 
@@ -867,10 +845,8 @@ module Jade
             | Nothing
           def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
             case maybe
-            of Just(something) then Just(fn(something))
-            of Nothing then maybe
-            end
-          end
+            of Just(something) -> Just(fn(something))
+            of Nothing -> maybe
         JADE
       end
 
@@ -902,12 +878,11 @@ module Jade
             = MyType
             | SomeOtherType(String)
 
+
           def my_function(thing: MyType) -> String
             case thing
-            of MyType then "My type"
-            of SomeOtherType(some_other) then some_other
-            end
-          end
+            of MyType -> "My type"
+            of SomeOtherType(some_other) -> some_other
         JADE
       end
 
@@ -929,12 +904,11 @@ module Jade
               = MyType
               | SomeOtherType(String)
 
+
             def my_function(thing: MyType) -> String
               case thing
-              of MyType then "My type"
-              of SomeOtherType(some_other) then some_other
-              end
-            end
+              of MyType -> "My type"
+              of SomeOtherType(some_other) -> some_other
           JADE
         end
 
@@ -1017,7 +991,6 @@ module Jade
         <<~JADE
           def name(thing: { a | name: String }) -> String
             thing.name
-          end
         JADE
       end
 
@@ -1043,14 +1016,13 @@ module Jade
       context 'with sugar on top' do
         let(:text) do
           <<~JADE
-            def pauls_birthday() -> { name: String, age: Int }
+            def pauls_birthday -> { name: String, age: Int }
               paul_before_today = {
                 name: "Paul",
                 age: 55,
               }
 
               paul_before_today |> .age=(paul_before_today.age + 1)
-            end
           JADE
         end
 
@@ -1070,7 +1042,6 @@ module Jade
         <<~JADE
           uses Jade::Date with
             today : Task(Int, Never)
-          end
         JADE
       end
 
@@ -1082,7 +1053,6 @@ module Jade
             uses Jade::Date with
               today : Task(Int, Never),
               today_plus_n_days : Int -> Task(Int, Never)
-            end
           JADE
         end
 
@@ -1098,10 +1068,8 @@ module Jade
         <<~JADE
           uses Jade::Date with
             today : Task(Int, Never)
-          end
-          def real_today() -> Task(Int, Never)
+          def real_today -> Task(Int, Never)
             today()
-          end
         JADE
       end
 
@@ -1112,9 +1080,8 @@ module Jade
       context 'extra args in a function' do
         let(:text) do
           <<~JADE
-            def ten() -> Int(a)
+            def ten -> Int(a)
               10
-            end
           JADE
         end
 
@@ -1154,7 +1121,6 @@ module Jade
           <<~JADE
             uses Jade::Date with
               today : Task(Maybe, Never)
-            end
           JADE
         end
 
@@ -1173,9 +1139,8 @@ module Jade
       context 'missing args in a function' do
         let(:text) do
           <<~JADE
-            def maybe_ten() -> Maybe
+            def maybe_ten -> Maybe
               Just(10)
-            end
           JADE
         end
 
@@ -1193,9 +1158,8 @@ module Jade
         context 'missing args in record in a function' do
           let(:text) do
             <<~JADE
-              def maybe_ten() -> { ten: Maybe }
+              def maybe_ten -> { ten: Maybe }
                 { ten: Just(10) }
-              end
             JADE
           end
 
@@ -1217,7 +1181,6 @@ module Jade
           <<~JADE
             interface Show(a) with
               show : String(Int) -> a
-            end
           JADE
         end
 
@@ -1238,7 +1201,6 @@ module Jade
           <<~JADE
             interface Show(a) with
               show : a -> Int(a)
-            end
           JADE
         end
 
@@ -1261,7 +1223,6 @@ module Jade
           <<~JADE
             interface Pepe(a) with
               show : Int -> String
-            end
           JADE
         end
 
@@ -1283,7 +1244,6 @@ module Jade
           <<~JADE
             interface Show(a) with
               show : a -> String
-            end
           JADE
         end
 
@@ -1297,7 +1257,6 @@ module Jade
           <<~JADE
             interface Default(a) with
               default : Int -> a
-            end
           JADE
         end
 
@@ -1354,10 +1313,9 @@ module Jade
         let(:text) do
           <<~JADE
             case (1, "one")
-            of (1, "1") then 1
-            of (2, "2") then 2
-            of _ then 0
-            end
+            of (1, "1") -> 1
+            of (2, "2") -> 2
+            of _ -> 0
           JADE
         end
 
@@ -1368,9 +1326,8 @@ module Jade
         let(:text) do
           <<~JADE
             case (1, "one")
-            of (1, "1") then 1
-            of (2, "2") then 2
-            end
+            of (1, "1") -> 1
+            of (2, "2") -> 2
           JADE
         end
 
@@ -1390,10 +1347,9 @@ module Jade
         let(:text) do
           <<~JADE
             case (1, "one")
-            of (1, "1") then 1
-            of (2, 2) then 2
-            of _ then 0
-            end
+            of (1, "1") -> 1
+            of (2, 2) -> 2
+            of _ -> 0
           JADE
         end
 
@@ -1417,7 +1373,6 @@ module Jade
         <<~JADE
           def swap(pair: (Int, String)) -> (String, Int)
             (Tuple.second(pair), Tuple.first(pair))
-          end
         JADE
       end
 
@@ -1440,9 +1395,8 @@ module Jade
       let(:text) do
         <<~JADE
           case 1
-          of 1 then True
-          of 2 then True
-          end
+          of 1 -> True
+          of 2 -> True
         JADE
       end
 
@@ -1457,9 +1411,8 @@ module Jade
           <<~JADE
             fn = (list) -> {
               case list
-              of [] then 0
-              of [x | xs] then x
-              end
+              of [] -> 0
+              of [x | xs] -> x
             }
           JADE
         end
@@ -1472,8 +1425,7 @@ module Jade
           <<~JADE
             fn = (list) -> {
               case list
-              of [] then 0
-              end
+              of [] -> 0
             }
           JADE
         end
@@ -1489,8 +1441,7 @@ module Jade
           <<~JADE
             fn = (list) -> {
               case list
-              of [x | xs] then x
-              end
+              of [x | xs] -> x
             }
           JADE
         end
@@ -1508,10 +1459,8 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) with
             (==): eq_pepe
-          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
-          end
         JADE
       end
 
@@ -1525,10 +1474,8 @@ module Jade
         <<~JADE
           implements Eq(Int) with
             (==): int_eq_override
-          end
           def int_eq_override(one: Int, other: Int) -> Bool
             True
-          end
         JADE
       end
 
@@ -1544,10 +1491,8 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) with
             eq: eq_pepe
-          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
-          end
         JADE
       end
 
@@ -1562,8 +1507,6 @@ module Jade
         <<~JADE
           type Pepe = Pepe(Int)
           implements Eq(Pepe) with
-
-          end
         JADE
       end
 
@@ -1579,10 +1522,8 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) extends GhostInterface with
             (==): eq_pepe
-          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
-          end
         JADE
       end
 
@@ -1598,10 +1539,8 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) extends Comparable with
             (==): eq_pepe
-          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
-          end
         JADE
       end
 
@@ -1617,16 +1556,12 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) with
             (==): eq_pepe
-          end
           implements Comparable(Pepe) extends Eq, GhostInterface with
             compare: compare_pepe
-          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
-          end
           def compare_pepe(one: Pepe, other: Pepe) -> Ordering
             LT
-          end
         JADE
       end
 
@@ -1642,16 +1577,12 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) extends Comparable with
             (==): eq_pepe
-          end
           implements Comparable(Pepe) extends Eq with
             compare: compare_pepe
-          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
-          end
           def compare_pepe(one: Pepe, other: Pepe) -> Ordering
             LT
-          end
         JADE
       end
 
@@ -1699,9 +1630,8 @@ module Jade
         context 'anonymous records' do
           let(:text) do
             <<~JADE
-              def test() -> Bool
+              def test -> Bool
                 { salute: "Hola" } == { salute: "Hei" }
-              end
             JADE
           end
 
@@ -1715,7 +1645,6 @@ module Jade
         <<~JADE
           def sum(list: List(Int)) -> Int
             List.fold(list, 0, (acc, x) -> { acc + x })
-          end
         JADE
       end
 
@@ -1743,7 +1672,6 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) with
             (==): (one, other) -> { one == other }
-          end
         JADE
       end
 
@@ -1767,7 +1695,6 @@ module Jade
           <<~JADE
             def foo(x: Nope) -> Int
               x
-            end
           JADE
         end
 
@@ -1778,9 +1705,8 @@ module Jade
       context 'in a function return type' do
         let(:text) do
           <<~JADE
-            def foo() -> Nope
+            def foo -> Nope
               1
-            end
           JADE
         end
 
@@ -1815,7 +1741,6 @@ module Jade
           <<~JADE
             implements Eq(Nope) with
               (==): (a, b) -> { True }
-            end
           JADE
         end
 

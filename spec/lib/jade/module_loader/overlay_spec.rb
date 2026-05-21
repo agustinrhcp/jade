@@ -22,9 +22,8 @@ module Jade
       <<~JADE
         module Leaf exposing (n)
 
-        def n() -> Int
+        def n -> Int
           42
-        end
       JADE
     end
 
@@ -34,9 +33,9 @@ module Jade
 
         import Leaf exposing (n)
 
-        def m() -> Int
+
+        def m -> Int
           n()
-        end
       JADE
     end
 

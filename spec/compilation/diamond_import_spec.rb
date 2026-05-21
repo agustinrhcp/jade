@@ -21,9 +21,9 @@ module Jade
 
         import M.Events
 
-        def foo() -> Int
+
+        def foo -> Int
           0
-        end
       JADE
     end
 
@@ -34,9 +34,9 @@ module Jade
         import M.Events
         import M.Middle
 
-        def run() -> Int
+
+        def run -> Int
           0
-        end
       JADE
     end
 
@@ -58,9 +58,9 @@ module Jade
           import M.Middle
           import M.Events
 
-          def run() -> Int
+
+          def run -> Int
             0
-          end
         JADE
       end
 

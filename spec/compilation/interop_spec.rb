@@ -36,15 +36,14 @@ module Jade
         uses Jade::TestDate with
           internal_today : Task(Int, Never),
           internal_today_plus_n_days : Int -> Task(Int, Never)
-        end
 
-        def today() -> Task(Int, Never)
+
+        def today -> Task(Int, Never)
           internal_today()
-        end
+
 
         def today_plus_n_days(n: Int) -> Task(Int, Never)
           internal_today_plus_n_days(n)
-        end
       JADE
     end
 
@@ -73,11 +72,10 @@ module Jade
 
           uses Jade::TestBetterDate with
             internal_today : Task({ year: Int, month: Int, day: Int }, Never)
-          end
 
-          def today() -> Task({ year: Int, month: Int, day: Int }, Never)
+
+          def today -> Task({ year: Int, month: Int, day: Int }, Never)
             internal_today()
-          end
         JADE
       end
 
@@ -95,11 +93,10 @@ module Jade
 
             uses Jade::TestBetterDate with
               internal_today : Task(a, Never)
-            end
 
-            def today() -> Task(a, Never)
+
+            def today -> Task(a, Never)
               internal_today()
-            end
           JADE
         end
 
@@ -117,7 +114,6 @@ module Jade
 
             def run_(n: Int) -> Task(Int, Char)
               Task.succeed(n)
-            end
           JADE
         end
 
@@ -154,13 +150,13 @@ module Jade
               day: Int
             }
 
+
             uses Jade::TestStructDate with
               internal_today : Task(Date, Never)
-            end
 
-            def today() -> Task(Date, Never)
+
+            def today -> Task(Date, Never)
               internal_today()
-            end
           JADE
         end
 
@@ -179,13 +175,13 @@ module Jade
 
             type Date = Date(Int, Int, Int)
 
+
             uses Jade::TestBetterDate with
               internal_today : Task(Date, Never)
-            end
 
-            def today() -> Task(Date, Never)
+
+            def today -> Task(Date, Never)
               internal_today()
-            end
           JADE
         end
 
@@ -214,11 +210,10 @@ module Jade
 
             uses Jade::TestMaybeDate with
               internal_today : Task(Maybe({ year: Int, month: Int, day: Int }), Never)
-            end
 
-            def today() -> Task(Maybe({ year: Int, month: Int, day: Int }), Never)
+
+            def today -> Task(Maybe({ year: Int, month: Int, day: Int }), Never)
               internal_today()
-            end
           JADE
         end
 
@@ -236,11 +231,10 @@ module Jade
 
             uses Jade::TestBetterDate with
               internal_today : { year: Int, month: Int, day: Int }
-            end
 
-            def today() -> { year: Int, month: Int, day: Int }
+
+            def today -> { year: Int, month: Int, day: Int }
               internal_today()
-            end
           JADE
         end
 
@@ -257,11 +251,10 @@ module Jade
 
             uses Jade::TestBetterDate with
               internal_today : Task(Task(Int, Never), Never)
-            end
 
-            def today() -> Task(Task(Int, Never), Never)
+
+            def today -> Task(Task(Int, Never), Never)
               internal_today()
-            end
           JADE
         end
 
@@ -287,11 +280,10 @@ module Jade
 
           uses Jade::TestFallible with
             fetch_data : Task(Int, String)
-          end
 
-          def fetch() -> Task(Int, String)
+
+          def fetch -> Task(Int, String)
             fetch_data()
-          end
         JADE
       end
 
@@ -316,11 +308,10 @@ module Jade
 
           uses Jade::TestBadPort with
             fetch_number : Task(Int, Never)
-          end
 
-          def fetch() -> Task(Int, Never)
+
+          def fetch -> Task(Int, Never)
             fetch_number()
-          end
         JADE
       end
 
@@ -346,11 +337,10 @@ module Jade
 
           uses Jade::TestWrongInner with
             fetch_number : Task(Int, Never)
-          end
 
-          def fetch() -> Task(Int, Never)
+
+          def fetch -> Task(Int, Never)
             fetch_number()
-          end
         JADE
       end
 
@@ -379,21 +369,20 @@ module Jade
             get_one : Task(Int, String),
             get_two : Task(Int, String),
             get_error : Task(Int, String)
-          end
 
-          def sum() -> Task(Int, String)
+
+          def sum -> Task(Int, String)
             one <- get_one()
             two <- get_two()
 
             Task.succeed(one + two)
-          end
 
-          def short_circuits() -> Task(Int, String)
+
+          def short_circuits -> Task(Int, String)
             one <- get_error()
             two <- get_two()
 
             Task.succeed(one + two)
-          end
         JADE
       end
 
@@ -428,13 +417,13 @@ module Jade
 
           import Decode exposing (Value)
 
+
           uses Jade::TestPassThrough with
             fetch_anything : Task(Value, Never)
-          end
 
-          def fetch() -> Task(Value, Never)
+
+          def fetch -> Task(Value, Never)
             fetch_anything()
-          end
         JADE
       end
 
@@ -464,13 +453,13 @@ module Jade
             age: Int
           }
 
+
           uses Jade::TestNamedStruct with
             fetch_user : Task(User, Never)
-          end
 
-          def fetch() -> Task(User, Never)
+
+          def fetch -> Task(User, Never)
             fetch_user()
-          end
         JADE
       end
 
@@ -502,13 +491,13 @@ module Jade
             age: Int
           }
 
+
           uses Jade::TestMissingField with
             fetch_user : Task(User, Never)
-          end
 
-          def fetch() -> Task(User, Never)
+
+          def fetch -> Task(User, Never)
             fetch_user()
-          end
         JADE
       end
 
@@ -534,44 +523,44 @@ module Jade
 
           import Decode exposing (Decodable, Decoder)
 
+
           type Status
             = Active
             | Inactive
 
-          def status_decoder() -> Decoder(Status)
+
+          def status_decoder -> Decoder(Status)
             Decode.and_then(
               Decode.string,
               (s) -> {
                 case s
-                of "active" then Decode.succeed(Active)
-                of "inactive" then Decode.succeed(Inactive)
-                of _ then Decode.fail("unknown status: " ++ s)
-                end
+                of "active" -> Decode.succeed(Active)
+                of "inactive" -> Decode.succeed(Inactive)
+                of _ -> Decode.fail("unknown status: " ++ s)
               },
             )
-          end
+
 
           implements Decodable(Status) with
             decoder: status_decoder
-          end
+
 
           uses Jade::TestUnionPort with
             fetch_active : Task(Status, Never),
             fetch_inactive : Task(Status, Never),
             fetch_bogus : Task(Status, Never)
-          end
 
-          def active() -> Task(Status, Never)
+
+          def active -> Task(Status, Never)
             fetch_active()
-          end
 
-          def inactive() -> Task(Status, Never)
+
+          def inactive -> Task(Status, Never)
             fetch_inactive()
-          end
 
-          def bogus() -> Task(Status, Never)
+
+          def bogus -> Task(Status, Never)
             fetch_bogus()
-          end
         JADE
       end
 
@@ -613,23 +602,23 @@ module Jade
             age: Int
           }
 
+
           uses Jade::TestPolyPort with
             fetch_patient : Task(a, Never),
             fetch_bad : Task(a, Never),
             echo : Patient -> Task(a, a)
-          end
 
-          def patient() -> Task(Patient, Never)
+
+          def patient -> Task(Patient, Never)
             fetch_patient()
-          end
 
-          def bad() -> Task(Patient, Never)
+
+          def bad -> Task(Patient, Never)
             fetch_bad()
-          end
+
 
           def echo_patient(p: Patient) -> Task(Patient, Patient)
             echo(p)
-          end
         JADE
       end
 
@@ -670,18 +659,18 @@ module Jade
               age: Int
             }
 
+
             uses Jade::TestPolyBothArms with
               try_fetch_ok : Task(a, e),
               try_fetch_err : Task(a, e)
-            end
 
-            def parse_ok() -> Task(Patient, Int)
+
+            def parse_ok -> Task(Patient, Int)
               try_fetch_ok()
-            end
 
-            def parse_err() -> Task(Patient, Int)
+
+            def parse_err -> Task(Patient, Int)
               try_fetch_err()
-            end
           JADE
         end
 
@@ -716,18 +705,18 @@ module Jade
               age: Int
             }
 
+
             uses Jade::TestPolyMaybe with
               fetch_some : Task(Maybe(a), Never),
               fetch_none : Task(Maybe(a), Never)
-            end
 
-            def some() -> Task(Maybe(Patient), Never)
+
+            def some -> Task(Maybe(Patient), Never)
               fetch_some()
-            end
 
-            def none() -> Task(Maybe(Patient), Never)
+
+            def none -> Task(Maybe(Patient), Never)
               fetch_none()
-            end
           JADE
         end
 
@@ -762,13 +751,13 @@ module Jade
               age: Int
             }
 
+
             uses Jade::TestPolyListMaybe with
               fetch_list_maybe : Task(List(Maybe(a)), Never)
-            end
 
-            def fetch() -> Task(List(Maybe(Patient)), Never)
+
+            def fetch -> Task(List(Maybe(Patient)), Never)
               fetch_list_maybe()
-            end
           JADE
         end
 
@@ -801,13 +790,13 @@ module Jade
               age: Int
             }
 
+
             uses Jade::TestPolyList with
               fetch_list : Task(List(a), Never)
-            end
 
-            def fetch() -> Task(List(Patient), Never)
+
+            def fetch -> Task(List(Patient), Never)
               fetch_list()
-            end
           JADE
         end
 
@@ -843,15 +832,14 @@ module Jade
 
           uses Jade::Stdlib::Date with
             today_ : Task({ year: Int, month: Int, day: Int }, Never)
-          end
 
-          def today() -> Task({ year: Int, month: Int, day: Int }, Never)
+
+          def today -> Task({ year: Int, month: Int, day: Int }, Never)
             today_()
-          end
+
 
           def year(date: { year: Int, month: Int, day: Int }) -> Int
             date.year
-          end
         JADE
       end
 

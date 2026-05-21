@@ -24,78 +24,88 @@ module Jade
 
       def code
         <<~JADE
-          module Result exposing(Result(..), map, and_then, with_default, to_maybe, from_maybe, map_error, on_error, sequence)
+          module Result exposing (
+            Result(..),
+            and_then,
+            from_maybe,
+            map,
+            map_error,
+            on_error,
+            sequence,
+            to_maybe,
+            with_default,
+          )
 
-          type Result(value, error) = Ok(value) | Err(error)
+          type Result(value, error)
+            = Ok(value)
+            | Err(error)
+
 
           def map(result: Result(a, e), fn: a -> b) -> Result(b, e)
             case result
-            of Ok(something) then
-              something |> fn |> Ok
+            of Ok(something) -> something
+              |> fn
+              |> Ok
+            of Err(error) -> Err(error)
 
-            of Err(error) then Err(error)
-            end
-          end
 
           def and_then(result: Result(a, e), fn: a -> Result(b, e)) -> Result(b, e)
             case result
-            of Ok(something) then
-              something |> fn
+            of Ok(something) -> something |> fn
+            of Err(error) -> Err(error)
 
-            of Err(error) then Err(error)
-            end
-          end
 
           def with_default(result: Result(a, e), default: a) -> a
             case result
-            of Ok(something) then something
-            of _ then default
-            end
-          end
+            of Ok(something) -> something
+            of _ -> default
+
 
           def to_maybe(result: Result(a, e)) -> Maybe(a)
             case result
-            of Ok(something) then Just(something)
-            of _ then Nothing
-            end
-          end
+            of Ok(something) -> Just(something)
+            of _ -> Nothing
+
 
           def from_maybe(maybe: Maybe(a), error: e) -> Result(a, e)
             case maybe
-            of Just(something) then Ok(something)
-            of Nothing then Err(error)
-            end
-          end
+            of Just(something) -> Ok(something)
+            of Nothing -> Err(error)
+
 
           def map_error(result: Result(a, e), fn: e -> x) -> Result(a, x)
             case result
-            of Err(error) then error |> fn |> Err
-            of Ok(something) then Ok(something)
-            end
-          end
+            of Err(error) -> error
+              |> fn
+              |> Err
+            of Ok(something) -> Ok(something)
+
 
           def sequence(results: List(Result(a, e))) -> Result(List(a), e)
-            List.fold(results, Ok([]), (acc, result) -> {
-              list <- acc
-              value <- result
-              Ok(list ++ [value])
-            })
-          end
+            List.fold(
+              results,
+              Ok([]),
+              (acc, result) -> {
+                list <- acc
+                value <- result
+
+                Ok(list ++ [value])
+              },
+            )
+
 
           def on_error(result: Result(a, e), fn: e -> Result(a, f)) -> Result(a, f)
             case result
-            of Err(error) then error |> fn
-            of Ok(_) then result
-            end
-          end
+            of Err(error) -> error |> fn
+            of Ok(_) -> result
+
 
           implements Mappable(Result(a, e)) with
             map: map
-          end
+
 
           implements Chainable(Result(a, e)) with
             and_then: and_then
-          end
         JADE
       end
     end

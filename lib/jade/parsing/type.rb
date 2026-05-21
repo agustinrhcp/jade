@@ -25,7 +25,7 @@ module Jade
         (type(:lbrace) >> type_record_row >> type_record_fields >> type(:rbrace)).map(&AST.type_record)
       }
 
-      parser(:type_record_row) { (type_param >> type(:pipe).skip) | none.map { nil } }
+      parser(:type_record_row) { optional(type_param >> type(:pipe).skip) }
 
       parser(:type_record_fields) {
         comma_sequence(
@@ -49,11 +49,10 @@ module Jade
       parser(:type_var) { identifier.map(&AST.type_var) }
 
       parser(:type_function) {
-        (
-          (unit | sequence(type_atom, separated_by: type(:comma).skip).map { [it] }) >>
-          type(:arrow).skip >>
-          type_atom
-        ).map(&AST.type_function)
+        atoms = sequence(type_atom, separated_by: type(:comma).skip)
+        params = unit | (atoms >> maybe(type(:comma))).map { [it] }
+
+        (params >> type(:arrow).skip >> type_atom).map(&AST.type_function)
       }
 
       parser(:unit) {
@@ -63,8 +62,10 @@ module Jade
       }
 
       parser(:type_application) {
+        no_args = [Combinators::CommaList.empty, nil]
+
         (
-          (type_name >> (type_application_args | none.map { [Combinators::CommaList.empty, nil] })) |
+          (type_name >> optional(type_application_args, default: no_args)) |
           (type_var  >> type_application_args)
         ).map(&AST.type_application)
       }

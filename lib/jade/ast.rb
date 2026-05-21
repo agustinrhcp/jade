@@ -171,7 +171,9 @@ module Jade
 
     def function_declaration
       ->(tokens) do
-        tokens => [def_token, name, params_list, return_type, body, end_token]
+        tokens => [def_token, name, params_list, return_type, body]
+
+        range_end = body.range&.end || return_type.range.end
 
         FunctionDeclaration.new(
           name: name.value,
@@ -179,7 +181,7 @@ module Jade
           return_type:,
           body:,
           trailing_comma: params_list.trailing_comma,
-          range: def_token.range.begin...end_token.range.end,
+          range: def_token.range.begin...range_end,
         )
       end
     end
@@ -360,12 +362,12 @@ module Jade
     end
 
     def if_then_else
-      ->((if_token, condition, if_branch, else_branch, end_token)) do
+      ->((if_token, condition, if_branch, else_branch)) do
         IfThenElse[
           condition,
           if_branch,
           else_branch,
-          if_token.range.begin..(end_token.range.end),
+          if_token.range.begin..else_branch.range.end,
         ]
       end
     end
@@ -384,11 +386,11 @@ module Jade
     end
 
     def case_of
-      ->((case_token, expression, branches, end_token)) do
+      ->((case_token, expression, branches)) do
         CaseOf[
           expression,
           branches,
-          case_token.range.begin..(end_token.range.end),
+          case_token.range.begin..branches.last.range.end,
         ]
       end
     end
@@ -507,12 +509,12 @@ module Jade
     end
 
     def lambda
-      ->((lparen_token, params_list, body, rbrace_token)) do
+      ->((lead_token, params_list, body, rbrace_token)) do
         Lambda.new(
           params: params_list.items,
           body:,
           trailing_comma: params_list.trailing_comma,
-          range: lparen_token.range.begin..rbrace_token.range.end,
+          range: lead_token.range.begin..rbrace_token.range.end,
         )
       end
     end

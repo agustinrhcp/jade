@@ -2,26 +2,23 @@ module BasicsExamples exposing (absolute, add, clamp, greet)
 
 def add(a: Int, b: Int) -> Int
   a + b
-end
+
 
 def greet(name: String) -> String
   "Hello, " ++ name ++ "!"
-end
+
 
 def absolute(n: Int) -> Int
   case n < 0
-  of True then 0 - n
-  of False then n
-  end
-end
+  of True -> 0 - n
+  of False -> n
+
 
 def clamp(value: Int, lo: Int, hi: Int) -> Int
   case value < lo
-  of True then lo
-  of False then
+  of True -> lo
+  of False -> (
     case value > hi
-    of True then hi
-    of False then value
-    end
-  end
-end
+    of True -> hi
+    of False -> value
+  )

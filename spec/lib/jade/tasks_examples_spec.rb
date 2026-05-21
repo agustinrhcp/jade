@@ -44,13 +44,12 @@ describe 'tasks mocker — DateTasks example' do
       uses DateTasks with
         today : Task(Int, Never),
         plus_days : Int -> Task(Int, Never)
-      end
+
 
       def run(offset: Int) -> Task(Int, Never)
         _ <- today()
 
         plus_days(offset)
-      end
     JADE
   end
 

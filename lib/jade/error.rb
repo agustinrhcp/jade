@@ -19,17 +19,18 @@ module Jade
       []
     end
 
-    def to_diagnostic(registry = nil)
-      case entry
-      when String then registry&.get(entry)&.source
-      else entry&.source
-      end.then do |source|
-        Jade::Diagnostics::Diagnostic.error(
-          message,
-          primary: Jade::Diagnostics::Label[source, span, label],
-          annotations: notes,
-        )
-      end
+    def to_diagnostic(registry = nil, source: nil)
+      source ||=
+        case entry
+        when String then registry&.get(entry)&.source
+        else entry&.source
+        end
+
+      Jade::Diagnostics::Diagnostic.error(
+        message,
+        primary: Jade::Diagnostics::Label[source, span, label],
+        annotations: notes,
+      )
     end
   end
 end

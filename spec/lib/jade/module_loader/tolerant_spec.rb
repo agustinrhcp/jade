@@ -22,9 +22,8 @@ module Jade
       <<~JADE
         module Broken exposing (oops)
 
-        def oops() -> Int
+        def oops -> Int
           "not an int"
-        end
       JADE
     end
 
@@ -49,9 +48,8 @@ module Jade
       write('ok', <<~JADE)
         module Ok exposing (n)
 
-        def n() -> Int
+        def n -> Int
           42
-        end
       JADE
 
       registry = ModuleLoader.load(src, 'ok.jd', tolerant: true)
@@ -64,9 +62,9 @@ module Jade
 
         import Broken exposing (oops)
 
-        def run() -> Int
+
+        def run -> Int
           oops()
-        end
       JADE
 
       registry = ModuleLoader.load(src, 'consumer.jd', tolerant: true)

@@ -16,9 +16,9 @@ module Jade
             = V1(Int)
             | V2(paid_amount: Int, tax_amount: Int, issued_amount: Int)
 
-          def make() -> Stuff
+
+          def make -> Stuff
             V2(paid_amount: 100, tax_amount: 20, issued_amount: 80)
-          end
         JADE
       end
 
@@ -43,12 +43,11 @@ module Jade
             = V1(Int)
             | V2(paid_amount: Int, tax_amount: Int)
 
+
           def total(s: Stuff) -> Int
             case s
-            of V1(n) then n
-            of V2(r) then r.paid_amount + r.tax_amount
-            end
-          end
+            of V1(n) -> n
+            of V2(r) -> r.paid_amount + r.tax_amount
         JADE
       end
 
@@ -70,11 +69,10 @@ module Jade
 
           type Stuff = V(paid_amount: Int, tax_amount: Int)
 
+
           def paid(s: Stuff) -> Int
             case s
-            of V({ paid_amount: pa, tax_amount: _ }) then pa
-            end
-          end
+            of V({ paid_amount: pa, tax_amount: _ }) -> pa
         JADE
       end
 
@@ -93,11 +91,10 @@ module Jade
 
           type Stuff = V(paid_amount: Int, tax_amount: Int)
 
+
           def bump_paid(s: Stuff) -> Stuff
             case s
-            of V(r) then V({ r | paid_amount: r.paid_amount + 1 })
-            end
-          end
+            of V(r) -> V({ r | paid_amount: r.paid_amount + 1 })
         JADE
       end
 
@@ -119,16 +116,15 @@ module Jade
             = CreditSource(credit_id: Int)
             | ReceiptSource(receipt_id: Int)
 
+
           def make_credit(id: Int) -> Source
             CreditSource(credit_id: id)
-          end
+
 
           def get_id(s: Source) -> Int
             case s
-            of CreditSource(c) then c.credit_id
-            of ReceiptSource(c) then c.receipt_id
-            end
-          end
+            of CreditSource(c) -> c.credit_id
+            of ReceiptSource(c) -> c.receipt_id
         JADE
       end
 
@@ -158,9 +154,9 @@ module Jade
 
           type Stuff = V(paid_amount: Int, tax_amount: Int)
 
+
           def make(p: Int, t: Int) -> Stuff
             V(paid_amount: p, tax_amount: t)
-          end
         JADE
       end
 
@@ -184,9 +180,9 @@ module Jade
 
             type Stuff = V(paid_amount: Int, tax_amount: Int)
 
-            def make() -> Stuff
+
+            def make -> Stuff
               V(paid_amount: 100)
-            end
           JADE
         end
 
@@ -203,9 +199,9 @@ module Jade
 
             type Stuff = V(paid_amount: Int, tax_amount: Int)
 
-            def make() -> Stuff
+
+            def make -> Stuff
               V(paid_amount: "oops", tax_amount: 20)
-            end
           JADE
         end
 

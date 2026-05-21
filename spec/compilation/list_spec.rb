@@ -23,39 +23,38 @@ module Jade
 
         def strs_to_list(str: String, str2: String) -> List(String)
           [str, str2]
-        end
+
 
         def list_length(list: List(a)) -> Int
           List.length(list)
-        end
+
 
         def list_singleton(element: a) -> List(a)
           List.singleton(element)
-        end
+
 
         def repeat(element: a, times: Int) -> List(a)
           List.repeat(element, times)
-        end
+
 
         def range(start: Int, end_: Int) -> List(Int)
           List.range(start, end_)
-        end
+
 
         def is_empty(list: List(a)) -> Bool
           List.is_empty(list)
-        end
+
 
         def maptiply(list: List(Int)) -> List(Int)
           list |> List.map((n) -> { n * 2 })
-        end
+
 
         def maptindexply(list: List(Int)) -> List(Int)
           list |> List.indexed_map((index, n) -> { n * index })
-        end
+
 
         def str_fold(list: List(String), initial: String) -> String
           list |> List.fold(initial, (acc, item) -> { String.concat([acc, item]) })
-        end
       JADE
     end
 
@@ -93,27 +92,32 @@ module Jade
     context 'sort and sort_by' do
       let(:source) do
         <<~JADE
-          module SortTest exposing (sort_by_neg, sort_by_str_len, sort_floats, sort_ints, sort_strings)
+          module SortTest exposing (
+            sort_by_neg,
+            sort_by_str_len,
+            sort_floats,
+            sort_ints,
+            sort_strings,
+          )
 
           def sort_ints(list: List(Int)) -> List(Int)
             List.sort(list)
-          end
+
 
           def sort_floats(list: List(Float)) -> List(Float)
             List.sort(list)
-          end
+
 
           def sort_strings(list: List(String)) -> List(String)
             List.sort(list)
-          end
+
 
           def sort_by_neg(list: List(Int)) -> List(Int)
             list |> List.sort_by((n) -> { 0 - n })
-          end
+
 
           def sort_by_str_len(list: List(String)) -> List(String)
             list |> List.sort_by(String.length)
-          end
         JADE
       end
 

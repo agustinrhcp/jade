@@ -14,7 +14,6 @@ module Jade
 
           def run(f: () -> Int) -> Int
             f()
-          end
         JADE
       end
 
@@ -39,10 +38,8 @@ module Jade
 
           def pick(flag: Bool, a: () -> Int, b: () -> Int) -> Int
             case flag
-            of True then a()
-            of False then b()
-            end
-          end
+            of True -> a()
+            of False -> b()
         JADE
       end
 
@@ -64,11 +61,10 @@ module Jade
 
           def apply(f: () -> Int) -> Int
             f()
-          end
+
 
           def double_thunk(f: () -> Int) -> Int
             apply(f) + apply(f)
-          end
         JADE
       end
 

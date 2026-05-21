@@ -2,18 +2,15 @@ module Interfaces exposing (are_equal, larger, sort_pair)
 
 def larger(a: a, b: a) -> a
   case compare(a, b)
-  of GT then a
-  of _ then b
-  end
-end
+  of GT -> a
+  of _ -> b
+
 
 def sort_pair(a: a, b: a) -> (a, a)
   case compare(a, b)
-  of GT then (b, a)
-  of _ then (a, b)
-  end
-end
+  of GT -> (b, a)
+  of _ -> (a, b)
+
 
 def are_equal(a: a, b: a) -> Bool
   a == b
-end

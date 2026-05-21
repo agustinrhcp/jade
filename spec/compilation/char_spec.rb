@@ -12,15 +12,14 @@ module Jade
 
         def is_a(c: Char) -> Bool
           c == 'a'
-        end
+
 
         def code_of(c: Char) -> Int
           Char.to_code(c)
-        end
+
 
         def roundtrip(c: Char) -> Maybe(Char)
           Char.from_code(Char.to_code(c))
-        end
       JADE
     end
 
@@ -41,7 +40,7 @@ module Jade
     end
 
     it 'parses a char literal' do
-      test_compiler.require('lit', "module Lit exposing (c)\n\ndef c() -> Char\n  'x'\nend\n")
+      test_compiler.require('lit', "module Lit exposing (c)\n\ndef c -> Char\n  'x'\n")
       expect(Lit::Internal.c.call).to eql 'x'
     end
   end
