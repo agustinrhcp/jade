@@ -66,16 +66,14 @@ module Jade
       include Task
 
       def run
-        tasks.reduce(Jade::Result::Ok[[]]) do |acc, task|
-          case acc
-          in Jade::Result::Err then acc
-          in Jade::Result::Ok[values]
-            case task.run
-            in Jade::Result::Ok[value]   then Jade::Result::Ok[values + [value]]
-            in Jade::Result::Err => err  then err
-            end
+        values = []
+        tasks.each do |task|
+          case task.run
+          in Jade::Result::Ok[value] then values << value
+          in Jade::Result::Err => err then return err
           end
         end
+        Jade::Result::Ok[values]
       end
     end
 
