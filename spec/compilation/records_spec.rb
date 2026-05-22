@@ -410,7 +410,7 @@ module Jade
         end
       end
 
-      describe 'calling a nullary function from another function' do
+      describe 'referencing a nullary function from another function' do
         let(:pepe_source) do
           <<~JADE
             module Pepe exposing (name_of_paul)
@@ -426,11 +426,11 @@ module Jade
 
 
             def name_of_paul -> String
-              paul().name
+              paul.name
           JADE
         end
 
-        it 'allows `paul()` even though `paul` is also a value' do
+        it 'reads `paul` as a value (bare reference)' do
           expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
           expect(Pepe.name_of_paul()).to eql 'Paul'
         end
@@ -453,7 +453,7 @@ module Jade
 
 
             def query -> Int
-              get_val(persons())
+              get_val(persons)
           JADE
         end
 

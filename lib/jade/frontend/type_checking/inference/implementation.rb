@@ -107,6 +107,12 @@ module Jade
                   name
                 )
               )
+
+            # `decoder: zero_arg_fn` becomes `FunctionCall(zero_arg_fn, [])`
+            # after ZeroArgRewrite. Type the call; its result must match the
+            # interface field's type.
+            in AST::FunctionCall
+              check(fn, registry, state, expected).first
             end
           end
 

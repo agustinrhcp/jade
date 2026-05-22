@@ -18,6 +18,7 @@ require 'jade/frontend/semantic_analysis/error/non_task_port'
 require 'jade/frontend/semantic_analysis/error/nested_task_port'
 require 'jade/frontend/semantic_analysis/error/invalid_list_rest_pattern'
 require 'jade/frontend/semantic_analysis/error/unused_interface_type_param'
+require 'jade/frontend/semantic_analysis/error/constant_not_callable'
 
 module Jade
   module Frontend

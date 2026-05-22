@@ -152,7 +152,7 @@ module Jade
 
 
         def go -> T
-          a = make()
+          a = make
 
           a
       JADE

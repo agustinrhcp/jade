@@ -238,7 +238,11 @@ module Jade
       end
 
       it 'is true for a no-arg fn returning a primitive' do
-        expect(described_class.eligible?(int_t, registry)).to be true
+        expect(described_class.eligible?(fn_t([], int_t), registry)).to be true
+      end
+
+      it 'is false for a no-arg fn whose return type is a function' do
+        expect(described_class.eligible?(fn_t([], fn_t([int_t], int_t)), registry)).to be false
       end
 
       it 'is true for Int -> Task(Int, String)' do
