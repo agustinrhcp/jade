@@ -29,31 +29,31 @@ module Jade
       end
 
       function(
-        :is_digit,
+        :"digit?",
         { char: 'Char' },
         'Bool',
       ) { it.match?(/\d/) }
 
       function(
-        :is_alpha,
+        :"alpha?",
         { char: 'Char' },
         'Bool',
       ) { it.match?(/[a-zA-Z]/) }
 
       function(
-        :is_alpha_num,
+        :"alpha_numeric?",
         { char: 'Char' },
         'Bool',
       ) { it.match?(/[a-zA-Z0-9]/) }
 
       function(
-        :is_upper,
+        :"upper?",
         { char: 'Char' },
         'Bool',
       ) { it.match?(/[A-Z]/) }
 
       function(
-        :is_lower,
+        :"lower?",
         { char: 'Char' },
         'Bool',
       ) { it.match?(/[a-z]/) }

@@ -522,12 +522,12 @@ module Jade
 
       let(:text) do
         <<~JADE
-          String.is_empty
+          String.empty?
         JADE
       end
 
       it { is_expected.to be_a(AST::QualifiedAccess) }
-      its(:symbol) { is_expected.to eql Symbol::ValueRef['String', 'is_empty']}
+      its(:symbol) { is_expected.to eql Symbol::ValueRef['String', 'empty?']}
 
       context 'when calling a not exposed function' do
         let(:text) do
@@ -552,7 +552,7 @@ module Jade
       context 'when calling a non existing module' do
         let(:text) do
           <<~JADE
-            Strong.is_empty
+            Strong.empty?
           JADE
         end
 
@@ -564,7 +564,7 @@ module Jade
           subject { super().first }
 
           it { is_expected.to be_a Frontend::SymbolResolution::Error::VariableNotFound }
-          its(:message) { is_expected.to include 'I cannot find a `Strong.is_empty` variable' }
+          its(:message) { is_expected.to include 'I cannot find a `Strong.empty?` variable' }
           its(:causes) { is_expected.to have(1).item.and all(be_a(Frontend::SymbolResolution::Error::ModuleNotFound)) }
         end
       end
@@ -670,7 +670,7 @@ module Jade
           module Test exposing (hello)
 
           def hello(str: String) -> Bool
-            String.is_empty(str)
+            String.empty?(str)
         JADE
       end
 
@@ -701,7 +701,7 @@ module Jade
             module Test 
 
             def hello(str: String) -> Bool
-              String.is_empty(str)
+              String.empty?(str)
           JADE
         end
 
@@ -717,7 +717,7 @@ module Jade
             module Test exposing (hei)
 
             def hello(str: String) -> Bool
-              String.is_empty(str)
+              String.empty?(str)
           JADE
         end
 
@@ -732,7 +732,7 @@ module Jade
               module Test exposing (Salutation)
 
               def hello(str: String) -> Bool
-                String.is_empty(str)
+                String.empty?(str)
             JADE
           end
 
@@ -749,7 +749,7 @@ module Jade
 
       let(:text) do
         <<~JADE
-          if String.is_empty("") then 1 else 2
+          if String.empty?("") then 1 else 2
         JADE
       end
 

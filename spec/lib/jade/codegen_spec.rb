@@ -124,12 +124,12 @@ module Jade
     context 'qualified and unqualified references' do
       let(:text) do
         <<~JADE
-          def is_empty(str: String) -> Bool
-            String.is_empty(str)
+          def empty?(str: String) -> Bool
+            String.empty?(str)
         JADE
       end
 
-      it { is_expected.to eql "def is_empty\n  ->(str) { str.empty? }\nend" }
+      it { is_expected.to eql "def empty?\n  ->(str) { str.empty? }\nend" }
     end
 
     context 'module' do
@@ -138,7 +138,7 @@ module Jade
           module Test exposing (hello)
 
           def hello(str: String) -> Bool
-            String.is_empty(str)
+            String.empty?(str)
         JADE
       end
 
@@ -166,7 +166,7 @@ module Jade
     context 'if then else' do
       let(:text) do
         <<~JADE
-          if String.is_empty("") then 1 else 2
+          if String.empty?("") then 1 else 2
         JADE
       end
 

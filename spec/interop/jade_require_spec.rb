@@ -11,8 +11,8 @@ describe 'requiring jade from a ruby file' do
   compiler.require('required')
 
   it 'works' do
-    expect(Required.is_empty('')).to be true
-    expect(Required.is_empty('hello')).to be false
+    expect(Required.empty?('')).to be true
+    expect(Required.empty?('hello')).to be false
   end
 
   it 'is idempotent across compiler instances' do

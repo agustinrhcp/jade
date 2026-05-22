@@ -30,7 +30,7 @@ module Jade
       ) { |key, value| Jade::Dict::Dict[{ key => value }] }
 
       function(
-        :is_empty,
+        :"empty?",
         { dict: 'Dict(k, v)' },
         'Bool',
       ) { it.hash.empty? }
@@ -53,7 +53,7 @@ module Jade
       end
 
       function(
-        :member,
+        :"member?",
         { dict: 'Dict(k, v)', key: 'k' },
         'Bool',
         constraints: [['Basics.Eq', 'k']],

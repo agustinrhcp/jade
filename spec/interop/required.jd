@@ -1,4 +1,4 @@
-module Required exposing (is_empty)
+module Required exposing (empty?)
 
-def is_empty(str: String) -> Bool
-  String.is_empty(str)
+def empty?(str: String) -> Bool
+  String.empty?(str)

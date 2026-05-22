@@ -32,7 +32,7 @@ module Jade
       ) { |a, b| a + b }
 
       function(
-        :is_empty,
+        :"empty?",
         { str: 'String'},
         'Bool',
       ) { it.empty? }
