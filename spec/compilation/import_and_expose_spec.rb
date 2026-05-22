@@ -41,7 +41,7 @@ module Jade
 
     it 'fails because MyType is no in scope' do
       expect { test_compiler.require('importing', importing_source) }
-        .to raise_error(RuntimeError, /cannot find a `MyType` constructor/)
+        .to raise_error(CompilationError, /cannot find a `MyType` constructor/)
     end
 
     context 'when exposing the type' do
@@ -63,7 +63,7 @@ module Jade
 
       it 'fails because MyType is no in scope' do
         expect { test_compiler.require('importing', importing_source) }
-          .to raise_error(RuntimeError, /cannot find a `MyType` constructor/)
+          .to raise_error(CompilationError, /cannot find a `MyType` constructor/)
       end
     end
 
@@ -133,7 +133,7 @@ module Jade
 
         it 'fails becausse the constructor is private' do
           expect { test_compiler.require('importing', importing_source) }
-            .to raise_error(RuntimeError, /cannot find a `Exposing.MyType` variable/)
+            .to raise_error(CompilationError, /cannot find a `Exposing.MyType` variable/)
         end
       end
     end
@@ -193,7 +193,7 @@ module Jade
 
       it 'fails because MyType constructors are private' do
         expect { test_compiler.require('importing', importing_source) }
-          .to raise_error(RuntimeError, /Exposing's `MyType` type does not allow `\(\.\.\)`/)
+          .to raise_error(CompilationError, /Exposing's `MyType` type does not allow `\(\.\.\)`/)
       end
     end
 
@@ -228,7 +228,7 @@ module Jade
 
       it 'fails because MyType constructors are private' do
         expect { test_compiler.require('importing', importing_source) }
-          .to raise_error(RuntimeError, /The `Exposing` module does not expose `wacamole`/)
+          .to raise_error(CompilationError, /The `Exposing` module does not expose `wacamole`/)
       end
     end
 
@@ -287,7 +287,7 @@ module Jade
 
         it 'fails because the constructor is not in scope' do
           expect { test_compiler.require('importing', importing_source) }
-            .to raise_error(RuntimeError, /cannot find a `Person` constructor/)
+            .to raise_error(CompilationError, /cannot find a `Person` constructor/)
         end
       end
 
@@ -323,7 +323,7 @@ module Jade
 
         it 'fails because the struct constructor is private' do
           expect { test_compiler.require('importing', importing_source) }
-            .to raise_error(RuntimeError, /Exposing's `Person` type does not allow `\(\.\.\)`/)
+            .to raise_error(CompilationError, /Exposing's `Person` type does not allow `\(\.\.\)`/)
         end
       end
     end

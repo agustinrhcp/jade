@@ -120,7 +120,7 @@ module Jade
 
       it 'raises a compilation error' do
         expect { test_compiler.require('chain_test', source) }
-          .to raise_error(RuntimeError, /needs at least one type parameter/)
+          .to raise_error(CompilationError, /needs at least one type parameter/)
       end
     end
 

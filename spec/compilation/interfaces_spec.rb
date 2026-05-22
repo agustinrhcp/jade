@@ -48,7 +48,7 @@ module Jade
 
       it 'fails, because functions cant be compared' do
         expect { test_compiler.require('interface_test', source) }
-          .to raise_error(RuntimeError, /Basics.Eq cannot be derived for .+ -> /)
+          .to raise_error(CompilationError, /Basics.Eq cannot be derived for .+ -> /)
       end
     end
 
@@ -128,7 +128,7 @@ module Jade
 
       it 'reports an orphan implementation error' do
         expect { test_compiler.require('interface_test', source) }
-          .to raise_error(RuntimeError, /only the owner of the interface or the type/)
+          .to raise_error(CompilationError, /only the owner of the interface or the type/)
       end
     end
 
@@ -155,7 +155,7 @@ module Jade
 
       it 'reports a type mismatch error' do
         expect { test_compiler.require('interface_test', source) }
-          .to raise_error(RuntimeError, /Implementation of Basics\.Eq\.\(==\)/)
+          .to raise_error(CompilationError, /Implementation of Basics\.Eq\.\(==\)/)
       end
     end
 
@@ -275,7 +275,7 @@ module Jade
 
         it 'reports a derivation failure rather than crashing' do
           expect { test_compiler.require('interface_test', source) }
-            .to raise_error(RuntimeError, /Basics.Eq cannot be derived for/)
+            .to raise_error(CompilationError, /Basics.Eq cannot be derived for/)
         end
       end
     end

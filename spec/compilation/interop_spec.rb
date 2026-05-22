@@ -187,7 +187,7 @@ module Jade
 
         it 'fails — Decodable cannot be derived and the user did not implement it' do
           expect { test_compiler.require('with_interop', with_interop_source) }
-            .to raise_error(RuntimeError, /Port `internal_today` cannot decode its ok arm \(`Date`\): no Decodable instance/)
+            .to raise_error(CompilationError, /Port `internal_today` cannot decode its ok arm \(`Date`\): no Decodable instance/)
         end
       end
 
@@ -240,7 +240,7 @@ module Jade
 
         it 'fails with NonTaskPort error' do
           expect { test_compiler.require('with_interop', with_interop_source) }
-            .to raise_error(RuntimeError, /Port `internal_today` must return a Task type/)
+            .to raise_error(CompilationError, /Port `internal_today` must return a Task type/)
         end
       end
 
@@ -260,7 +260,7 @@ module Jade
 
         it 'fails with NestedTaskPort error' do
           expect { test_compiler.require('with_interop', with_interop_source) }
-            .to raise_error(RuntimeError, /tasks must not return tasks/)
+            .to raise_error(CompilationError, /tasks must not return tasks/)
         end
       end
     end

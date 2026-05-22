@@ -188,7 +188,7 @@ module Jade
 
         it 'fails with a type mismatch on the record argument' do
           expect { test_compiler.require('m', source) }
-            .to raise_error(RuntimeError, /tax_amount/)
+            .to raise_error(CompilationError, /tax_amount/)
         end
       end
 
@@ -207,7 +207,7 @@ module Jade
 
         it 'fails with a type mismatch' do
           expect { test_compiler.require('m', source) }
-            .to raise_error(RuntimeError, /String|Int/)
+            .to raise_error(CompilationError, /String|Int/)
         end
       end
     end

@@ -41,7 +41,7 @@ module Jade
 
         it 'fails with type mismatch' do
           expect { test_compiler.require('pepe', pepe_source) }
-            .to raise_error(RuntimeError, /it returns { name : String, age : Int } but its signature says it should be { name : String, age : Float }/)
+            .to raise_error(CompilationError, /it returns { name : String, age : Int } but its signature says it should be { name : String, age : Float }/)
         end
       end
 
@@ -111,7 +111,7 @@ module Jade
 
           it 'fails with type mismatch' do
             expect { test_compiler.require('pepe', pepe_source) }
-              .to raise_error(RuntimeError, /it expects { a | ate : Int } but found { name : String, age : Int }>/)
+              .to raise_error(CompilationError, /it expects { a | ate : Int } but found { name : String, age : Int }>/)
           end
         end
       end
@@ -247,7 +247,7 @@ module Jade
 
           it 'fails with type mismatch' do
             expect { test_compiler.require('pepe', pepe_source) }
-              .to raise_error(RuntimeError, /Pattern is trying to match { name : String, id : Int } with { t11 | name : Int }/)
+              .to raise_error(CompilationError, /Pattern is trying to match { name : String, id : Int } with { t11 | name : Int }/)
           end
         end
 
@@ -265,7 +265,7 @@ module Jade
 
           it 'fails with type mismatch' do
             expect { test_compiler.require('pepe', pepe_source) }
-              .to raise_error(RuntimeError, /Pattern is trying to match { name : String, id : Int } with { t\d+ | name : Maybe(String) }/)
+              .to raise_error(CompilationError, /Pattern is trying to match { name : String, id : Int } with { t\d+ | name : Maybe(String) }/)
           end
         end
       end
@@ -484,7 +484,7 @@ module Jade
 
         it 'fails to compile' do
           expect { test_compiler.require('pepe', pepe_source) }
-            .to raise_error(RuntimeError, /Function call mismatch/)
+            .to raise_error(CompilationError, /Function call mismatch/)
         end
       end
 
@@ -510,7 +510,7 @@ module Jade
 
         it 'fails to compile' do
           expect { test_compiler.require('pepe', pepe_source) }
-            .to raise_error(RuntimeError, /Function call mismatch/)
+            .to raise_error(CompilationError, /Function call mismatch/)
         end
       end
 
@@ -604,7 +604,7 @@ module Jade
           JADE
 
           expect { test_compiler.require('forms_bad', source) }
-            .to raise_error(RuntimeError, /Address/)
+            .to raise_error(CompilationError, /Address/)
         end
       end
 
@@ -628,17 +628,17 @@ module Jade
 
         it 'rejects unknown fields with a pointed error' do
           expect { compile('Person(name: "Paul", age: 55, nickname: "Pablo")') }
-            .to raise_error(RuntimeError, /`Person` has no field `nickname` \(has: `name`, `age`\)/)
+            .to raise_error(CompilationError, /`Person` has no field `nickname` \(has: `name`, `age`\)/)
         end
 
         it 'rejects missing fields' do
           expect { compile('Person(name: "Paul")') }
-            .to raise_error(RuntimeError, /`Person` is missing field `age:`/)
+            .to raise_error(CompilationError, /`Person` is missing field `age:`/)
         end
 
         it 'rejects duplicate fields' do
           expect { compile('Person(name: "Paul", name: "Bob", age: 55)') }
-            .to raise_error(RuntimeError, /Field `name:` was given more than once/)
+            .to raise_error(CompilationError, /Field `name:` was given more than once/)
         end
 
         it 'rejects kwargs syntax on a regular function call' do
@@ -653,7 +653,7 @@ module Jade
               add(a: 1, b: 2)
           JADE
           expect { test_compiler.require('m_bad', source) }
-            .to raise_error(RuntimeError, /Keyword-argument syntax is only valid/)
+            .to raise_error(CompilationError, /Keyword-argument syntax is only valid/)
         end
       end
     end
