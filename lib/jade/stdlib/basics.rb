@@ -87,6 +87,12 @@ module Jade
       function('float_mul', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a * b }
       function('float_div', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a / b }
 
+      function(:to_float,  { n: 'Int'   }, 'Float') { |n| n.to_f }
+      function(:floor,     { n: 'Float' }, 'Int'  ) { |n| n.floor }
+      function(:ceiling,   { n: 'Float' }, 'Int'  ) { |n| n.ceil }
+      function(:round,     { n: 'Float' }, 'Int'  ) { |n| n.round }
+      function(:truncate,  { n: 'Float' }, 'Int'  ) { |n| n.truncate }
+
       function(
         'identity',
         { a: 'a' },

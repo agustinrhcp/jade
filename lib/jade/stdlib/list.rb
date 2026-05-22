@@ -6,6 +6,7 @@ module Jade
       extend Intrinsics
 
       import Maybe
+      import Tuple
 
       union :List, 'a'
 
@@ -97,7 +98,7 @@ module Jade
         body: Symbol::DerivedFunction.new(
           params: ['list'],
           body: [:call,
-            [:stdlib_fn, 'List._sort_with'],
+            [:stdlib_fn, 'List.sort_with'],
             [[:var, 'list'], [:impl_arg, 0, 'compare']],
           ],
         ),
@@ -111,16 +112,17 @@ module Jade
         body: Symbol::DerivedFunction.new(
           params: ['list', 'key'],
           body: [:call,
-            [:stdlib_fn, 'List._sort_by_with'],
+            [:stdlib_fn, 'List.sort_by_with'],
             [[:var, 'list'], [:var, 'key'], [:impl_arg, 0, 'compare']],
           ],
         ),
       )
 
       function(
-        '_sort_with',
+        'sort_with',
         { list: 'List(a)', cmp: 'a, a -> Ordering' },
         'List(a)',
+        private: true,
       ) do |list, cmp|
         list.sort do |x, y|
           case cmp.call(x, y)
@@ -132,9 +134,10 @@ module Jade
       end
 
       function(
-        '_sort_by_with',
+        'sort_by_with',
         { list: 'List(a)', key: 'a -> b', cmp: 'b, b -> Ordering' },
         'List(a)',
+        private: true,
       ) do |list, key, cmp|
         list
           .map { |x| [x, key.call(x)] }
@@ -146,6 +149,163 @@ module Jade
             end
           end
           .map(&:first)
+      end
+
+      function(
+        :"any?",
+        { list: 'List(a)', fn: 'a -> Bool' },
+        'Bool',
+      ) { |list, fn| list.any?(&fn) }
+
+      function(
+        :"all?",
+        { list: 'List(a)', fn: 'a -> Bool' },
+        'Bool',
+      ) { |list, fn| list.all?(&fn) }
+
+      function(
+        :find,
+        { list: 'List(a)', fn: 'a -> Bool' },
+        'Maybe(a)',
+      ) do |list, fn|
+        match = list.find(&fn)
+        match.nil? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[match]
+      end
+
+      function(
+        :filter_map,
+        { list: 'List(a)', fn: 'a -> Maybe(b)' },
+        'List(b)',
+      ) do |list, fn|
+        list.flat_map do |x|
+          case fn.call(x)
+          in Jade::Maybe::Just[v] then [v]
+          else []
+          end
+        end
+      end
+
+      function(
+        :take,
+        { list: 'List(a)', n: 'Int' },
+        'List(a)',
+      ) { |list, n| list.first([n, 0].max) }
+
+      function(
+        :drop,
+        { list: 'List(a)', n: 'Int' },
+        'List(a)',
+      ) { |list, n| list.drop([n, 0].max) }
+
+      function(
+        :partition,
+        { list: 'List(a)', fn: 'a -> Bool' },
+        'Tuple2(List(a), List(a))',
+      ) do |list, fn|
+        pass, rest = list.partition(&fn)
+        Jade::Tuple::Tuple2[pass, rest]
+      end
+
+      function(
+        :concat,
+        { lists: 'List(List(a))' },
+        'List(a)',
+      ) { it.flatten(1) }
+
+      function(
+        :zip,
+        { left: 'List(a)', right: 'List(b)' },
+        'List(Tuple2(a, b))',
+      ) do |left, right|
+        len = [left.length, right.length].min
+        left.first(len).zip(right.first(len)).map { |(x, y)| Jade::Tuple::Tuple2[x, y] }
+      end
+
+      function(
+        :unzip,
+        { list: 'List(Tuple2(a, b))' },
+        'Tuple2(List(a), List(b))',
+      ) { |list| Jade::Tuple::Tuple2[list.map(&:_1), list.map(&:_2)] }
+
+      function(
+        :"member?",
+        { list: 'List(a)', element: 'a' },
+        'Bool',
+        constraints: [['Basics.Eq', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['list', 'element'],
+          body: [:call,
+            [:stdlib_fn, 'List.member_with'],
+            [[:var, 'list'], [:var, 'element'], [:impl_arg, 0, '(==)']],
+          ],
+        ),
+      )
+
+      function(
+        'member_with',
+        { list: 'List(a)', element: 'a', eq: 'a, a -> Bool' },
+        'Bool',
+        private: true,
+      ) { |list, element, eq| list.any? { |x| eq.call(x, element) } }
+
+      function(
+        :maximum,
+        { list: 'List(a)' },
+        'Maybe(a)',
+        constraints: [['Basics.Comparable', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['list'],
+          body: [:call,
+            [:stdlib_fn, 'List.maximum_with'],
+            [[:var, 'list'], [:impl_arg, 0, 'compare']],
+          ],
+        ),
+      )
+
+      function(
+        :minimum,
+        { list: 'List(a)' },
+        'Maybe(a)',
+        constraints: [['Basics.Comparable', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['list'],
+          body: [:call,
+            [:stdlib_fn, 'List.minimum_with'],
+            [[:var, 'list'], [:impl_arg, 0, 'compare']],
+          ],
+        ),
+      )
+
+      function(
+        'maximum_with',
+        { list: 'List(a)', cmp: 'a, a -> Ordering' },
+        'Maybe(a)',
+        private: true,
+      ) do |list, cmp|
+        if list.empty?
+          Jade::Maybe::Nothing[]
+        else
+          best = list.reduce do |acc, x|
+            cmp.call(x, acc).is_a?(Jade::Basics::GT) ? x : acc
+          end
+          Jade::Maybe::Just[best]
+        end
+      end
+
+      function(
+        'minimum_with',
+        { list: 'List(a)', cmp: 'a, a -> Ordering' },
+        'Maybe(a)',
+        private: true,
+      ) do |list, cmp|
+        if list.empty?
+          Jade::Maybe::Nothing[]
+        else
+          best = list.reduce do |acc, x|
+            cmp.call(x, acc).is_a?(Jade::Basics::LT) ? x : acc
+          end
+          Jade::Maybe::Just[best]
+        end
       end
 
       implementation('Appendable', 'List', '(++)' => 'list_append')

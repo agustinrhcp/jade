@@ -179,4 +179,124 @@ module Jade
       expect(Escape.quote).to eql 'say "hi"'
     end
   end
+
+  describe 'phase-1 additions' do
+    include_context 'with test compiler'
+
+    let(:source) do
+      <<~JADE
+        module S exposing (
+          char_count,
+          ends?,
+          has?,
+          ltrim,
+          lwr,
+          mlines,
+          rep,
+          round_trip,
+          rtrim,
+          starts?,
+          trim_,
+          upr,
+          ws,
+        )
+
+        def trim_(s: String) -> String
+          String.trim(s)
+
+
+        def ltrim(s: String) -> String
+          String.trim_left(s)
+
+
+        def rtrim(s: String) -> String
+          String.trim_right(s)
+
+
+        def lwr(s: String) -> String
+          String.to_lower(s)
+
+
+        def upr(s: String) -> String
+          String.to_upper(s)
+
+
+        def has?(s: String, sub: String) -> Bool
+          String.contains?(s, sub)
+
+
+        def starts?(s: String, p: String) -> Bool
+          String.starts_with?(s, p)
+
+
+        def ends?(s: String, p: String) -> Bool
+          String.ends_with?(s, p)
+
+
+        def rep(s: String, t: String, r: String) -> String
+          String.replace(s, t, r)
+
+
+        def ws(s: String) -> List(String)
+          String.words(s)
+
+
+        def mlines(s: String) -> List(String)
+          String.lines(s)
+
+
+        def char_count(s: String) -> Int
+          s
+            |> String.to_list
+            |> List.length
+
+
+        def round_trip(s: String) -> String
+          s
+            |> String.to_list
+            |> String.from_list
+      JADE
+    end
+
+    before { test_compiler.require('s', source) }
+
+    it 'trims whitespace' do
+      expect(S.trim_('  hi  ')).to eql 'hi'
+      expect(S.ltrim('  hi  ')).to eql 'hi  '
+      expect(S.rtrim('  hi  ')).to eql '  hi'
+    end
+
+    it 'changes case' do
+      expect(S.lwr('AbC')).to eql 'abc'
+      expect(S.upr('AbC')).to eql 'ABC'
+    end
+
+    it 'contains / starts_with / ends_with' do
+      expect(S.has?('hello world', 'lo w')).to be true
+      expect(S.has?('hello world', 'zz')).to be false
+      expect(S.starts?('hello', 'hel')).to be true
+      expect(S.starts?('hello', 'lo')).to be false
+      expect(S.ends?('hello', 'llo')).to be true
+      expect(S.ends?('hello', 'he')).to be false
+    end
+
+    it 'replaces literal substrings (no regex)' do
+      expect(S.rep('a.b.c', '.', '-')).to eql 'a-b-c'
+      expect(S.rep('abc', 'x', 'y')).to eql 'abc'
+    end
+
+    it 'splits into words and lines' do
+      expect(S.ws("  one  two\tthree ")).to eql ['one', 'two', 'three']
+      expect(S.ws('')).to eql []
+      expect(S.mlines("a\nb\nc")).to eql ['a', 'b', 'c']
+      expect(S.mlines("a\nb\n")).to eql ['a', 'b', '']
+    end
+
+    it 'to_list / from_list — char count and string round-trip' do
+      expect(S.char_count('abc')).to eql 3
+      expect(S.char_count('')).to eql 0
+      expect(S.round_trip('hello')).to eql 'hello'
+      expect(S.round_trip('')).to eql ''
+    end
+  end
 end

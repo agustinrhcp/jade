@@ -132,5 +132,49 @@ module Jade
         expect(Cmp.max_float(2.5, 1.5)).to eql 2.5
       end
     end
+
+    describe 'numeric conversions' do
+      before { test_compiler.require('conv', source) }
+
+      let(:source) do
+        <<~JADE
+          module Conv exposing (as_float, ceil_, floor_, round_, trunc_)
+
+          def as_float(n: Int) -> Float
+            to_float(n)
+
+
+          def floor_(n: Float) -> Int
+            floor(n)
+
+
+          def ceil_(n: Float) -> Int
+            ceiling(n)
+
+
+          def round_(n: Float) -> Int
+            round(n)
+
+
+          def trunc_(n: Float) -> Int
+            truncate(n)
+        JADE
+      end
+
+      it 'lifts Int to Float' do
+        expect(Conv.as_float(3)).to eql 3.0
+      end
+
+      it 'floors, ceilings, rounds, and truncates' do
+        expect(Conv.floor_(1.7)).to eql 1
+        expect(Conv.floor_(-1.2)).to eql(-2)
+        expect(Conv.ceil_(1.2)).to eql 2
+        expect(Conv.ceil_(-1.7)).to eql(-1)
+        expect(Conv.round_(1.5)).to eql 2
+        expect(Conv.round_(1.4)).to eql 1
+        expect(Conv.trunc_(1.9)).to eql 1
+        expect(Conv.trunc_(-1.9)).to eql(-1)
+      end
+    end
   end
 end

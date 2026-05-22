@@ -1,9 +1,9 @@
 require 'set'
 require 'jade/stdlib/basics'
 require 'jade/stdlib/maybe'
+require 'jade/stdlib/tuple'
 require 'jade/stdlib/list'
 require 'jade/stdlib/char'
-require 'jade/stdlib/tuple'
 require 'jade/stdlib/string'
 require 'jade/stdlib/result'
 require 'jade/stdlib/task'
@@ -26,8 +26,8 @@ module Jade
     COMPILED = %w[Maybe Result Decode.Params Calendar Clock].freeze
     TOPLEVELS = (INTRINSICS + COMPILED).map { it.split('.', 2).first }.to_set.freeze
     STDLIBS = [
-      Stdlib::Basics, Stdlib::Maybe, Stdlib::List, Stdlib::Char,
-      Stdlib::Tuple, Stdlib::String, Stdlib::Result, Stdlib::Task,
+      Stdlib::Basics, Stdlib::Maybe, Stdlib::Tuple, Stdlib::List, Stdlib::Char,
+      Stdlib::String, Stdlib::Result, Stdlib::Task,
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
       Stdlib::Dict,
       Stdlib::Calendar, Stdlib::Clock,
