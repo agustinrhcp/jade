@@ -32,7 +32,7 @@ module Jade
 
 
         def empty_size -> Int
-          Dict.size(Dict.empty())
+          Dict.size(Dict.empty)
 
 
         def insert_size -> Int
@@ -121,7 +121,7 @@ module Jade
 
 
         def counts(words: List(String)) -> Dict(String, Int)
-          List.fold(words, Dict.empty(), (acc, word) -> { bump(acc, word) })
+          List.fold(words, Dict.empty, (acc, word) -> { bump(acc, word) })
 
 
         def bump(acc: Dict(String, Int), word: String) -> Dict(String, Int)

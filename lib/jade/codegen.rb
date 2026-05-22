@@ -103,14 +103,8 @@ module Jade
             .lookup(sym.to_ref)
             .then { PortDecoder.task_call(it, registry) }
 
-        in Symbol::StdlibFunction => fn if fn.constant?
-          "#{fn.codegen}.call()"
-
         in Symbol::StdlibFunction(codegen:)
           codegen
-
-        in Symbol::Function => fn if fn.constant?
-          "#{name}.call()"
 
         else
           name
@@ -161,14 +155,8 @@ module Jade
 
       in AST::QualifiedAccess(symbol:)
         case registry.lookup(symbol)
-        in Symbol::StdlibFunction => fn if fn.constant?
-          "#{fn.codegen}.call()"
-
         in Symbol::StdlibFunction(codegen:)
           codegen
-
-        in Symbol::Function => fn if fn.constant?
-          to_qualified(fn.module_name) + "::Internal.#{fn.name}.call()"
 
         in Symbol::Function => fn
           to_qualified(fn.module_name) + "::Internal.#{fn.name}"

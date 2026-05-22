@@ -10,6 +10,7 @@ require 'jade/frontend/symbol_resolution'
 require 'jade/frontend/type_checking'
 require 'jade/frontend/fixity_fixer'
 require 'jade/frontend/desugaring'
+require 'jade/frontend/desugaring/resolved'
 
 module Jade
   module Frontend
@@ -22,6 +23,7 @@ module Jade
         .then { ForwardDeclaration.declare_entry(it, registry) }
         .and_then { SymbolResolution.resolve_entry(it, registry.update_module(it)) }
         .and_then { SemanticAnalysis.analyze(it, registry.update_module(it)) }
+        .map { Desugaring.desugar_resolved_entry(it, registry.update_module(it)) }
         .and_then { TypeChecking.check(it, registry.update_module(it)) }
     end
 
@@ -47,11 +49,12 @@ module Jade
         .then do |fixed_ast, updated_entry|
           updated_registry = registry.update_module(updated_entry)
           SymbolResolution
-            .resolve(fixed_ast, updated_registry, updated_entry) 
+            .resolve(fixed_ast, updated_registry, updated_entry)
             .then do |enhanced_ast|
               SemanticAnalysis
                 .analyze_repl(enhanced_ast, updated_registry, scope)
                 .and_then do |scope|
+                  enhanced_ast = Desugaring.desugar_resolved(enhanced_ast, updated_registry)
                   TypeChecking.check_repl(enhanced_ast, updated_registry, env, var_gen)
                     .map { |type, new_env| [enhanced_ast, type, updated_registry, updated_entry, scope, new_env] }
                 end
@@ -71,6 +74,7 @@ module Jade
             .map { entry.with(ast: it) }
         end
         .and_then { |entry| SemanticAnalysis.analyze(entry, registry.update_module(entry)) }
+        .map { Desugaring.desugar_resolved_entry(it, registry.update_module(it)) }
         .map { [it, registry.update_module(it)] }
     end
 

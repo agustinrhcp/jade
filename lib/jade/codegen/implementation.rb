@@ -69,7 +69,10 @@ module Jade
           generate_node(fn, registry)
             .then { Pretty.block("def #{fn_name}", it) }
 
-        in AST::VariableReference
+        # Bare VariableReference, and the auto-invoke FunctionCall the
+        # desugar pass synthesises for zero-arg fn refs, both dispatch via
+        # impl_fn_ref — no method emitted here.
+        in AST::VariableReference | AST::FunctionCall
           nil
         end
       end

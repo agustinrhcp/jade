@@ -93,23 +93,7 @@ module Jade
 
           private
 
-          # `f` for `def f() -> T` has type `T` directly,
-          # so `f()` is a no-op and yields `T`. Skip the Function(args, ret)
-          # unification in that case to avoid spurious type errors.
           def unify_callee(state, callee_result, args_acc, node, outer)
-            case [args_acc.types, state.env.substitution.apply(callee_result.type)]
-            in [[], Type::Function => applied]
-              unify_as_function(state, callee_result, args_acc, node, outer)
-
-            in [[], applied]
-              [state, applied]
-
-            else
-              unify_as_function(state, callee_result, args_acc, node, outer)
-            end
-          end
-
-          def unify_as_function(state, callee_result, args_acc, node, outer)
             return_type = state.fresh
             fn_type = Type.function(args_acc.types, return_type)
 

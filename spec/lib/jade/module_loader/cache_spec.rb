@@ -47,7 +47,7 @@ module Jade
 
 
         def m -> Int
-          n()
+          n
       JADE
     end
 

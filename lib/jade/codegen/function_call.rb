@@ -213,6 +213,16 @@ module Jade
 
           Pretty.lambda("impl_arg", inner) + ".call(#{build_impl_arg(dep_dispatches)})"
 
+        # Impl-dispatch dicts hold evaluated values, not callables —
+        # `{ 'decoder' => <Decoder>, 'compare' => <Proc(a, b)> }`.
+        # `impl_arg[i]['decoder'].desc` works directly; we never `.call`
+        # it. So constant slots like `Decode.int` get invoked at synth
+        # time; only multi-arg slots keep their Proc shape.
+        #
+        # The desugar pass that normally auto-invokes zero-arg refs
+        # operates on AST. These dicts are built straight from
+        # `Symbol::Implementation.functions` at codegen, no AST in
+        # between, so the equivalent invoke happens here instead.
         in Symbol::StdlibFunction if fn.constant?
           "#{fn.codegen}.call()"
 

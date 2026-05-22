@@ -60,15 +60,9 @@ module Jade
       Function[args, return_type]
     end
 
-    # Destructures a fn type into [args, return_type], handling the
-    # nullary collapse: a `def f() -> T` has type `T` (not `() -> T`),
-    # because bare `f` in Jade source is auto-invoked. Use this anywhere
-    # you need a uniform view of "what does this fn take and return."
     def signature(fn_type)
-      case fn_type
-      in Function(args:, return_type:) then [args, return_type]
-      else [[], fn_type]
-      end
+      fn_type => Function(args:, return_type:)
+      [args, return_type]
     end
 
     def anonymous_record(fields, row_var)
@@ -110,10 +104,6 @@ module Jade
           .constructor(symbol.qualified_name)
           .then { [it.apply(union_vars), union_cs, union_map] }
 
-      in Symbol::Function if symbol.constant?
-        from_symbol_r(symbol.return_type, registry, var_gen, {})
-          .then { |(t, c, _)| [t, c, var_map] }
-
       in Symbol::Function
         args, arg_cs, local_map = symbol
           .params
@@ -126,10 +116,6 @@ module Jade
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
           .then { |(t, c, _)| [Type.function(args, t), c + arg_cs] }
           .then { it + [var_map] }
-
-      in Symbol::StdlibFunction if symbol.constant?
-        from_symbol_r(symbol.return_type, registry, var_gen, {})
-          .then { |(t, c, _)| [t, c, var_map] }
 
       in Symbol::StdlibFunction
         args, arg_cs, local_map = symbol
