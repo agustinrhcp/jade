@@ -118,6 +118,60 @@ module Jade
         'String'
       ) { |list, with| list.join(with) }
 
+      function(:trim,       { str: 'String' }, 'String') { it.strip }
+      function(:trim_left,  { str: 'String' }, 'String') { it.lstrip }
+      function(:trim_right, { str: 'String' }, 'String') { it.rstrip }
+      function(:to_lower,   { str: 'String' }, 'String') { it.downcase }
+      function(:to_upper,   { str: 'String' }, 'String') { it.upcase }
+
+      function(
+        :"contains?",
+        { str: 'String', sub: 'String' },
+        'Bool',
+      ) { |str, sub| str.include?(sub) }
+
+      function(
+        :"starts_with?",
+        { str: 'String', prefix: 'String' },
+        'Bool',
+      ) { |str, prefix| str.start_with?(prefix) }
+
+      function(
+        :"ends_with?",
+        { str: 'String', suffix: 'String' },
+        'Bool',
+      ) { |str, suffix| str.end_with?(suffix) }
+
+      function(
+        :replace,
+        { str: 'String', target: 'String', replacement: 'String' },
+        'String',
+      ) { |str, target, replacement| str.gsub(target, replacement) }
+
+      function(
+        :words,
+        { str: 'String' },
+        'List(String)',
+      ) { it.split(/\s+/).reject(&:empty?) }
+
+      function(
+        :lines,
+        { str: 'String' },
+        'List(String)',
+      ) { it.split("\n", -1) }
+
+      function(
+        :to_list,
+        { str: 'String' },
+        'List(Char)',
+      ) { it.chars }
+
+      function(
+        :from_list,
+        { chars: 'List(Char)' },
+        'String',
+      ) { it.join }
+
       default_importing('String')
 
       function(

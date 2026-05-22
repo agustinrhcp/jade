@@ -33,6 +33,11 @@ module Jade
         'Basics.int_eq'     => ->(a, b) { "(#{a} == #{b})" },
         'Basics.float_eq'   => ->(a, b) { "(#{a} == #{b})" },
         'Basics.bool_eq'    => ->(a, b) { "(#{a} == #{b})" },
+        'Basics.to_float'   => ->(n)    { "#{n}.to_f" },
+        'Basics.floor'      => ->(n)    { "#{n}.floor" },
+        'Basics.ceiling'    => ->(n)    { "#{n}.ceil" },
+        'Basics.round'      => ->(n)    { "#{n}.round" },
+        'Basics.truncate'   => ->(n)    { "#{n}.truncate" },
 
         'String.str_append' => ->(a, b)        { "(#{a} + #{b})" },
         'String.str_eq'     => ->(a, b)        { "(#{a} == #{b})" },
@@ -47,6 +52,19 @@ module Jade
         'String.concat'     => ->(xs)          { "#{xs}.join" },
         'String.join'       => ->(xs, with)    { "#{xs}.join(#{with})" },
         'String.map'        => ->(s, fn)       { "#{s}.chars.map(&#{fn}).join" },
+        'String.trim'       => ->(s)           { "#{s}.strip" },
+        'String.trim_left'  => ->(s)           { "#{s}.lstrip" },
+        'String.trim_right' => ->(s)           { "#{s}.rstrip" },
+        'String.to_lower'   => ->(s)           { "#{s}.downcase" },
+        'String.to_upper'   => ->(s)           { "#{s}.upcase" },
+        'String.contains?'  => ->(s, sub)      { "#{s}.include?(#{sub})" },
+        'String.starts_with?' => ->(s, p)      { "#{s}.start_with?(#{p})" },
+        'String.ends_with?' => ->(s, p)        { "#{s}.end_with?(#{p})" },
+        'String.replace'    => ->(s, t, r)     { "#{s}.gsub(#{t}, #{r})" },
+        'String.words'      => ->(s)           { "#{s}.split(/\\s+/).reject(&:empty?)" },
+        'String.lines'      => ->(s)           { "#{s}.split(\"\\n\", -1)" },
+        'String.to_list'    => ->(s)           { "#{s}.chars" },
+        'String.from_list'  => ->(xs)          { "#{xs}.join" },
 
         'List.singleton'    => ->(x)           { "[#{x}]" },
         'List.repeat'       => ->(x, n)        { "([#{x}] * #{n})" },
@@ -61,6 +79,11 @@ module Jade
         'List.fold'         => ->(xs, init, fn) { "#{xs}.reduce(#{init}, &#{fn})" },
         'List.filter'       => ->(xs, fn)      { "#{xs}.filter(&#{fn})" },
         'List.list_append'  => ->(a, b)        { "(#{a} + #{b})" },
+        'List.any?'         => ->(xs, fn)      { "#{xs}.any?(&#{fn})" },
+        'List.all?'         => ->(xs, fn)      { "#{xs}.all?(&#{fn})" },
+        'List.take'         => ->(xs, n)       { "#{xs}.first([#{n}, 0].max)" },
+        'List.drop'         => ->(xs, n)       { "#{xs}.drop([#{n}, 0].max)" },
+        'List.concat'       => ->(xs)          { "#{xs}.flatten(1)" },
 
         'Char.to_code'      => ->(c)           { "#{c}.ord" },
         'Char.digit?'       => ->(c)           { "#{c}.match?(/\\d/)" },
@@ -96,6 +119,8 @@ module Jade
         'List.fold'        => ->(xs, init, params, body)   { "#{xs}.reduce(#{init}) { |#{params}| #{body} }" },
         'List.and_then'    => ->(xs, params, body)         { "#{xs}.flat_map { |#{params}| #{body} }" },
         'List.indexed_map' => ->(xs, params, body)         { "#{xs}.each_with_index.map { |#{params}| #{body} }" },
+        'List.any?'        => ->(xs, params, body)         { "#{xs}.any? { |#{params}| #{body} }" },
+        'List.all?'        => ->(xs, params, body)         { "#{xs}.all? { |#{params}| #{body} }" },
         'String.map'       => ->(s, params, body)          { "#{s}.chars.map { |#{params}| #{body} }.join" },
       }.freeze
 
@@ -108,8 +133,16 @@ module Jade
         String.uncons
         String.to_int
         Char.from_code
-        List._sort_with
-        List._sort_by_with
+        List.sort_with
+        List.sort_by_with
+        List.find
+        List.filter_map
+        List.partition
+        List.zip
+        List.unzip
+        List.member_with
+        List.maximum_with
+        List.minimum_with
         Tuple.pair
         Decode.and_map
         Decode.and_then

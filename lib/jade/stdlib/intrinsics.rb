@@ -60,7 +60,7 @@ module Jade
         end
       end
 
-      def function(name, params, ret, constraints: [], body: nil, &block)
+      def function(name, params, ret, constraints: [], body: nil, private: false, &block)
         qualified_fn_name = "#{module_name}.#{name}"
 
         codegen = body || "Jade::Runtime.intr('#{qualified_fn_name}')"
@@ -74,7 +74,7 @@ module Jade
             constraints:,
           )
           .with(module_name:)
-          .then { store(it) }
+          .tap { store(it) unless private }
           .tap { Runtime.register(qualified_fn_name, &block) }
       end
 
