@@ -9,9 +9,18 @@ require 'jade/codegen'
 require 'jade/compiler'
 require 'jade/interop'
 require 'jade/stdlib'
+require 'jade/diagnostics'
+require 'jade/diagnostics/renderer'
 
 module Jade
-  class CompilationError < RuntimeError; end
+  class CompilationError < StandardError
+    attr_reader :diagnostics
+
+    def initialize(diagnostics)
+      @diagnostics = diagnostics
+      super(diagnostics.items.map(&:message).join(", "))
+    end
+  end
 
   extend self
 
@@ -22,7 +31,8 @@ module Jade
   def require(path)
     @compiler ||= Compiler.new
     @compiler.require(path)
-  rescue CompilationError
+  rescue CompilationError => e
+    $stderr.puts Diagnostics::Renderer.new.render_all(e.diagnostics)
     exit 1
   end
 end

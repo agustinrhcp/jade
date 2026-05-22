@@ -34,6 +34,24 @@ module Jade
         .to raise_error(CompilationError)
     end
 
+    it 'carries a structured Diagnostics::List on the raised error' do
+      ModuleLoader.load(src, 'broken.jd')
+    rescue CompilationError => e
+      expect(e.diagnostics).to be_a(Diagnostics::List)
+      expect(e.diagnostics.items).not_to be_empty
+      expect(e.diagnostics.items.first).to be_a(Diagnostics::Diagnostic)
+      expect(e.diagnostics.items.first).to be_error
+    end
+
+    it 'carries diagnostics for a parse error too' do
+      write('syntax_broken', "module SyntaxBroken exposing (x)\n\ndef x ->")
+
+      ModuleLoader.load(src, 'syntax_broken.jd')
+    rescue CompilationError => e
+      expect(e.diagnostics.items).not_to be_empty
+      expect(e.diagnostics.items.first).to be_a(Diagnostics::Diagnostic)
+    end
+
     it 'in tolerant mode returns a registry with the failed entry holding diagnostics' do
       registry = ModuleLoader.load(src, 'broken.jd', tolerant: true)
       entry    = registry.modules['Broken']

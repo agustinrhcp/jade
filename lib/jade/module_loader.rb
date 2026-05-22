@@ -12,7 +12,6 @@ require 'jade/module_loader/dependency_graph'
 require 'jade/module_loader/normalize'
 require 'jade/module_loader/topological_sort'
 require 'jade/diagnostics'
-require 'jade/diagnostics/renderer'
 
 require 'jade/stdlib'
 
@@ -89,12 +88,7 @@ module Jade
         .on_err do |errors|
           diagnostics = errors.reduce(Diagnostics::List.empty) { |list, err| list.add(err.to_diagnostic(registry)) }
 
-          if tolerant
-            Ok[entry.with(diagnostics:)]
-          else
-            $stderr.puts Diagnostics::Renderer.new.render_all(diagnostics)
-            raise CompilationError, diagnostics.items.map(&:message).join(", ")
-          end
+          tolerant ? Ok[entry.with(diagnostics:)] : raise(CompilationError.new(diagnostics))
         end => Ok(compiled)
 
       compiled
@@ -111,9 +105,7 @@ module Jade
           Diagnostics::List
             .empty
             .add(err.to_diagnostic(source: source))
-            .then { $stderr.puts Diagnostics::Renderer.new.render_all(it) }
-
-          raise CompilationError, err.message
+            .then { raise CompilationError.new(it) }
         end => Ok([raw_ast, comments])
 
       Frontend::CommentAttacher
