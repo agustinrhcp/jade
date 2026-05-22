@@ -64,7 +64,7 @@ module Jade
           ) -> Expr(a)
             sql = [table_name_or_alias, column_name]
               |> List.filter((part) -> { part
-              |> String.is_empty
+              |> String.empty?
               |> Basics.not })
               |> String.join(".")
 

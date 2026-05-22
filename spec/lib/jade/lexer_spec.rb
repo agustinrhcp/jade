@@ -226,7 +226,7 @@ module Jade
           module Test exposing (hello)
 
           def hello(str: String) -> Bool
-            String.is_empty(str)
+            String.empty?(str)
             end
         JADE
       end
@@ -239,15 +239,15 @@ module Jade
     context 'if then else' do
       let(:text) do
         <<~JADE
-          if String.is_empty("") then 1 else 2
+          if String.empty?("") then 1 else 2
           end
         JADE
       end
 
       it { is_expected.to have(14).item.and all(be_a(Token)) }
       its([0])  { is_expected.to be_token.of_type(:if).at(0...2) }
-      its([9])  { is_expected.to be_token.of_type(:then).at(23...27) }
-      its([11])  { is_expected.to be_token.of_type(:else).at(30...34) }
+      its([9])  { is_expected.to be_token.of_type(:then).at(21...25) }
+      its([11])  { is_expected.to be_token.of_type(:else).at(28...32) }
     end
 
     context 'case of' do

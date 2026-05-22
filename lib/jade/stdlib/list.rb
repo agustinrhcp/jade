@@ -28,7 +28,7 @@ module Jade
       ) { |begin_, end_| (begin_..end_).to_a }
 
       function(
-        :is_empty,
+        :"empty?",
         { list: 'List(a)' },
         'Bool',
       ) { |list| list.empty? }

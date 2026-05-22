@@ -678,7 +678,7 @@ module Jade
 
       let(:text) do
         <<~JADE
-          String.is_empty
+          String.empty?
         JADE
       end
 
@@ -689,7 +689,7 @@ module Jade
       describe 'a longer chain' do
         let(:text) do
           <<~JADE
-            String.Utils.is_empty
+            String.Utils.empty?
           JADE
         end
 
@@ -704,8 +704,8 @@ module Jade
 
       let(:text) do
         <<~JADE
-          def is_empty(str: String) -> String
-            String.is_empty(str)
+          def empty?(str: String) -> String
+            String.empty?(str)
         JADE
       end
 
@@ -732,7 +732,7 @@ module Jade
           module Test exposing (hello)
 
           def hello(str: String) -> Bool
-            String.is_empty(str)
+            String.empty?(str)
         JADE
       end
 
@@ -756,7 +756,7 @@ module Jade
             module Test exposing (..)
 
             def hello(str: String) -> Bool
-              String.is_empty(str)
+              String.empty?(str)
           JADE
         end
 
@@ -770,7 +770,7 @@ module Jade
 
       let(:text) do
         <<~JADE
-          if String.is_empty("") then 1 else 2
+          if String.empty?("") then 1 else 2
         JADE
       end
 

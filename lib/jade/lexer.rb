@@ -93,7 +93,7 @@ module Jade
         when scanner.scan(/\A#[^\n]*/)
           tokens << tok(:comment, scanner)
 
-        when scanner.scan(/\A[a-z][a-z0-9_]*|\A_[a-z0-9_]+/)
+        when scanner.scan(/\A[a-z][a-z0-9_]*\??|\A_[a-z0-9_]+\??/)
           type = KEYWORDS.include?(scanner.matched) ? scanner.matched.to_sym : :identifier
           tokens << tok(type, scanner)
 

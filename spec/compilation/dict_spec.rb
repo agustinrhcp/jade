@@ -49,7 +49,7 @@ module Jade
 
 
         def missing(key: String) -> Bool
-          Dict.singleton("a", 1) |> Dict.member(key)
+          Dict.singleton("a", 1) |> Dict.member?(key)
 
 
         def remove_key(key: String) -> List(String)

@@ -308,7 +308,7 @@ module Jade
       context 'if then else' do
         let(:text) do
           <<~JADE
-            if String.is_empty("") then 1 else 2
+            if String.empty?("") then 1 else 2
           JADE
         end
 
@@ -336,7 +336,7 @@ module Jade
         context 'when the branches have different types' do
           let(:text) do
             <<~JADE
-              if String.is_empty("") then 1 else "two"
+              if String.empty?("") then 1 else "two"
             JADE
           end
 

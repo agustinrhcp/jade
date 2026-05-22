@@ -14,13 +14,13 @@ module Jade
         end
 
         it { is_expected.to include('String') }
-        it { is_expected.to include('is_empty') }
+        it { is_expected.to include('empty?') }
       end
 
       describe 'its registered functions' do
-        describe 'is_empty' do
+        describe 'empty?' do
           it 'registers it and works' do
-            expect(Runtime.intr("String.is_empty").call("")).to be true
+            expect(Runtime.intr("String.empty?").call("")).to be true
           end
         end
 

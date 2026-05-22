@@ -171,7 +171,7 @@ module Jade
           def days_in_month(y: Int, m: Month) -> Int
             case m
             of Jan -> 31
-            of Feb -> if is_leap(y) then 29 else 28
+            of Feb -> if leap?(y) then 29 else 28
             of Mar -> 31
             of Apr -> 30
             of May -> 31
@@ -184,7 +184,7 @@ module Jade
             of Dec -> 31
 
 
-          def is_leap(y: Int) -> Bool
+          def leap?(y: Int) -> Bool
             (mod(y, 4) == 0) && ((mod(y, 100) != 0) || (mod(y, 400) == 0))
 
 
@@ -211,7 +211,7 @@ module Jade
             of 12 -> 334
             of _ -> 0)
 
-            if mi > 2 && is_leap(y) then base + 1 else base
+            if mi > 2 && leap?(y) then base + 1 else base
 
 
           def to_rata_die(d: Date) -> Int
