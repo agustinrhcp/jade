@@ -76,39 +76,6 @@ This should fail, Int has no vars
 Interop must return a Task
 
 
-### Formatter: inline lambda in nested call gets broken across lines
-
-A single-expression lambda passed as a nested call argument gets reflowed
-onto multiple lines, even when the whole expression would fit:
-
-```jade
-String.join(List.map(xs, (w) -> { w.sql }), " AND ")
-```
-
-becomes
-
-```jade
-String.join(List.map(xs, (w) -> {
-  w.sql
-}), " AND ")
-```
-
-Triggered when the lambda is in any nested call (not just `List.map`).
-Repro:
-
-```bash
-cat <<'EOF' | bin/jade-fmt
-module Foo exposing (bar)
-
-def bar(xs: List(Expr)) -> String
-  String.join(List.map(xs, (w) -> { w.sql }), " AND ")
-EOF
-```
-
-`jade-fmt --check` returns 0 on the broken output, so the formatter is
-self-consistent — the rendering rule is just wrong for this shape.
-
-
 ### Formatter: trailing `end` after single-expression def
 
 After the "drop end" syntax change, the formatter still emits a trailing
