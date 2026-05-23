@@ -948,7 +948,7 @@ module Jade
         describe 'its message' do
           subject { super().first.message }
 
-          it { is_expected.to eql "The item at 2 does not match the previous items in the list, expected Int but found String" }
+          it { is_expected.to eql "The 2nd item does not match the previous items in the list, expected Int but found String" }
         end
       end
     end
