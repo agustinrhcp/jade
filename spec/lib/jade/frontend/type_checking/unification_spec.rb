@@ -60,6 +60,20 @@ module Jade
 
         it { is_expected.to be_error }
       end
+
+      context 'unifying flex against a type application containing a rigid var' do
+        let(:rigid_vars) { [Type.var('c')] }
+        let(:type1) { Type.parse('t1') }
+        let(:type2) { Type.parse('List(c)') }
+
+        it { is_expected.to be_ok }
+
+        describe 'the substitution' do
+          subject { super() => Ok(substitution); substitution }
+
+          its(:mappings) { is_expected.to include('t1' => Type.parse('List(c)')) }
+        end
+      end
     end
 
     describe 'unifying variable with anything else' do

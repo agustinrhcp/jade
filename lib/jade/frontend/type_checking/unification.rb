@@ -47,7 +47,17 @@ module Jade
           in [Type::Var, _]
             return Ok[Substitution::EMPTY] if type1 == type2
 
-            if (ctx.rigid?(type1) || ctx.rigid?(type2)) && type1 != type2
+            if ctx.rigid?(type1)
+              if type2.is_a?(Type::Var) && !ctx.rigid?(type2)
+                return Err[UnificationError.new(type2, type1)] if occurs_in?(type2, type1)
+
+                return Ok[Substitution::EMPTY.bind(type2.id, type1)]
+              end
+
+              return Err[UnificationError.new(type1, type2)]
+            end
+
+            if type2.is_a?(Type::Var) && ctx.rigid?(type2)
               return Err[UnificationError.new(type1, type2)]
             end
 
