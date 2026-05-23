@@ -23,6 +23,20 @@ module Jade
       expect(Pepe.str_to_int('1')).to eql 1
       expect(Pepe.str_to_int('pepe')).to be_nil
     end
+
+    it 'parses zero-padded decimal strings (not octal)' do
+      expect(Pepe.str_to_int('09')).to eql 9
+      expect(Pepe.str_to_int('08')).to eql 8
+      expect(Pepe.str_to_int('007')).to eql 7
+      expect(Pepe.str_to_int('0')).to eql 0
+      expect(Pepe.str_to_int('-05')).to eql(-5)
+    end
+
+    it 'rejects non-decimal numeric forms' do
+      expect(Pepe.str_to_int('0x10')).to be_nil
+      expect(Pepe.str_to_int('1.5')).to be_nil
+      expect(Pepe.str_to_int('')).to be_nil
+    end
   end
 
   describe 'uncons / cons / from_char / map' do

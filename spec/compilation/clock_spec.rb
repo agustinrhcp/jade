@@ -264,6 +264,11 @@ module Jade
         expect(Use::Internal.since_epoch_ms.call(result._1)).to eql 1_700_000_000_123
       end
 
+      it 'parses zero-padded hour/minute/second fields' do
+        result = Use::Internal.parse_iso.call('2026-05-22T09:08:07Z')
+        expect(result).to be_ok
+      end
+
       it 'returns Err for an invalid timestamp' do
         expect(Use::Internal.parse_iso.call('not-a-time')).to be_err
       end

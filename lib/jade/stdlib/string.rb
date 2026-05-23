@@ -87,7 +87,7 @@ module Jade
         'Maybe(Int)'
       ) do |str|
         begin
-          Integer(str)
+          Integer(str, 10)
             .then { Jade::Maybe::Just[it] }
         rescue
           Jade::Maybe::Nothing[]
