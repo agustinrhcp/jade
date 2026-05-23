@@ -47,8 +47,8 @@ module Jade
 
       def dispatch_value(entry, registry)
         case entry
-        in Type::Constraint(interface:, type: Type::Var)
-          Codegen.dict_env[[interface, canonical_var_id(entry.type)]]
+        in Type::Constraint(interface:, type: Type::Var(id:))
+          Codegen.dict_env[[interface, id]]
 
         in Symbol::Implementation
           Pretty.hash(generate_impl_dispatch(entry, registry))
@@ -170,8 +170,8 @@ module Jade
         in Symbol::Implementation
           generate_impl_dispatch(entry, registry)
 
-        in Type::Constraint(interface:, type: Type::Var)
-          Codegen.dict_env[[interface, canonical_var_id(entry.type)]] ||
+        in Type::Constraint(interface:, type: Type::Var(id:))
+          Codegen.dict_env[[interface, id]] ||
             fail("no dict in scope for #{interface}")
         end
       end
@@ -181,20 +181,13 @@ module Jade
       # in the current dict_env (e.g. an anonymous lambda's body).
       def dispatch_lookup(entry, fn_name, registry, &fallback)
         case entry
-        in Type::Constraint(interface:, type: Type::Var)
+        in Type::Constraint(interface:, type: Type::Var(id:))
           Codegen
-            .dict_env[[interface, canonical_var_id(entry.type)]]
+            .dict_env[[interface, id]]
             &.then { "#{it}[#{fn_name.inspect}]" } || fallback.call
 
         in Symbol::Implementation
           generate_impl_dispatch(entry, registry)[fn_name]
-        end
-      end
-
-      def canonical_var_id(var)
-        case Codegen.dict_substitution.apply(var)
-        in Type::Var(id:) then id
-        else var.id
         end
       end
 
