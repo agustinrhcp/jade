@@ -9,7 +9,7 @@ module Jade
           end
 
           def message
-            "The item at #{@actual_index} does not match the previous items in the list, " +
+            "The #{ordinal(@actual_index)} item does not match the previous items in the list, " +
               "expected #{@expected} but found #{@actual}"
           end
         end

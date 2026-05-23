@@ -12,13 +12,13 @@ module Jade
 
           case symbol
           in nil
-            Error::ConstructorNotFound
-              .new(
+            tuple_arity_overflow(name, current_entry, node.range)
+              .then { it || Error::ConstructorNotFound.new(
                 current_entry.name,
                 node.range,
                 name:,
                 exposed_type_module: exposed_type_origin(name, current_entry, registry),
-              )
+              ) }
               .then { Result[node, [it]] }
 
           in symbol
@@ -34,6 +34,16 @@ module Jade
           if Stdlib.private_constructor?(name)
             registry.lookup(Symbol::ValueRef.new(*name.split('.')))
           end
+        end
+
+        def tuple_arity_overflow(name, current_entry, span)
+          klass = ForwardDeclaration::Error::TupleArityOverflow
+
+          name
+            .match(/^Tuple\.Tuple(?<arity>\d+)$/)
+            &.then { it[:arity].to_i }
+            &.then { it > klass::MAX_ARITY ? it : nil }
+            &.then { klass.new(current_entry.name, span, arity: it) }
         end
 
         def exposed_type_origin(name, current_entry, registry)

@@ -48,4 +48,48 @@ module Jade
       expect(Pepe.pattern_matching(3, "3")).to eql 0
     end
   end
+
+  describe 'tuple arity cap' do
+    include_context 'with test compiler'
+
+    around { |ex| ENV['JADE_SKIP_FORMAT_CHECK'] = '1'; ex.run; ENV.delete('JADE_SKIP_FORMAT_CHECK') }
+
+    it 'rejects value tuples larger than 4' do
+      expect {
+        test_compiler.require('BigVal', <<~JADE)
+          module BigVal exposing (big)
+
+
+          def big -> Int
+            case (1, 2, 3, 4, 5)
+            of _ -> 0
+        JADE
+      }.to raise_error(CompilationError, /Tuple of 5 items is too big — tuples cap at 4/)
+    end
+
+    it 'rejects tuple patterns larger than 4' do
+      expect {
+        test_compiler.require('BigPat', <<~JADE)
+          module BigPat exposing (big)
+
+
+          def big(t: (Int, Int, Int, Int)) -> Int
+            case t
+            of (a, _, _, _, _) -> a
+        JADE
+      }.to raise_error(CompilationError, /Tuple of 5 items is too big/)
+    end
+
+    it 'rejects tuple types larger than 4' do
+      expect {
+        test_compiler.require('BigType', <<~JADE)
+          module BigType exposing (big)
+
+
+          def big(t: (Int, Int, Int, Int, Int)) -> Int
+            99
+        JADE
+      }.to raise_error(CompilationError, /Tuple of 5 items is too big/)
+    end
+  end
 end

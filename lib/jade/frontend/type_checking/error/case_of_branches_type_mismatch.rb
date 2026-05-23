@@ -10,7 +10,7 @@ module Jade
 
           def message
             "First branch of this case statement is #{@expected} " +
-              "but #{@actual_index}nd branch is #{@actual}"
+              "but #{ordinal(@actual_index)} branch is #{@actual}"
           end
         end
       end

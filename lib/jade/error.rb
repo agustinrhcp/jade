@@ -32,5 +32,16 @@ module Jade
         annotations: notes,
       )
     end
+
+    private
+
+    def ordinal(n)
+      if (11..13).cover?(n % 100)
+        'th'
+      else
+        %w[th st nd rd th th th th th th][n % 10]
+      end
+        .then { "#{n}#{it}" }
+    end
   end
 end

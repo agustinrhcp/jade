@@ -137,7 +137,7 @@ module Jade
         in AST::Pattern::Tuple(patterns:)
           AST::ConstructorReference[
             "Tuple.Tuple#{patterns.size}",
-            nil,
+            node.range,
           ]
             .then do
               AST::Pattern::Constructor.new(

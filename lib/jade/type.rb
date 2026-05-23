@@ -6,7 +6,6 @@ require 'jade/type/application'
 require 'jade/type/partial_application'
 require 'jade/type/constructor'
 require 'jade/type/function'
-require 'jade/type/unit'
 require 'jade/type/var'
 
 module Jade
@@ -20,10 +19,6 @@ module Jade
 
     def var(id, name = nil)
       Var[id, name]
-    end
-
-    def unit
-      Unit[]
     end
 
     def int

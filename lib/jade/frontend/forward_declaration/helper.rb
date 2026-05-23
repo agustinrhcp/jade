@@ -41,6 +41,9 @@ module Jade
               .then { Results.sequence(it) }
               .and_then { |resolved_params| figure_out_type(entry, return_type).map { Symbol.function_type(resolved_params, it) } }
 
+          in AST::TypeTuple(items:) if items.length > Error::TupleArityOverflow::MAX_ARITY
+            Err[Error::TupleArityOverflow.new(entry&.name, node.range, arity: items.length)]
+
           in AST::TypeTuple(items:)
             type_name = Stdlib::Tuple.constructor_by_arity(items.length)
 
