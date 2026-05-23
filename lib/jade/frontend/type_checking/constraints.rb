@@ -45,7 +45,10 @@ module Jade
 
         # An origin's dictionaries can be touched by multiple inference frames:
         # the call's own callee constraints attach here, and outer frames
-        # also attach when args bubble up concretely.
+        # also attach when args bubble up concretely. Var-typed markers' ids
+        # may chain further as inference proceeds; the finalize-time
+        # canonicalize pass walks the AST and rewrites them to their final
+        # form so codegen can read marker.type.id directly.
         def attach_dictionary(constraint, impl)
           constraint => Type::Constraint(
             origin: { dictionaries: dicts },

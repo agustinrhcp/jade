@@ -1,3 +1,4 @@
+require 'jade/frontend/type_checking/canonicalize'
 require 'jade/frontend/type_checking/constraints'
 require 'jade/frontend/type_checking/definition'
 require 'jade/frontend/type_checking/env'
@@ -26,6 +27,7 @@ module Jade
           .then { Generalizer.generalize(it.first.env) }
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
           .then { finalize(*it, registry) }
+          .map { Canonicalize.run(entry.ast, it) }
           .map { entry.with(env: it) }
           .and_then { PortResolution.resolve(it, registry) }
       end

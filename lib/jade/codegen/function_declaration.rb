@@ -35,14 +35,8 @@ module Jade
         param_names = params.map { generate_node(it, registry) }
         dict_params = var_cs.each_index.map { dict_synthetic_name(it) }
 
-        body_code = registry
-          .get(symbol.module_name)
-          .env
-          .substitution
-          .then do |subs|
-            build_dict_env(var_cs)
-              .then { Codegen.with_dict_env(it, subs) { generate_node(body, registry) } }
-          end
+        body_code = build_dict_env(var_cs)
+          .then { Codegen.with_dict_env(it) { generate_node(body, registry) } }
 
         target = var_cs.empty? ? name : fn_impl_synthetic_name(name)
 

@@ -44,10 +44,9 @@ module Jade
       def emit_impl_decoder(impl, interop_fn, dictionaries, registry)
         synthetic_env = build_synthetic_dict_env(impl, interop_fn, dictionaries, registry)
 
-        Codegen
-          .with_dict_env(synthetic_env, Frontend::TypeChecking::Substitution::EMPTY) {
-            FunctionCall.generate_impl_dispatch(impl, registry).fetch('decoder')
-          }
+        Codegen.with_dict_env(synthetic_env) {
+          FunctionCall.generate_impl_dispatch(impl, registry).fetch('decoder')
+        }
       end
 
       # Maps [iface, port_var_id] → ruby expression for the call-site dict.
