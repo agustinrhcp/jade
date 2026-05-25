@@ -477,8 +477,9 @@ module Jade
             is_expected.to include("class ::__Test__::Pepe\n  def ==(other_pepe)\n    pepe = self\n    true\n  end\nend")
           end
 
-          it 'emits register_impl alongside the method' do
-            is_expected.to include('Jade::Runtime.register_impl("Basics.Eq"')
+          it 'does not emit register_impl or a synthetic __impl_* def' do
+            is_expected.not_to include('Jade::Runtime.register_impl')
+            is_expected.not_to include('__impl_Eq_Pepe')
           end
         end
 
@@ -498,8 +499,9 @@ module Jade
             is_expected.to include("class ::__Test__::Person\n  def ==(other)\n    one = self\n    (one.id == other.id)\n  end\nend")
           end
 
-          it 'emits register_impl alongside the method' do
-            is_expected.to include('Jade::Runtime.register_impl("Basics.Eq"')
+          it 'does not emit register_impl or a synthetic __impl_* def' do
+            is_expected.not_to include('Jade::Runtime.register_impl')
+            is_expected.not_to include('__impl_Eq_Person')
           end
         end
 
@@ -518,12 +520,12 @@ module Jade
             is_expected.to include("class ::__Test__::Pepe\n  def ==(other)\n    ::__Test__::Internal.eq_pepe.call(self, other)\n  end\nend")
           end
 
-          it 'emits register_impl alongside the method' do
-            is_expected.to include('Jade::Runtime.register_impl("Basics.Eq"')
+          it 'does not emit register_impl' do
+            is_expected.not_to include('Jade::Runtime.register_impl')
           end
         end
 
-        context 'with a complex first-param pattern' do
+        context 'with destructured params' do
           let(:text) do
             <<~JADE
               type Pepe = Pepe(Int)
@@ -532,9 +534,9 @@ module Jade
             JADE
           end
 
-          it 'falls back to register_impl without emitting an invalid def' do
-            is_expected.not_to match(/def ==\(.*\)\n\s+__Test__::Pepe\(/)
-            is_expected.to include('Jade::Runtime.register_impl("Basics.Eq"')
+          it 'rewrites the whole signature to a case-on-args block' do
+            is_expected.to include("def ==(__a1__)")
+            is_expected.to include("case [self, __a1__]\n    in [__Test__::Pepe(x), __Test__::Pepe(y)] then")
           end
         end
       end

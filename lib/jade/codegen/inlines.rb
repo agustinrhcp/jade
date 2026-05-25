@@ -6,14 +6,7 @@ module Jade
       # Ruby's native ordering on these types matches LT/EQ/GT semantics, so
       # the derived comparison ops can collapse to plain operators.
       RUBY_NATIVE_COMPARES = %w[Basics.int_compare Basics.float_compare String.str_compare].to_set.freeze
-      RUBY_NATIVE_EQS = %w[Basics.int_eq Basics.float_eq Basics.bool_eq String.str_eq].to_set.freeze
-
-      DERIVED_COMPARISONS = {
-        'Basics.(<)'  => ->(a, b) { "(#{a} < #{b})" },
-        'Basics.(>)'  => ->(a, b) { "(#{a} > #{b})" },
-        'Basics.(<=)' => ->(a, b) { "(#{a} <= #{b})" },
-        'Basics.(>=)' => ->(a, b) { "(#{a} >= #{b})" },
-      }.freeze
+      RUBY_NATIVE_EQS      = %w[Basics.int_eq Basics.float_eq Basics.bool_eq String.str_eq].to_set.freeze
 
       INLINES = {
         'Basics.identity'   => ->(a)    { a },
@@ -214,37 +207,6 @@ module Jade
 
       def block_for(qualified_name)
         BLOCK_INLINES[qualified_name]
-      end
-
-      def comparison_for(qualified_name, dictionaries, registry)
-        template = DERIVED_COMPARISONS[qualified_name]
-        return nil unless template
-        return nil unless dictionaries&.first.is_a?(Symbol::Implementation)
-
-        dictionaries.first.functions['compare'].then do |entry|
-          next nil unless entry.is_a?(Symbol::ValueRef)
-
-          fn = registry.lookup(entry)
-          next nil unless fn.is_a?(Symbol::StdlibFunction)
-          next nil unless RUBY_NATIVE_COMPARES.include?("#{fn.module_name}.#{fn.name}")
-
-          template
-        end
-      end
-
-      def neq_for(qualified_name, dictionaries, registry)
-        return nil unless qualified_name == 'Basics.(!=)'
-        return nil unless dictionaries&.first.is_a?(Symbol::Implementation)
-
-        dictionaries.first.functions['(==)'].then do |entry|
-          next nil unless entry.is_a?(Symbol::ValueRef)
-
-          fn = registry.lookup(entry)
-          next nil unless fn.is_a?(Symbol::StdlibFunction)
-          next nil unless RUBY_NATIVE_EQS.include?("#{fn.module_name}.#{fn.name}")
-
-          ->(a, b) { "(#{a} != #{b})" }
-        end
       end
 
       def derived_for(qualified_name, dictionaries, registry)
