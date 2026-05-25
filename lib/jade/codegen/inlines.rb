@@ -47,6 +47,8 @@ module Jade
         'String.cons'       => ->(head, tail)  { "(#{head} + #{tail})" },
         'String.from_char'  => ->(c)           { c },
         'String.from_int'   => ->(n)           { "#{n}.to_s" },
+        'String.to_int'     => ->(s)           { "(Jade::Maybe::Just[Integer(#{s}, 10)] rescue Jade::Maybe::Nothing[])" },
+        'String.uncons'     => ->(s)           { "#{s}.then { |s| s.empty? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[Jade::Tuple::Tuple2[s[0], s[1..]]] }" },
         'String.repeat'     => ->(s, n)        { "(#{s} * #{n})" },
         'String.split'      => ->(s, by)       { "#{s}.split(#{by})" },
         'String.concat'     => ->(xs)          { "#{xs}.join" },
@@ -66,6 +68,10 @@ module Jade
         'String.to_list'    => ->(s)           { "#{s}.chars" },
         'String.from_list'  => ->(xs)          { "#{xs}.join" },
 
+        'List.head'         => ->(xs)          { "#{xs}.then { |xs| xs.empty? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[xs.first] }" },
+        'List.find'         => ->(xs, fn)      { "#{xs}.find(&#{fn}).then { |m| m.nil? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[m] }" },
+        'List.partition'    => ->(xs, fn)      { "Jade::Tuple::Tuple2[*#{xs}.partition(&#{fn})]" },
+        'List.unzip'        => ->(xs)          { "#{xs}.then { |xs| Jade::Tuple::Tuple2[xs.map(&:_1), xs.map(&:_2)] }" },
         'List.singleton'    => ->(x)           { "[#{x}]" },
         'List.repeat'       => ->(x, n)        { "([#{x}] * #{n})" },
         'List.range'        => ->(lo, hi)      { "(#{lo}..#{hi}).to_a" },
@@ -86,6 +92,7 @@ module Jade
         'List.concat'       => ->(xs)          { "#{xs}.flatten(1)" },
 
         'Char.to_code'      => ->(c)           { "#{c}.ord" },
+        'Char.from_code'    => ->(code)        { "(Jade::Maybe::Just[#{code}.chr] rescue Jade::Maybe::Nothing[])" },
         'Char.digit?'       => ->(c)           { "#{c}.match?(/\\d/)" },
         'Char.alpha?'       => ->(c)           { "#{c}.match?(/[a-zA-Z]/)" },
         'Char.alpha_numeric?' => ->(c)         { "#{c}.match?(/[a-zA-Z0-9]/)" },
@@ -93,11 +100,13 @@ module Jade
         'Char.lower?'       => ->(c)           { "#{c}.match?(/[a-z]/)" },
         'Char.char_eq'      => ->(a, b)        { "(#{a} == #{b})" },
 
+        'Tuple.pair'        => ->(a, b)        { "Jade::Tuple::Tuple2[#{a}, #{b}]" },
         'Tuple.first'       => ->(t)           { "#{t}._1" },
         'Tuple.second'      => ->(t)           { "#{t}._2" },
 
         'Dict.empty'      => ->()           { "Jade::Dict::Dict[{}]" },
         'Dict.singleton'  => ->(k, v)       { "Jade::Dict::Dict[{ #{k} => #{v} }]" },
+        'Dict.get'        => ->(d, k)       { "#{d}.hash.then { |h| #{k}.then { |k| h.key?(k) ? Jade::Maybe::Just[h[k]] : Jade::Maybe::Nothing[] } }" },
         'Dict.empty?'     => ->(d)          { "#{d}.hash.empty?" },
         'Dict.size'       => ->(d)          { "#{d}.hash.size" },
         'Dict.member?'    => ->(d, k)       { "#{d}.hash.key?(#{k})" },
@@ -121,6 +130,8 @@ module Jade
         'List.indexed_map' => ->(xs, params, body)         { "#{xs}.each_with_index.map { |#{params}| #{body} }" },
         'List.any?'        => ->(xs, params, body)         { "#{xs}.any? { |#{params}| #{body} }" },
         'List.all?'        => ->(xs, params, body)         { "#{xs}.all? { |#{params}| #{body} }" },
+        'List.find'        => ->(xs, params, body)         { "#{xs}.find { |#{params}| #{body} }.then { |m| m.nil? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[m] }" },
+        'List.partition'   => ->(xs, params, body)         { "Jade::Tuple::Tuple2[*#{xs}.partition { |#{params}| #{body} }]" },
         'String.map'       => ->(s, params, body)          { "#{s}.chars.map { |#{params}| #{body} }.join" },
       }.freeze
 
@@ -129,21 +140,13 @@ module Jade
         Basics.int_compare
         Basics.float_compare
         String.str_compare
-        List.head
-        String.uncons
-        String.to_int
-        Char.from_code
         List.sort_with
         List.sort_by_with
-        List.find
         List.filter_map
-        List.partition
         List.zip
-        List.unzip
         List.member_with
         List.maximum_with
         List.minimum_with
-        Tuple.pair
         Decode.and_map
         Decode.and_then
         Decode.bool
@@ -242,6 +245,48 @@ module Jade
 
           ->(a, b) { "(#{a} != #{b})" }
         end
+      end
+
+      def derived_for(qualified_name, dictionaries, registry)
+        return nil unless dictionaries&.first in Symbol::Implementation => impl
+
+        case qualified_name
+        in 'List.sort' if native_compare?(impl, registry)
+          ->(xs) { "#{xs}.sort" }
+
+        in 'List.sort_by' if native_compare?(impl, registry)
+          ->(xs, key) { "#{xs}.sort_by(&#{key})" }
+
+        in 'List.maximum' if native_compare?(impl, registry)
+          ->(xs) { "#{xs}.max.then { |m| m.nil? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[m] }" }
+
+        in 'List.minimum' if native_compare?(impl, registry)
+          ->(xs) { "#{xs}.min.then { |m| m.nil? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[m] }" }
+
+        in 'List.member?' if native_eq?(impl, registry)
+          ->(xs, e) { "#{xs}.include?(#{e})" }
+
+        else
+          nil
+        end
+      end
+
+      def native_compare?(impl, registry)
+        native_impl_fn?(impl, 'compare', RUBY_NATIVE_COMPARES, registry)
+      end
+
+      def native_eq?(impl, registry)
+        native_impl_fn?(impl, '(==)', RUBY_NATIVE_EQS, registry)
+      end
+
+      def native_impl_fn?(impl, fn_name, native_set, registry)
+        entry = impl.functions[fn_name]
+        return false unless entry.is_a?(Symbol::ValueRef)
+
+        fn = registry.lookup(entry)
+        return false unless fn.is_a?(Symbol::StdlibFunction)
+
+        native_set.include?("#{fn.module_name}.#{fn.name}")
       end
     end
   end

@@ -10,6 +10,9 @@ module Jade
         variant_sym = keyed_variant_constructor(callee, registry)
         return generate_keyed_variant_call(variant_sym, args, registry) if variant_sym
 
+        try_operator_call(callee, args, registry)
+          .then { return it if it }
+
         Inline.try_for(callee, args, dictionaries, registry)
           .then { return it if it }
 
@@ -17,6 +20,25 @@ module Jade
           .reject(&:empty?)
           .join(', ')
           .then { "#{generate_callee(callee, args, registry, dictionaries)}.call(#{it})" }
+      end
+
+      def try_operator_call(callee, args, registry)
+        MethodNames
+          .call_operator(callee_qname(callee, registry))
+          &.then { |op| emit_operator(op, args, registry) }
+      end
+
+      def callee_qname(callee, registry)
+        case resolve_callee_symbol(callee, registry)
+        in Symbol::InterfaceFunction | Symbol::StdlibFunction => sym then sym.qualified_name
+        else nil
+        end
+      end
+
+      def emit_operator(op, args, registry)
+        args
+          .map { generate_node(it, registry) }
+          .then { |(a, b)| op == 'compare' ? "#{a}.compare(#{b})" : "(#{a} #{op} #{b})" }
       end
 
       def generate_impl_dispatch(impl, registry)
