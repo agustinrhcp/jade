@@ -341,14 +341,14 @@ module Jade
     def generate_for_partition(node, registry, depth)
       case node
       in AST::Implementation
-        registrations = Implementation.generate_registrations_for(node, registry)
-        defs          = Implementation.generate_defs(node, registry)
-
         if MethodNames.operator_interface?(node.symbol.interface.qualified_name)
-          methods = Implementation.generate_operator_impl(node, registry)
-          [[registrations, methods].reject(&:empty?).join(Pretty.newline(2)), defs, nil]
+          [Implementation.generate_operator_impl(node, registry), nil, nil]
         else
-          [registrations, defs, nil]
+          [
+            Implementation.generate_registrations_for(node, registry),
+            Implementation.generate_defs(node, registry),
+            nil,
+          ]
         end
 
       in AST::FunctionDeclaration

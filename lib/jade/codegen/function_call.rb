@@ -42,6 +42,10 @@ module Jade
       end
 
       def generate_impl_dispatch(impl, registry)
+        if MethodNames.operator_interface?(impl.interface.qualified_name)
+          return operator_dispatch(impl)
+        end
+
         impl
           .deps
           .map { |dep| dispatch_for_dep(dep, registry) }
@@ -50,6 +54,18 @@ module Jade
               generate_impl_fn(fn, dep_dispatches, impl.functions, registry)
             end
           end
+      end
+
+      def operator_dispatch(impl)
+        MethodNames::INTERFACE_METHODS
+          .fetch(impl.interface.qualified_name)
+          .to_h { |jade_fn, ruby_method| [jade_fn, operator_lambda(ruby_method)] }
+      end
+
+      def operator_lambda(ruby_method)
+        ruby_method == 'compare' \
+          ? "->(a, b) { a.compare(b) }"
+          : "->(a, b) { (a #{ruby_method} b) }"
       end
 
       # An Implementation's dep is one of two dictionary-slot shapes: a

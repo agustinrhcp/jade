@@ -7,19 +7,13 @@ module Jade
       def generate(node, registry)
         node => AST::Implementation(symbol:)
 
-        [
-          generate_defs(node, registry),
-          generate_registrations_for(node, registry),
-          operator_impl_or_empty(node, registry, symbol.interface.qualified_name),
-        ]
-          .reject(&:empty?)
-          .join(Pretty.newline(2))
-      end
-
-      def operator_impl_or_empty(node, registry, iface_qname)
-        MethodNames.operator_interface?(iface_qname) \
-          ? generate_operator_impl(node, registry)
-          : ""
+        if MethodNames.operator_interface?(symbol.interface.qualified_name)
+          generate_operator_impl(node, registry)
+        else
+          [generate_defs(node, registry), generate_registrations_for(node, registry)]
+            .reject(&:empty?)
+            .join(Pretty.newline(2))
+        end
       end
 
       def generate_operator_impl(node, registry)
@@ -54,15 +48,11 @@ module Jade
       def operator_method_body(ruby_method, fn, impl_sym, fn_name, registry)
         case fn
         in AST::Lambda(params:, body:)
-          return nil unless params.all? { simple_lambda_param?(it) }
-
-          params
-            .map { generate_node(it, registry) }
-            .then { |(first, *rest)|
-              ["#{first} = self", generate_node(body, registry)]
-                .join(Pretty.newline)
-                .then { Pretty.block("def #{ruby_method}(#{rest.join(', ')})", it) }
-            }
+          if params.all? { simple_lambda_param?(it) }
+            emit_simple_method(ruby_method, params, body, registry)
+          else
+            emit_destructuring_method(ruby_method, params, body, registry)
+          end
 
 
         # Operator-interface fns are all binary, so `(other)` is the signature.
@@ -75,10 +65,30 @@ module Jade
         end
       end
 
-      # `(Pepe(id), other) -> { ... }` would rebind a destructured pattern to
-      # `self` — invalid Ruby. Fall back to the dispatch-table path.
       def simple_lambda_param?(pattern)
         pattern in AST::Pattern::Binding | AST::Pattern::Wildcard
+      end
+
+      def emit_simple_method(ruby_method, params, body, registry)
+        first, *rest = params.map { generate_node(it, registry) }
+        body_code    = generate_node(body, registry)
+        inner        = first == '_' ? body_code : "#{first} = self\n#{body_code}"
+
+        Pretty.block("def #{ruby_method}(#{rest.join(', ')})", inner)
+      end
+
+      # Any destructured pattern (`Pepe(x)`) in a param position would be
+      # invalid Ruby. Rewrite the whole signature to a case-on-args block
+      # that destructures inside the method body instead.
+      def emit_destructuring_method(ruby_method, params, body, registry)
+        rest_names = (1...params.size).map { |i| "__a#{i}__" }
+        args       = ['self', *rest_names].join(', ')
+        patterns   = params.map { generate_node(it, registry) }.join(', ')
+
+        generate_node(body, registry)
+          .then { Pretty.indent(it) }
+          .then { "case [#{args}]\nin [#{patterns}] then\n#{it}\nend" }
+          .then { Pretty.block("def #{ruby_method}(#{rest_names.join(', ')})", it) }
       end
 
       COMPARABLE_DERIVATIONS = [
