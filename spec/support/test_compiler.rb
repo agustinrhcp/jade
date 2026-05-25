@@ -33,12 +33,15 @@ module Jade
       FormatCheck.assert!(source, label: module_name) unless ENV['JADE_SKIP_FORMAT_CHECK']
       write(module_name, source)
 
-      key = [module_name, @written.sort].freeze
-      return if @@compiled.include?(key)
+      key    = [module_name, @written.sort].freeze
+      rb_file = File.join(@build_root, "#{module_name}.rb")
+
+      if @@compiled.include?(key) && File.exist?(rb_file)
+        return
+      end
 
       silence_warnings { compiler.require(module_name) }
 
-      rb_file = File.join(@build_root, "#{module_name}.rb")
       raise "Expected #{rb_file} to exist" unless File.exist?(rb_file)
 
       @@compiled[key] = true
@@ -46,6 +49,10 @@ module Jade
 
     def cleanup
       FileUtils.rm_rf(@project_root)
+    end
+
+    def generated_source(module_name)
+      File.read(File.join(@build_root, "#{module_name}.rb"))
     end
 
     private
