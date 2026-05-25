@@ -94,11 +94,10 @@ module Jade
               check(fn, registry, state, expected).first
 
             in AST::VariableReference
-              fn_qname = "#{state.env.entry_name}.#{fn.name}"
-              state.env.lookup(fn_qname) => { type: declared_type }
+              ref_state, ref_result = check(fn, registry, state, expected)
 
-              state.unify(
-                declared_type,
+              ref_state.unify(
+                ref_result.type,
                 expected.type,
                 &mismatch_error(
                   state.env.entry_name,

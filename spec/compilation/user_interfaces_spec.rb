@@ -197,5 +197,54 @@ module Jade
         expect(QualImpl.tag_today).to eql 2026
       end
     end
+
+    context 'bare reference whose type does not match the interface slot' do
+      let(:source) do
+        <<~JADE
+          module BareMismatch exposing (run)
+
+          interface Show(a) with
+            show : a -> String
+
+
+          implements Show(Int) with
+            show: identity
+
+
+          def run(n: Int) -> String
+            show(n)
+        JADE
+      end
+
+      it 'reports an implementation type mismatch' do
+        expect { test_compiler.require('bare_mismatch', source) }
+          .to raise_error(CompilationError, /Implementation of .*Show\.show/)
+      end
+    end
+
+    context 'bare reference to a function from another module' do
+      let(:source) do
+        <<~JADE
+          module BareCrossModule exposing (run)
+
+          interface Echo(a) with
+            echo : a -> a
+
+
+          implements Echo(String) with
+            echo: identity
+
+
+          def run(s: String) -> String
+            echo(s)
+        JADE
+      end
+
+      it 'resolves identity to Basics.identity via lexical scope' do
+        test_compiler.require('bare_cross_module', source)
+
+        expect(BareCrossModule.run('hi')).to eql 'hi'
+      end
+    end
   end
 end
