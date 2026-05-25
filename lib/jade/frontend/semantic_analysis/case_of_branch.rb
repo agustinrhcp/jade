@@ -8,11 +8,11 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::CaseOfBranch(pattern:, body:)
 
-          analyze_node(pattern, registry, scope, entry) => { scope: ptn_scope, errors: ptn_errors }
-          analyze_node(body, registry, ptn_scope, entry) => { errors: body_errors }
-
-          # TODO: Analyze unreachability
-          Result[scope, ptn_errors + body_errors]
+          ptn_r = analyze_node(pattern, registry, scope, entry)
+          Result.combine(node, scope:,
+            pattern: ptn_r,
+            body: analyze_node(body, registry, ptn_r.scope, entry),
+          )
         end
       end
     end

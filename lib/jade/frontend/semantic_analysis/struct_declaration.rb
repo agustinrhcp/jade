@@ -6,12 +6,14 @@ module Jade
         extend Helper
 
         def analyze(node, registry, scope, entry)
-          node => AST::StructDeclaration(symbol:)
+          node => AST::StructDeclaration(name:)
 
-          unbound_var_errors = validate_no_unbound_vars(symbol, registry, entry)
-          annotation_errors = validate_type_symbol(symbol, registry, entry)
+          symbol_ref = entry.lookup_type(name).to_ref
 
-          Result[scope, unbound_var_errors + annotation_errors]
+          Result
+            .init(node.with(symbol: symbol_ref), scope)
+            .add_errors(validate_no_unbound_vars(symbol_ref, registry, entry))
+            .add_errors(validate_type_symbol(symbol_ref, registry, entry))
         end
 
         private
@@ -29,7 +31,7 @@ module Jade
 
           [
             Error::UnboundTypeVariable.new(
-              entry&.name,
+              entry.name,
               missing_vars.size == 1 ? missing_vars.first.decl_span : actual_symbol.decl_span,
               type_name: symbol.name,
               variables: missing_vars.map(&:name),

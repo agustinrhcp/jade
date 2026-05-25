@@ -8,7 +8,7 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::Tuple(items:)
 
-          analyze_many(items, registry, scope, entry)
+          analyze_in_sequence(items, registry, scope, entry)
             .with(scope:)
         end
       end

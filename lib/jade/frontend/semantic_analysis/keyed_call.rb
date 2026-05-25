@@ -1,9 +1,6 @@
-require 'jade/frontend/symbol_resolution/keyed_call/validation'
-
 module Jade
   module Frontend
-    module SymbolResolution
-      # The only resolver that swaps the node for a different AST shape.
+    module SemanticAnalysis
       # Lowers `Foo(name: x, age: y)` into a positional FunctionCall:
       #   - struct constructor: FunctionCall(Foo, [x, y]) ordered by struct fields
       #   - keyed variant:      FunctionCall(V, [{a: x, b: y}]) anon record arg
@@ -11,23 +8,28 @@ module Jade
         extend self
         extend Helper
 
-        def resolve(node, registry, current_entry)
+        def analyze(node, registry, scope, entry)
           node => AST::KeyedCall(callee:, fields:)
 
-          resolve_node(callee, registry, current_entry) => {
-            node: callee_resolved, errors: callee_errors,
-          }
+          callee_r = analyze_node(callee, registry, scope, entry)
+          callee_resolved = callee_r.node
           constructor = constructor_symbol(callee_resolved, registry)
           parent = constructor && registry.lookup(constructor.parent)
 
-          fields
-            .map { resolve_node(it, registry, current_entry) }
-            .then { Result.sequence(it) }
-            .add_errors(callee_errors)
-            .add_errors(Validation.errors(
-              node, fields, parent, constructor, registry, current_entry,
-            ))
-            .map { lower(node, callee_resolved, it, parent, constructor, registry) }
+          fields_r = analyze_in_parallel(fields, registry, scope, entry)
+          fields_resolved = fields_r.node
+
+          validation_errors = Validation.errors(
+            node, fields_resolved, parent, constructor, registry, entry,
+          )
+
+          lowered = lower(node, callee_resolved, fields_resolved, parent, constructor, registry)
+
+          Result[
+            lowered,
+            callee_r.errors + fields_r.errors + validation_errors,
+            scope,
+          ]
         end
 
         private

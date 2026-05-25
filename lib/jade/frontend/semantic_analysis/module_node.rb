@@ -8,13 +8,18 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::Module(body:, exposing:)
 
-          case exposing
+          exposing_errors = case exposing
           in AST::ExposeNone
-            Result[scope, [Error::MissingExposingClause.new(entry&.name, 0..0)]]
+            [Error::MissingExposingClause.new(entry.name, 0..0)]
           else
-            Result[scope, []]
+            []
           end
-            .then { analyze_node(body, registry, it.scope, entry).add_errors(it.errors) }
+
+          Result
+            .combine(node, scope:,
+              body: analyze_node(body, registry, scope, entry),
+            )
+            .add_errors(exposing_errors)
         end
       end
     end

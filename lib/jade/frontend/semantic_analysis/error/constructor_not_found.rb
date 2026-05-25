@@ -1,6 +1,6 @@
 module Jade
   module Frontend
-    module SymbolResolution
+    module SemanticAnalysis
       module Error
         class ConstructorNotFound < Jade::Error
           def initialize(entry, span, name:, exposed_type_module: nil)

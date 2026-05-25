@@ -29,10 +29,10 @@ module Jade
       Jade::Frontend::SemanticAnalysis::Error::TypeParamRequired
       Jade::Frontend::SemanticAnalysis::Error::UnboundTypeVariable
       Jade::Frontend::SemanticAnalysis::Error::UnknownImplementationFunction
-      Jade::Frontend::SymbolResolution::Error::DuplicateField
-      Jade::Frontend::SymbolResolution::Error::KwargsOnNonConstructor
-      Jade::Frontend::SymbolResolution::Error::MissingField
-      Jade::Frontend::SymbolResolution::Error::UnknownField
+      Jade::Frontend::SemanticAnalysis::Error::DuplicateField
+      Jade::Frontend::SemanticAnalysis::Error::KwargsOnNonConstructor
+      Jade::Frontend::SemanticAnalysis::Error::MissingField
+      Jade::Frontend::SemanticAnalysis::Error::UnknownField
       Jade::Frontend::TypeChecking::Error::DerivationFailed
       Jade::Frontend::TypeChecking::Error::MissingImplementation
       Jade::Frontend::TypeChecking::Error::UnresolvedConstraint

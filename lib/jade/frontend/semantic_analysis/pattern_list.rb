@@ -8,21 +8,24 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::Pattern::List(patterns:, rest:)
 
-          result = analyze_many(patterns, registry, scope, entry)
+          patterns_r = analyze_in_sequence(patterns, registry, scope, entry)
 
-          case rest
-          in AST::Pattern::Binding(name:)
-            bind(result.scope, Symbol.var(name, node.range), entry)
-              .add_errors(result.errors)
+          rest_scope, rest_errors =
+            case rest
+            in AST::Pattern::Binding(name:)
+              bind_r = bind(patterns_r.scope, Symbol.var(name, node.range), entry)
+              [bind_r.scope, bind_r.errors]
 
-          in AST::Pattern::Wildcard | nil
-            result
+            in AST::Pattern::Wildcard | nil
+              [patterns_r.scope, []]
 
-          else
-            Error::InvalidListRestPattern
-              .new(entry.name, rest.range)
-              .then { result.add_errors([it]) }
-          end
+            else
+              [patterns_r.scope, [Error::InvalidListRestPattern.new(entry.name, rest.range)]]
+            end
+
+          Result
+            .combine(node, scope: rest_scope, patterns: patterns_r)
+            .add_errors(rest_errors)
         end
       end
     end

@@ -11,14 +11,21 @@ module Jade
           duplicate_errors = expressions
             .select { it.is_a?(AST::FunctionDeclaration) }
             .group_by(&:name)
-            .flat_map do |name, decls|
-              decls.drop(1).map do |decl|
-                Error::DuplicateFunctionDeclaration.new(entry.name, decl.range, name)
-              end
+            .filter_map do |name, decls|
+              next nil if decls.size < 2
+
+              first, *rest = decls
+              Error::DuplicateFunctionDeclaration.new(
+                entry.name,
+                first.range,
+                name,
+                duplicate_spans: rest.map(&:range),
+              )
             end
 
-          analyze_many(expressions, registry, scope, entry)
+          analyze_in_sequence(expressions, registry, scope, entry)
             .add_errors(duplicate_errors)
+            .map_node { node.with(expressions: it) }
         end
       end
     end

@@ -8,10 +8,10 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::CaseOf(expression:, branches:)
 
-          analyze_node(expression, registry, scope, entry) => { errors: exp_errors }
-
-          analyze_many(branches, registry, scope, entry)
-            .add_errors(exp_errors)
+          Result.combine(node, scope:,
+            expression: analyze_node(expression, registry, scope, entry),
+            branches: analyze_in_parallel(branches, registry, scope, entry),
+          )
         end
       end
     end

@@ -3,8 +3,9 @@ module Jade
     module Desugaring
       extend self
 
-      # Runs after SymbolResolution. Add new post-symbol rewrites as
-      # `in` branches below; `map_children` handles transparent recursion.
+      # Runs after SemanticAnalysis (which resolves names and attaches
+      # symbols). Add new post-resolution rewrites as `in` branches
+      # below; `map_children` handles transparent recursion.
       def desugar_resolved_entry(entry, registry)
         desugar_resolved(entry.ast, registry)
           .then { entry.with(ast: it) }

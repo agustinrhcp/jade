@@ -1,11 +1,14 @@
 module Jade
   module Frontend
-    module SymbolResolution
+    module SemanticAnalysis
+      # Lowers a MemberAccess chain into either a QualifiedAccess
+      # (when the prefix resolves to an imported module alias) or a
+      # RecordAccess (when it's field access on a value expression).
       module MemberAccess
         extend self
         extend Helper
 
-        def resolve(node, registry, current_entry)
+        def analyze(node, registry, scope, entry)
           node => AST::MemberAccess(target:)
 
           qualified_names = collect_qualified_names(node)
@@ -13,20 +16,19 @@ module Jade
           if qualified_names
             *path, access = qualified_names
 
-            case resolve_qualified_access(path, node, registry, current_entry)
+            case resolve_qualified_access(path, node, registry, entry)
             in Ok(symbol)
-              AST::QualifiedAccess[*node.deconstruct]
-                .with(symbol:)
-                .then { Result[it, []] }
+              new_node = AST::QualifiedAccess[*node.deconstruct].with(symbol:)
+              Result[new_node, [], scope]
 
             in Err(error)
-              Result[node, [error]]
+              Result[node, [error], scope]
             end
 
           else
-            resolve_node(target, registry, current_entry)
-              .map { node.with(target: it) }
-              .map { AST::RecordAccess[*it.deconstruct] }
+            target_r = analyze_node(target, registry, scope, entry)
+            new_node = AST::RecordAccess[*node.with(target: target_r.node).deconstruct]
+            Result[new_node, target_r.errors, scope]
           end
         end
 
@@ -46,25 +48,23 @@ module Jade
           end
         end
 
-        def resolve_qualified_access(path, node, registry, current_entry)
+        def resolve_qualified_access(path, node, registry, entry)
           node => AST::MemberAccess(name:, target:)
 
           module_name = path.join('.')
-          import = current_entry
+          import = entry
             .imports
             .find { it.alias == module_name }
 
           if import.nil?
             Error::ModuleNotFound
-              .new(current_entry.name, node.target.range, name: import)
+              .new(entry.name, node.target.range, name: import)
 
           else
-            # TODO: exposes is a list, not a hash. I could however
-            #   make it into a hash
             case registry.get(import.module_name).exposed_value(name.name)
             in nil
               Error::ValueNotExposed
-                .new(current_entry.name, name.range, module_name:, name: name.name)
+                .new(entry.name, name.range, module_name:, name: name.name)
 
             in symbol
               return Ok[symbol]
@@ -73,7 +73,7 @@ module Jade
             .then do
               Error::VariableNotFound
                 .new(
-                  current_entry.name,
+                  entry.name,
                   node.range,
                   name: [module_name, name.name].join('.'),
                   causes: [it],

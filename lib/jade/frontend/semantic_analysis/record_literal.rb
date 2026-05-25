@@ -8,7 +8,11 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::RecordLiteral(fields:)
 
-          analyze_many(fields, registry, scope, entry)
+          Result
+            .combine(node, scope:,
+              fields: analyze_in_parallel(fields, registry, scope, entry),
+            )
+            .map_node { it.with(symbol: Symbol.anonymous_record(fields.map(&:key))) }
             .add_errors(analyze_duplicate_fields(fields, entry))
         end
       end

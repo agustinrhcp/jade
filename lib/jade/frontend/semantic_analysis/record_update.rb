@@ -8,11 +8,12 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::RecordUpdate(base:, fields:)
 
-          analyze_node(base, registry, scope, entry) => { errors: base_errors }
-
-          analyze_many(fields, registry, scope, entry)
+          Result
+            .combine(node, scope:,
+              base: analyze_node(base, registry, scope, entry),
+              fields: analyze_in_parallel(fields, registry, scope, entry),
+            )
             .add_errors(analyze_duplicate_fields(fields, entry))
-            .add_errors(base_errors)
         end
       end
     end

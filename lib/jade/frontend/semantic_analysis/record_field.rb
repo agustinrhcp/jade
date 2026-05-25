@@ -9,6 +9,7 @@ module Jade
           node => AST::RecordField(value:)
 
           analyze_node(value, registry, scope, entry)
+            .then { Result.combine(node, scope:, value: it) }
         end
       end
     end

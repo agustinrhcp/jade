@@ -6,17 +6,17 @@ module Jade
         extend Helper
 
         def analyze(node, registry, scope, entry)
-          node => AST::InterfaceDeclaration(symbol:)
+          node => AST::InterfaceDeclaration(name:)
 
-          interface = registry.lookup(symbol)
+          symbol_ref = entry.lookup_type(name).to_ref
+          interface = registry.lookup(symbol_ref)
 
-          (
-            interface
-              .functions
-              .flat_map { validate_type_symbol(it, registry, entry) } +
-                validate_type_param_used(interface, registry, entry)
-          )
-            .then { Result[scope, it] }
+          Result
+            .init(node.with(symbol: symbol_ref), scope)
+            .add_errors(
+              interface.functions.flat_map { validate_type_symbol(it, registry, entry) } +
+                validate_type_param_used(interface, registry, entry),
+            )
         end
 
         private
@@ -32,7 +32,7 @@ module Jade
 
           [
             Error::UnusedInterfaceTypeParam.new(
-              entry&.name,
+              entry.name,
               interface.decl_span,
               interface: interface.name,
               type_param: interface.type_param.name,

@@ -8,11 +8,11 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::IfThenElse(condition:, if_branch:, else_branch:)
 
-          analyze_node(condition, registry, scope, entry) => { errors: condition_errors }
-          analyze_node(if_branch, registry, scope, entry) => { errors: if_errors }
-          analyze_node(else_branch, registry, scope, entry) => { errors: else_errors }
-
-          Result[scope, condition_errors + if_errors + else_errors]
+          Result.combine(node, scope:,
+            condition: analyze_node(condition, registry, scope, entry),
+            if_branch: analyze_node(if_branch, registry, scope, entry),
+            else_branch: analyze_node(else_branch, registry, scope, entry),
+          )
         end
       end
     end

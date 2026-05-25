@@ -6,7 +6,7 @@ require 'jade/stdlib'
 require 'jade/frontend/comment_attacher'
 require 'jade/frontend/forward_declaration'
 require 'jade/frontend/semantic_analysis'
-require 'jade/frontend/symbol_resolution'
+require 'jade/frontend/usage_analysis'
 require 'jade/frontend/type_checking'
 require 'jade/frontend/fixity_fixer'
 require 'jade/frontend/desugaring'
@@ -21,9 +21,9 @@ module Jade
         .then { FixityFixer.fix_entry(it) }
         .then { Desugaring.desugar_entry(it) }
         .then { ForwardDeclaration.declare_entry(it, registry) }
-        .and_then { SymbolResolution.resolve_entry(it, registry.update_module(it)) }
         .and_then { SemanticAnalysis.analyze(it, registry.update_module(it)) }
         .map { Desugaring.desugar_resolved_entry(it, registry.update_module(it)) }
+        .map { UsageAnalysis.analyze(it, registry.update_module(it)) }
         .and_then { TypeChecking.check(it, registry.update_module(it)) }
     end
 
@@ -48,16 +48,12 @@ module Jade
         .then { |entry| FixityFixer.fix(ast).then { [it, entry] } }
         .then do |fixed_ast, updated_entry|
           updated_registry = registry.update_module(updated_entry)
-          SymbolResolution
-            .resolve(fixed_ast, updated_registry, updated_entry)
-            .then do |enhanced_ast|
-              SemanticAnalysis
-                .analyze_repl(enhanced_ast, updated_registry, scope)
-                .and_then do |scope|
-                  enhanced_ast = Desugaring.desugar_resolved(enhanced_ast, updated_registry)
-                  TypeChecking.check_repl(enhanced_ast, updated_registry, env, var_gen)
-                    .map { |type, new_env| [enhanced_ast, type, updated_registry, updated_entry, scope, new_env] }
-                end
+          SemanticAnalysis
+            .analyze_repl(fixed_ast, updated_registry, scope, updated_entry)
+            .and_then do |(enhanced_ast, new_scope)|
+              enhanced_ast = Desugaring.desugar_resolved(enhanced_ast, updated_registry)
+              TypeChecking.check_repl(enhanced_ast, updated_registry, env, var_gen)
+                .map { |type, new_env| [enhanced_ast, type, updated_registry, updated_entry, new_scope, new_env] }
             end
         end
     end
@@ -69,12 +65,10 @@ module Jade
         .then { Desugaring.desugar(it) }
         .then { |enh_ast| ForwardDeclaration.declare(enh_ast, registry, current_entry).map { [enh_ast, it] } }
         .and_then do |enh_ast, entry|
-          SymbolResolution
-            .resolve(enh_ast, registry.update_module(entry), entry)
-            .map { entry.with(ast: it) }
+          SemanticAnalysis.analyze(entry.with(ast: enh_ast), registry.update_module(entry))
         end
-        .and_then { |entry| SemanticAnalysis.analyze(entry, registry.update_module(entry)) }
         .map { Desugaring.desugar_resolved_entry(it, registry.update_module(it)) }
+        .map { UsageAnalysis.analyze(it, registry.update_module(it)) }
         .map { [it, registry.update_module(it)] }
     end
 

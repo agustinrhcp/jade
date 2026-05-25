@@ -6,23 +6,24 @@ module Jade
         extend Helper
 
         def analyze(node, registry, scope, entry)
-          node => AST::FunctionDeclaration(name:, body:, params:, return_type:, symbol:)
+          node => AST::FunctionDeclaration(name:, body:, params:, return_type:)
 
-          annotation_errors = validate_type_symbol(symbol, registry, entry) +
-            validate_predicate_return(name, return_type, symbol, registry, entry) +
-            params.flat_map { validate_no_predicate_param(it, entry) }
+          symbol_ref = entry.lookup_value(name).to_ref
 
-          params
-            .reduce(Result[scope, []]) do |acc, param|
-              bind(acc.scope, Symbol.param(param.name, param.range), entry)
-                .add_errors(acc.errors)
-            end
-            .then do
-              analyze_node(body, registry, it.scope, entry)
-                .add_errors(it.errors)
-            end
-              .add_errors(annotation_errors)
-              .with(scope:)
+          params_r = params.reduce(Result[nil, [], scope]) do |acc, param|
+            bind(acc.scope, Symbol.var(param.name, param.range), entry)
+              .add_errors(acc.errors)
+          end
+
+          Result
+            .combine(node, scope:,
+              body: analyze_node(body, registry, params_r.scope, entry),
+            )
+            .map_node { it.with(symbol: symbol_ref) }
+            .add_errors(params_r.errors)
+            .add_errors(validate_type_symbol(symbol_ref, registry, entry))
+            .add_errors(validate_predicate_return(name, return_type, symbol_ref, registry, entry))
+            .add_errors(params.flat_map { validate_no_predicate_param(it, entry) })
         end
 
         # `?` suffix is reserved for function declaration names. Forbid

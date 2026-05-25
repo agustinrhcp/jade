@@ -543,9 +543,9 @@ module Jade
         describe 'the error' do
           subject { super().first }
 
-          it { is_expected.to be_a Frontend::SymbolResolution::Error::VariableNotFound }
+          it { is_expected.to be_a Frontend::SemanticAnalysis::Error::VariableNotFound }
           its(:message) { is_expected.to include 'I cannot find a `String.not_exposed_thingy` variable' }
-          its(:causes) { is_expected.to have(1).item.and all(be_a(Frontend::SymbolResolution::Error::ValueNotExposed)) }
+          its(:causes) { is_expected.to have(1).item.and all(be_a(Frontend::SemanticAnalysis::Error::ValueNotExposed)) }
         end
       end
 
@@ -563,9 +563,9 @@ module Jade
         describe 'the error' do
           subject { super().first }
 
-          it { is_expected.to be_a Frontend::SymbolResolution::Error::VariableNotFound }
+          it { is_expected.to be_a Frontend::SemanticAnalysis::Error::VariableNotFound }
           its(:message) { is_expected.to include 'I cannot find a `Strong.empty?` variable' }
-          its(:causes) { is_expected.to have(1).item.and all(be_a(Frontend::SymbolResolution::Error::ModuleNotFound)) }
+          its(:causes) { is_expected.to have(1).item.and all(be_a(Frontend::SemanticAnalysis::Error::ModuleNotFound)) }
         end
       end
     end
@@ -658,7 +658,7 @@ module Jade
 
         describe 'the error' do
           subject { super().first }
-          it { is_expected.to be_a Frontend::SymbolResolution::Error::ConstructorNotFound }
+          it { is_expected.to be_a Frontend::SemanticAnalysis::Error::ConstructorNotFound }
           its(:message) { is_expected.to include 'I cannot find a `Lala` constructor' }
         end
       end

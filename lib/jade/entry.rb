@@ -12,6 +12,7 @@ module Jade
     :implementations,
     :entry,
     :diagnostics,
+    :usage_index,
   ) do
 
     def self.empty(name)
@@ -28,6 +29,7 @@ module Jade
         implementations: {},
         entry: false,
         diagnostics: Diagnostics::List.empty,
+        usage_index: nil,
       )
     end
 
