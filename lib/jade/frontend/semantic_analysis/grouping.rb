@@ -9,6 +9,7 @@ module Jade
           node => AST::Grouping(expression:)
 
           analyze_node(expression, registry, scope, entry)
+            .map_node { node.with(expression: it) }
         end
       end
     end

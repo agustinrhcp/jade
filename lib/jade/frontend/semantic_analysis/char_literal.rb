@@ -1,12 +1,12 @@
 module Jade
   module Frontend
     module SemanticAnalysis
-      module RecordAccess
+      module CharLiteral
         extend self
         extend Helper
 
         def analyze(node, _registry, scope, _entry)
-          Result.init(node, scope)
+          Result.init(node.with(symbol: Symbol::TypeRef['Char', 'Char']), scope)
         end
       end
     end

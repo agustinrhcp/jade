@@ -1,18 +1,15 @@
 module Jade
   module Frontend
-    module SymbolResolution
+    module SemanticAnalysis
       module Error
-        class VariableNotFound < Jade::Error
-          attr_reader :causes
-
-          def initialize(entry, span, name:, causes: [])
+        class ModuleNotFound < Jade::Error
+          def initialize(entry, span, name:)
             @name = name
-            @causes = causes
             super(entry:, span:)
           end
 
           def message
-            "I cannot find a `#{@name}` variable"
+            "I cannot find a `#{@name}` module"
           end
 
           def label

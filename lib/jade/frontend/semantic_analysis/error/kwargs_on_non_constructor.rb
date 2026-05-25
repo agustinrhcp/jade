@@ -1,6 +1,6 @@
 module Jade
   module Frontend
-    module SymbolResolution
+    module SemanticAnalysis
       module Error
         class KwargsOnNonConstructor < Jade::Error
           def initialize(entry, span)

@@ -1,6 +1,6 @@
 module Jade
   module Frontend
-    module SymbolResolution
+    module SemanticAnalysis
       module Error
         class MissingField < Jade::Error
           def initialize(entry, span, type_name:, fields:)

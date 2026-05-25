@@ -8,12 +8,16 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::FunctionCall(callee:, args:)
 
-          analyze_many(args, registry, scope, entry) => { errors: args_errors }
-          result = analyze_node(callee, registry, scope, entry).add_errors(args_errors)
+          callee_r = analyze_node(callee, registry, scope, entry)
+          args_r = analyze_in_parallel(args, registry, scope, entry)
 
-          return result unless calling_a_constant?(callee, args, registry)
-
-          result.add_errors([constant_not_callable(callee, entry)])
+          Result
+            .combine(node, scope:, callee: callee_r, args: args_r)
+            .add_errors(
+              calling_a_constant?(callee_r.node, args_r.node, registry) ?
+                [constant_not_callable(callee_r.node, entry)] :
+                [],
+            )
         end
 
         private

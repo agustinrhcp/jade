@@ -1,6 +1,6 @@
 module Jade
   module Frontend
-    module SymbolResolution
+    module SemanticAnalysis
       module Error
         class ValueNotExposed < Jade::Error
           def initialize(entry, span, name:, module_name:)

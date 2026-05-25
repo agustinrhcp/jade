@@ -1,15 +1,14 @@
 module Jade
   module Frontend
-    module SymbolResolution
+    module SemanticAnalysis
       module ImplementationFunction
         extend self
         extend Helper
 
-        def resolve(node, registry, current_entry)
+        def analyze(node, registry, scope, entry)
           node => AST::ImplementationFunction(fn:)
 
-          resolve_node(fn, registry, current_entry)
-            .map { node.with(fn: it) }
+          Result.combine(node, scope:, fn: analyze_node(fn, registry, scope, entry))
         end
       end
     end

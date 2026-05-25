@@ -8,12 +8,12 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::Assign(pattern:, expression:)
 
-          analyze_node(expression, registry, scope, entry) => { errors: expr_errors }
-
-          analyze_node(pattern, registry, scope, entry)
-            .add_errors(expr_errors)
+          ptn_r = analyze_node(pattern, registry, scope, entry)
+          Result.combine(node, scope: ptn_r.scope,
+            pattern: ptn_r,
+            expression: analyze_node(expression, registry, scope, entry),
+          )
         end
-
       end
     end
   end

@@ -11,29 +11,42 @@ module Jade
           if scope.lookup(name)
             Error::ShadowingError
               .new(entry.name, symbol.decl_span, name:)
-              .then { Result[scope, [it]] }
+              .then { Result[nil, [it], scope] }
 
           else
-            Result[scope.bind(name, symbol), []]
+            Result[nil, [], scope.bind(name, symbol)]
           end
         end
 
         def lookup(scope, name, entry, span)
-          if scope.lookup(name)
-            Result[scope, []]
+          if (decl = scope.lookup(name))
+            Result[decl, [], scope]
 
           else
             Error::UndefinedVariable
               .new(entry.name, span, var_ref: name)
-              .then { Result[scope, [it]] }
+              .then { Result[nil, [it], scope] }
           end
         end
 
-        def analyze_many(nodes, registry, scope, entry)
-          nodes.reduce(Result[scope, []]) do |acc, node|
-            analyze_node(node, registry, acc.scope, entry) => Result[node_scope, node_errors]
-            Result[node_scope, node_errors + acc.errors]
+        # Threaded: child N analyzed with the scope produced by child N-1;
+        # the returned scope is the last child's. Use when later siblings
+        # depend on bindings introduced by earlier ones — body statements,
+        # lambda/function params, sequential pattern bindings.
+        def analyze_in_sequence(nodes, registry, scope, entry)
+          nodes.reduce(Result[[], [], scope]) do |acc, node|
+            r = analyze_node(node, registry, acc.scope, entry)
+            Result[acc.node + [r.node], acc.errors + r.errors, r.scope]
           end
+        end
+
+        # Independent: every child analyzed with the input scope; the
+        # returned scope is the input scope (no bindings leak). Use when
+        # children don't see each other — record fields, list items,
+        # function-call args, if/case branches.
+        def analyze_in_parallel(nodes, registry, scope, entry)
+          results = nodes.map { analyze_node(it, registry, scope, entry) }
+          Result[results.map(&:node), results.flat_map(&:errors), scope]
         end
 
         def analyze_duplicate_fields(fields, entry)
@@ -105,7 +118,7 @@ module Jade
 
             if constructor_symbol.type_params.size != args.size
               [Error::TypeArgsMismatch.new(
-                  entry&.name,
+                  entry.name,
                   symbol.span,
                   type_name: constructor.name,
                   expected: constructor_symbol.type_params.size,

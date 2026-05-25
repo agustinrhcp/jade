@@ -8,16 +8,14 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::Lambda(params:, body:)
 
-          params
-            .reduce(Result[scope, []]) do |acc, param|
-              analyze_node(param, registry, acc.scope, entry)
-                .add_errors(acc.errors)
-            end
-            .then do
-              analyze_node(body, registry, it.scope, entry)
-                .add_errors(it.errors)
-            end
-            .with(scope:)
+          params_r = analyze_in_sequence(params, registry, scope, entry)
+
+          Result
+            .combine(node, scope:,
+              params: params_r,
+              body: analyze_node(body, registry, params_r.scope, entry),
+            )
+            .map_node { it.with(symbol: Symbol::Lambda[params.size]) }
         end
       end
     end

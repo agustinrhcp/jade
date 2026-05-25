@@ -5,7 +5,7 @@ module Jade
         extend self
         extend Helper
 
-        def analyze(node, registry, scope, entry)
+        def analyze(node, _registry, scope, entry)
           node => AST::Pattern::Binding(name:)
 
           predicate_errors =
@@ -15,8 +15,11 @@ module Jade
               []
             end
 
-          bind(scope, Symbol.var(name, node.range), entry)
-            .add_errors(predicate_errors)
+          bind_r = bind(scope, Symbol.var(name, node.range), entry)
+
+          Result
+            .init(node, bind_r.scope)
+            .add_errors(bind_r.errors + predicate_errors)
         end
       end
     end

@@ -8,20 +8,29 @@ module Jade
         def analyze(node, registry, scope, entry)
           node => AST::InteropImportDeclaration(functions:)
 
-          type_errors = functions
+          functions_with_symbols = functions.map do |fn|
+            entry
+              .lookup_value(fn.name)
+              .then { fn.with(symbol: it) }
+          end
+
+          type_errors = functions_with_symbols
             .flat_map { validate_type_symbol(it.symbol, registry, entry) }
 
-          task_errors = functions
+          task_errors = functions_with_symbols
             .flat_map { |fn| task_shape_errors(fn, entry) }
 
-          Result[scope, type_errors + task_errors]
+          Result
+            .init(node.with(functions: functions_with_symbols), scope)
+            .add_errors(type_errors + task_errors)
         end
 
         private
 
         def task_shape_errors(fn, entry)
           unless task_type?(fn.symbol.return_type)
-            Error::NonTaskPort.new(entry.name, fn.range, fn_name: fn.name)
+            Error::NonTaskPort
+              .new(entry.name, fn.range, fn_name: fn.name)
               .then { return [it] }
           end
 

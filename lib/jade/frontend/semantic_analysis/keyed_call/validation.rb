@@ -1,14 +1,14 @@
 module Jade
   module Frontend
-    module SymbolResolution
+    module SemanticAnalysis
       module KeyedCall
         module Validation
           extend self
 
-          def errors(node, fields, parent, constructor, registry, current_entry)
-            duplicate_field_errors(fields, current_entry) +
-              kwargs_callee_errors(node, parent, current_entry) +
-              field_set_errors(node, fields, parent, constructor, registry, current_entry)
+          def errors(node, fields, parent, constructor, registry, entry)
+            duplicate_field_errors(fields, entry) +
+              kwargs_callee_errors(node, parent, entry) +
+              field_set_errors(node, fields, parent, constructor, registry, entry)
           end
 
           def expected_field_keys(parent, constructor, registry)
@@ -21,30 +21,30 @@ module Jade
 
           private
 
-          def duplicate_field_errors(fields, current_entry)
+          def duplicate_field_errors(fields, entry)
             fields
               .group_by(&:key)
               .filter_map do |key, group|
                 next if group.size < 2
 
                 Error::DuplicateField.new(
-                  current_entry.name,
+                  entry.name,
                   group.last.range,
                   field: key,
                 )
               end
           end
 
-          def kwargs_callee_errors(node, parent, current_entry)
+          def kwargs_callee_errors(node, parent, entry)
             case parent
             in Symbol::Struct | Symbol::Union
               []
             else
-              [Error::KwargsOnNonConstructor.new(current_entry.name, node.range)]
+              [Error::KwargsOnNonConstructor.new(entry.name, node.range)]
             end
           end
 
-          def field_set_errors(node, fields, parent, constructor, registry, current_entry)
+          def field_set_errors(node, fields, parent, constructor, registry, entry)
             parent in Symbol::Struct | Symbol::Union or return []
 
             expected = expected_field_keys(parent, constructor, registry)
@@ -53,7 +53,7 @@ module Jade
 
             unknown = (provided - expected).map do |key|
               Error::UnknownField.new(
-                current_entry.name,
+                entry.name,
                 fields.find { it.key == key }.range,
                 type_name:,
                 field: key,
@@ -68,7 +68,7 @@ module Jade
                 else
                   Error::MissingField
                     .new(
-                      current_entry.name,
+                      entry.name,
                       node.range,
                       type_name:,
                       fields: missing,

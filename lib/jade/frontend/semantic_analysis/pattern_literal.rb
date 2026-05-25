@@ -6,7 +6,10 @@ module Jade
         extend Helper
 
         def analyze(node, registry, scope, entry)
-          Result[scope, []]
+          node => AST::Pattern::Literal(literal:)
+
+          analyze_node(literal, registry, scope, entry)
+            .then { Result.combine(node, scope:, literal: it) }
         end
       end
     end

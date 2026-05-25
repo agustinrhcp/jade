@@ -18,7 +18,6 @@ require 'jade/symbol/stdlib_implementation'
 require 'jade/symbol/struct'
 require 'jade/symbol/type_application'
 require 'jade/symbol/partial_application'
-require 'jade/symbol/type_param'
 require 'jade/symbol/type_ref'
 require 'jade/symbol/union'
 require 'jade/symbol/variant'
@@ -85,10 +84,6 @@ module Jade
 
     def var(name, span)
       Variable[name, span]
-    end
-
-    def param(name, span)
-      Param[name, span]
     end
 
     def predeclared_function(name)
