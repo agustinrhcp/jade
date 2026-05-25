@@ -67,8 +67,8 @@ module Jade
         # find_first takes a `Int -> Bool` predicate, which isn't decodable
         # at the boundary — call through Internal so we can pass a lambda.
         even = ->(x) { x % 2 == 0 }
-        expect(MaybeExamples::Internal.find_first.call([1, 3, 4, 5], even)).to be_just(4)
-        expect(MaybeExamples::Internal.find_first.call([1, 3, 5], even)).to be_nothing
+        expect(MaybeExamples::Internal.find_first([1, 3, 4, 5], even)).to be_just(4)
+        expect(MaybeExamples::Internal.find_first([1, 3, 5], even)).to be_nothing
       end
 
       it 'chains operations with pipeline' do
@@ -81,14 +81,14 @@ module Jade
       before { compile('custom_types.jd') }
 
       it 'describes shapes' do
-        expect(CustomTypes::Internal.describe.call(CustomTypes::Circle[1.0])).to eq 'circle'
-        expect(CustomTypes::Internal.describe.call(CustomTypes::Rectangle[2.0, 3.0])).to eq 'rectangle'
-        expect(CustomTypes::Internal.describe.call(CustomTypes::Triangle[3.0, 4.0, 5.0])).to eq 'triangle'
+        expect(CustomTypes::Internal.describe(CustomTypes::Circle[1.0])).to eq 'circle'
+        expect(CustomTypes::Internal.describe(CustomTypes::Rectangle[2.0, 3.0])).to eq 'rectangle'
+        expect(CustomTypes::Internal.describe(CustomTypes::Triangle[3.0, 4.0, 5.0])).to eq 'triangle'
       end
 
       it 'computes perimeters' do
-        expect(CustomTypes::Internal.perimeter.call(CustomTypes::Rectangle[3.0, 4.0])).to be_within(0.001).of(14.0)
-        expect(CustomTypes::Internal.perimeter.call(CustomTypes::Triangle[3.0, 4.0, 5.0])).to be_within(0.001).of(12.0)
+        expect(CustomTypes::Internal.perimeter(CustomTypes::Rectangle[3.0, 4.0])).to be_within(0.001).of(14.0)
+        expect(CustomTypes::Internal.perimeter(CustomTypes::Triangle[3.0, 4.0, 5.0])).to be_within(0.001).of(12.0)
       end
     end
 

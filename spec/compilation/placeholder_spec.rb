@@ -68,13 +68,13 @@ module Jade
       end
 
       it 'partially applies a constructor with one hole' do
-        result = HoleCtor::Internal.just_holed.call(7)
+        result = HoleCtor::Internal.just_holed(7)
         expect(result.send(:_1)).to eql 7
         expect(result.send(:_2)).to eql "fixed"
       end
 
       it 'curries a 2-arg constructor' do
-        result = HoleCtor::Internal.build_first.call(7, "ok")
+        result = HoleCtor::Internal.build_first(7, "ok")
         expect(result.send(:_1)).to eql 7
         expect(result.send(:_2)).to eql "ok"
       end

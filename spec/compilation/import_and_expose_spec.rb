@@ -158,7 +158,7 @@ module Jade
       it 'works' do
         expect { test_compiler.require('importing', importing_source) }
           .to_not raise_error
-        expect(Importing::Internal.hello.call(Exposing::MyType[])).to eql 'My type'
+        expect(Importing::Internal.hello(Exposing::MyType[])).to eql 'My type'
       end
     end
 

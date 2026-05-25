@@ -139,6 +139,9 @@ module Jade
         in Symbol::StdlibFunction(codegen:)
           codegen
 
+        in Symbol::Function => fn
+          "#{to_qualified(fn.module_name)}::Internal.method(:#{fn.name})"
+
         else
           name
         end
@@ -192,7 +195,7 @@ module Jade
           codegen
 
         in Symbol::Function => fn
-          to_qualified(fn.module_name) + "::Internal.#{fn.name}"
+          "#{to_qualified(fn.module_name)}::Internal.method(:#{fn.name})"
 
         in Symbol::Constructor => sym
           ConstructorReference.from_symbol(sym)
@@ -341,14 +344,14 @@ module Jade
     def generate_for_partition(node, registry, depth)
       case node
       in AST::Implementation
+        registrations = Implementation.generate_registrations_for(node, registry)
+        defs          = Implementation.generate_defs(node, registry)
+
         if MethodNames.operator_interface?(node.symbol.interface.qualified_name)
-          [Implementation.generate_operator_impl(node, registry), nil, nil]
+          methods = Implementation.generate_operator_impl(node, registry)
+          [[registrations, methods].reject(&:empty?).join(Pretty.newline(2)), defs, nil]
         else
-          [
-            Implementation.generate_registrations_for(node, registry),
-            Implementation.generate_defs(node, registry),
-            nil,
-          ]
+          [registrations, defs, nil]
         end
 
       in AST::FunctionDeclaration

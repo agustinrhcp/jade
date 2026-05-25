@@ -60,35 +60,35 @@ module Jade
       before { test_compiler.require('on_error', on_error_source) }
 
       it 'passes through Ok unchanged' do
-        expect(OnError::Internal.recover.call(Result::Ok[42])).to be_ok(42)
+        expect(OnError::Internal.recover(Result::Ok[42])).to be_ok(42)
       end
 
       it 'recovers from Err with a new Ok' do
-        expect(OnError::Internal.recover.call(Result::Err["oops"])).to be_ok(0)
+        expect(OnError::Internal.recover(Result::Err["oops"])).to be_ok(0)
       end
 
       it 'can remap the error' do
-        expect(OnError::Internal.passthrough.call(Result::Err["oops"])).to be_err("oops!")
+        expect(OnError::Internal.passthrough(Result::Err["oops"])).to be_err("oops!")
       end
     end
 
     it 'works' do
-      expect(Pepe::Internal.int_to_r.call(1)).to be_ok(1)
-      expect(Pepe::Internal.int_to_r.call(2)).to be_ok(3)
-      expect(Pepe::Internal.int_to_r.call(3)).to be_ok(5)
-      expect(Pepe::Internal.int_to_r.call(4)).to be_err('Not 1, 2 or 3')
+      expect(Pepe::Internal.int_to_r(1)).to be_ok(1)
+      expect(Pepe::Internal.int_to_r(2)).to be_ok(3)
+      expect(Pepe::Internal.int_to_r(3)).to be_ok(5)
+      expect(Pepe::Internal.int_to_r(4)).to be_err('Not 1, 2 or 3')
 
-      expect(Pepe::Internal.int_to_r_times_2.call(1)).to be_ok(2)
-      expect(Pepe::Internal.int_to_r_times_2.call(2)).to be_ok(6)
-      expect(Pepe::Internal.int_to_r_times_2.call(4)).to be_err('Not 1, 2 or 3')
+      expect(Pepe::Internal.int_to_r_times_2(1)).to be_ok(2)
+      expect(Pepe::Internal.int_to_r_times_2(2)).to be_ok(6)
+      expect(Pepe::Internal.int_to_r_times_2(4)).to be_err('Not 1, 2 or 3')
 
-      expect(Pepe::Internal.int_to_r_times_2_to_r.call(1)).to be_ok(3)
-      expect(Pepe::Internal.int_to_r_times_2_to_r.call(2)).to be_err('Not 1, 2 or 3')
+      expect(Pepe::Internal.int_to_r_times_2_to_r(1)).to be_ok(3)
+      expect(Pepe::Internal.int_to_r_times_2_to_r(2)).to be_err('Not 1, 2 or 3')
 
-      expect(Pepe::Internal.int_to_r_to_maybe.call(1)).to be_just(1)
-      expect(Pepe::Internal.int_to_r_to_maybe.call(2)).to be_just(3)
-      expect(Pepe::Internal.int_to_r_to_maybe.call(3)).to be_just(5)
-      expect(Pepe::Internal.int_to_r_to_maybe.call(4)).to be_nothing
+      expect(Pepe::Internal.int_to_r_to_maybe(1)).to be_just(1)
+      expect(Pepe::Internal.int_to_r_to_maybe(2)).to be_just(3)
+      expect(Pepe::Internal.int_to_r_to_maybe(3)).to be_just(5)
+      expect(Pepe::Internal.int_to_r_to_maybe(4)).to be_nothing
     end
   end
 end

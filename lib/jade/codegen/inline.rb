@@ -54,7 +54,10 @@ module Jade
         case resolve_callee_symbol(callee, registry)
         in Symbol::StdlibFunction(module_name:, name:)
           qualified = "#{module_name}.#{name}"
-          Inlines.for(qualified) || Inlines.derived_for(qualified, dictionaries, registry)
+          Inlines.for(qualified) ||
+            Inlines.comparison_for(qualified, dictionaries, registry) ||
+            Inlines.neq_for(qualified, dictionaries, registry) ||
+            Inlines.derived_for(qualified, dictionaries, registry)
 
         in Symbol::InterfaceFunction(name: fn_name) if dictionaries&.first.is_a?(Symbol::Implementation)
           interface_impl_inline(dictionaries.first.functions[fn_name], registry)

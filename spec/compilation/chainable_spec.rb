@@ -75,22 +75,22 @@ module Jade
       before { test_compiler.require('chain_test', source) }
 
       it 'chains two Ok values' do
-        result = ChainTest::Internal.chain.call(3, 4)
+        result = ChainTest::Internal.chain(3, 4)
         expect(result).to be_ok(7)
       end
 
       it 'short-circuits on the first Err' do
-        result = ChainTest::Internal.chain.call(0, 4)
+        result = ChainTest::Internal.chain(0, 4)
         expect(result).to be_err('cannot be zero')
       end
 
       it 'short-circuits on the second Err' do
-        result = ChainTest::Internal.chain.call(3, 0)
+        result = ChainTest::Internal.chain(3, 0)
         expect(result).to be_err('cannot be zero')
       end
 
       it 'short-circuits on a forced Err' do
-        result = ChainTest::Internal.chain_err.call(3, 4)
+        result = ChainTest::Internal.chain_err(3, 4)
         expect(result).to be_err('forced')
       end
     end
@@ -146,8 +146,8 @@ module Jade
       end
 
       it 'maps over Result' do
-        expect(ChainTest::Internal.add_one_result.call(Result::Ok[5])).to be_ok(6)
-        expect(ChainTest::Internal.add_one_result.call(Result::Err['oops'])).to be_err('oops')
+        expect(ChainTest::Internal.add_one_result(Result::Ok[5])).to be_ok(6)
+        expect(ChainTest::Internal.add_one_result(Result::Err['oops'])).to be_err('oops')
       end
     end
   end

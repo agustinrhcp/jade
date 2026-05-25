@@ -65,21 +65,21 @@ module Jade
     it 'works' do
       expect(Pepe.strs_to_list('1', '2')).to eql ["1", "2"]
 
-      expect(Pepe::Internal.list_length.call([])).to eql 0
-      expect(Pepe::Internal.list_length.call(['1', '2'])).to eql 2
-      expect(Pepe::Internal.list_length.call([1, 2])).to eql 2
+      expect(Pepe::Internal.list_length([])).to eql 0
+      expect(Pepe::Internal.list_length(['1', '2'])).to eql 2
+      expect(Pepe::Internal.list_length([1, 2])).to eql 2
 
-      expect(Pepe::Internal.list_singleton.call(0)).to eql [0]
+      expect(Pepe::Internal.list_singleton(0)).to eql [0]
 
-      expect(Pepe::Internal.repeat.call(0, 0)).to eql []
-      expect(Pepe::Internal.repeat.call(0, 2)).to eql [0, 0]
+      expect(Pepe::Internal.repeat(0, 0)).to eql []
+      expect(Pepe::Internal.repeat(0, 2)).to eql [0, 0]
 
       expect(Pepe.range(0, 0)).to eql [0]
       expect(Pepe.range(0, 2)).to eql [0, 1, 2]
       expect(Pepe.range(6, 3)).to eql []
 
-      expect(Pepe::Internal.empty?.call([])).to be true
-      expect(Pepe::Internal.empty?.call([1])).to be false
+      expect(Pepe::Internal.empty?([])).to be true
+      expect(Pepe::Internal.empty?([1])).to be false
 
       expect(Pepe.maptiply([1, 2, 3])).to eql [2, 4, 6]
 

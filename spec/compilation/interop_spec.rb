@@ -49,8 +49,8 @@ module Jade
 
     it 'returns an Int wrapped in Task' do
       test_compiler.require('with_interop', with_interop_source)
-      expect(WithInterop::Internal.today.call().run).to be_ok(20260131)
-      expect(WithInterop::Internal.today_plus_n_days.call(1).run).to be_ok(20260201)
+      expect(WithInterop::Internal.today().run).to be_ok(20260131)
+      expect(WithInterop::Internal.today_plus_n_days(1).run).to be_ok(20260201)
     end
 
     context 'more elaborate date' do
@@ -82,7 +82,7 @@ module Jade
       it 'returns a record wrapped in Task' do
         test_compiler.require('with_interop', with_interop_source)
 
-        expect(WithInterop::Internal.today.call().run)
+        expect(WithInterop::Internal.today().run)
           .to be_ok(have_attributes(year: 2026, month: 1, day: 31))
       end
 
@@ -163,7 +163,7 @@ module Jade
         it 'coerces the hash into a struct' do
           test_compiler.require('with_interop', with_interop_source)
 
-          expect(WithInterop::Internal.today.call().run)
+          expect(WithInterop::Internal.today().run)
             .to be_ok(have_attributes(year: 2026, month: 1, day: 31))
         end
       end
@@ -220,7 +220,7 @@ module Jade
         it 'returns a Just wrapped in Task' do
           test_compiler.require('with_interop', with_interop_source)
 
-          expect(WithInterop::Internal.today.call().run).to be_ok(look_like(:Just, anything))
+          expect(WithInterop::Internal.today().run).to be_ok(look_like(:Just, anything))
         end
       end
 
@@ -289,7 +289,7 @@ module Jade
 
       it 'returns an Err wrapped in Task' do
         test_compiler.require('with_interop', with_interop_source)
-        expect(WithInterop::Internal.fetch.call().run).to be_err("not found")
+        expect(WithInterop::Internal.fetch().run).to be_err("not found")
       end
     end
 
@@ -317,7 +317,7 @@ module Jade
 
       it 'raises immediately when called' do
         test_compiler.require('with_interop', with_interop_source)
-        expect { WithInterop::Internal.fetch.call() }
+        expect { WithInterop::Internal.fetch() }
           .to raise_error(Jade::Interop::PortNotRegistered, /not a Jade port/)
       end
     end
@@ -346,7 +346,7 @@ module Jade
 
       it 'raises a decode error lazily when run' do
         test_compiler.require('with_interop', with_interop_source)
-        task = WithInterop::Internal.fetch.call()
+        task = WithInterop::Internal.fetch()
         expect { task.run }
           .to raise_error(Jade::Interop::DecodeError, /expected Int, got String/)
       end
@@ -389,15 +389,15 @@ module Jade
       before { test_compiler.require('with_interop', with_interop_source) }
 
       it 'chains port tasks and returns the combined result' do
-        expect(WithInterop::Internal.sum.call().run).to be_ok(3)
+        expect(WithInterop::Internal.sum().run).to be_ok(3)
       end
 
       it 'short-circuits when a port task fails' do
-        expect(WithInterop::Internal.short_circuits.call().run).to be_err("port failed")
+        expect(WithInterop::Internal.short_circuits().run).to be_err("port failed")
       end
 
       it 'is lazy — no Ruby code runs until .run' do
-        task = WithInterop::Internal.sum.call()
+        task = WithInterop::Internal.sum()
         expect(task).to be_a(Jade::Task)
       end
     end
@@ -429,7 +429,7 @@ module Jade
 
       it 'passes the raw Ruby value through unchanged' do
         test_compiler.require('with_interop', with_interop_source)
-        result = WithInterop::Internal.fetch.call().run
+        result = WithInterop::Internal.fetch().run
         expect(result).to be_ok
         expect(result._1).to eql({ totally: 'arbitrary', nested: { stuff: [1, 2, 3] } })
       end
@@ -465,7 +465,7 @@ module Jade
 
       it 'returns the struct as the named class' do
         test_compiler.require('with_interop', with_interop_source)
-        result = WithInterop::Internal.fetch.call().run
+        result = WithInterop::Internal.fetch().run
         expect(result).to be_ok
         expect(result._1).to be_a(WithInterop::User)
         expect(result._1.name).to eql 'Ada'
@@ -503,7 +503,7 @@ module Jade
 
       it 'raises with a path-aware message' do
         test_compiler.require('with_interop', with_interop_source)
-        expect { WithInterop::Internal.fetch.call().run }
+        expect { WithInterop::Internal.fetch().run }
           .to raise_error(Jade::Interop::DecodeError, /missing field `age`/)
       end
     end
@@ -567,19 +567,19 @@ module Jade
       before { test_compiler.require('with_interop', with_interop_source) }
 
       it 'decodes the active variant' do
-        result = WithInterop::Internal.active.call().run
+        result = WithInterop::Internal.active().run
         expect(result).to be_ok
         expect(result._1).to look_like(:Active)
       end
 
       it 'decodes the inactive variant' do
-        result = WithInterop::Internal.inactive.call().run
+        result = WithInterop::Internal.inactive().run
         expect(result).to be_ok
         expect(result._1).to look_like(:Inactive)
       end
 
       it 'raises when the decoder rejects the value' do
-        expect { WithInterop::Internal.bogus.call().run }
+        expect { WithInterop::Internal.bogus().run }
           .to raise_error(Jade::Interop::DecodeError, /unknown status: weird/)
       end
     end
@@ -625,19 +625,19 @@ module Jade
       before { test_compiler.require('with_interop', with_interop_source) }
 
       it 'decodes a polymorphic port with the caller-side concrete type' do
-        result = WithInterop::Internal.patient.call().run
+        result = WithInterop::Internal.patient().run
         expect(result).to be_ok
         expect(result._1).to look_like(:Patient, name: 'Alice', age: 31)
       end
 
       it 'raises DecodeError when the stub data does not match the caller type' do
-        expect { WithInterop::Internal.bad.call().run }
+        expect { WithInterop::Internal.bad().run }
           .to raise_error(Jade::Interop::DecodeError)
       end
 
       it 'dedupes the Decodable constraint when the same var appears in both arms' do
         p = WithInterop::Patient[name: 'Cara', age: 22]
-        result = WithInterop::Internal.echo_patient.call(p).run
+        result = WithInterop::Internal.echo_patient(p).run
         expect(result).to be_ok
         expect(result._1).to look_like(:Patient, name: 'Cara', age: 22)
       end
@@ -677,13 +677,13 @@ module Jade
         before { test_compiler.require('both_arms', both_arms_source) }
 
         it 'decodes the ok arm into the caller-side ok type' do
-          result = BothArms::Internal.parse_ok.call().run
+          result = BothArms::Internal.parse_ok().run
           expect(result).to be_ok
           expect(result._1).to look_like('BothArms::Patient', name: 'Dan', age: 11)
         end
 
         it 'decodes the err arm into the caller-side err type' do
-          result = BothArms::Internal.parse_err.call().run
+          result = BothArms::Internal.parse_err().run
           expect(result).to be_err(42)
         end
       end
@@ -723,13 +723,13 @@ module Jade
         before { test_compiler.require('maybe_nested', maybe_source) }
 
         it 'composes Decode.nullable around the caller-side decoder' do
-          result = MaybeNested::Internal.some.call().run
+          result = MaybeNested::Internal.some().run
           expect(result).to be_ok
           expect(result._1).to look_like(:Just, look_like('MaybeNested::Patient', name: 'Alice', age: 31))
         end
 
         it 'decodes nil as Nothing' do
-          result = MaybeNested::Internal.none.call().run
+          result = MaybeNested::Internal.none().run
           expect(result).to be_ok
           expect(result._1).to look_like(:Nothing)
         end
@@ -763,7 +763,7 @@ module Jade
 
         it 'composes Decode.list and Decode.nullable around the caller-side decoder' do
           test_compiler.require('doubly_nested', doubly_source)
-          result = DoublyNested::Internal.fetch.call().run
+          result = DoublyNested::Internal.fetch().run
           expect(result).to be_ok
           expect(result._1.length).to eql 3
           expect(result._1[0]).to look_like(:Just, look_like('DoublyNested::Patient', name: 'A', age: 1))
@@ -802,7 +802,7 @@ module Jade
 
         it 'composes Decode.list around the caller-side decoder' do
           test_compiler.require('nested', nested_source)
-          result = Nested::Internal.fetch.call().run
+          result = Nested::Internal.fetch().run
           expect(result).to be_ok
           expect(result._1.length).to eql 2
           expect(result._1[0]).to look_like('Nested::Patient', name: 'Alice', age: 31)
@@ -845,9 +845,9 @@ module Jade
 
       it 'returns a Task with the date' do
         test_compiler.require('stdlib_date', stdlib_date)
-        result = StdlibDate::Internal.today.call().run
+        result = StdlibDate::Internal.today().run
         expect(result).to be_ok
-        expect(StdlibDate::Internal.year.call(result._1)).to eql 2026
+        expect(StdlibDate::Internal.year(result._1)).to eql 2026
       end
     end
   end

@@ -40,10 +40,10 @@ module Jade
     end
 
     it 'works' do
-      expect(Pepe::Internal.make_pair.call(1, "hello")).to eql Tuple::Tuple2[1, "hello"]
-      expect(Pepe::Internal.get_first.call(Tuple::Tuple2[1, "hello"])).to eql 1
-      expect(Pepe::Internal.get_second.call(Tuple::Tuple2[1, "hello"])).to eql "hello"
-      expect(Pepe::Internal.swap.call(Tuple::Tuple2[1, "hello"])).to eql Tuple::Tuple2["hello", 1]
+      expect(Pepe::Internal.make_pair(1, "hello")).to eql Tuple::Tuple2[1, "hello"]
+      expect(Pepe::Internal.get_first(Tuple::Tuple2[1, "hello"])).to eql 1
+      expect(Pepe::Internal.get_second(Tuple::Tuple2[1, "hello"])).to eql "hello"
+      expect(Pepe::Internal.swap(Tuple::Tuple2[1, "hello"])).to eql Tuple::Tuple2["hello", 1]
       expect(Pepe.pattern_matching(1, "1")).to eql 1
       expect(Pepe.pattern_matching(3, "3")).to eql 0
     end

@@ -124,7 +124,7 @@ module Jade
       end
 
       it 'is lazy' do
-        expect(TaskTest::Internal.all_ok.call).to be_a(Jade::Task)
+        expect(TaskTest::Internal.all_ok).to be_a(Jade::Task)
       end
     end
 
@@ -192,24 +192,24 @@ module Jade
       end
 
       it 'is lazy' do
-        task = TaskTest::Internal.sum.call
+        task = TaskTest::Internal.sum
         expect(task).to be_a(Jade::Task)
       end
     end
 
     context 'nothing runs until Task.run is called' do
       it 'succeed is lazy' do
-        task = TaskTest::Internal.always_ok.call
+        task = TaskTest::Internal.always_ok
         expect(task).to be_a(Jade::Task)
       end
 
       it 'map is lazy' do
-        task = TaskTest::Internal.mapped.call
+        task = TaskTest::Internal.mapped
         expect(task).to be_a(Jade::Task)
       end
 
       it 'and_then is lazy' do
-        task = TaskTest::Internal.chained.call
+        task = TaskTest::Internal.chained
         expect(task).to be_a(Jade::Task)
       end
     end

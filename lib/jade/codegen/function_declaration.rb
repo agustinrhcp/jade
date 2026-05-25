@@ -38,12 +38,11 @@ module Jade
         body_code = build_dict_env(var_cs)
           .then { Codegen.with_dict_env(it) { generate_node(body, registry) } }
 
-        target = var_cs.empty? ? name : fn_impl_synthetic_name(name)
+        target  = var_cs.empty? ? name : fn_impl_synthetic_name(name)
+        sig     = (param_names + dict_params).join(', ')
+        sig_str = sig.empty? ? '' : "(#{sig})"
 
-        (param_names + dict_params)
-          .join(', ')
-          .then { Pretty.lambda(it, body_code) }
-          .then { Pretty.block("def #{target}", it) }
+        Pretty.block("def #{target}#{sig_str}", body_code)
       end
 
       private
@@ -54,7 +53,7 @@ module Jade
 
         [
           *decode_arg_lines(args, param_names, registry),
-          "#{encoder}.call(Internal.#{name}.call#{decoded_call_args(param_names)})",
+          "#{encoder}.call(Internal.#{name}#{decoded_call_args(param_names)})",
         ]
           .join(Pretty.newline)
           .then { Pretty.block("def self.#{name}(#{param_names.join(', ')})", it) }
@@ -74,7 +73,7 @@ module Jade
       def task_run_def(name, params_str, args, param_names, ok_enc, err_enc, registry)
         [
           *decode_arg_lines(args, param_names, registry),
-          "case Internal.#{name}.call#{decoded_call_args(param_names)}.run",
+          "case Internal.#{name}#{decoded_call_args(param_names)}.run",
           "in Jade::Result::Ok[v]  then [\"ok\",  #{ok_enc}.call(v)]",
           "in Jade::Result::Err[e] then [\"err\", #{err_enc}.call(e)]",
           'end',
