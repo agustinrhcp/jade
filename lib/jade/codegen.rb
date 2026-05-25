@@ -1,5 +1,6 @@
 require 'jade/codegen/helpers'
 require 'jade/codegen/pretty'
+require 'jade/codegen/method_names'
 require 'jade/codegen/inlines'
 require 'jade/codegen/inline'
 require 'jade/codegen/boundary'
@@ -35,6 +36,36 @@ module Jade
       @dict_env = prev_env
     end
 
+    # False outside a Module so bare expressions (REPL) get the runtime
+    # fallback — no constants exist to reference.
+    def hoist_records?
+      @hoist_records
+    end
+
+    def with_hoisted_records
+      prev = @hoist_records
+      @hoist_records = true
+      yield
+    ensure
+      @hoist_records = prev
+    end
+
+    def record_shape_constant(keys)
+      "Record_#{keys.join('_')}"
+    end
+
+    def collect_record_shapes(node, shapes = Set.new)
+      shapes << node.fields.map(&:key).sort if node.is_a?(AST::RecordLiteral)
+
+      if node.is_a?(AST::Node)
+        node.members.each do |m|
+          [*node.public_send(m)].each { collect_record_shapes(it, shapes) if it.is_a?(AST::Node) }
+        end
+      end
+
+      shapes
+    end
+
     def generate_entry(entry, registry)
       generate(entry.ast, registry)
         .then { entry.entry ? "#{load_path}\n#{it}" : it }
@@ -50,7 +81,15 @@ module Jade
           *namespace_setup_lines(name),
         ].reject(&:empty?).join(Pretty.newline)
 
-        outer, inner, wrappers = partition_module_body(body.expressions, registry, name.count('.'))
+        shape_consts = collect_record_shapes(body)
+          .sort
+          .map { |keys|
+            "#{record_shape_constant(keys)} = Data.define(#{keys.map { ":#{it}" }.join(', ')})"
+          }
+
+        outer, inner, wrappers = with_hoisted_records {
+          partition_module_body(body.expressions, registry, name.count('.'))
+        }
 
         inner_module = ["extend self", *inner]
           .join(Pretty.newline(2))
@@ -58,6 +97,7 @@ module Jade
 
         [
           "extend self",
+          *shape_consts,
           *outer,
           inner_module,
           *wrappers,
@@ -226,11 +266,14 @@ module Jade
         Pretty.array(items.map { generate(it, registry) })
 
       in AST::RecordLiteral(fields:)
-        sorted = fields.sort_by { it.key }
-        keys   = sorted.map { ":#{it.key}" }.join(', ')
-        values = generate_many(sorted.map(&:value), registry)
+        fields.sort_by(&:key).then { |sorted|
+          keys   = sorted.map(&:key)
+          values = generate_many(sorted.map(&:value), registry)
 
-        "Jade::Runtime.record(#{keys})[#{values}]"
+          hoist_records? \
+            ? "#{record_shape_constant(keys)}[#{values}]"
+            : "Jade::Runtime.record(#{keys.map { ":#{it}" }.join(', ')})[#{values}]"
+        }
 
       in AST::RecordField(key:, value:)
         "#{key}: #{generate(value, registry)}"
@@ -298,11 +341,15 @@ module Jade
     def generate_for_partition(node, registry, depth)
       case node
       in AST::Implementation
-        [
-          Implementation.generate_registrations_for(node, registry),
-          Implementation.generate_defs(node, registry),
-          nil,
-        ]
+        registrations = Implementation.generate_registrations_for(node, registry)
+        defs          = Implementation.generate_defs(node, registry)
+
+        if MethodNames.operator_interface?(node.symbol.interface.qualified_name)
+          methods = Implementation.generate_operator_impl(node, registry)
+          [[registrations, methods].reject(&:empty?).join(Pretty.newline(2)), defs, nil]
+        else
+          [registrations, defs, nil]
+        end
 
       in AST::FunctionDeclaration
         [

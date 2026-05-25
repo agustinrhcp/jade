@@ -5,6 +5,9 @@ module Jade
       extend Helpers
 
       def try_for(callee, args, dictionaries, registry)
+        try_sort_by_block(callee, args, dictionaries, registry)
+          .then { return it if it }
+
         try_block_form(callee, args, registry)
           .then { return it if it }
 
@@ -33,13 +36,28 @@ module Jade
         )
       end
 
+      def try_sort_by_block(callee, args, dictionaries, registry)
+        return nil unless resolve_callee_symbol(callee, registry) in Symbol::StdlibFunction(module_name: 'List', name: 'sort_by')
+        return nil unless args.last in AST::Lambda(params: lambda_params, body: lambda_body)
+        return nil unless simple_lambda_params?(lambda_params)
+        return nil unless dictionaries&.first.is_a?(Symbol::Implementation)
+        return nil unless Inlines.native_compare?(dictionaries.first, registry)
+
+        xs     = generate_node(args[0], registry)
+        params = lambda_params.map { lambda_param_name(it) }.join(', ')
+        body   = generate_node(lambda_body, registry)
+
+        "#{xs}.sort_by { |#{params}| #{body} }"
+      end
+
       def resolve_inline_fn(callee, dictionaries, registry)
         case resolve_callee_symbol(callee, registry)
         in Symbol::StdlibFunction(module_name:, name:)
           qualified = "#{module_name}.#{name}"
           Inlines.for(qualified) ||
             Inlines.comparison_for(qualified, dictionaries, registry) ||
-            Inlines.neq_for(qualified, dictionaries, registry)
+            Inlines.neq_for(qualified, dictionaries, registry) ||
+            Inlines.derived_for(qualified, dictionaries, registry)
 
         in Symbol::InterfaceFunction(name: fn_name) if dictionaries&.first.is_a?(Symbol::Implementation)
           interface_impl_inline(dictionaries.first.functions[fn_name], registry)

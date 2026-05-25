@@ -23,6 +23,23 @@ module Jade
     LT = Data.define()
   end
 
+  # Compiled code calls `a.compare(b)`; natives ship `<=>` not `compare`.
+  # Guarded so a future Ruby or third-party `compare` wins — clobbering
+  # would silently swap semantics.
+  [Integer, Float, ::String].each do |klass|
+    next if klass.method_defined?(:compare)
+
+    klass.class_eval do
+      define_method(:compare) do |other|
+        case self <=> other
+        when -1 then Basics::LT[]
+        when 0  then Basics::EQ[]
+        when 1  then Basics::GT[]
+        end
+      end
+    end
+  end
+
   module Dict
     Dict = Data.define(:hash) do
       def to_s
