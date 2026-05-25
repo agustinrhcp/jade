@@ -51,6 +51,11 @@ module Jade
           expect(response[:result][:capabilities][:textDocumentSync]).to include(openClose: true, change: 1)
         end
 
+        it 'advertises documentSymbolProvider' do
+          _, outbound = subject
+          expect(outbound.first[:result][:capabilities][:documentSymbolProvider]).to eq true
+        end
+
         it 'advertises utf-8 when the client supports it' do
           _, outbound = Handlers.dispatch(State.empty, {
             'method' => 'initialize',
@@ -209,6 +214,73 @@ module Jade
           by_uri = publishes.to_h { |m| [m[:params][:uri], m[:params][:diagnostics]] }
           expect(by_uri[uri]).to be_empty
           expect(by_uri[other_uri]).not_to be_empty
+        end
+      end
+
+      describe 'documentSymbol' do
+        let(:module_text) do
+          <<~JADE
+            module Leaf exposing (n, Color)
+
+            type Color
+              = Red
+              | Green
+              | Blue
+
+            def n() -> Int
+              42
+          JADE
+        end
+
+        def open_and_request_symbols(text:)
+          File.write(File.join(src, 'leaf.jd'), text)
+          state, _ = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+          Handlers.dispatch(state, {
+            'method' => 'textDocument/documentSymbol',
+            'id' => 99,
+            'params' => { 'textDocument' => { 'uri' => uri } },
+          })
+        end
+
+        it 'returns a function symbol for a top-level def' do
+          _, outbound = open_and_request_symbols(text: module_text)
+          symbols = outbound.first[:result]
+          fn = symbols.find { it[:name] == 'n' }
+          expect(fn[:kind]).to eq Converters::SYMBOL_KIND[:function]
+        end
+
+        it 'returns a type symbol with its variants as children' do
+          _, outbound = open_and_request_symbols(text: module_text)
+          symbols = outbound.first[:result]
+          type = symbols.find { it[:name] == 'Color' }
+          expect(type[:kind]).to eq Converters::SYMBOL_KIND[:enum]
+          expect(type[:children].map { it[:name] }).to contain_exactly('Red', 'Green', 'Blue')
+          expect(type[:children].first[:kind]).to eq Converters::SYMBOL_KIND[:enum_member]
+        end
+
+        it 'returns an empty list for a uri that is not in the registry' do
+          state, _ = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => module_text } },
+          })
+          _, outbound = Handlers.dispatch(state, {
+            'method' => 'textDocument/documentSymbol',
+            'id' => 1,
+            'params' => { 'textDocument' => { 'uri' => "file://#{src}/missing.jd" } },
+          })
+          expect(outbound.first[:result]).to eq []
+        end
+
+        it 'returns an empty list when no compile has run' do
+          _, outbound = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/documentSymbol',
+            'id' => 1,
+            'params' => { 'textDocument' => { 'uri' => uri } },
+          })
+          expect(outbound.first[:result]).to eq []
         end
       end
 

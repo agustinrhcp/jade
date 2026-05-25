@@ -22,6 +22,39 @@ module Jade
 
       SEVERITY = { error: 1, warning: 2, info: 3, hint: 4 }.freeze
 
+      SYMBOL_KIND = {
+        function: 12,
+        enum: 10,
+        enum_member: 22,
+        struct: 23,
+        interface: 11,
+      }.freeze
+
+      def to_document_symbol(node, source)
+        case node
+        in AST::FunctionDeclaration(name:, range:)
+          document_symbol(name, :function, source, range)
+
+        in AST::TypeDeclaration(name:, range:, variants:)
+          document_symbol(
+            name, :enum, source, range,
+            children: variants.map { document_symbol(it.name, :enum_member, source, it.range) },
+          )
+
+        in AST::StructDeclaration(name:, range:)
+          document_symbol(name, :struct, source, range)
+
+        in AST::InterfaceDeclaration(name:, range:, functions:)
+          document_symbol(
+            name, :interface, source, range,
+            children: functions.map { document_symbol(it.name, :function, source, it.range) },
+          )
+
+        else
+          nil
+        end
+      end
+
       def diagnostic_to_lsp(diagnostic)
         {
           range: diagnostic.primary.then { span_to_range(it.source, it.span) },
@@ -46,6 +79,16 @@ module Jade
       end
 
       private
+
+      def document_symbol(name, kind, source, range, children: [])
+        {
+          name: name.to_s,
+          kind: SYMBOL_KIND.fetch(kind),
+          range: span_to_range(source, range),
+          selectionRange: span_to_range(source, range),
+          children:,
+        }
+      end
 
       def diagnostic_message(diagnostic)
         [diagnostic.message, *diagnostic.annotations.map { "#{it.kind}: #{it.message}" }]
