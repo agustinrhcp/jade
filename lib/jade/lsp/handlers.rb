@@ -7,15 +7,16 @@ module Jade
 
       def dispatch(state, message)
         case message['method']
-        when 'initialize'              then on_initialize(state, message)
-        when 'initialized'             then [state, []]
-        when 'shutdown'                then [state, [respond(message['id'], nil)]]
-        when 'exit'                    then [state, []]
-        when 'textDocument/didOpen'    then on_did_open(state, message['params'])
-        when 'textDocument/didChange'  then on_did_change(state, message['params'])
-        when 'textDocument/didSave'    then [state, []]
-        when 'textDocument/didClose'   then on_did_close(state, message['params'])
-        else                                on_unknown(state, message)
+        when 'initialize' then on_initialize(state, message)
+        when 'initialized' then [state, []]
+        when 'shutdown' then [state, [respond(message['id'], nil)]]
+        when 'exit' then [state, []]
+        when 'textDocument/didOpen' then on_did_open(state, message['params'])
+        when 'textDocument/didChange' then on_did_change(state, message['params'])
+        when 'textDocument/didSave' then [state, []]
+        when 'textDocument/didClose' then on_did_close(state, message['params'])
+        when 'textDocument/documentSymbol' then on_document_symbol(state, message)
+        else on_unknown(state, message)
         end
       end
 
@@ -38,6 +39,7 @@ module Jade
           capabilities: {
             textDocumentSync: { openClose: true, change: 1 },
             positionEncoding: negotiate_encoding(params),
+            documentSymbolProvider: true,
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
@@ -68,6 +70,24 @@ module Jade
       def on_did_close(state, params)
         params['textDocument']['uri']
           .then { recompile_and_publish(state.close(it), extra_uris: [it]) }
+      end
+
+      def on_document_symbol(state, message)
+        symbols = message
+          .dig('params', 'textDocument', 'uri')
+          .then { document_symbols_for(state, it) }
+        [state, [respond(message['id'], symbols)]]
+      end
+
+      def document_symbols_for(state, uri)
+        return [] unless state.registry && state.source_root
+
+        rel = Converters.relative_path(uri, state.source_root)
+        entry = state.registry.modules.each_value.find { it.source&.uri == rel }
+        return [] unless entry
+
+        entry.ast.body.expressions
+          .filter_map { Converters.to_document_symbol(it, entry.source) }
       end
 
       # extra_uris always receive a publishDiagnostics, but compile output
