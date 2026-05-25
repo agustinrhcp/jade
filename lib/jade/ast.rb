@@ -95,7 +95,7 @@ module Jade
       ->(tokens) do
         tokens => [open, token, close]
 
-        Literal[token.value, token.range.begin..close.range.end]
+        Literal[token.value, token.range.begin...close.range.end]
       end
     end
 
@@ -121,7 +121,7 @@ module Jade
         Assign[
           pattern_node,
           expression_node,
-          pattern_node.range.begin..expression_node.range.end,
+          pattern_node.range.begin...expression_node.range.end,
         ]
       end
     end
@@ -131,7 +131,7 @@ module Jade
         Bind[
           pattern_node,
           expression_node,
-          pattern_node.range.begin..expression_node.range.end,
+          pattern_node.range.begin...expression_node.range.end,
         ]
       end
     end
@@ -163,7 +163,7 @@ module Jade
         else
           Body[
             expressions,
-            expressions.first.range.begin..expressions.last.range.end,
+            expressions.first.range.begin...expressions.last.range.end,
           ]
         end
       end
@@ -193,7 +193,7 @@ module Jade
         FunctionDeclarationParam[
           name.value,
           type,
-          name.range.begin..type.range.end,
+          name.range.begin...type.range.end,
         ]
       end
     end
@@ -210,7 +210,7 @@ module Jade
           fields: fields_list.items.map { |(identifier, type)| [identifier.value, type] }.to_h,
           row_var:,
           trailing_comma: fields_list.trailing_comma,
-          range: lbrace.range.begin..rbrace.range.end,
+          range: lbrace.range.begin...rbrace.range.end,
         )
       end
     end
@@ -218,7 +218,7 @@ module Jade
     def qualified_type_name
       ->((first, *rest)) do
         constants = [first] + rest
-        QualifiedTypeName[constants.map(&:value), constants.first.range.begin..constants.last.range.end]
+        QualifiedTypeName[constants.map(&:value), constants.first.range.begin...constants.last.range.end]
       end
     end
 
@@ -234,7 +234,7 @@ module Jade
           constructor:,
           args: args_list.items,
           trailing_comma: args_list.trailing_comma,
-          range: constructor.range.begin..(rparen || constructor).range.end,
+          range: constructor.range.begin...(rparen || constructor).range.end,
         )
       end
     end
@@ -243,9 +243,9 @@ module Jade
       ->((params, return_type)) do
         case params
         in [TypeUnit => unit]
-          TypeFunction[[], return_type, unit.range.begin..return_type.range.end]
+          TypeFunction[[], return_type, unit.range.begin...return_type.range.end]
         else
-          TypeFunction[params, return_type, params.first.range.begin..return_type.range.end]
+          TypeFunction[params, return_type, params.first.range.begin...return_type.range.end]
         end
       end
     end
@@ -256,7 +256,7 @@ module Jade
           left,
           InfixOperator[token_op.value, token_op.range],
           right,
-          left.range.begin..right.range.end,
+          left.range.begin...right.range.end,
         ]
       end
     end
@@ -269,7 +269,7 @@ module Jade
           infix: false,
           dictionaries: [],
           trailing_comma: args_list.trailing_comma,
-          range: lparen.range.begin..rparen.range.end,
+          range: lparen.range.begin...rparen.range.end,
         )
       end
     end
@@ -279,7 +279,7 @@ module Jade
         MemberAccess[
           target,
           name,
-          dot.range.begin..name.range.end,
+          dot.range.begin...name.range.end,
         ]
       end
     end
@@ -291,7 +291,7 @@ module Jade
           type_params: type_params_list.items,
           variants:,
           trailing_comma: type_params_list.trailing_comma,
-          range: type_token.range.begin..variants.last.range.end,
+          range: type_token.range.begin...variants.last.range.end,
         )
       end
     end
@@ -308,7 +308,7 @@ module Jade
           name: name.value,
           args: args_list.items,
           trailing_comma: args_list.trailing_comma,
-          range: name.range.begin..(args_list.items.last || name).range.end,
+          range: name.range.begin...(args_list.items.last || name).range.end,
         )
       end
     end
@@ -326,7 +326,7 @@ module Jade
           callee:,
           fields: fields_list.items,
           trailing_comma: fields_list.trailing_comma,
-          range: lparen.range.begin..rparen.range.end,
+          range: lparen.range.begin...rparen.range.end,
         )
       end
     end
@@ -345,7 +345,7 @@ module Jade
           module_parts.map(&:value).join('.'),
           as,
           exposing,
-          import.range.begin..(module_parts.last.range.end),
+          import.range.begin...(module_parts.last.range.end),
         ]
       end
     end
@@ -356,7 +356,7 @@ module Jade
           module_parts.map(&:value).join('.'),
           exposing,
           body,
-          module_parts.first.range.begin..(body.expressions.last.range.end),
+          module_parts.first.range.begin...(body.expressions.last.range.end),
         ]
       end
     end
@@ -367,7 +367,7 @@ module Jade
           condition,
           if_branch,
           else_branch,
-          if_token.range.begin..else_branch.range.end,
+          if_token.range.begin...else_branch.range.end,
         ]
       end
     end
@@ -380,7 +380,7 @@ module Jade
           condition,
           Body.new(expressions: [expr], range: expr.range),
           Body.new(expressions: [else_expr], range: else_expr.range),
-          expr.range.begin..else_expr.range.end,
+          expr.range.begin...else_expr.range.end,
         ]
       end
     end
@@ -390,7 +390,7 @@ module Jade
         CaseOf[
           expression,
           branches,
-          case_token.range.begin..branches.last.range.end,
+          case_token.range.begin...branches.last.range.end,
         ]
       end
     end
@@ -400,7 +400,7 @@ module Jade
         CaseOfBranch[
           pattern,
           body,
-          of_token.range.begin..(body.range.end),
+          of_token.range.begin...(body.range.end),
         ]
       end
     end
@@ -433,7 +433,7 @@ module Jade
           constructor:,
           patterns: patterns_list.items,
           trailing_comma: patterns_list.trailing_comma,
-          range: constructor.range.begin..(patterns_list.items.first&.range&.end || constructor.range.end),
+          range: constructor.range.begin...(patterns_list.items.first&.range&.end || constructor.range.end),
         )
       end
     end
@@ -443,7 +443,7 @@ module Jade
         Pattern::Record.new(
           fields: fields_list.items,
           trailing_comma: fields_list.trailing_comma,
-          range: lbrace.range.begin..r_brace.range.end,
+          range: lbrace.range.begin...r_brace.range.end,
         )
       end
     end
@@ -453,7 +453,7 @@ module Jade
         Pattern::RecordField[
           identifier.value,
           pattern,
-          identifier.range.begin..pattern.range.end,
+          identifier.range.begin...pattern.range.end,
         ]
       end
     end
@@ -463,7 +463,7 @@ module Jade
         Pattern::Tuple.new(
           patterns: [first, *rest_list.items],
           trailing_comma: rest_list.trailing_comma,
-          range: lparen_token.range.begin..rparen_token.range.end,
+          range: lparen_token.range.begin...rparen_token.range.end,
         )
       end
     end
@@ -474,7 +474,7 @@ module Jade
           patterns: patterns_list.items,
           rest: tail,
           trailing_comma: patterns_list.trailing_comma,
-          range: lbrack.range.begin..rbrack.range.end,
+          range: lbrack.range.begin...rbrack.range.end,
         )
       end
     end
@@ -483,7 +483,7 @@ module Jade
       ->((lparen_token, expression, rparen_token)) do
         Grouping[
           expression,
-          lparen_token.range.begin..rparen_token.range.end
+          lparen_token.range.begin...rparen_token.range.end
         ]
       end
     end
@@ -493,7 +493,7 @@ module Jade
         Tuple.new(
           items: [first, *rest_list.items],
           trailing_comma: rest_list.trailing_comma,
-          range: lparen_token.range.begin..rparen_token.range.end,
+          range: lparen_token.range.begin...rparen_token.range.end,
         )
       end
     end
@@ -503,7 +503,7 @@ module Jade
         TypeTuple.new(
           items: [first, *rest_list.items],
           trailing_comma: rest_list.trailing_comma,
-          range: lparen_token.range.begin..rparen_token.range.end,
+          range: lparen_token.range.begin...rparen_token.range.end,
         )
       end
     end
@@ -514,7 +514,7 @@ module Jade
           params: params_list.items,
           body:,
           trailing_comma: params_list.trailing_comma,
-          range: lead_token.range.begin..rbrace_token.range.end,
+          range: lead_token.range.begin...rbrace_token.range.end,
         )
       end
     end
@@ -536,7 +536,7 @@ module Jade
         ExposeList.new(
           items: comma_list.items,
           trailing_comma: comma_list.trailing_comma,
-          range: comma_list.items.first.range.begin..comma_list.items.last.range.end,
+          range: comma_list.items.first.range.begin...comma_list.items.last.range.end,
         )
       end
     end
@@ -570,7 +570,7 @@ module Jade
         List.new(
           items: items_list.items,
           trailing_comma: items_list.trailing_comma,
-          range: lbrack.range.begin..rbrack.range.end,
+          range: lbrack.range.begin...rbrack.range.end,
         )
       end
     end
@@ -580,14 +580,14 @@ module Jade
         RecordLiteral.new(
           fields: fields_list.items,
           trailing_comma: fields_list.trailing_comma,
-          range: lbrace.range.begin..rbrace.range.begin,
+          range: lbrace.range.begin...rbrace.range.end,
         )
       end
     end
 
     def record_field
       ->((key, value)) do
-        RecordField[key.value, value, key.range.begin..value.range.end]
+        RecordField[key.value, value, key.range.begin...value.range.end]
       end
     end
 
@@ -597,20 +597,20 @@ module Jade
           base: variable_reference,
           fields: fields_list.items,
           trailing_comma: fields_list.trailing_comma,
-          range: lbrace.range.begin..rbrace.range.begin,
+          range: lbrace.range.begin...rbrace.range.end,
         )
       end
     end
 
     def record_update_sugar
-      ->((dot, key, assign)) do
-        RecordUpdateSugar[key.value, dot.range.begin..assign.range.begin]
+      ->((dot, key, _assign)) do
+        RecordUpdateSugar[key.value, dot.range.begin...key.range.end]
       end
     end
 
     def record_access_sugar
       ->((dot, key)) do
-        RecordAccessSugar[key.value, dot.range.begin..key.range.begin]
+        RecordAccessSugar[key.value, dot.range.begin...key.range.end]
       end
     end
 
@@ -619,7 +619,7 @@ module Jade
         InteropImportDeclaration[
           interop_module,
           interop_functions,
-          uses_token.range.begin..interop_functions.last.range.end,
+          uses_token.range.begin...interop_functions.last.range.end,
         ]
       end
     end
@@ -638,7 +638,7 @@ module Jade
         InteropFunction[
           name.value,
           type_expression,
-          name.range.begin..type_expression.range.end,
+          name.range.begin...type_expression.range.end,
         ]
       end
     end
@@ -650,7 +650,7 @@ module Jade
           type_params: type_params_list.items,
           record_type:,
           trailing_comma: type_params_list.trailing_comma,
-          range: struct_token.range.begin..record_type.range.end,
+          range: struct_token.range.begin...record_type.range.end,
         )
       end
     end
@@ -663,7 +663,7 @@ module Jade
           applied_type,
           extends.map(&:value),
           functions,
-          implements_token.range.begin..range_end,
+          implements_token.range.begin...range_end,
         ]
       end
     end
@@ -678,7 +678,7 @@ module Jade
         ImplementationFunction[
           canonical_name,
           fn,
-          name.range.begin..fn.range.end,
+          name.range.begin...fn.range.end,
         ]
       end
     end
@@ -689,7 +689,7 @@ module Jade
           name.value,
           type_param,
           functions,
-          interface_token.range.begin..functions.last.range.end,
+          interface_token.range.begin...functions.last.range.end,
         ]
       end
     end
@@ -705,7 +705,7 @@ module Jade
         InterfaceFunctionDecl[
           canonical_name,
           type,
-          name.range.begin..type.range.end,
+          name.range.begin...type.range.end,
         ]
       end
     end
