@@ -57,7 +57,7 @@ module Jade
 
       parser(:unit) {
         (type(:lparen) >> type(:rparen)).map { |lparen, rparen|
-          [[AST::TypeUnit[lparen.range.begin..rparen.range.end]]]
+          [[AST::TypeUnit[lparen.range.begin...rparen.range.end]]]
         }
       }
 

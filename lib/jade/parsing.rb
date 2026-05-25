@@ -255,7 +255,7 @@ module Jade
       (type(:minus) >> (int | float)).map do |(minus_tok, lit_node)|
         lit_node.with(
           value: -lit_node.value,
-          range: minus_tok.range.begin..lit_node.range.end,
+          range: minus_tok.range.begin...lit_node.range.end,
         )
       end
     }

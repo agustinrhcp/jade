@@ -48,7 +48,7 @@ module Jade::Diagnostics
 
     def span_block(label, severity:)
       loc = location_of(label.source, label.span.begin)
-      end_offset = label.span.exclude_end? ? [label.span.end - 1, 0].max : label.span.end
+      end_offset = [label.span.end - 1, 0].max
       end_loc = location_of(label.source, [end_offset, label.source.text.length - 1].min)
       multiline = end_loc.line > loc.line
       gutter_w = (multiline ? end_loc.line : loc.line).to_s.length
