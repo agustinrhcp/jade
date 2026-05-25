@@ -126,8 +126,9 @@ module Jade
         "#{intr(qname)}.call"
       end
 
-      # Explicit impl returns a fn that produces a Decoder; derived impl is
-      # already a Decoder.
+      # impl_fn_ref returns a Method ref; callers `.call(...)` it. For
+      # 0-arg decoder methods that means `decoder.call()` → the Decoder
+      # value. For 1-arg encoder methods that's `encoder.call(value)`.
       def decoder_dispatch(name, args, registry)
         if ref = impl_fn_ref(DECODABLE, name, 'decoder', registry)
           "#{ref}.call"
@@ -136,8 +137,6 @@ module Jade
         end
       end
 
-      # Encoder expressions evaluate to `a -> Value` directly — no `.call`
-      # shim either way.
       def encoder_dispatch(name, args, registry)
         impl_fn_ref(ENCODABLE, name, 'encoder', registry) ||
           derived_dispatch(ENCODABLE, name, args, registry)&.dig('encoder')
@@ -166,7 +165,7 @@ module Jade
 
         case fn_sym
         in Symbol::Function
-          "#{to_qualified(fn_sym.module_name)}::Internal.#{fn_sym.name}"
+          "#{to_qualified(fn_sym.module_name)}::Internal.method(:#{fn_sym.name})"
 
         in Symbol::StdlibFunction(codegen:) if codegen.is_a?(String)
           codegen

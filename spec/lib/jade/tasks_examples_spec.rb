@@ -74,7 +74,7 @@ describe 'tasks mocker — DateTasks example' do
     end
 
     it 'runs the chain against stubs, no real Date.today touched' do
-      expect(Schedule::Internal.run.call(2).run).to be_ok(20260103)
+      expect(Schedule::Internal.run(2).run).to be_ok(20260103)
 
       expect(DateTasks.today).to have_been_called
       expect(DateTasks.plus_days).to have_been_called.with(2)
@@ -83,7 +83,7 @@ describe 'tasks mocker — DateTasks example' do
     it 'short-circuits when the first task fails' do
       all_calls_to(DateTasks.today) { |t| t.err(:no_clock) }
 
-      expect(Schedule::Internal.run.call(2).run).to be_err(:no_clock)
+      expect(Schedule::Internal.run(2).run).to be_err(:no_clock)
 
       expect(DateTasks.today).to have_been_called
       expect(DateTasks.plus_days).not_to have_been_called
@@ -92,7 +92,7 @@ describe 'tasks mocker — DateTasks example' do
 
   describe 'forgetting to stub' do
     it 'raises rather than calling the real registered body — strict mode' do
-      expect { Schedule::Internal.run.call(0).run }
+      expect { Schedule::Internal.run(0).run }
         .to raise_error(Jade::Tasks::Unbound, /DateTasks\.today/)
     end
   end

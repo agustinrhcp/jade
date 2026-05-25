@@ -70,21 +70,21 @@ module Jade
     before { test_compiler.require('strs', source) }
 
     it 'uncons returns head char' do
-      expect(Strs::Internal.first_char.call('abc')).to be_just('a')
-      expect(Strs::Internal.first_char.call('')).to be_nothing
+      expect(Strs::Internal.first_char('abc')).to be_just('a')
+      expect(Strs::Internal.first_char('')).to be_nothing
     end
 
     it 'cons prepends a char' do
-      expect(Strs::Internal.prepend.call('x', 'yz')).to eql 'xyz'
+      expect(Strs::Internal.prepend('x', 'yz')).to eql 'xyz'
     end
 
     it 'from_char wraps a char as a string' do
-      expect(Strs::Internal.single.call('q')).to eql 'q'
+      expect(Strs::Internal.single('q')).to eql 'q'
     end
 
     it 'walks a string via repeated uncons' do
-      expect(Strs::Internal.walk.call('abc')).to eql ['a', 'b', 'c']
-      expect(Strs::Internal.walk.call('')).to eql []
+      expect(Strs::Internal.walk('abc')).to eql ['a', 'b', 'c']
+      expect(Strs::Internal.walk('')).to eql []
     end
   end
 

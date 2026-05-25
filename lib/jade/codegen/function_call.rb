@@ -16,10 +16,31 @@ module Jade
         Inline.try_for(callee, args, dictionaries, registry)
           .then { return it if it }
 
+        return constructor_call(callee, args, registry) if callee.is_a?(AST::ConstructorReference)
+
         [generate_many(args, registry), generate_dict_args(callee, dictionaries, registry)]
           .reject(&:empty?)
           .join(', ')
-          .then { "#{generate_callee(callee, args, registry, dictionaries)}.call(#{it})" }
+          .then { "#{generate_callee(callee, args, registry, dictionaries)}#{invocation_op(callee, registry)}(#{it})" }
+      end
+
+      def constructor_call(callee, args, registry)
+        resolve_callee_symbol(callee, registry)
+          .then { to_qualified(it.qualified_name) }
+          .then { "#{it}[#{generate_many(args, registry)}]" }
+      end
+
+      # Direct-def call sites (`Foo::Internal.name(args)`) for plain user fns;
+      # `.call(args)` for everything else (lambdas, Procs, Methods).
+      def invocation_op(callee, registry)
+        case callee.symbol
+        in Symbol::ValueRef => ref then invocation_op_for(registry.lookup(ref))
+        in symbol                  then invocation_op_for(symbol)
+        end
+      end
+
+      def invocation_op_for(symbol)
+        symbol.is_a?(Symbol::Function) ? '' : '.call'
       end
 
       def try_operator_call(callee, args, registry)
@@ -42,10 +63,6 @@ module Jade
       end
 
       def generate_impl_dispatch(impl, registry)
-        if MethodNames.operator_interface?(impl.interface.qualified_name)
-          return operator_dispatch(impl)
-        end
-
         impl
           .deps
           .map { |dep| dispatch_for_dep(dep, registry) }
@@ -54,18 +71,6 @@ module Jade
               generate_impl_fn(fn, dep_dispatches, impl.functions, registry)
             end
           end
-      end
-
-      def operator_dispatch(impl)
-        MethodNames::INTERFACE_METHODS
-          .fetch(impl.interface.qualified_name)
-          .to_h { |jade_fn, ruby_method| [jade_fn, operator_lambda(ruby_method)] }
-      end
-
-      def operator_lambda(ruby_method)
-        ruby_method == 'compare' \
-          ? "->(a, b) { a.compare(b) }"
-          : "->(a, b) { (a #{ruby_method} b) }"
       end
 
       # An Implementation's dep is one of two dictionary-slot shapes: a
@@ -124,7 +129,7 @@ module Jade
 
 
       def generate_callee(callee, args, registry, dictionaries)
-        return generate_node(callee, registry) if callee in AST::ConstructorReference | AST::RecordAccess | AST::FunctionCall | AST::Grouping
+        return generate_node(callee, registry) if callee in AST::RecordAccess | AST::FunctionCall | AST::Grouping
 
         case callee.symbol
         in Symbol::ValueRef
@@ -153,9 +158,6 @@ module Jade
 
         in Symbol::Function => fn_sym
           to_qualified(fn_sym.module_name) + "::Internal." + fn_target_name(fn_sym, registry)
-
-        in Symbol::Constructor => sym
-          ConstructorReference.from_symbol(sym)
 
         in Symbol::StdlibImplementation => symbol
           dictionaries
@@ -276,11 +278,13 @@ module Jade
         in Symbol::ValueRef
           registry.lookup(fn).then { generate_impl_fn(it, dep_dispatches, sibling_fns, registry) }
 
+        # 0-arg fn: Ruby auto-invokes on bare reference. Result is the
+        # dispatch-slot value (decoder, encoder template, ...) ready to use.
         in Symbol::Function => fn if fn.constant?
-          "#{to_qualified(fn.module_name)}::Internal.#{fn.name}.call()"
+          "#{to_qualified(fn.module_name)}::Internal.#{fn.name}"
 
         in Symbol::Function => fn
-          "#{to_qualified(fn.module_name)}::Internal.#{fn.name}"
+          "#{to_qualified(fn.module_name)}::Internal.method(:#{fn.name})"
         end
       end
 

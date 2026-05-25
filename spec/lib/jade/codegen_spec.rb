@@ -73,7 +73,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "def add\n  ->(a, b) { a }\nend" }
+      it { is_expected.to eql "def add(a, b)\n  a\nend" }
     end
 
     context 'function call' do
@@ -86,7 +86,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to include "__Test__::Internal.add.call(1, 2)" }
+      it { is_expected.to include "__Test__::Internal.add(1, 2)" }
     end
 
     context 'type def' do
@@ -116,7 +116,7 @@ module Jade
         end
 
         it 'emits the constructor call after the type definitions' do
-          expect(subject).to include '__Test__::Just.method(:[]).call(12)'
+          expect(subject).to include '__Test__::Just[12]'
         end
       end
     end
@@ -129,7 +129,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "def empty?\n  ->(str) { str.empty? }\nend" }
+      it { is_expected.to eql "def empty?(str)\n  str.empty?\nend" }
     end
 
     context 'module' do
@@ -150,8 +150,8 @@ module Jade
           "  extend self\n\n" \
           "  module Internal\n" \
           "    extend self\n\n" \
-          "    def hello\n" \
-          "      ->(str) { str.empty? }\n" \
+          "    def hello(str)\n" \
+          "      str.empty?\n" \
           "    end\n" \
           "  end"
         )
@@ -331,7 +331,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "Person = Data.define(:name, :age)\n__Test__::Person.method(:[]).call(\"Guybrush\", 28)" }
+      it { is_expected.to eql "Person = Data.define(:name, :age)\n__Test__::Person[\"Guybrush\", 28]" }
     end
 
     describe 'tuple' do
@@ -342,7 +342,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "Jade::Tuple::Tuple2.method(:[]).call(1, 2)" }
+        it { is_expected.to eql "Jade::Tuple::Tuple2[1, 2]" }
       end
 
       context 'three elements' do
@@ -352,7 +352,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "Jade::Tuple::Tuple3.method(:[]).call(1, 2, 3)" }
+        it { is_expected.to eql "Jade::Tuple::Tuple3[1, 2, 3]" }
       end
 
       context 'four elements' do
@@ -362,7 +362,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "Jade::Tuple::Tuple4.method(:[]).call(1, 2, 3, 4)" }
+        it { is_expected.to eql "Jade::Tuple::Tuple4[1, 2, 3, 4]" }
       end
     end
 
@@ -420,7 +420,7 @@ module Jade
             JADE
           end
 
-          it { is_expected.to eql "def test\n  ->() { (Jade::Maybe::Nothing[] == Jade::Maybe::Just.method(:[]).call(1)) }\nend" }
+          it { is_expected.to eql "def test\n  (Jade::Maybe::Nothing[] == Jade::Maybe::Just[1])\nend" }
 
           context 'when calling !=' do
             let(:text) do
@@ -430,7 +430,7 @@ module Jade
               JADE
             end
 
-            it { is_expected.to eql "def test\n  ->() { (Jade::Maybe::Nothing[] != Jade::Maybe::Just.method(:[]).call(1)) }\nend" }
+            it { is_expected.to eql "def test\n  (Jade::Maybe::Nothing[] != Jade::Maybe::Just[1])\nend" }
           end
 
           context 'with a type with different type params per variant' do
@@ -441,7 +441,7 @@ module Jade
               JADE
             end
 
-            it { is_expected.to eql "def test\n  ->() { (Jade::Result::Ok.method(:[]).call(\"OK\") != Jade::Result::Err.method(:[]).call(404)) }\nend" }
+            it { is_expected.to eql "def test\n  (Jade::Result::Ok[\"OK\"] != Jade::Result::Err[404])\nend" }
           end
         end
 
@@ -459,7 +459,7 @@ module Jade
             JADE
           end
 
-          it { is_expected.to eql "def test\n  ->() { (Jade::Runtime.record(:n, :salute)[1, \"Hola\"] == Jade::Runtime.record(:n, :salute)[2, \"Hei\"]) }\nend" }
+          it { is_expected.to eql "def test\n  (Jade::Runtime.record(:n, :salute)[1, \"Hola\"] == Jade::Runtime.record(:n, :salute)[2, \"Hei\"])\nend" }
         end
       end
 
@@ -477,9 +477,8 @@ module Jade
             is_expected.to include("class ::__Test__::Pepe\n  def ==(other_pepe)\n    pepe = self\n    true\n  end\nend")
           end
 
-          it 'does not emit register_impl or a synthetic __impl_* def' do
-            is_expected.not_to include('Jade::Runtime.register_impl')
-            is_expected.not_to include('__impl_Eq_Pepe')
+          it 'emits register_impl alongside the method' do
+            is_expected.to include('Jade::Runtime.register_impl("Basics.Eq"')
           end
         end
 
@@ -499,9 +498,8 @@ module Jade
             is_expected.to include("class ::__Test__::Person\n  def ==(other)\n    one = self\n    (one.id == other.id)\n  end\nend")
           end
 
-          it 'does not emit register_impl or a synthetic __impl_* def' do
-            is_expected.not_to include('Jade::Runtime.register_impl')
-            is_expected.not_to include('__impl_Eq_Person')
+          it 'emits register_impl alongside the method' do
+            is_expected.to include('Jade::Runtime.register_impl("Basics.Eq"')
           end
         end
 
@@ -517,15 +515,15 @@ module Jade
           end
 
           it 'emits a `==` method delegating to the standalone fn' do
-            is_expected.to include("class ::__Test__::Pepe\n  def ==(other)\n    ::__Test__::Internal.eq_pepe.call(self, other)\n  end\nend")
+            is_expected.to include("class ::__Test__::Pepe\n  def ==(other)\n    ::__Test__::Internal.eq_pepe(self, other)\n  end\nend")
           end
 
-          it 'does not emit register_impl' do
-            is_expected.not_to include('Jade::Runtime.register_impl')
+          it 'emits register_impl alongside the method' do
+            is_expected.to include('Jade::Runtime.register_impl("Basics.Eq"')
           end
         end
 
-        context 'with destructured params' do
+        context 'with a complex first-param pattern' do
           let(:text) do
             <<~JADE
               type Pepe = Pepe(Int)
@@ -534,9 +532,9 @@ module Jade
             JADE
           end
 
-          it 'rewrites the whole signature to a case-on-args block' do
-            is_expected.to include("def ==(__a1__)")
-            is_expected.to include("case [self, __a1__]\n    in [__Test__::Pepe(x), __Test__::Pepe(y)] then")
+          it 'falls back to register_impl without emitting an invalid def' do
+            is_expected.not_to match(/def ==\(.*\)\n\s+__Test__::Pepe\(/)
+            is_expected.to include('Jade::Runtime.register_impl("Basics.Eq"')
           end
         end
       end

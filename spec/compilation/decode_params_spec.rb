@@ -35,21 +35,21 @@ module Jade
       before { test_compiler.require('patch_params', source) }
 
       it 'returns an empty list when no fields are present' do
-        expect(PatchParams::Internal.parse_fields.call('{}')).to be_ok([])
+        expect(PatchParams::Internal.parse_fields('{}')).to be_ok([])
       end
 
       it 'collects only the fields that were provided' do
-        expect(PatchParams::Internal.parse_fields.call('{"name":"Pepe"}'))
+        expect(PatchParams::Internal.parse_fields('{"name":"Pepe"}'))
           .to be_ok([PatchParams::Name['Pepe']])
       end
 
       it 'preserves build order, not input key order' do
-        expect(PatchParams::Internal.parse_fields.call('{"age":30,"name":"Pepe"}'))
+        expect(PatchParams::Internal.parse_fields('{"age":30,"name":"Pepe"}'))
           .to be_ok([PatchParams::Name['Pepe'], PatchParams::Age[30]])
       end
 
       it 'fails when a present field has the wrong type' do
-        result = PatchParams::Internal.parse_fields.call('{"name":42}')
+        result = PatchParams::Internal.parse_fields('{"name":42}')
         expect(result).to be_err
       end
     end
@@ -84,12 +84,12 @@ module Jade
       before { test_compiler.require('create_params', source) }
 
       it 'fills both defaults when both keys are absent' do
-        expect(CreateParams::Internal.parse_fields.call('{}'))
+        expect(CreateParams::Internal.parse_fields('{}'))
           .to be_ok([CreateParams::Name['anon'], CreateParams::Age[0]])
       end
 
       it 'uses the present value over the default' do
-        expect(CreateParams::Internal.parse_fields.call('{"name":"Pepe"}'))
+        expect(CreateParams::Internal.parse_fields('{"name":"Pepe"}'))
           .to be_ok([CreateParams::Name['Pepe'], CreateParams::Age[0]])
       end
     end
@@ -128,12 +128,12 @@ module Jade
       before { test_compiler.require('multi_arg', source) }
 
       it 'decodes a multi-arg variant from a nested object' do
-        expect(MultiArg::Internal.parse.call('{"coords":{"x":3,"y":7}}'))
+        expect(MultiArg::Internal.parse('{"coords":{"x":3,"y":7}}'))
           .to be_ok([MultiArg::Coords[3, 7]])
       end
 
       it 'decodes both fields together' do
-        expect(MultiArg::Internal.parse.call('{"name":"Pepe","coords":{"x":1,"y":2}}'))
+        expect(MultiArg::Internal.parse('{"name":"Pepe","coords":{"x":1,"y":2}}'))
           .to be_ok([MultiArg::Name['Pepe'], MultiArg::Coords[1, 2]])
       end
     end
@@ -177,13 +177,13 @@ module Jade
       before { test_compiler.require('nested', source) }
 
       it 'decodes the outer field with an empty inner object' do
-        expect(Nested::Internal.parse.call('{"address":{}}'))
+        expect(Nested::Internal.parse('{"address":{}}'))
           .to be_ok([Nested::Address[[]]])
       end
 
       it 'collects fields from the nested sub-params' do
         json = '{"name":"Pepe","address":{"line1":"123 Main","line2":"Apt 4"}}'
-        expect(Nested::Internal.parse.call(json)).to be_ok([
+        expect(Nested::Internal.parse(json)).to be_ok([
           Nested::Name['Pepe'],
           Nested::Address[[
             Nested::Line1['123 Main'],
@@ -193,7 +193,7 @@ module Jade
       end
 
       it 'omits the outer field entirely when its key is absent' do
-        expect(Nested::Internal.parse.call('{"name":"Pepe"}'))
+        expect(Nested::Internal.parse('{"name":"Pepe"}'))
           .to be_ok([Nested::Name['Pepe']])
       end
     end

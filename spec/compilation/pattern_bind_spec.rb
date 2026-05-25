@@ -24,8 +24,8 @@ module Jade
       end
 
       it 'extracts the field' do
-        expect(PatternBind::Internal.get_name.call(Maybe::Just[{ name: 'Alice' }])).to be_just('Alice')
-        expect(PatternBind::Internal.get_name.call(Maybe::Nothing[])).to be_nothing
+        expect(PatternBind::Internal.get_name(Maybe::Just[{ name: 'Alice' }])).to be_just('Alice')
+        expect(PatternBind::Internal.get_name(Maybe::Nothing[])).to be_nothing
       end
     end
 
@@ -42,7 +42,7 @@ module Jade
       end
 
       it 'destructures the tuple' do
-        expect(PatternBind::Internal.sum_pair.call(Tuple::Tuple2[3, 4])).to eql 7
+        expect(PatternBind::Internal.sum_pair(Tuple::Tuple2[3, 4])).to eql 7
       end
     end
 
@@ -59,7 +59,7 @@ module Jade
       end
 
       it 'destructures the record' do
-        expect(PatternBind::Internal.get_name_direct.call({ name: 'Bob', age: 25 })).to eql 'Bob'
+        expect(PatternBind::Internal.get_name_direct({ name: 'Bob', age: 25 })).to eql 'Bob'
       end
     end
 
@@ -157,7 +157,7 @@ module Jade
           a
       JADE
 
-      expect(OpaqueApp::Internal.go.call).to be_a(OpaqueLib::T)
+      expect(OpaqueApp::Internal.go).to be_a(OpaqueLib::T)
     end
   end
 end

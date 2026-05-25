@@ -122,8 +122,8 @@ module Jade
       expect(N.in_call_arg(false)).to eql 0
       expect(N.in_list(true)).to eql [1, 2, 3]
       expect(N.in_list(false)).to eql [1, 99, 3]
-      expect(N::Internal.in_record.call(true).y).to eql 2
-      expect(N::Internal.in_record.call(false).y).to eql 99
+      expect(N::Internal.in_record(true).y).to eql 2
+      expect(N::Internal.in_record(false).y).to eql 99
     end
 
     it 'spans multiple lines' do

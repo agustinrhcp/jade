@@ -298,7 +298,7 @@ module Jade
       it 'finds the user-declared decoder via registry impl lookup' do
         wrapper_type = Type.constructor('BoundaryTest.Wrapper').apply([])
         expect(described_class.decoder_for(wrapper_type, loaded_registry))
-          .to eql 'BoundaryTest::Internal.my_decoder.call'
+          .to eql 'BoundaryTest::Internal.method(:my_decoder).call'
       end
     end
   end

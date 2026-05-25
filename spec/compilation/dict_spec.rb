@@ -182,14 +182,14 @@ module Jade
     it 'enumerates keys/values/pairs in insertion order' do
       expect(Pepe.keys_of).to eql ['a', 'b']
       expect(Pepe.values_of).to eql [1, 2]
-      expect(Pepe::Internal.to_pairs.call).to eql [
+      expect(Pepe::Internal.to_pairs).to eql [
         Jade::Tuple::Tuple2['a', 1],
         Jade::Tuple::Tuple2['b', 2],
       ]
     end
 
     it 'rebuilds from a list of pairs (last write wins)' do
-      expect(Pepe::Internal.rebuild.call).to eql [
+      expect(Pepe::Internal.rebuild).to eql [
         Jade::Tuple::Tuple2['x', 10],
         Jade::Tuple::Tuple2['y', 20],
       ]
@@ -219,7 +219,7 @@ module Jade
     end
 
     it 'counts a stream of words via update + fold' do
-      result = Pepe::Internal.counts.call(%w[a b a c a b])
+      result = Pepe::Internal.counts(%w[a b a c a b])
       expect(result.hash).to eql({ 'a' => 3, 'b' => 2, 'c' => 1 })
     end
 
@@ -227,8 +227,8 @@ module Jade
       a = dict.call({ 'x' => 1, 'y' => 2 })
       b = dict.call({ 'y' => 2, 'x' => 1 })
       c = dict.call({ 'x' => 1, 'y' => 3 })
-      expect(Pepe::Internal.equal.call(a, b)).to be true
-      expect(Pepe::Internal.equal.call(a, c)).to be false
+      expect(Pepe::Internal.equal(a, b)).to be true
+      expect(Pepe::Internal.equal(a, c)).to be false
     end
 
     it 'threads Eq through a polymorphic helper called at a concrete site' do
