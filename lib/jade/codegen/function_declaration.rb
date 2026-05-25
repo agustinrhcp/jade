@@ -36,7 +36,7 @@ module Jade
         dict_params = var_cs.each_index.map { dict_synthetic_name(it) }
 
         body_code = build_dict_env(var_cs)
-          .then { Codegen.with_dict_env(it) { generate_node(body, registry) } }
+          .then { Codegen.with_dict_env(it) { emit_body(body, symbol, param_names, registry) } }
 
         target  = var_cs.empty? ? name : fn_impl_synthetic_name(name)
         sig     = (param_names + dict_params).join(', ')
@@ -46,6 +46,14 @@ module Jade
       end
 
       private
+
+      def emit_body(body, self_sym, param_names, registry)
+        if TailCall.tail_recursive?(body, self_sym, param_names.size, registry)
+          TailCall.generate_body(body, registry, self_sym, param_names)
+        else
+          generate_node(body, registry)
+        end
+      end
 
       def eligible_wrapper(name, args, return_type, registry)
         param_names = args.each_index.map { param_synthetic_name(it) }
