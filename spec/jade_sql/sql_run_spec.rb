@@ -121,7 +121,7 @@ module Jade
       it 'returns the affected count from the port' do
         all_calls_to(JadeSql::Runtime.port_execute_count) { |t, _pair| t.ok(7) }
 
-        expect(App::Internal.count_via_execute.call.run).to be_ok(7)
+        expect(App::Internal.count_via_execute.run).to be_ok(7)
         expect(JadeSql::Runtime.port_execute_count).to have_been_called
       end
 
@@ -130,7 +130,7 @@ module Jade
           t.err(JadeSql::SqlErrors.db_error("syntax error"))
         end
 
-        expect(App::Internal.count_via_execute.call.run).to be_err(look_like("Sql::Run::DbError", "syntax error"))
+        expect(App::Internal.count_via_execute.run).to be_err(look_like("Sql::Run::DbError", "syntax error"))
       end
 
       it 'surfaces a NotFound from port_execute_one' do
@@ -138,7 +138,7 @@ module Jade
           t.err(JadeSql::SqlErrors.not_found)
         end
 
-        expect(App::Internal.find_via_run.call.run).to be_err(look_like("Sql::Run::NotFound"))
+        expect(App::Internal.find_via_run.run).to be_err(look_like("Sql::Run::NotFound"))
       end
 
       it 'surfaces a NotUnique from port_execute_one' do
@@ -146,7 +146,7 @@ module Jade
           t.err(JadeSql::SqlErrors.not_unique)
         end
 
-        expect(App::Internal.find_via_run.call.run).to be_err(look_like("Sql::Run::NotUnique"))
+        expect(App::Internal.find_via_run.run).to be_err(look_like("Sql::Run::NotUnique"))
       end
     end
 
@@ -156,7 +156,7 @@ module Jade
           t.ok({ "id" => 1, "name" => "Paul", "balance" => 100 })
         end
 
-        result = App::Internal.find_via_run.call.run
+        result = App::Internal.find_via_run.run
         expect(result).to be_ok(look_like("App::Patient", id: 1, name: "Paul", balance: 100))
       end
     end
@@ -170,7 +170,7 @@ module Jade
           ])
         end
 
-        result = App::Internal.all_via_run.call.run
+        result = App::Internal.all_via_run.run
         expect(result).to be_ok
         expect(result._1.length).to eql 2
       end
@@ -178,7 +178,7 @@ module Jade
       it 'returns an empty list when the DB returns no rows' do
         all_calls_to(JadeSql::Runtime.port_execute_many) { |t, _pair| t.ok([]) }
 
-        result = App::Internal.list_via_execute.call.run
+        result = App::Internal.list_via_execute.run
         expect(result).to be_ok
         expect(result._1).to eql []
       end
@@ -196,7 +196,7 @@ module Jade
           t.ok({ "id" => 1, "name" => "Paul", "balance" => 100 })
         end
 
-        result = App::Internal.paul_via_run.call.run
+        result = App::Internal.paul_via_run.run
         expect(result).to be_ok(look_like("App::Patient", id: 1, name: "Paul", balance: 100))
       end
     end

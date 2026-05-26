@@ -41,15 +41,15 @@ module Jade
       before { test_compiler.require('app', source) }
 
       it 'accepts a canonical 8-4-4-4-12 form' do
-        expect(App::Internal.parse_good.call).to eql Jade::Maybe::Just[Sql::Uuid::Uuid["550e8400-e29b-41d4-a716-446655440000"]]
+        expect(App::Internal.parse_good).to eql Jade::Maybe::Just[Sql::Uuid::Uuid["550e8400-e29b-41d4-a716-446655440000"]]
       end
 
       it 'rejects a non-uuid string' do
-        expect(App::Internal.parse_bad.call).to eql Jade::Maybe::Nothing[]
+        expect(App::Internal.parse_bad).to eql Jade::Maybe::Nothing[]
       end
 
       it 'normalises uppercase to lowercase on roundtrip' do
-        expect(App::Internal.str_good.call).to eql "550e8400-e29b-41d4-a716-446655440000"
+        expect(App::Internal.str_good).to eql "550e8400-e29b-41d4-a716-446655440000"
       end
     end
 
@@ -81,7 +81,7 @@ module Jade
           t.ok({ "value" => "00000000-0000-4000-8000-000000000000" })
         end
 
-        result = App::Internal.gen_v4.call.run
+        result = App::Internal.gen_v4.run
         expect(result).to be_ok("00000000-0000-4000-8000-000000000000")
       end
 
@@ -90,7 +90,7 @@ module Jade
           t.ok({ "value" => "00000000-0000-7000-8000-000000000000" })
         end
 
-        result = App::Internal.gen_v7.call.run
+        result = App::Internal.gen_v7.run
         expect(result).to be_ok("00000000-0000-7000-8000-000000000000")
       end
 
@@ -116,7 +116,7 @@ module Jade
       before { test_compiler.require('app', source) }
 
       it 'encodes to the lowercase string form' do
-        expect(App::Internal.encoded.call).to eql "550e8400-e29b-41d4-a716-446655440000"
+        expect(App::Internal.encoded).to eql "550e8400-e29b-41d4-a716-446655440000"
       end
     end
   end

@@ -20,7 +20,7 @@ module Jade
             column("p", "name")
         JADE
 
-        App::Internal.make_col.call.then do |expr|
+        App::Internal.make_col.then do |expr|
           expect(expr.sql).to eql 'p.name'
           expect(expr.params).to eql []
         end
@@ -39,7 +39,7 @@ module Jade
             to_expr(42)
         JADE
 
-        App::Internal.make_expr.call.then do |expr|
+        App::Internal.make_expr.then do |expr|
           expect(expr.sql).to eql '?'
           expect(expr.params).to eql [42]
         end
@@ -56,7 +56,7 @@ module Jade
             to_expr("paul")
         JADE
 
-        App::Internal.make_expr.call.then do |expr|
+        App::Internal.make_expr.then do |expr|
           expect(expr.params).to eql ['paul']
         end
       end
@@ -72,7 +72,7 @@ module Jade
             to_expr(Just(12))
         JADE
 
-        App::Internal.make_expr.call.then do |expr|
+        App::Internal.make_expr.then do |expr|
           expect(expr.params).to eql [12]
         end
       end
@@ -88,7 +88,7 @@ module Jade
             to_expr(Nothing)
         JADE
 
-        App::Internal.make_expr.call.then do |expr|
+        App::Internal.make_expr.then do |expr|
           expect(expr.params).to eql [nil]
         end
       end
@@ -106,7 +106,7 @@ module Jade
             column("p", "age") |> eq(to_expr(18))
         JADE
 
-        App::Internal.predicate.call.then do |expr|
+        App::Internal.predicate.then do |expr|
           expect(expr.sql).to eql 'p.age = ?'
           expect(expr.params).to eql [18]
         end
@@ -125,7 +125,7 @@ module Jade
             column("p", "age") |> is_null
         JADE
 
-        App::Internal.predicate.call.then do |expr|
+        App::Internal.predicate.then do |expr|
           expect(expr.sql).to eql 'p.age IS NULL'
           expect(expr.params).to eql []
         end
@@ -147,7 +147,7 @@ module Jade
             a |> and(b)
         JADE
 
-        App::Internal.predicate.call.then do |expr|
+        App::Internal.predicate.then do |expr|
           expect(expr.sql).to eql 'p.a = ? AND p.b = ?'
           expect(expr.params).to eql [1, 2]
         end
@@ -195,7 +195,7 @@ module Jade
       it 'records the table and where clause' do
         test_compiler.require('app', source)
 
-        App::Internal.named_paul.call.then do |q|
+        App::Internal.named_paul.then do |q|
           expect(q.tables.size).to eql 1
           expect(q.tables.first.name).to eql 'persons'
           expect(q.tables.first.alias_).to eql 'p'
@@ -263,7 +263,7 @@ module Jade
       it 'records the inner join with predicate' do
         test_compiler.require('app', source)
 
-        App::Internal.persons_with_orders.call.then do |q|
+        App::Internal.persons_with_orders.then do |q|
           expect(q.tables.size).to eql 1
           expect(q.tables.first.name).to eql 'persons'
           expect(q.joins.size).to eql 1
@@ -319,7 +319,7 @@ module Jade
       it 'overrides the join alias and qualifies its columns' do
         test_compiler.require('app', source)
 
-        App::Internal.parents_and_kids.call.then do |q|
+        App::Internal.parents_and_kids.then do |q|
           expect(q.tables.first.alias_).to eql 'persons'
           expect(q.joins.size).to eql 1
           j = q.joins.first
@@ -387,7 +387,7 @@ module Jade
       it 'records left_join with strict on-predicate, maybe result' do
         test_compiler.require('app', source)
 
-        App::Internal.persons_with_optional_orders.call.then do |q|
+        App::Internal.persons_with_optional_orders.then do |q|
           j = q.joins.first
           expect(j.kind).to eql Sql::Query::LeftJ[]
           expect(j.on.sql).to eql 'p.id = o.person_id'
@@ -452,7 +452,7 @@ module Jade
       it 'compiles when c.id is lifted to Maybe(Int)' do
         test_compiler.require('app', source)
 
-        App::Internal.persons_with_companies.call.then do |q|
+        App::Internal.persons_with_companies.then do |q|
           j = q.joins.first
           expect(j.on.sql).to eql 'p.company_id = c.id'
         end
@@ -512,7 +512,7 @@ module Jade
       it 'projects the selected columns in declared order' do
         test_compiler.require('app', adults_source)
 
-        App::Internal.adults_query.call.then do |q|
+        App::Internal.adults_query.then do |q|
           expect(q.result.columns_sql).to eql ['p.id', 'p.name', 'p.age']
         end
       end
@@ -603,7 +603,7 @@ module Jade
       it 'emits SELECT, FROM, INNER JOIN, WHERE clauses + params in order' do
         test_compiler.require('app', source)
 
-        sql, params = App::Internal.rendered.call.then { [it._1, it._2] }
+        sql, params = App::Internal.rendered.then { [it._1, it._2] }
 
         expect(sql).to eql(
           'SELECT p.id, p.name, o.total ' \
@@ -756,35 +756,35 @@ module Jade
       before { test_compiler.require('app', source) }
 
       it 'appends ORDER BY with implicit ASC' do
-        sql, _ = App::Internal.sorted_asc.call.then { [it._1, it._2] }
+        sql, _ = App::Internal.sorted_asc.then { [it._1, it._2] }
         expect(sql).to eql(
           'SELECT p.id, p.name, p.age FROM persons p ORDER BY p.name'
         )
       end
 
       it 'appends ORDER BY ... DESC' do
-        sql, _ = App::Internal.sorted_desc.call.then { [it._1, it._2] }
+        sql, _ = App::Internal.sorted_desc.then { [it._1, it._2] }
         expect(sql).to eql(
           'SELECT p.id, p.name, p.age FROM persons p ORDER BY p.age DESC'
         )
       end
 
       it 'preserves order-by declaration order across mixed directions' do
-        sql, _ = App::Internal.multi_sorted.call.then { [it._1, it._2] }
+        sql, _ = App::Internal.multi_sorted.then { [it._1, it._2] }
         expect(sql).to eql(
           'SELECT p.id, p.name, p.age FROM persons p ORDER BY p.age DESC, p.name'
         )
       end
 
       it 'appends GROUP BY with comma-separated columns' do
-        sql, _ = App::Internal.grouped.call.then { [it._1, it._2] }
+        sql, _ = App::Internal.grouped.then { [it._1, it._2] }
         expect(sql).to eql(
           'SELECT p.id, p.name, p.age FROM persons p GROUP BY p.age, p.name'
         )
       end
 
       it 'renders ORDER BY before LIMIT/OFFSET' do
-        sql, _ = App::Internal.sorted_then_paged.call.then { [it._1, it._2] }
+        sql, _ = App::Internal.sorted_then_paged.then { [it._1, it._2] }
         expect(sql).to eql(
           'SELECT p.id, p.name, p.age ' \
           'FROM persons p ' \
@@ -867,24 +867,24 @@ module Jade
       before { test_compiler.require('app', source) }
 
       it 'appends LIMIT after WHERE' do
-        sql, params = App::Internal.page_one.call.then { [it._1, it._2] }
+        sql, params = App::Internal.page_one.then { [it._1, it._2] }
         expect(sql).to eql 'SELECT p.id, p.name FROM persons p LIMIT 10'
         expect(params).to eql []
       end
 
       it 'appends LIMIT then OFFSET' do
-        sql, params = App::Internal.page_two.call.then { [it._1, it._2] }
+        sql, params = App::Internal.page_two.then { [it._1, it._2] }
         expect(sql).to eql 'SELECT p.id, p.name FROM persons p LIMIT 10 OFFSET 10'
         expect(params).to eql []
       end
 
       it 'appends only OFFSET when LIMIT is unset' do
-        sql, _ = App::Internal.only_offset.call.then { [it._1, it._2] }
+        sql, _ = App::Internal.only_offset.then { [it._1, it._2] }
         expect(sql).to eql 'SELECT p.id, p.name FROM persons p OFFSET 20'
       end
 
       it 'emits no LIMIT/OFFSET when neither is set' do
-        sql, _ = App::Internal.no_paging.call.then { [it._1, it._2] }
+        sql, _ = App::Internal.no_paging.then { [it._1, it._2] }
         expect(sql).to eql 'SELECT p.id, p.name FROM persons p'
       end
     end
@@ -1085,31 +1085,31 @@ module Jade
       before { test_compiler.require('app', source) }
 
       it 'insert renders INSERT with codec-driven assigns' do
-        sql, params = App::Internal.insert_paul.call.then { [it._1, it._2] }
+        sql, params = App::Internal.insert_paul.then { [it._1, it._2] }
         expect(sql).to eql 'INSERT INTO patients (name, balance) VALUES (?, ?)'
         expect(params).to eql ['Paul', 100]
       end
 
       it 'insert accepts a raw List(Assignment) via SqlMapper(List(Assignment))' do
-        sql, params = App::Internal.insert_from_assigns.call.then { [it._1, it._2] }
+        sql, params = App::Internal.insert_from_assigns.then { [it._1, it._2] }
         expect(sql).to eql 'INSERT INTO patients (name, balance) VALUES (?, ?)'
         expect(params).to eql ['Paul', 100]
       end
 
       it 'update renders UPDATE … WHERE pk = ?' do
-        sql, params = App::Internal.update_paul.call.then { [it._1, it._2] }
+        sql, params = App::Internal.update_paul.then { [it._1, it._2] }
         expect(sql).to eql 'UPDATE patients SET name = ?, balance = ? WHERE id = ?'
         expect(params).to eql ['Paul', 100, 42]
       end
 
       it 'delete renders DELETE … WHERE pk = ?' do
-        sql, params = App::Internal.delete_paul.call.then { [it._1, it._2] }
+        sql, params = App::Internal.delete_paul.then { [it._1, it._2] }
         expect(sql).to eql 'DELETE FROM patients WHERE id = ?'
         expect(params).to eql [42]
       end
 
       it 'insert_all renders multi-row VALUES' do
-        sql, params = App::Internal.insert_many.call.then { [it._1, it._2] }
+        sql, params = App::Internal.insert_many.then { [it._1, it._2] }
         expect(sql).to eql 'INSERT INTO patients (name, balance) VALUES (?, ?), (?, ?)'
         expect(params).to eql [
           'Paul',  100,
@@ -1118,29 +1118,29 @@ module Jade
       end
 
       it 'update_all renders bulk UPDATE with predicate' do
-        sql, params = App::Internal.update_all_to_zero.call.then { [it._1, it._2] }
+        sql, params = App::Internal.update_all_to_zero.then { [it._1, it._2] }
         expect(sql).to eql 'UPDATE patients SET archived = ? WHERE p.balance = ?'
         expect(params).to eql [true, 0]
       end
 
       it 'delete_all renders bulk DELETE with predicate' do
-        sql, params = App::Internal.delete_archived.call.then { [it._1, it._2] }
+        sql, params = App::Internal.delete_archived.then { [it._1, it._2] }
         expect(sql).to eql 'DELETE FROM patients WHERE p.archived = ?'
         expect(params).to eql [true]
       end
 
       it 'insert + returning projects the table columns into RETURNING' do
-        sql, _ = App::Internal.insert_paul_returning.call.then { [it._1, it._2] }
+        sql, _ = App::Internal.insert_paul_returning.then { [it._1, it._2] }
         expect(sql).to eql 'INSERT INTO patients (name, balance) VALUES (?, ?) RETURNING p.id, p.name, p.balance'
       end
 
       it 'update + returning appends RETURNING with the projected columns' do
-        sql, _ = App::Internal.update_paul_returning.call.then { [it._1, it._2] }
+        sql, _ = App::Internal.update_paul_returning.then { [it._1, it._2] }
         expect(sql).to eql 'UPDATE patients SET name = ?, balance = ? WHERE id = ? RETURNING p.id, p.name, p.balance'
       end
 
       it 'delete + returning appends RETURNING with the projected columns' do
-        sql, _ = App::Internal.delete_paul_returning.call.then { [it._1, it._2] }
+        sql, _ = App::Internal.delete_paul_returning.then { [it._1, it._2] }
         expect(sql).to eql 'DELETE FROM patients WHERE id = ? RETURNING p.id, p.name, p.balance'
       end
     end
