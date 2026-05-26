@@ -71,6 +71,26 @@ module Jade
       ensure
         @dispatched_methods = prev
       end
+
+      # Maps boundary decoder/encoder expression strings to module-level
+      # const names that hold the same value, precomputed once at module
+      # load. Populated by `Boundary.collect_cache` at the start of module
+      # emission; consumed by `Boundary.cached_decoder_for` /
+      # `cached_encoder_for` from wrapper codegen.
+      #
+      # Shape: `{ decoders: { spec => const }, encoders: { spec => const } }`.
+      # Empty outside a Module — `cached_*` falls through to the raw spec.
+      def boundary_cache
+        @boundary_cache || { decoders: {}, encoders: {} }
+      end
+
+      def with_boundary_cache(cache)
+        prev = @boundary_cache
+        @boundary_cache = cache
+        yield
+      ensure
+        @boundary_cache = prev
+      end
     end
   end
 end

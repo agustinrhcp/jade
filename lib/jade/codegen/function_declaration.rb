@@ -57,7 +57,7 @@ module Jade
 
       def eligible_wrapper(name, args, return_type, registry)
         param_names = args.each_index.map { param_synthetic_name(it) }
-        encoder     = Codegen::Boundary.encoder_for(return_type, registry)
+        encoder     = Codegen::Boundary::Cache.encoder_for(return_type, registry)
 
         [
           *decode_arg_lines(args, param_names, registry),
@@ -68,7 +68,7 @@ module Jade
       end
 
       def task_wrapper_pair(name, args, task_return, registry)
-        ok_enc, err_enc = Codegen::Boundary.task_arms(task_return, registry)
+        ok_enc, err_enc = Codegen::Boundary::Cache.task_arms(task_return, registry)
         param_names     = args.each_index.map { param_synthetic_name(it) }
         params_str      = param_names.join(', ')
 
@@ -109,7 +109,7 @@ module Jade
         args
           .zip(param_names)
           .each_with_index.map do |(arg_type, pname), i|
-            Codegen::Boundary.decoder_for(arg_type, registry)
+            Codegen::Boundary::Cache.decoder_for(arg_type, registry)
               .then { "#{decoded_name(i)} = Jade::Interop::Boundary.decode_or_raise(#{it}, #{pname})" }
           end
       end
