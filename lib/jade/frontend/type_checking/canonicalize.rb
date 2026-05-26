@@ -27,6 +27,9 @@ module Jade
             walk(callee, sub)
             args.each { walk(it, sub) }
 
+          in AST::QualifiedAccess | AST::VariableReference
+            canonicalize_dictionaries(node, sub)
+
           in AST::Module(body:)             then walk(body, sub)
           in AST::Body(expressions:)        then expressions.each { walk(it, sub) }
           in AST::FunctionDeclaration(body:) then walk(body, sub)
@@ -56,9 +59,7 @@ module Jade
           # silently skipping a subtree.
           in AST::Literal |
              AST::CharLiteral |
-             AST::VariableReference |
              AST::ConstructorReference |
-             AST::QualifiedAccess |
              AST::ImportDeclaration |
              AST::InteropImportDeclaration |
              AST::TypeDeclaration |

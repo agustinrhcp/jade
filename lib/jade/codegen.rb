@@ -73,6 +73,10 @@ module Jade
         .then { entry.with(generated: it) }
     end
 
+    def reference_emission(resolved, dictionaries, registry, &fallback)
+      FunctionCall.reference_with_dictionaries(resolved, dictionaries, registry) || fallback.call
+    end
+
     def generate(node, registry, depth: 0)
       case node
       in AST::Module(name:, body:)
@@ -130,21 +134,25 @@ module Jade
           .reject(&:empty?)
           .join("\n")
 
-      in AST::VariableReference(symbol: ref, name:)
-        case ref.is_a?(Symbol::ValueRef) ? registry.lookup(ref) : ref
-        in Symbol::InteropFunction => sym
-          registry
-            .lookup(sym.to_ref)
-            .then { PortDecoder.task_call(it, registry) }
+      in AST::VariableReference(symbol: ref, name:, dictionaries:)
+        resolved = ref.is_a?(Symbol::ValueRef) ? registry.lookup(ref) : ref
 
-        in Symbol::StdlibFunction(codegen:)
-          codegen
+        reference_emission(resolved, dictionaries, registry) do
+          case resolved
+          in Symbol::InteropFunction => sym
+            registry
+              .lookup(sym.to_ref)
+              .then { PortDecoder.task_call(it, registry) }
 
-        in Symbol::Function => fn
-          "#{to_qualified(fn.module_name)}::Internal.method(:#{fn.name})"
+          in Symbol::StdlibFunction(codegen:)
+            codegen
 
-        else
-          name
+          in Symbol::Function => fn
+            "#{to_qualified(fn.module_name)}::Internal.method(:#{fn.name})"
+
+          else
+            name
+          end
         end
 
       in AST::Assign(pattern:, expression:)
@@ -190,16 +198,20 @@ module Jade
       in AST::InterfaceDeclaration
         ""
 
-      in AST::QualifiedAccess(symbol:)
-        case registry.lookup(symbol)
-        in Symbol::StdlibFunction(codegen:)
-          codegen
+      in AST::QualifiedAccess(symbol:, dictionaries:)
+        resolved = registry.lookup(symbol)
 
-        in Symbol::Function => fn
-          "#{to_qualified(fn.module_name)}::Internal.method(:#{fn.name})"
+        reference_emission(resolved, dictionaries, registry) do
+          case resolved
+          in Symbol::StdlibFunction(codegen:)
+            codegen
 
-        in Symbol::Constructor => sym
-          ConstructorReference.from_symbol(sym)
+          in Symbol::Function => fn
+            "#{to_qualified(fn.module_name)}::Internal.method(:#{fn.name})"
+
+          in Symbol::Constructor => sym
+            ConstructorReference.from_symbol(sym)
+          end
         end
 
       in AST::IfThenElse(condition:, if_branch:, else_branch:)

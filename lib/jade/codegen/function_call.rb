@@ -98,6 +98,40 @@ module Jade
         end
       end
 
+      # Polymorphic fn referenced as a value (not called). Wraps the fn with
+      # its dispatched dictionaries so the result is a monomorphic callable
+      # matching the type at the use site. Returns nil when the symbol
+      # doesn't need wrapping; the caller falls back to its default
+      # reference emission.
+      def reference_with_dictionaries(symbol, dictionaries, registry)
+        return nil if dictionaries.empty?
+
+        case symbol
+        in Symbol::StdlibFunction => fn if fn.constraints.any?
+          dictionaries
+            .map { dispatch_dict(it, registry) }
+            .then { generate_impl_fn(fn.codegen, it, {}, registry) }
+
+        in Symbol::Function => fn if dict_constraints(fn, registry).any?
+          param_names = fn.params.size.times.map { param_synthetic_name(it) }
+
+          fn_constraints(fn, registry)
+            .each_with_index
+            .filter_map { |c, i| dispatch_value(dictionaries[i], registry) if c.type.is_a?(Type::Var) }
+            .then { (param_names + it).join(', ') }
+            .then { "#{to_qualified(fn.module_name)}::Internal.#{fn_target_name(fn, registry)}(#{it})" }
+            .then { Pretty.lambda(param_names.join(', '), it) }
+
+        in Symbol::InterfaceFunction => fn
+          dispatch_value(dictionaries.first, registry)
+            &.then { "#{it}[#{fn.name.inspect}]" } ||
+            fail("no dict in scope to reference interface method `#{fn.qualified_name}` as a value")
+
+        else
+          nil
+        end
+      end
+
       private
 
       def keyed_variant_constructor(callee, registry)

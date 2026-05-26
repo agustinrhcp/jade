@@ -47,7 +47,7 @@ module Jade
     define(:InfixApplication, :left, :operator, :right)
     define(:InfixOperator, :value)
 
-    define(:FunctionCall, :callee, :args, :infix, :dictionaries)
+    define(:FunctionCall, :callee, :args, :infix)
     define(:KeyedCall, :callee, :fields)
     define(:Placeholder)
     define(:MemberAccess, :target, :name)

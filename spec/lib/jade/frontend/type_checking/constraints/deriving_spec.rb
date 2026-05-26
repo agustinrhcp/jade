@@ -80,7 +80,7 @@ module Jade
               let(:constraint) do
                 Type
                   .eq(Type.parse('a -> a'))
-                  .with(origin: AST::FunctionCall[nil, nil, nil, nil, 0..10])
+                  .with(origin: AST::FunctionCall.new(callee: nil, args: nil, infix: nil, range: 0..10))
               end
 
               it { is_expected.to be_error }

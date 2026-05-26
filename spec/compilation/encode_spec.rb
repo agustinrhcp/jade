@@ -251,5 +251,250 @@ module Jade
         ])
       end
     end
+
+    context 'Encode.encode passed as a value (polymorphic fn argument)' do
+      let(:source) do
+        <<~JADE
+          module PolyArg exposing (int_field, object_two, string_field)
+
+          import Encode
+          import Decode exposing (Value)
+
+
+          def string_field(s: String) -> String
+            Encode.encode_to_string(
+              Encode.object([Encode.field("k", Encode.encode, s)]),
+            )
+
+
+          def int_field(i: Int) -> String
+            Encode.encode_to_string(
+              Encode.object([Encode.field("k", Encode.encode, i)]),
+            )
+
+
+          def object_two(name: String, age: Int) -> String
+            Encode.encode_to_string(
+              Encode.object(
+                [
+                  Encode.field("name", Encode.encode, name),
+                  Encode.field("age", Encode.encode, age),
+                ],
+              ),
+            )
+        JADE
+      end
+
+      before { test_compiler.require('poly_arg', source) }
+
+      it 'wraps Encode.encode with the String dict' do
+        expect(PolyArg.string_field("abc")).to eql('{"k":"abc"}')
+      end
+
+      it 'wraps Encode.encode with the Int dict' do
+        expect(PolyArg.int_field(42)).to eql('{"k":42}')
+      end
+
+      it 'wraps each Encode.encode reference with its own dict' do
+        expect(PolyArg.object_two("Pepe", 30)).to eql('{"name":"Pepe","age":30}')
+      end
+    end
+
+    context 'Encode.encode passed to a user fn' do
+      let(:source) do
+        <<~JADE
+          module PolyUserArg exposing (apply_int)
+
+          import Encode
+          import Decode exposing (Value)
+
+
+          def apply_encoder(enc: Int -> Value, i: Int) -> Value
+            enc(i)
+
+
+          def apply_int(i: Int) -> String
+            Encode.encode_to_string(apply_encoder(Encode.encode, i))
+        JADE
+      end
+
+      before { test_compiler.require('poly_user_arg', source) }
+
+      it 'resolves the dict at the user-fn call site' do
+        expect(PolyUserArg.apply_int(42)).to eql('42')
+      end
+    end
+
+    context 'Encode.encode referenced inside a generic body' do
+      let(:source) do
+        <<~JADE
+          module PolyGeneric exposing (wrap_int, wrap_string)
+
+          import Encode
+          import Decode exposing (Value)
+
+
+          def wrap(x: a) -> Value
+            Encode.object([Encode.field("v", Encode.encode, x)])
+
+
+          def wrap_string(s: String) -> String
+            Encode.encode_to_string(wrap(s))
+
+
+          def wrap_int(i: Int) -> String
+            Encode.encode_to_string(wrap(i))
+        JADE
+      end
+
+      before { test_compiler.require('poly_generic', source) }
+
+      it 'threads the dict through the generic call for String' do
+        expect(PolyGeneric.wrap_string("abc")).to eql('{"v":"abc"}')
+      end
+
+      it 'threads the dict through the generic call for Int' do
+        expect(PolyGeneric.wrap_int(7)).to eql('{"v":7}')
+      end
+    end
+
+    context 'user fn with a constraint passed as a value' do
+      let(:source) do
+        <<~JADE
+          module UserPoly exposing (go_int, go_string)
+
+          import Encode
+          import Decode exposing (Value)
+
+
+          def my_enc(x: a) -> Value
+            Encode.encode(x)
+
+
+          def apply_int(enc: Int -> Value, i: Int) -> Value
+            enc(i)
+
+
+          def apply_string(enc: String -> Value, s: String) -> Value
+            enc(s)
+
+
+          def go_int(i: Int) -> String
+            Encode.encode_to_string(apply_int(my_enc, i))
+
+
+          def go_string(s: String) -> String
+            Encode.encode_to_string(apply_string(my_enc, s))
+        JADE
+      end
+
+      before { test_compiler.require('user_poly', source) }
+
+      it 'specializes the user fn for Int at the value-position use' do
+        expect(UserPoly.go_int(42)).to eql('42')
+      end
+
+      it 'specializes the user fn for String at the value-position use' do
+        expect(UserPoly.go_string("hi")).to eql('"hi"')
+      end
+    end
+
+    context 'interface method passed as a value' do
+      let(:source) do
+        <<~JADE
+          module IfacePoly exposing (go_int, go_string)
+
+          import Encode
+          import Decode exposing (Value)
+
+
+          def apply_int(enc: Int -> Value, i: Int) -> Value
+            enc(i)
+
+
+          def apply_string(enc: String -> Value, s: String) -> Value
+            enc(s)
+
+
+          def go_int(i: Int) -> String
+            Encode.encode_to_string(apply_int(Encode.encoder, i))
+
+
+          def go_string(s: String) -> String
+            Encode.encode_to_string(apply_string(Encode.encoder, s))
+        JADE
+      end
+
+      before { test_compiler.require('iface_poly', source) }
+
+      it 'resolves the interface method via the Int impl' do
+        expect(IfacePoly.go_int(42)).to eql('42')
+      end
+
+      it 'resolves the interface method via the String impl' do
+        expect(IfacePoly.go_string("hi")).to eql('"hi"')
+      end
+    end
+
+    context 'user fn and interface method passed as values inside a generic body' do
+      let(:source) do
+        <<~JADE
+          module GenericRef exposing (via_iface_int, via_iface_string, via_user_int, via_user_string)
+
+          import Encode
+          import Decode exposing (Value)
+
+
+          def my_enc(x: a) -> Value
+            Encode.encode(x)
+
+
+          def apply(enc: a -> Value, x: a) -> Value
+            enc(x)
+
+
+          def with_user_fn(x: a) -> Value
+            apply(my_enc, x)
+
+
+          def with_iface(x: a) -> Value
+            apply(Encode.encoder, x)
+
+
+          def via_user_int(i: Int) -> String
+            Encode.encode_to_string(with_user_fn(i))
+
+
+          def via_user_string(s: String) -> String
+            Encode.encode_to_string(with_user_fn(s))
+
+
+          def via_iface_int(i: Int) -> String
+            Encode.encode_to_string(with_iface(i))
+
+
+          def via_iface_string(s: String) -> String
+            Encode.encode_to_string(with_iface(s))
+        JADE
+      end
+
+      before { test_compiler.require('generic_ref', source) }
+
+      it 'user fn as value, dict from enclosing generic, Int caller' do
+        expect(GenericRef.via_user_int(42)).to eql('42')
+      end
+
+      it 'user fn as value, dict from enclosing generic, String caller' do
+        expect(GenericRef.via_user_string("hi")).to eql('"hi"')
+      end
+
+      it 'interface method as value, dict from enclosing generic, Int caller' do
+        expect(GenericRef.via_iface_int(42)).to eql('42')
+      end
+
+      it 'interface method as value, dict from enclosing generic, String caller' do
+        expect(GenericRef.via_iface_string("hi")).to eql('"hi"')
+      end
+    end
   end
 end

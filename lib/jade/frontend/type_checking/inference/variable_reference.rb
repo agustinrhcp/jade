@@ -16,6 +16,7 @@ module Jade
               symbol.qualified_name
             end
               .then { state.env.lookup(it) }
+              .then { it.attach_origin(node) }
               .then { [state, it] }
           end
         end
