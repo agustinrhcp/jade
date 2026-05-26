@@ -20,6 +20,7 @@ require 'byebug'
 
 require 'jade/result'
 require 'jade/tasks/rspec'
+require 'jade/frontend/type_checking/var_gen'
 
 Dir[File.join(File.dirname(__FILE__), 'support/**/*.rb')].sort.each { |f| require f }
 
@@ -27,6 +28,8 @@ $stderr = File.open(File::NULL, 'w')
 
 RSpec.configure do |config|
   config.include RSpec::CollectionMatchers
+
+  config.before(:each) { Jade::Frontend::TypeChecking::VarGen.counter = 0 }
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
   # assertions if you prefer.

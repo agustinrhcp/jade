@@ -81,6 +81,7 @@ module Jade
             expect(constraints[0].type).to eq fn.args.first
             expect(constraints[1].type).to eq fn.return_type
           end
+
         end
       end
     end

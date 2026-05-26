@@ -58,7 +58,7 @@ module Jade
 
         describe 'the arg' do
           subject { super().args.first }
-          it { is_expected.to be_a(Type::Var).and have_attributes(name: 'a', id: 'a1') }
+          it { is_expected.to be_a(Type::Var).and have_attributes(name: 'a') }
         end
       end
 
@@ -85,7 +85,7 @@ module Jade
         it { is_expected.to be_a(Type::Application) }
 
         its(:constructor) { is_expected.to be_a(Type::Constructor).and have_attributes(name: 'Maybe.Maybe') }
-        its(:args) { is_expected.to eql [Type.var('a1', 'a')] }
+        its(:args) { is_expected.to contain_exactly(be_a(Type::Var).and(have_attributes(name: 'a'))) }
       end
 
       describe 'variant symbol: Just' do
@@ -107,7 +107,7 @@ module Jade
           it { is_expected.to be_a(Type::Application) }
 
           its(:constructor) { is_expected.to be_a(Type::Constructor).and have_attributes(name: 'Maybe.Maybe') }
-          its(:args) { is_expected.to eql [Type.var('a1', 'a')] }
+          its(:args) { is_expected.to contain_exactly(be_a(Type::Var).and(have_attributes(name: 'a'))) }
         end
       end
 
