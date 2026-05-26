@@ -1,6 +1,6 @@
 module Jade
   module Symbol
-    Function = Data.define(:module_name, :name, :params, :return_type) do
+    Function = Data.define(:module_name, :name, :params, :return_type, :decl_span) do
       include Base
 
       def to_ref

@@ -17,6 +17,7 @@ module Jade
         when 'textDocument/didClose' then on_did_close(state, message['params'])
         when 'textDocument/documentSymbol' then on_document_symbol(state, message)
         when 'textDocument/hover' then on_hover(state, message)
+        when 'textDocument/definition' then on_definition(state, message)
         else on_unknown(state, message)
         end
       end
@@ -42,6 +43,7 @@ module Jade
             positionEncoding: negotiate_encoding(params),
             documentSymbolProvider: true,
             hoverProvider: true,
+            definitionProvider: true,
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
@@ -87,6 +89,25 @@ module Jade
           .then { [state, [respond(message['id'], it)]] }
       end
 
+      def on_definition(state, message)
+        message['params']
+          .then { definition_for(state, it['textDocument']['uri'], it['position']) }
+          .then { [state, [respond(message['id'], it)]] }
+      end
+
+      def definition_for(state, uri, position)
+        return nil unless state.registry
+
+        rel = Converters.relative_path(uri, state.source_root)
+        entry = state.registry.modules.each_value.find { it.source&.uri == rel }
+        return nil unless entry
+
+        Converters
+          .position_to_offset(entry.source, position['line'], position['character'])
+          .then { entry.ast.find_at_path(it) }
+          .then { Converters.definition_for_path(it, state.registry, entry, state.source_root) }
+      end
+
       def hover_for(state, uri, position)
         return nil unless state.registry
 
@@ -96,7 +117,7 @@ module Jade
 
         Converters
           .position_to_offset(entry.source, position['line'], position['character'])
-          .then { Converters.hover_for_path(entry.ast.find_at_path(it), state.registry) }
+          .then { Converters.hover_for_path(entry.ast.find_at_path(it), state.registry, entry) }
       end
 
       def document_symbols_for(state, uri)
