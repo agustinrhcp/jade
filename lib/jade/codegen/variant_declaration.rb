@@ -5,11 +5,17 @@ module Jade
       extend Helpers
 
       def generate(node, sibling_names)
-        node => AST::VariantDeclaration(name:, args:)
+        node => AST::VariantDeclaration(name:, args:, symbol:)
+
+        impls = symbol.qualified_name
+          .then { "::#{to_qualified(it)}" }
+          .then { Codegen.dispatched_methods[it] || [] }
 
         sibling_names
           .map { |s| "def #{predicate_name(s)}; #{s == name}; end" }
-          .join("\n")
+          .then { [it.join(Pretty.newline), *impls] }
+          .reject(&:empty?)
+          .join(Pretty.newline(2))
           .then { Pretty.block("#{name} = #{data_define(fields_for(args))} do", it) }
       end
 

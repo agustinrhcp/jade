@@ -474,7 +474,7 @@ module Jade
           end
 
           it 'emits a `==` method on the type class' do
-            is_expected.to include("class ::__Test__::Pepe\n  def ==(other_pepe)\n    pepe = self\n    true\n  end\nend")
+            is_expected.to include("class ::__Test__::Pepe\n  def ==(other_pepe)\n    true\n  end\nend")
           end
 
           it 'emits register_impl alongside the method' do
@@ -495,7 +495,7 @@ module Jade
           end
 
           it 'emits a `==` method with operator-dispatched body' do
-            is_expected.to include("class ::__Test__::Person\n  def ==(other)\n    one = self\n    (one.id == other.id)\n  end\nend")
+            is_expected.to include("class ::__Test__::Person\n  def ==(other)\n    (id == other.id)\n  end\nend")
           end
 
           it 'emits register_impl alongside the method' do

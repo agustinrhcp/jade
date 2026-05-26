@@ -27,6 +27,8 @@ module Jade
         'Basics.float_sub'  => ->(a, b) { "(#{a} - #{b})" },
         'Basics.float_mul'  => ->(a, b) { "(#{a} * #{b})" },
         'Basics.float_div'  => ->(a, b) { "(#{a} / #{b})" },
+        'Basics.int_compare'   => ->(a, b) { "#{a}.compare(#{b})" },
+        'Basics.float_compare' => ->(a, b) { "#{a}.compare(#{b})" },
         'Basics.(&&)'       => ->(a, b) { "(#{a} && #{b})" },
         'Basics.(||)'       => ->(a, b) { "(#{a} || #{b})" },
         'Basics.not'        => ->(a)    { "(!#{a})" },
@@ -39,8 +41,9 @@ module Jade
         'Basics.round'      => ->(n)    { "#{n}.round" },
         'Basics.truncate'   => ->(n)    { "#{n}.truncate" },
 
-        'String.str_append' => ->(a, b)        { "(#{a} + #{b})" },
-        'String.str_eq'     => ->(a, b)        { "(#{a} == #{b})" },
+        'String.str_append'  => ->(a, b)        { "(#{a} + #{b})" },
+        'String.str_eq'      => ->(a, b)        { "(#{a} == #{b})" },
+        'String.str_compare' => ->(a, b)        { "#{a}.compare(#{b})" },
         'String.empty?'     => ->(s)           { "#{s}.empty?" },
         'String.length'     => ->(s)           { "#{s}.length" },
         'String.reverse'    => ->(s)           { "#{s}.reverse" },
@@ -137,9 +140,6 @@ module Jade
 
       # Bodies that don't fit a single Ruby expression.
       NO_INLINE = %w[
-        Basics.int_compare
-        Basics.float_compare
-        String.str_compare
         List.sort_with
         List.sort_by_with
         List.filter_map
