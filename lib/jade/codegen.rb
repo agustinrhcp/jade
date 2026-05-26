@@ -1,3 +1,4 @@
+require 'jade/codegen/context'
 require 'jade/codegen/helpers'
 require 'jade/codegen/pretty'
 require 'jade/codegen/method_names'
@@ -21,35 +22,7 @@ module Jade
     extend self
     extend Emitter
     extend Helpers
-
-    # Maps [interface_qname, type_var_id] => ruby parameter name. Set by
-    # FunctionDeclaration around its body so nested calls can resolve the
-    # caller's dict for var-typed constraints. Empty outside any function.
-    def dict_env
-      @dict_env ||= {}
-    end
-
-    def with_dict_env(env)
-      prev_env = @dict_env
-      @dict_env = env
-      yield
-    ensure
-      @dict_env = prev_env
-    end
-
-    # False outside a Module so bare expressions (REPL) get the runtime
-    # fallback — no constants exist to reference.
-    def hoist_records?
-      @hoist_records
-    end
-
-    def with_hoisted_records
-      prev = @hoist_records
-      @hoist_records = true
-      yield
-    ensure
-      @hoist_records = prev
-    end
+    extend Context
 
     def record_shape_constant(keys)
       "Record_#{keys.join('_')}"
@@ -65,6 +38,31 @@ module Jade
       end
 
       shapes
+    end
+
+    def collect_dispatched_methods(body, registry)
+      body.expressions
+        .filter { it.is_a?(AST::Implementation) }
+        .filter { MethodNames.operator_interface?(it.symbol.interface.qualified_name) }
+        .flat_map do |node|
+          methods = Implementation.method_bodies_for(node, registry)
+          ruby_classes_for_type(node.symbol.type, registry).map { [it, methods] }
+        end
+        .group_by(&:first)
+        .transform_values { |pairs| pairs.flat_map(&:last) }
+    end
+
+    def data_define_with_methods(name, fields, ruby_class)
+      methods = dispatched_methods[ruby_class] || []
+      base    = data_define(fields)
+
+      if methods.empty?
+        "#{name} = #{base}"
+      else
+        methods
+          .join(Pretty.newline(2))
+          .then { Pretty.block("#{name} = #{base} do", it) }
+      end
     end
 
     def generate_entry(entry, registry)
@@ -92,9 +90,12 @@ module Jade
             "#{record_shape_constant(keys)} = Data.define(#{keys.map { ":#{it}" }.join(', ')})"
           }
 
-        outer, inner, wrappers = with_hoisted_records {
-          partition_module_body(body.expressions, registry, name.count('.'))
-        }
+        outer, inner, wrappers =
+          with_dispatched_methods(collect_dispatched_methods(body, registry)) do
+            with_hoisted_records do
+              partition_module_body(body.expressions, registry, name.count('.'))
+            end
+          end
 
         inner_module = ["extend self", *inner]
           .join(Pretty.newline(2))
@@ -133,6 +134,9 @@ module Jade
           .map { generate(it, registry, depth:) }
           .reject(&:empty?)
           .join("\n")
+
+      in AST::VariableReference(name:) if name == self_var_name
+        'self'
 
       in AST::VariableReference(symbol: ref, name:, dictionaries:)
         resolved = ref.is_a?(Symbol::ValueRef) ? registry.lookup(ref) : ref
@@ -188,12 +192,8 @@ module Jade
           .map { VariantDeclaration.generate(it, variants.map(&:name)) }
           .join(Pretty.newline(2))
 
-      in AST::StructDeclaration(name:, record_type:)
-        record_type
-          .fields
-          .keys
-          .then { data_define(it) }
-          .then { "#{name} = #{it}"}
+      in AST::StructDeclaration(name:, record_type:, symbol:)
+        data_define_with_methods(name, record_type.fields.keys, "::#{to_qualified(symbol.qualified_name)}")
 
       in AST::InterfaceDeclaration
         ""
@@ -282,20 +282,24 @@ module Jade
         Pretty.array(items.map { generate(it, registry) })
 
       in AST::RecordLiteral(fields:)
-        fields.sort_by(&:key).then { |sorted|
+        fields.sort_by(&:key).then do |sorted|
           keys   = sorted.map(&:key)
           values = generate_many(sorted.map(&:value), registry)
 
           hoist_records? \
             ? "#{record_shape_constant(keys)}[#{values}]"
             : "Jade::Runtime.record(#{keys.map { ":#{it}" }.join(', ')})[#{values}]"
-        }
+        end
 
       in AST::RecordField(key:, value:)
         "#{key}: #{generate(value, registry)}"
 
       in AST::RecordAccess(target:, name:)
-        "#{generate(target, registry)}.#{name.name}"
+        if self_var_name && target.is_a?(AST::VariableReference) && target.name == self_var_name
+          name.name
+        else
+          "#{generate(target, registry)}.#{name.name}"
+        end
 
       in AST::RecordUpdate(base:, fields:)
         generate_many(fields, registry)
@@ -360,12 +364,11 @@ module Jade
         registrations = Implementation.generate_registrations_for(node, registry)
         defs          = Implementation.generate_defs(node, registry)
 
-        if MethodNames.operator_interface?(node.symbol.interface.qualified_name)
-          methods = Implementation.generate_operator_impl(node, registry)
-          [[registrations, methods].reject(&:empty?).join(Pretty.newline(2)), defs, nil]
-        else
-          [registrations, defs, nil]
-        end
+        # For dispatched interfaces, methods now live inside the type's
+        # `Data.define do ... end` block (collected by
+        # `collect_dispatched_methods` and rendered by StructDeclaration /
+        # VariantDeclaration). The class-reopen emission is gone.
+        [registrations, defs, nil]
 
       in AST::FunctionDeclaration
         [

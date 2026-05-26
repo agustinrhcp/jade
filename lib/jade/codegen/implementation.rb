@@ -28,12 +28,21 @@ module Jade
         ruby_classes_for_type(symbol.type, registry).then { |ruby_classes|
           next "" if ruby_classes.empty?
 
-          [
-            *functions.filter_map { generate_operator_method(it, symbol, registry) },
-            *comparable_derivations(symbol.interface.qualified_name),
-          ]
+          method_bodies_for(node, registry)
             .then { it.empty? ? "" : class_reopens(ruby_classes, it) }
         }
+      end
+
+      # Just the method-def strings (no surrounding `class ... end`). Used
+      # by `Codegen.collect_dispatched_methods` to gather impl methods for
+      # inlining into the type's `Data.define do ... end` block.
+      def method_bodies_for(node, registry)
+        node => AST::Implementation(functions:, symbol:)
+
+        [
+          *functions.filter_map { generate_operator_method(it, symbol, registry) },
+          *comparable_derivations(symbol.interface.qualified_name),
+        ]
       end
 
       def class_reopens(ruby_classes, method_defs)
@@ -53,16 +62,20 @@ module Jade
 
       def operator_method_body(ruby_method, fn, impl_sym, fn_name, registry)
         case fn
-        in AST::Lambda(params:, body:)
-          return nil unless params.all? { simple_lambda_param?(it) }
+        in AST::Lambda(params: [first_param, *rest_params], body:)
+          return nil unless simple_lambda_param?(first_param)
+          return nil unless rest_params.all? { simple_lambda_param?(it) }
 
-          params
-            .map { generate_node(it, registry) }
-            .then { |(first, *rest)|
-              ["#{first} = self", generate_node(body, registry)]
-                .join(Pretty.newline)
-                .then { Pretty.block("def #{ruby_method}(#{rest.join(', ')})", it) }
-            }
+          rest_str = rest_params.map { generate_node(it, registry) }.join(', ')
+          first_name =
+            case first_param
+            in AST::Pattern::Binding(name:) then name
+            else nil
+            end
+
+          Codegen
+            .with_self_var_name(first_name) { generate_node(body, registry) }
+            .then { Pretty.block("def #{ruby_method}(#{rest_str})", it) }
 
 
         # Operator-interface fns are all binary, so `(other)` is the signature.
