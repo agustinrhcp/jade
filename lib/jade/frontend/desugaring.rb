@@ -28,19 +28,23 @@ module Jade
                 .then { desugar(it) }
 
             else
-              AST::FunctionCall[right, [left], operator, [], node.range]
+              AST::FunctionCall.new(
+                callee: right,
+                args: [left],
+                infix: operator,
+                range: node.range,
+              )
 
             end
               .then { desugar(it) }
 
           else
-            AST::FunctionCall[
-              AST::VariableReference["(#{operator.value})", operator.range],
-              [desugar(left), desugar(right)],
-              operator,
-              [],
-              node.range
-            ]
+            AST::FunctionCall.new(
+              callee: AST::VariableReference["(#{operator.value})", operator.range],
+              args: [desugar(left), desugar(right)],
+              infix: operator,
+              range: node.range,
+            )
           end
 
         in AST::FunctionCall(callee:, args:)
@@ -126,13 +130,12 @@ module Jade
             end
 
         in AST::Tuple(items:)
-          AST::FunctionCall[
-            AST::ConstructorReference["Tuple.Tuple#{items.size}", node.range],
-            items.map { desugar(it) },
-            false,
-            [],
-            node.range,
-          ]
+          AST::FunctionCall.new(
+            callee: AST::ConstructorReference["Tuple.Tuple#{items.size}", node.range],
+            args: items.map { desugar(it) },
+            infix: false,
+            range: node.range,
+          )
 
         in AST::Pattern::Tuple(patterns:)
           AST::ConstructorReference[

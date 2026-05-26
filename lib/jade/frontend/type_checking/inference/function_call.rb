@@ -80,10 +80,21 @@ module Jade
                   end
                 end
 
-              # Args' constraints dispatch at their own origins (inner call sites).
+              # Args' constraints dispatch at their own origins (inner call sites,
+              # or a QualifiedAccess/VariableReference when a polymorphic fn is
+              # passed as a value). Var-typed ones attach themselves as a marker,
+              # mirroring the callee path, so reference-as-value codegen can
+              # resolve via the enclosing function's dict_env.
               args_errors = args_subst
-                .reject { it.type.is_a?(Type::Var) }
-                .flat_map { Constraints.solve_at_call_site(it, registry, st.env.entry_name) }
+                .flat_map do |c|
+                  case c.type
+                  in Type::Var
+                    Constraints.attach_dictionary(c, c)
+                    []
+                  else
+                    Constraints.solve_at_call_site(c, registry, st.env.entry_name)
+                  end
+                end
 
               st
                 .add_errors(callee_errors + args_errors)
