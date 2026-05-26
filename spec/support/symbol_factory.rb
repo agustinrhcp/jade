@@ -18,6 +18,7 @@ module Jade
         name: name,
         params: {},
         return_type: nil,
+        decl_span: nil,
       )
     end
 

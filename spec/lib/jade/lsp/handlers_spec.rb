@@ -61,6 +61,11 @@ module Jade
           expect(outbound.first[:result][:capabilities][:hoverProvider]).to eq true
         end
 
+        it 'advertises definitionProvider' do
+          _, outbound = subject
+          expect(outbound.first[:result][:capabilities][:definitionProvider]).to eq true
+        end
+
         it 'advertises utf-8 when the client supports it' do
           _, outbound = Handlers.dispatch(State.empty, {
             'method' => 'initialize',
@@ -337,6 +342,65 @@ module Jade
         it 'returns nil before any compile has run' do
           _, outbound = Handlers.dispatch(initialized_state, {
             'method' => 'textDocument/hover',
+            'id' => 1,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'position' => { 'line' => 0, 'character' => 0 },
+            },
+          })
+          expect(outbound.first[:result]).to be_nil
+        end
+      end
+
+      describe 'definition' do
+        let(:def_text) do
+          <<~JADE
+            module Leaf exposing (n)
+
+            def helper(x: Int) -> Int
+              x + 1
+
+            def n() -> Int
+              helper(42)
+          JADE
+        end
+
+        def open_and_define(text:, at:)
+          File.write(File.join(src, 'leaf.jd'), text)
+          state, _ = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+          offset = text.index(at)
+          line = text[0...offset].count("\n")
+          character = offset - (text.rindex("\n", offset) || -1) - 1
+          Handlers.dispatch(state, {
+            'method' => 'textDocument/definition',
+            'id' => 11,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'position' => { 'line' => line, 'character' => character },
+            },
+          })
+        end
+
+        it 'returns a Location for a local function reference' do
+          _, outbound = open_and_define(text: def_text, at: 'helper(42)')
+          loc = outbound.first[:result]
+          expect(loc[:uri]).to eq uri
+          # helper is declared on line 2 (0-indexed)
+          expect(loc[:range][:start][:line]).to eq 2
+        end
+
+        it 'returns nil for stdlib calls (no decl_span yet)' do
+          text = "module Leaf exposing (n)\n\ndef n() -> Int\n  String.length(\"hi\")\n"
+          _, outbound = open_and_define(text:, at: 'String.length')
+          expect(outbound.first[:result]).to be_nil
+        end
+
+        it 'returns nil before any compile has run' do
+          _, outbound = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/definition',
             'id' => 1,
             'params' => {
               'textDocument' => { 'uri' => uri },

@@ -86,12 +86,12 @@ module Jade
       Variable[name, span]
     end
 
-    def predeclared_function(name)
-      Function[nil, name, nil, nil]
+    def predeclared_function(name, decl_span = nil)
+      Function[nil, name, nil, nil, decl_span]
     end
 
-    def function(name, params, return_type)
-      Function[nil, name, params, return_type]
+    def function(name, params, return_type, decl_span = nil)
+      Function[nil, name, params, return_type, decl_span]
     end
 
     def function_type(params, return_type)

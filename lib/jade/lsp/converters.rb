@@ -43,11 +43,26 @@ module Jade
         Jade::Symbol::Variant,
       ].freeze
 
-      def hover_for_path(path, registry)
+      def definition_for_path(path, registry, entry, source_root)
         symbol = path
           .reverse
-          .filter_map { hoverable_symbol(it, registry) }
-          .first
+          .filter_map { resolve_symbol(it, registry, entry) }
+          .find { it.respond_to?(:decl_span) && it.decl_span }
+
+        return nil unless symbol
+
+        source = registry.modules.fetch(symbol.module_name).source
+        {
+          uri: lsp_uri(source.uri, source_root),
+          range: span_to_range(source, symbol.decl_span),
+        }
+      end
+
+      def hover_for_path(path, registry, entry)
+        symbol = path
+          .reverse
+          .filter_map { resolve_symbol(it, registry, entry) }
+          .find { HOVERABLE_SYMBOLS.include?(it.class) }
 
         return nil unless symbol
 
@@ -114,11 +129,16 @@ module Jade
 
       private
 
-      def hoverable_symbol(node, registry)
+      def resolve_symbol(node, registry, entry)
         case node
         in AST::VariableReference | AST::ConstructorReference | AST::QualifiedAccess
-          resolved = node.symbol.is_a?(Jade::Symbol::ValueRef) ? registry.lookup(node.symbol) : node.symbol
-          HOVERABLE_SYMBOLS.include?(resolved.class) ? resolved : nil
+          node.symbol
+            .then { it.is_a?(Jade::Symbol::ValueRef) ? registry.lookup(it) : it }
+
+        in AST::TypeName(type:)
+          entry.types[type]
+            .then { it.is_a?(Jade::Symbol::TypeRef) ? registry.lookup(it) : it }
+
         else
           nil
         end
