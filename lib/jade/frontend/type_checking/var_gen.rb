@@ -1,14 +1,21 @@
 module Jade
   module Frontend
     module TypeChecking
+      # Type-var ids must be unique across every scheme that ever flows
+      # through unification. Per-instance counters made cross-module
+      # imports fragile: a fresh id from one module could equal a
+      # quantified id from another, aliasing them through
+      # Substitution.apply. A class-level counter makes collisions
+      # impossible by construction.
       class VarGen
-        def initialize
-          @next_id = 1
+        @counter = 0
+
+        class << self
+          attr_accessor :counter
         end
 
         def fresh_id
-          "t#{@next_id}"
-            .tap { @next_id += 1 }
+          "t#{self.class.counter += 1}"
         end
 
         def fresh(name = nil)
@@ -17,8 +24,7 @@ module Jade
         end
 
         def next(name)
-          "#{name}#{@next_id}"
-            .tap { @next_id += 1 }
+          "#{name}#{self.class.counter += 1}"
             .then { Type.var(it, name) }
         end
       end

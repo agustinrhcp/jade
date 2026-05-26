@@ -16,7 +16,7 @@ module Jade
         Inline.try_for(callee, args, dictionaries, registry)
           .then { return it if it }
 
-        return constructor_call(callee, args, registry) if callee.is_a?(AST::ConstructorReference)
+        return constructor_call(callee, args, registry) if constructor_callee?(callee, registry)
 
         [generate_many(args, registry), generate_dict_args(callee, dictionaries, registry)]
           .reject(&:empty?)
@@ -28,6 +28,12 @@ module Jade
         resolve_callee_symbol(callee, registry)
           .then { to_qualified(it.qualified_name) }
           .then { "#{it}[#{generate_many(args, registry)}]" }
+      end
+
+      def constructor_callee?(callee, registry)
+        return true if callee.is_a?(AST::ConstructorReference)
+
+        resolve_callee_symbol(callee, registry).is_a?(Symbol::Constructor)
       end
 
       # Direct-def call sites (`Foo::Internal.name(args)`) for plain user fns;

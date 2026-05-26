@@ -49,6 +49,27 @@ module Jade
     end
   end
 
+  describe 'qualified constructor call' do
+    include_context 'with test compiler'
+
+    it 'compiles Tuple.Tuple2(...) as a qualified call' do
+      test_compiler.require('Quali', <<~JADE)
+        module Quali exposing (mk, swap)
+
+        def mk -> (Int, String)
+          Tuple.Tuple2(1, "x")
+
+
+        def swap(t: (a, b)) -> (b, a)
+          Tuple.Tuple2(Tuple.second(t), Tuple.first(t))
+      JADE
+
+      expect(Quali::Internal.mk).to eql Tuple::Tuple2[1, "x"]
+      expect(Quali::Internal.swap(Tuple::Tuple2[1, "x"])).to eql Tuple::Tuple2["x", 1]
+    end
+  end
+
+
   describe 'tuple arity cap' do
     include_context 'with test compiler'
 
