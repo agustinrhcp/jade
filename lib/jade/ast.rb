@@ -262,24 +262,24 @@ module Jade
     end
 
     def function_call
-      ->(callee, lparen, args_list, rparen) do
+      ->(callee, _lparen, args_list, rparen) do
         FunctionCall.new(
           callee:,
           args: args_list.items,
           infix: false,
           dictionaries: [],
           trailing_comma: args_list.trailing_comma,
-          range: lparen.range.begin...rparen.range.end,
+          range: callee.range.begin...rparen.range.end,
         )
       end
     end
 
     def member_access
-      ->(target, dot, name) do
+      ->(target, _dot, name) do
         MemberAccess[
           target,
           name,
-          dot.range.begin...name.range.end,
+          target.range.begin...name.range.end,
         ]
       end
     end

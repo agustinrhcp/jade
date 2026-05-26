@@ -16,6 +16,7 @@ module Jade
         when 'textDocument/didSave' then [state, []]
         when 'textDocument/didClose' then on_did_close(state, message['params'])
         when 'textDocument/documentSymbol' then on_document_symbol(state, message)
+        when 'textDocument/hover' then on_hover(state, message)
         else on_unknown(state, message)
         end
       end
@@ -40,6 +41,7 @@ module Jade
             textDocumentSync: { openClose: true, change: 1 },
             positionEncoding: negotiate_encoding(params),
             documentSymbolProvider: true,
+            hoverProvider: true,
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
@@ -79,8 +81,26 @@ module Jade
         [state, [respond(message['id'], symbols)]]
       end
 
+      def on_hover(state, message)
+        message['params']
+          .then { hover_for(state, it['textDocument']['uri'], it['position']) }
+          .then { [state, [respond(message['id'], it)]] }
+      end
+
+      def hover_for(state, uri, position)
+        return nil unless state.registry
+
+        rel = Converters.relative_path(uri, state.source_root)
+        entry = state.registry.modules.each_value.find { it.source&.uri == rel }
+        return nil unless entry
+
+        Converters
+          .position_to_offset(entry.source, position['line'], position['character'])
+          .then { Converters.hover_for_path(entry.ast.find_at_path(it), state.registry) }
+      end
+
       def document_symbols_for(state, uri)
-        return [] unless state.registry && state.source_root
+        return [] unless state.registry
 
         rel = Converters.relative_path(uri, state.source_root)
         entry = state.registry.modules.each_value.find { it.source&.uri == rel }

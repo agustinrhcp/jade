@@ -56,6 +56,11 @@ module Jade
           expect(outbound.first[:result][:capabilities][:documentSymbolProvider]).to eq true
         end
 
+        it 'advertises hoverProvider' do
+          _, outbound = subject
+          expect(outbound.first[:result][:capabilities][:hoverProvider]).to eq true
+        end
+
         it 'advertises utf-8 when the client supports it' do
           _, outbound = Handlers.dispatch(State.empty, {
             'method' => 'initialize',
@@ -281,6 +286,64 @@ module Jade
             'params' => { 'textDocument' => { 'uri' => uri } },
           })
           expect(outbound.first[:result]).to eq []
+        end
+      end
+
+      describe 'hover' do
+        let(:hover_text) do
+          <<~JADE
+            module Leaf exposing (n)
+
+            def helper(x: Int) -> Int
+              x + 1
+
+            def n() -> Int
+              helper(42)
+          JADE
+        end
+
+        def open_and_hover(text:, at:)
+          File.write(File.join(src, 'leaf.jd'), text)
+          state, _ = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+          offset = text.index(at)
+          line = text[0...offset].count("\n")
+          character = offset - (text.rindex("\n", offset) || -1) - 1
+          Handlers.dispatch(state, {
+            'method' => 'textDocument/hover',
+            'id' => 42,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'position' => { 'line' => line, 'character' => character },
+            },
+          })
+        end
+
+        it 'returns a signature for a module-level function reference' do
+          _, outbound = open_and_hover(text: hover_text, at: 'helper(42)')
+          result = outbound.first[:result]
+          expect(result[:contents][:value]).to include('helper')
+          expect(result[:contents][:value]).to include('Int')
+          expect(result[:contents][:kind]).to eq 'markdown'
+        end
+
+        it 'returns nil when the cursor is not on a hoverable node' do
+          _, outbound = open_and_hover(text: hover_text, at: '  x + 1')
+          expect(outbound.first[:result]).to be_nil
+        end
+
+        it 'returns nil before any compile has run' do
+          _, outbound = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/hover',
+            'id' => 1,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'position' => { 'line' => 0, 'character' => 0 },
+            },
+          })
+          expect(outbound.first[:result]).to be_nil
         end
       end
 

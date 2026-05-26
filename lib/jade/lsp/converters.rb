@@ -13,6 +13,10 @@ module Jade
         { line:, character: offset - source.line_starts[line] }
       end
 
+      def position_to_offset(source, line, character)
+        source.line_starts[line] + character
+      end
+
       def span_to_range(source, span)
         {
           start: offset_to_position(source, span.begin),
@@ -29,6 +33,36 @@ module Jade
         struct: 23,
         interface: 11,
       }.freeze
+
+      HOVERABLE_SYMBOLS = [
+        Jade::Symbol::Function,
+        Jade::Symbol::StdlibFunction,
+        Jade::Symbol::InteropFunction,
+        Jade::Symbol::InterfaceFunction,
+        Jade::Symbol::Constructor,
+        Jade::Symbol::Variant,
+      ].freeze
+
+      def hover_for_path(path, registry)
+        symbol = path
+          .reverse
+          .filter_map { hoverable_symbol(it, registry) }
+          .first
+
+        return nil unless symbol
+
+        type, _ = Jade::Type
+          .from_symbol(symbol, registry, Frontend::TypeChecking::VarGen.new)
+
+        {
+          contents: {
+            kind: 'markdown',
+            value: "```jade\n#{symbol.name} : #{type}\n```",
+          },
+        }
+      rescue StandardError
+        nil
+      end
 
       def to_document_symbol(node, source)
         case node
@@ -79,6 +113,16 @@ module Jade
       end
 
       private
+
+      def hoverable_symbol(node, registry)
+        case node
+        in AST::VariableReference | AST::ConstructorReference | AST::QualifiedAccess
+          resolved = node.symbol.is_a?(Jade::Symbol::ValueRef) ? registry.lookup(node.symbol) : node.symbol
+          HOVERABLE_SYMBOLS.include?(resolved.class) ? resolved : nil
+        else
+          nil
+        end
+      end
 
       def document_symbol(name, kind, source, range, children: [])
         {

@@ -85,10 +85,10 @@ module Jade
       Frontend
         .run_entry(entry, registry)
         .map { Codegen.generate_entry(it, registry.update_module(it)) }
-        .on_err do |errors|
+        .on_err do |(latest, errors)|
           diagnostics = errors.reduce(Diagnostics::List.empty) { |list, err| list.add(err.to_diagnostic(registry)) }
 
-          tolerant ? Ok[entry.with(diagnostics:)] : raise(CompilationError.new(diagnostics))
+          tolerant ? Ok[latest.with(diagnostics:)] : raise(CompilationError.new(diagnostics))
         end => Ok(compiled)
 
       compiled

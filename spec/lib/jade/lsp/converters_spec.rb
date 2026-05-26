@@ -22,6 +22,27 @@ module Jade
         end
       end
 
+      describe '.position_to_offset' do
+        it 'returns 0 at line 0 column 0' do
+          expect(Converters.position_to_offset(source, 0, 0)).to eq 0
+        end
+
+        it 'tracks within the first line' do
+          expect(Converters.position_to_offset(source, 0, 4)).to eq 4
+        end
+
+        it 'crosses the newline' do
+          expect(Converters.position_to_offset(source, 1, 0)).to eq 10
+        end
+
+        it 'round-trips with offset_to_position' do
+          [0, 4, 10, 14].each do |offset|
+            pos = Converters.offset_to_position(source, offset)
+            expect(Converters.position_to_offset(source, pos[:line], pos[:character])).to eq offset
+          end
+        end
+      end
+
       describe '.span_to_range' do
         it 'maps an exclusive Range straight to an LSP half-open range' do
           expect(Converters.span_to_range(source, 4...8)).to eq(
