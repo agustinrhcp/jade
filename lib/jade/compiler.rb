@@ -12,6 +12,7 @@ module Jade
       if needs_rebuild?(target)
         ModuleLoader
           .load(config.source_root.first, path + '.jd', cache_dir: cache_root)
+          .tap { render_diagnostics(it) }
           .then { ModuleLoader.emit(it, path: build_root) }
       end
 
@@ -19,6 +20,15 @@ module Jade
     end
 
     private
+
+    def render_diagnostics(registry)
+      registry
+        .modules
+        .each_value
+        .reject { Stdlib.is_stdlib?(it) }
+        .reject { it.diagnostics.items.empty? }
+        .each { $stderr.puts Diagnostics::Renderer.new.render_all(it.diagnostics) }
+    end
 
     def config
       @config ||= Config.new

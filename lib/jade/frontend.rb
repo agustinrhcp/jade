@@ -7,6 +7,7 @@ require 'jade/frontend/comment_attacher'
 require 'jade/frontend/forward_declaration'
 require 'jade/frontend/semantic_analysis'
 require 'jade/frontend/usage_analysis'
+require 'jade/frontend/unused_analysis'
 require 'jade/frontend/type_checking'
 require 'jade/frontend/fixity_fixer'
 require 'jade/frontend/desugaring'
@@ -30,6 +31,7 @@ module Jade
         .and_then { SemanticAnalysis.analyze(it, registry.update_module(it)).map { it.tap(&capture) } }
         .map { Desugaring.desugar_resolved_entry(it, registry.update_module(it)).tap(&capture) }
         .map { UsageAnalysis.analyze(it, registry.update_module(it)).tap(&capture) }
+        .map { UnusedAnalysis.analyze(it, registry.update_module(it)).tap(&capture) }
         .and_then { TypeChecking.check(it, registry.update_module(it)).map { it.tap(&capture) } }
         .map_error { |errs| [latest, errs] }
     end
