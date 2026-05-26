@@ -5,6 +5,7 @@ require 'jade/codegen/method_names'
 require 'jade/codegen/inlines'
 require 'jade/codegen/inline'
 require 'jade/codegen/boundary'
+require 'jade/codegen/boundary/cache'
 
 require 'jade/codegen/emitter'
 
@@ -90,10 +91,15 @@ module Jade
             "#{record_shape_constant(keys)} = Data.define(#{keys.map { ":#{it}" }.join(', ')})"
           }
 
+        boundary_cache  = Boundary::Cache.collect(body, registry)
+        boundary_consts = Boundary::Cache.constants(boundary_cache, registry)
+
         outer, inner, wrappers =
-          with_dispatched_methods(collect_dispatched_methods(body, registry)) do
-            with_hoisted_records do
-              partition_module_body(body.expressions, registry, name.count('.'))
+          with_boundary_cache(boundary_cache) do
+            with_dispatched_methods(collect_dispatched_methods(body, registry)) do
+              with_hoisted_records do
+                partition_module_body(body.expressions, registry, name.count('.'))
+              end
             end
           end
 
@@ -106,6 +112,7 @@ module Jade
           *shape_consts,
           *outer,
           inner_module,
+          *boundary_consts,
           *wrappers,
         ]
           .reject(&:empty?)
@@ -334,11 +341,9 @@ module Jade
         .map { "module #{it}; end" }
     end
 
-    # Splits the module body into three flat lists of pretty-printed chunks:
-    # outer (imports, types, interface decls, impl registrations) goes before
-    # `module Internal`; inner (function defs, impl fn defs) lives inside it;
-    # wrappers (Phase 3 boundary `def self.X(args)`) come after the
-    # singleton-method fallthrough loop so they override the proxies.
+    # Returns [outer, inner, wrappers]: outer goes before `module Internal`,
+    # inner lives inside it, wrappers come after the singleton-method
+    # fallthrough loop so they override the proxies.
     def partition_module_body(expressions, registry, depth)
       expressions
         .chunk_while { |a, b| import?(a) && import?(b) }
@@ -364,10 +369,6 @@ module Jade
         registrations = Implementation.generate_registrations_for(node, registry)
         defs          = Implementation.generate_defs(node, registry)
 
-        # For dispatched interfaces, methods now live inside the type's
-        # `Data.define do ... end` block (collected by
-        # `collect_dispatched_methods` and rendered by StructDeclaration /
-        # VariantDeclaration). The class-reopen emission is gone.
         [registrations, defs, nil]
 
       in AST::FunctionDeclaration
