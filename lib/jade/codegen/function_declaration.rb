@@ -48,8 +48,10 @@ module Jade
       private
 
       def emit_body(body, self_sym, param_names, registry)
-        if TailCall.tail_recursive?(body, self_sym, param_names.size, registry)
-          TailCall.generate_body(body, registry, self_sym, param_names)
+        if Transforms::TailCall.tail_recursive?(body, self_sym, param_names.size, registry)
+          Transforms::TailCall.generate_body(body, registry, self_sym, param_names)
+        elsif (shape = Transforms::FoldShape.shape_for(body, self_sym, param_names, registry))
+          Transforms::FoldShape.generate_body(shape, registry)
         else
           generate_node(body, registry)
         end
