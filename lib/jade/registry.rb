@@ -53,6 +53,14 @@ module Jade
       with(dependency_graph: dependency_graph.add(entry.name, imports))
     end
 
+    def find_node_at(uri, offset)
+      modules
+        .each_value
+        .find { it.source&.uri == uri }
+        &.ast
+        &.find_at(offset)
+    end
+
     def lookup(symbol)
       *module_parts, name = symbol.qualified_name.split('.')
       module_entry = module_parts.join('.').then { modules[it] }

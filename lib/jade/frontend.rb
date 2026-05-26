@@ -16,15 +16,22 @@ module Jade
   module Frontend
     extend self
 
+    # On error, wraps the failure as `[latest_processed_entry, errors]` so
+    # tolerant callers can recover the AST as of the last successful stage
+    # instead of falling back to the original pre-frontend entry.
     def run_entry(initial, registry)
+      latest = initial
+      capture = ->(entry) { latest = entry }
+
       initial
-        .then { FixityFixer.fix_entry(it) }
-        .then { Desugaring.desugar_entry(it) }
-        .then { ForwardDeclaration.declare_entry(it, registry) }
-        .and_then { SemanticAnalysis.analyze(it, registry.update_module(it)) }
-        .map { Desugaring.desugar_resolved_entry(it, registry.update_module(it)) }
-        .map { UsageAnalysis.analyze(it, registry.update_module(it)) }
-        .and_then { TypeChecking.check(it, registry.update_module(it)) }
+        .then { FixityFixer.fix_entry(it).tap(&capture) }
+        .then { Desugaring.desugar_entry(it).tap(&capture) }
+        .then { ForwardDeclaration.declare_entry(it, registry).map { it.tap(&capture) } }
+        .and_then { SemanticAnalysis.analyze(it, registry.update_module(it)).map { it.tap(&capture) } }
+        .map { Desugaring.desugar_resolved_entry(it, registry.update_module(it)).tap(&capture) }
+        .map { UsageAnalysis.analyze(it, registry.update_module(it)).tap(&capture) }
+        .and_then { TypeChecking.check(it, registry.update_module(it)).map { it.tap(&capture) } }
+        .map_error { |errs| [latest, errs] }
     end
 
     def run(ast)
