@@ -335,8 +335,51 @@ module Jade
         end
 
         it 'returns nil when the cursor is not on a hoverable node' do
-          _, outbound = open_and_hover(text: hover_text, at: '  x + 1')
+          _, outbound = open_and_hover(text: hover_text, at: 'module Leaf')
           expect(outbound.first[:result]).to be_nil
+        end
+
+        it 'returns the enclosing function signature when hovering inside its body whitespace' do
+          _, outbound = open_and_hover(text: hover_text, at: '  x + 1')
+          expect(outbound.first[:result][:contents][:value]).to include('helper')
+        end
+
+        it 'renders inferred constraints for constrained function calls' do
+          text = <<~JADE
+            module M exposing (caller)
+
+            def eq_check(a: a, b: a) -> Bool
+              a == b
+
+            def caller(x: Int) -> Bool
+              eq_check(x, x)
+          JADE
+          _, outbound = open_and_hover(text:, at: 'eq_check(x, x)')
+          expect(outbound.first[:result][:contents][:value]).to include('Eq a => ')
+        end
+
+        it 'lists implemented interfaces under a type hover' do
+          text = <<~JADE
+            module M exposing (Box, run)
+
+            type Box = Box(Int)
+
+
+            implements Chainable(Box) with
+              and_then: and_then_box
+
+
+            def and_then_box(m: Box, f: Box -> Box) -> Box
+              f(m)
+
+
+            def run(b: Box) -> Box
+              b
+          JADE
+          _, outbound = open_and_hover(text:, at: 'Box) -> Box')
+          val = outbound.first[:result][:contents][:value]
+          expect(val).to include('type Box')
+          expect(val).to include('implements Chainable')
         end
 
         it 'returns nil before any compile has run' do
