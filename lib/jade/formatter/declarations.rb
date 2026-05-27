@@ -89,6 +89,22 @@ module Jade
       end
     end
 
+    module TypeAliasDeclaration
+      extend self
+      extend Helper
+
+      def format(node, indent:, source:)
+        node => AST::TypeAliasDeclaration(name:, type_params:, body_type:)
+
+        params_str = type_params.empty? ?
+          "" :
+          "(#{type_params.map(&:name).join(', ')})"
+
+        "type alias #{name}#{params_str} = #{format_type(body_type)}"
+          .then(&and_indent(indent))
+      end
+    end
+
     module ImportDeclaration
       extend self
       extend Helper

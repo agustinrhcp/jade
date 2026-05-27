@@ -25,6 +25,7 @@ module Jade
       'uses',
       'with',
       'struct',
+      'alias',
       'interface',
       'implements',
       'extends',

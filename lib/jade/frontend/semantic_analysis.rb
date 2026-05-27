@@ -19,6 +19,7 @@ require 'jade/frontend/semantic_analysis/interop_import_declaration'
 require 'jade/frontend/semantic_analysis/implementation'
 require 'jade/frontend/semantic_analysis/implementation_function'
 require 'jade/frontend/semantic_analysis/struct_declaration'
+require 'jade/frontend/semantic_analysis/type_alias_declaration'
 require 'jade/frontend/semantic_analysis/interface_declaration'
 require 'jade/frontend/semantic_analysis/if_then_else'
 require 'jade/frontend/semantic_analysis/member_access'
@@ -86,6 +87,7 @@ module Jade
         in AST::Implementation then Implementation
         in AST::ImplementationFunction then ImplementationFunction
         in AST::StructDeclaration then StructDeclaration
+        in AST::TypeAliasDeclaration then TypeAliasDeclaration
         in AST::InterfaceDeclaration then InterfaceDeclaration
         in AST::IfThenElse then IfThenElse
         in AST::MemberAccess then MemberAccess

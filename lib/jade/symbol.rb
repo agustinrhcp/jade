@@ -16,6 +16,7 @@ require 'jade/symbol/record_type'
 require 'jade/symbol/stdlib_function'
 require 'jade/symbol/stdlib_implementation'
 require 'jade/symbol/struct'
+require 'jade/symbol/alias'
 require 'jade/symbol/type_application'
 require 'jade/symbol/partial_application'
 require 'jade/symbol/type_ref'
@@ -120,6 +121,14 @@ module Jade
 
     def predeclared_struct(name, type_params, span)
       Struct[nil, name, type_params, nil, span]
+    end
+
+    def predeclared_alias(name, type_params, span)
+      Alias[nil, name, type_params, nil, span]
+    end
+
+    def alias(name, type_params, body, span)
+      Alias[nil, name, type_params, body, span]
     end
 
     def interface(name, type_var, functions, default, span)

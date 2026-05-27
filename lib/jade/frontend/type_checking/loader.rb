@@ -35,6 +35,11 @@ module Jade
           entry
             .types
             .reduce(env) do |e, (_, sym)|
+              # Aliases are transparent — they get expanded into their
+              # body whenever a TypeRef resolves to one. They never need
+              # to be looked up as definitions during unification.
+              next e if sym.is_a?(Symbol::Alias)
+
               Definition
                 .from_symbol(sym, registry)
                 .then { e.define(sym.qualified_name, it) }
@@ -65,6 +70,7 @@ module Jade
 
           in Symbol::TypeRef
             return env if env.lookup_def(sym.qualified_name)
+            return env if registry.lookup(sym).is_a?(Symbol::Alias)
 
             Definition
               .from_symbol(sym, registry)

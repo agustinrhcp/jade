@@ -87,6 +87,11 @@ module Jade
 
           in Symbol::RecordType(row_var:)
             row_var.nil? ? [] : [row_var]
+
+          in Symbol::Alias(body:)
+            # Aliases are transparent — vars are whatever the body has.
+            # Skip if body unresolved (cycle / pre-deep-decl).
+            body ? collect_vars(body, registry) : []
           end
         end
 
@@ -143,6 +148,10 @@ module Jade
 
           in Symbol::Struct(type_params:, record_type:)
             validate_type_symbol(record_type, registry, entry) +
+              type_params.flat_map { validate_type_symbol(it, registry, entry) }
+
+          in Symbol::Alias(type_params:, body:)
+            (body ? validate_type_symbol(body, registry, entry) : []) +
               type_params.flat_map { validate_type_symbol(it, registry, entry) }
           end
         end
