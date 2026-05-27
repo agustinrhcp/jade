@@ -7,6 +7,7 @@ require 'jade/frontend/semantic_analysis/error/constructor_pattern_arity_mismatc
 require 'jade/frontend/semantic_analysis/error/duplicate_field'
 require 'jade/frontend/semantic_analysis/error/duplicate_function_declaration'
 require 'jade/frontend/semantic_analysis/error/duplicate_record_field'
+require 'jade/frontend/semantic_analysis/error/implementation_on_alias'
 require 'jade/frontend/semantic_analysis/error/invalid_list_rest_pattern'
 require 'jade/frontend/semantic_analysis/error/kwargs_on_non_constructor'
 require 'jade/frontend/semantic_analysis/error/missing_exposing_clause'

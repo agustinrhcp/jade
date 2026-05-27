@@ -339,6 +339,33 @@ module Jade
       end
     end
 
+    describe 'implements on an alias is rejected' do
+      let(:source) do
+        <<~JADE
+          module BadImpl exposing (Show, show)
+
+          interface Show(a) with
+            show : a -> String
+
+
+          type alias UserId = Int
+
+
+          implements Show(UserId) with
+            show: id_show
+
+
+          def id_show(n: UserId) -> String
+            "id"
+        JADE
+      end
+
+      it 'raises an alias-impl error pointing at struct/type' do
+        expect { test_compiler.require('bad_impl', source) }
+          .to raise_error(/alias|nominal/i)
+      end
+    end
+
     describe 'unbound type variable is rejected' do
       let(:source) do
         <<~JADE
