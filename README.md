@@ -100,6 +100,36 @@ p4 = p1 |> .age=(57)                 # update sugar in pipelines
 
 Anonymous records do not coerce into nominal structs. To build a `Person`, use one of the forms above; passing `{ name: "Paul", age: 55 }` where `Person` is expected is a type error.
 
+**Type aliases:**
+```jade
+type alias UserId = Int
+type alias Point  = (Float, Float)
+type alias Handler = Int -> Int
+type alias UserResult = Result(User, ApiError)
+type alias Pair(a) = (a, a)
+type alias User = { name: String, age: Int }
+```
+
+A `type alias` is a **readability shorthand** — purely a name for another type, with no runtime identity. `UserId` and `Int` are the same type; `Handler` and `Int -> Int` are the same type; a record literal `{ name: "Paul", age: 55 }` directly satisfies `User`. Aliases never have their own constructors or typeclass implementations — if you want either, reach for `struct` or a single-variant `type`.
+
+```jade
+type alias User = { name: String, age: Int }
+
+u1 = { name: "Paul", age: 55 }     # construct with a record literal
+u2 = { u1 | age: 56 }              # record update
+name = u1.name                     # field access
+```
+
+When to use what:
+
+| Mechanism | Identity | Construct with |
+|---|---|---|
+| `struct User = { ... }` | Nominal — distinct from same-shaped records | `User("Paul", 55)` |
+| `type User = User({ ... })` | Nominal newtype — wraps an inner shape | `User({ ... })` |
+| `type alias User = { ... }` | Structural — a readability name | record literal `{ ... }` |
+
+Recursive aliases (`type alias L = List(L)`) are rejected — use a union (`type`) for recursive shapes.
+
 **Anonymous records:**
 ```jade
 def origin() -> { x: Int, y: Int }

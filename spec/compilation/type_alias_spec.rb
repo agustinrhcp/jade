@@ -167,6 +167,29 @@ module Jade
       end
     end
 
+    describe 'record alias supports record update' do
+      before do
+        test_compiler.require('user_update', source)
+      end
+
+      let(:source) do
+        <<~JADE
+          module UserUpdate exposing (bumped)
+
+          type alias User = { name: String, age: Int }
+
+
+          def bumped -> User
+            base = { name: "Alice", age: 30 }
+            { base | age: base.age + 1 }
+        JADE
+      end
+
+      it '`{ u | age: ... }` is a structural record op — alias just names the type' do
+        expect(UserUpdate.bumped).to eql({ 'name' => 'Alice', 'age' => 31 })
+      end
+    end
+
     describe 'aliasing a function type' do
       before do
         test_compiler.require('handlers', source)
@@ -294,6 +317,25 @@ module Jade
       it 'chained aliases unify all the way down' do
         expect(AliasesChain.zero).to eql 0
         expect(AliasesChain.plus_one(5)).to eql 6
+      end
+    end
+
+    describe 'alias with wrong arity is rejected' do
+      let(:source) do
+        <<~JADE
+          module BadArity exposing (whatever)
+
+          type alias UserId = Int
+
+
+          def whatever(x: UserId(Int)) -> Int
+            x
+        JADE
+      end
+
+      it 'raises a type-args-mismatch error' do
+        expect { test_compiler.require('bad_arity', source) }
+          .to raise_error(/UserId.*needs|argument/i)
       end
     end
 
