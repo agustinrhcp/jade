@@ -51,8 +51,11 @@ module Jade
       end
 
       def hover_for_path(path, registry, entry)
-        innermost_resolved(path, registry, entry)
-          .then { hoverable?(it) ? hover_response(it, registry) : nil }
+        path
+          .reverse
+          .lazy
+          .filter_map { hover_for_node(it, registry, entry) }
+          .first
       rescue StandardError
         nil
       end
@@ -128,6 +131,26 @@ module Jade
 
       def hoverable?(symbol)
         symbol && HOVERABLE_SYMBOLS.include?(symbol.class)
+      end
+
+      # Symbol-based hover (richer — signatures, constraints, impls) is
+      # tried first; pinned-type hover (from TypeChecking's per-node
+      # table) is the fallback for nodes that don't resolve to a named
+      # symbol (locals, intermediate expressions).
+      def hover_for_node(node, registry, entry)
+        symbol = resolve_symbol(node, registry, entry)
+        return hover_response(symbol, registry) if hoverable?(symbol)
+
+        type = entry.env.node_types[node.id]
+        return nil unless type
+
+        { contents: { kind: 'markdown', value: code_block(pinned_text(node, type)) } }
+      end
+
+      def pinned_text(node, type)
+        node.respond_to?(:name) && node.name.is_a?(String) ?
+          "#{node.name} : #{type}" :
+          type.to_s
       end
 
       def hover_response(symbol, registry)

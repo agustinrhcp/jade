@@ -433,7 +433,7 @@ module Jade
           constructor:,
           patterns: patterns_list.items,
           trailing_comma: patterns_list.trailing_comma,
-          range: constructor.range.begin...(patterns_list.items.first&.range&.end || constructor.range.end),
+          range: constructor.range.begin...(patterns_list.items.last&.range&.end || constructor.range.end),
         )
       end
     end

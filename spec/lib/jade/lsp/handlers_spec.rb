@@ -382,6 +382,28 @@ module Jade
           expect(val).to include('implements Chainable')
         end
 
+        describe 'pinned-type fallback' do
+          let(:locals_text) do
+            <<~JADE
+              module M exposing (run)
+
+              def run(x: Int) -> Int
+                doubled = x * 2
+                doubled + 1
+            JADE
+          end
+
+          it 'renders a local let-binding with its name and inferred type' do
+            _, outbound = open_and_hover(text: locals_text, at: 'doubled = ')
+            expect(outbound.first[:result][:contents][:value]).to include('doubled : Int')
+          end
+
+          it 'renders an intermediate expression as just its type' do
+            _, outbound = open_and_hover(text: locals_text, at: 'x * 2')
+            expect(outbound.first[:result][:contents][:value]).to include('Int')
+          end
+        end
+
         it 'returns nil before any compile has run' do
           _, outbound = Handlers.dispatch(initialized_state, {
             'method' => 'textDocument/hover',

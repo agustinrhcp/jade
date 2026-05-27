@@ -28,6 +28,7 @@ module Jade
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
           .then { finalize(*it, registry) }
           .map { Canonicalize.run(entry.ast, it) }
+          .map { it.canonicalize_node_types }
           .map { entry.with(env: it) }
           .and_then { PortResolution.resolve(it, registry) }
       end
@@ -109,6 +110,19 @@ module Jade
         in AST::VariableReference then Inference::VariableReference
         end
           .infer(node, registry, state, expected_type)
+          .then { |s, r| [pin_node_type(s, node, r), r] }
+      end
+
+      private
+
+      # Records the inferred type at this node so post-finalize the LSP
+      # (and anyone else) can look up `node.id -> type`. Types contain
+      # Type::Var here; `canonicalize_node_types` resolves them once the
+      # substitution is final.
+      def pin_node_type(state, node, result)
+        return state unless node.respond_to?(:id) && result.respond_to?(:type)
+
+        state.with(env: state.env.pin_type(node.id, result.type))
       end
     end
   end
