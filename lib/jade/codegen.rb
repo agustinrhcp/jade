@@ -6,6 +6,7 @@ require 'jade/codegen/inlines'
 require 'jade/codegen/inline'
 require 'jade/codegen/boundary'
 require 'jade/codegen/boundary/cache'
+require 'jade/codegen/boundary/specialized'
 
 require 'jade/codegen/emitter'
 

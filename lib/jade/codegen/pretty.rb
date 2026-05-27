@@ -32,6 +32,18 @@ module Jade
         "[#{items.join(', ')}]"
       end
 
+      # `callee(a, b, c)` on one line when it fits, multi-line with trailing
+      # comma when it doesn't or when an arg is already multi-line.
+      def call(callee, args, width: 80)
+        "#{callee}(#{args.join(', ')})".then do |oneline|
+          if oneline.length <= width && args.none? { multiline?(it) }
+            oneline
+          else
+            "#{callee}(\n#{indent(args.join(",\n"))},\n)"
+          end
+        end
+      end
+
       def multiline?(str)
         str.include?("\n")
       end

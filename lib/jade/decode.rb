@@ -298,16 +298,22 @@ module Jade
       end
 
       def ruby_type_name(v)
-        case v
-        when ::String              then "String"
-        when ::Integer             then "Int"
-        when ::Float               then "Float"
-        when TrueClass, FalseClass then "Bool"
-        when ::NilClass            then "null"
-        when ::Array               then "Array"
-        when ::Hash                then "Object"
-        else                            v.class.name
-        end
+        Jade::Decode.type_name(v)
+      end
+    end
+
+    # Public so specialized boundary decoders can emit error values matching
+    # the interpreter's `WrongType` format without going through `Runner`.
+    def self.type_name(v)
+      case v
+      when ::String              then "String"
+      when ::Integer             then "Int"
+      when ::Float               then "Float"
+      when TrueClass, FalseClass then "Bool"
+      when ::NilClass            then "null"
+      when ::Array               then "Array"
+      when ::Hash                then "Object"
+      else                            v.class.name
       end
     end
   end
