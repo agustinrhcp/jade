@@ -39,7 +39,7 @@ module Jade
           with(rows: rows + other.rows)
         end
 
-        def missing_patterns(env, seen_recursive_types = Set.new)
+        def missing_patterns(env, seen_recursive_types = ::Set.new)
           if types.empty?
             return rows.empty? ? Matrix[[[]], types] : Matrix.empty
           end
@@ -60,7 +60,7 @@ module Jade
             expand(env).missing_patterns(env, seen_recursive_types)
 
           else
-            new_seen = seen_recursive_types | Set[type]
+            new_seen = seen_recursive_types | ::Set[type]
             constructors_of(type, env)
               .reduce(Matrix.empty.with(types:)) do |acc, constructor|
                 missing = specialize(constructor)

@@ -31,7 +31,7 @@ module Jade
       "Record_#{keys.join('_')}"
     end
 
-    def collect_record_shapes(node, shapes = Set.new)
+    def collect_record_shapes(node, shapes = ::Set.new)
       shapes << node.fields.map(&:key).sort if node.is_a?(AST::RecordLiteral)
 
       if node.is_a?(AST::Node)

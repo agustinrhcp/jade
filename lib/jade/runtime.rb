@@ -49,6 +49,12 @@ module Jade
     end
   end
 
+  module Set
+    Set = Data.define(:hash) do
+      def to_s = "Set(#{hash.keys.join(', ')})"
+    end
+  end
+
   module Runtime
     extend self
     extend Interop::Runtime
@@ -71,6 +77,7 @@ module Jade
       require "jade/stdlib/decode"
       require "jade/stdlib/encode"
       require "jade/stdlib/dict"
+      require "jade/stdlib/set"
     end
 
     def intr(name)
