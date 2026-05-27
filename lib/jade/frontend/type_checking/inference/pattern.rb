@@ -7,6 +7,11 @@ module Jade
           extend self
 
           def infer(pattern, registry, state, expected)
+            infer_(pattern, registry, state, expected)
+              .then { |s, r| [s.with(env: s.env.pin_type(pattern.id, r.type)), r] }
+          end
+
+          def infer_(pattern, registry, state, expected)
             case pattern
             in AST::Pattern::Record(fields:, symbol:)
               fields_state, fields_result = fields

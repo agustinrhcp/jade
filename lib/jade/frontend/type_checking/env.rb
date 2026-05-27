@@ -5,9 +5,12 @@ require 'jade/frontend/type_checking/var_gen'
 module Jade
   module Frontend
     module TypeChecking
-      Env = Data.define(:entry_name, :bindings, :substitution, :definitions, :var_gen) do
+      Env = Data.define(
+        :entry_name, :bindings, :substitution,
+        :definitions, :var_gen, :node_types,
+      ) do
         def self.empty(var_gen = VarGen.new)
-          Env[nil, {}, Substitution::EMPTY, {}, var_gen]
+          Env[nil, {}, Substitution::EMPTY, {}, var_gen, {}]
         end
 
         def fresh
@@ -18,6 +21,19 @@ module Jade
           bindings
             .merge(key => value)
             .then { with(bindings: it) }
+        end
+
+        def pin_type(node_id, type)
+          with(node_types: node_types.merge(node_id => type))
+        end
+
+        # Post-finalize, apply the env's substitution to every pinned
+        # type so stored types are canonical (no leftover Type::Var that
+        # the substitution would resolve).
+        def canonicalize_node_types
+          node_types
+            .transform_values { substitution.apply(it) }
+            .then { with(node_types: it) }
         end
 
         def define(key, value)

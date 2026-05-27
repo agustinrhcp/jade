@@ -28,8 +28,12 @@ module Jade
 
     private
 
+    # Byte offsets — must match StringScanner's byte-positioned `pos`,
+    # which is what every AST `:range` carries. Using char positions
+    # here drifts spans by the multi-byte-char count beyond the first
+    # non-ASCII glyph in the file.
     def calculate_line_starts(text)
-      [0] + text.enum_for(:scan, /\n/).map { Regexp.last_match.end(0) }
+      [0] + text.b.enum_for(:scan, /\n/).map { Regexp.last_match.end(0) }
     end
 
     def self.camelize(str)
