@@ -208,6 +208,95 @@ module Jade
       end
     end
 
+    describe 'alias is exposed and consumed across modules' do
+      before do
+        test_compiler.require('shared_types', shared_source)
+        test_compiler.require('shared_consumer', consumer_source)
+      end
+
+      let(:shared_source) do
+        <<~JADE
+          module SharedTypes exposing (UserId)
+
+          type alias UserId = Int
+        JADE
+      end
+
+      let(:consumer_source) do
+        <<~JADE
+          module SharedConsumer exposing (next_id)
+
+          import SharedTypes exposing (UserId)
+
+
+          def next_id(id: UserId) -> UserId
+            id + 1
+        JADE
+      end
+
+      it 'a cross-module alias resolves and works at the boundary' do
+        expect(SharedConsumer.next_id(41)).to eql 42
+      end
+    end
+
+    describe 'alias inside a struct field' do
+      before do
+        test_compiler.require('user_with_id', source)
+      end
+
+      let(:source) do
+        <<~JADE
+          module UserWithId exposing (mk, id_of)
+
+          type alias UserId = Int
+
+          struct UserRow = { id: UserId, name: String }
+
+
+          def mk(id: UserId, name: String) -> UserRow
+            UserRow(id, name)
+
+
+          def id_of(row: UserRow) -> UserId
+            row.id
+        JADE
+      end
+
+      it 'aliases used as struct field types work transparently' do
+        row = UserWithId::Internal.mk(7, 'Carol')
+        expect(UserWithId::Internal.id_of(row)).to eql 7
+      end
+    end
+
+    describe 'alias to alias' do
+      before do
+        test_compiler.require('aliases_chain', source)
+      end
+
+      let(:source) do
+        <<~JADE
+          module AliasesChain exposing (zero, plus_one)
+
+          type alias A = Int
+
+          type alias B = A
+
+
+          def zero -> B
+            0
+
+
+          def plus_one(b: B) -> A
+            b + 1
+        JADE
+      end
+
+      it 'chained aliases unify all the way down' do
+        expect(AliasesChain.zero).to eql 0
+        expect(AliasesChain.plus_one(5)).to eql 6
+      end
+    end
+
     describe 'unbound type variable is rejected' do
       let(:source) do
         <<~JADE

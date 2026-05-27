@@ -38,12 +38,17 @@ module Jade
               # Aliases are transparent — they get expanded into their
               # body whenever a TypeRef resolves to one. They never need
               # to be looked up as definitions during unification.
-              next e if sym.is_a?(Symbol::Alias)
+              next e if alias_symbol?(sym, registry)
 
               Definition
                 .from_symbol(sym, registry)
                 .then { e.define(sym.qualified_name, it) }
             end
+        end
+
+        def alias_symbol?(sym, registry)
+          sym.is_a?(Symbol::Alias) ||
+            (sym.is_a?(Symbol::TypeRef) && registry.lookup(sym).is_a?(Symbol::Alias))
         end
 
         def load_imports(env, entry, registry)
