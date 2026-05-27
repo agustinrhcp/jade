@@ -119,7 +119,7 @@ module Jade
           end
         end
 
-        def cycle_in_extends?(interface_qname, type_qname, entry, visited: Set.new)
+        def cycle_in_extends?(interface_qname, type_qname, entry, visited: ::Set.new)
           key = [interface_qname, type_qname]
           return true if visited.include?(key)
 

@@ -121,6 +121,18 @@ module Jade
         'Dict.from_list'  => ->(pairs)      { "Jade::Dict::Dict[#{pairs}.each_with_object({}) { |p, h| h[p._1] = p._2 }]" },
         'Dict.union'      => ->(l, r)       { "Jade::Dict::Dict[#{r}.hash.merge(#{l}.hash)]" },
         'Dict.dict_eq'    => ->(a, b)       { "(#{a}.hash == #{b}.hash)" },
+
+        'Set.empty'       => ->()           { "Jade::Set::Set[{}]" },
+        'Set.singleton'   => ->(v)          { "Jade::Set::Set[{ #{v} => true }]" },
+        'Set.empty?'      => ->(s)          { "#{s}.hash.empty?" },
+        'Set.size'        => ->(s)          { "#{s}.hash.size" },
+        'Set.member?'     => ->(s, v)       { "#{s}.hash.key?(#{v})" },
+        'Set.insert'      => ->(s, v)       { "Jade::Set::Set[#{s}.hash.merge(#{v} => true)]" },
+        'Set.remove'      => ->(s, v)       { "Jade::Set::Set[#{s}.hash.except(#{v})]" },
+        'Set.to_list'     => ->(s)          { "#{s}.hash.keys" },
+        'Set.from_list'   => ->(xs)         { "Jade::Set::Set[#{xs}.each_with_object({}) { |v, h| h[v] = true }]" },
+        'Set.union'       => ->(l, r)       { "Jade::Set::Set[#{l}.hash.merge(#{r}.hash)]" },
+        'Set.set_eq'      => ->(a, b)       { "(#{a}.hash == #{b}.hash)" },
       }.freeze
 
       # Native block form is 2-3× faster than `&lambda` — Ruby skips
@@ -202,6 +214,11 @@ module Jade
         Dict.filter
         Dict.fold
         Dict.merge
+        Set.map
+        Set.filter
+        Set.fold
+        Set.intersect
+        Set.diff
       ].to_set.freeze
 
       def for(qualified_name)

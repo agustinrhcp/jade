@@ -65,6 +65,9 @@ module Jade
         in 'Dict'
           'Dict'
 
+        in 'Set'
+          'Set'
+
         end
           .then { [it, type] }
       end

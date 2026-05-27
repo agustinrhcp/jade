@@ -20,8 +20,8 @@ module Jade
         name:,
         defined_values: {},
         defined_types: {},
-        imports: Set[],
-        exposes: Set[],
+        imports: ::Set[],
+        exposes: ::Set[],
         ast: nil,
         source: nil,
         generated: nil,
@@ -34,11 +34,11 @@ module Jade
     end
 
     def expose(symbol)
-      with(exposes: exposes + Set[symbol])
+      with(exposes: exposes + ::Set[symbol])
     end
 
     def import(import_entry)
-      with(imports: imports + Set[import_entry])
+      with(imports: imports + ::Set[import_entry])
     end
 
     def exposed_value(unqualified_name)

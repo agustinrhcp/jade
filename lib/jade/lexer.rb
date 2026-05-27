@@ -9,7 +9,7 @@ module Jade
   module Lexer
     extend self
 
-    KEYWORDS = Set[
+    KEYWORDS = ::Set[
       'def',
       'type',
       'module',

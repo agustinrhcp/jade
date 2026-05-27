@@ -388,6 +388,7 @@ Pass a class constant or `'Module::Name'` string when the short name is ambiguou
 | `Decode` | `string`, `int`, `float`, `bool`, `list`, `field`, `at`, `succeed`, `required`, `optional`, ... |
 | `Encode` | `string`, `int`, `float`, `bool`, `list`, `object`, plus `Encodable` derivation for user types |
 | `Dict` | `Dict(k, v)`, `empty`, `singleton`, `get`, `member`, `insert`, `update`, `remove`, `size`, `is_empty`, `keys`, `values`, `to_list`, `from_list`, `map`, `filter`, `fold`, `union`, `merge` |
+| `Set` | `Set(a)`, `empty`, `singleton`, `insert`, `remove`, `member?`, `size`, `empty?`, `to_list`, `from_list`, `map`, `filter`, `fold`, `union`, `intersect`, `diff` |
 | `Basics` | `Eq`, `Comparable`, `Appendable`, `Mappable`, `Chainable`, `Ordering` |
 
 ---
