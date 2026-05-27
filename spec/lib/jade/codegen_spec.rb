@@ -163,8 +163,8 @@ module Jade
       end
 
       it 'emits the boundary wrapper for eligible fns' do
-        is_expected.to include("def self.hello(__p0__)")
-        is_expected.to include("Jade::Interop::Boundary.decode_or_raise")
+        is_expected.to include("def self.hello(str)")
+        is_expected.to include("Jade::Interop::Boundary.string")
       end
     end
 

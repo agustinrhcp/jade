@@ -5,7 +5,7 @@ module Jade
       extend Helpers
 
       def generate_boundary_wrapper(node, registry)
-        node => AST::FunctionDeclaration(name:, symbol:)
+        node => AST::FunctionDeclaration(name:, params:, symbol:)
 
         entry = registry.get(symbol.module_name)
         return nil unless entry&.exposed_value(name)
@@ -20,11 +20,12 @@ module Jade
         end
 
         args, return_type = Type.signature(fn_type)
+        param_names       = params.map(&:name)
 
         if task_return?(return_type)
-          task_wrapper_pair(name, args, return_type, registry)
+          task_wrapper_pair(name, args, param_names, return_type, registry)
         else
-          eligible_wrapper(name, args, return_type, registry)
+          eligible_wrapper(name, args, param_names, return_type, registry)
         end
       end
 
@@ -57,42 +58,62 @@ module Jade
         end
       end
 
-      def eligible_wrapper(name, args, return_type, registry)
-        param_names = args.each_index.map { param_synthetic_name(it) }
-        encoder     = Codegen::Boundary::Cache.encoder_for(return_type, registry)
-
-        [
-          *decode_arg_lines(args, param_names, registry),
-          "#{encoder}.call(Internal.#{name}#{decoded_call_args(param_names)})",
-        ]
-          .join(Pretty.newline)
-          .then { Pretty.block("def self.#{name}(#{param_names.join(', ')})", it) }
+      def eligible_wrapper(name, args, param_names, return_type, registry)
+        decoded_args(args, param_names, registry)
+          .then { Pretty.call("Internal.#{name}", it) }
+          .then { encode_return(return_type, it, registry) }
+          .then { Pretty.block(boundary_def_header(name, param_names), it) }
       end
 
-      def task_wrapper_pair(name, args, task_return, registry)
+      def boundary_def_header(name, param_names)
+        "def self.#{name}(#{param_names.join(', ')})"
+      end
+
+      def decoded_args(args, param_names, registry)
+        args.zip(param_names).map { |t, pname| decode_call(t, pname, registry) }
+      end
+
+      def decode_call(arg_type, pname, registry)
+        Codegen::Boundary::Specialized.decode_expr(arg_type, pname) ||
+          Codegen::Boundary::Cache.decoder_for(arg_type, registry)
+            .then { "Jade::Interop::Boundary.decode_or_raise(#{it}, #{pname})" }
+      end
+
+      def encode_return(return_type, call_expr, registry)
+        if Codegen::Boundary::Specialized.identity_encoder?(return_type)
+          call_expr
+        else
+          encoder = Codegen::Boundary::Cache.encoder_for(return_type, registry)
+          "#{encoder}.call(#{call_expr})"
+        end
+      end
+
+      def task_wrapper_pair(name, args, param_names, task_return, registry)
         ok_enc, err_enc = Codegen::Boundary::Cache.task_arms(task_return, registry)
-        param_names     = args.each_index.map { param_synthetic_name(it) }
-        params_str      = param_names.join(', ')
 
-        run_def  = task_run_def(name, params_str, args, param_names, ok_enc, err_enc, registry)
-        bang_def = task_bang_def(name, params_str, param_names)
-
-        [run_def, bang_def].join(Pretty.newline(2))
+        [
+          task_run_def(name, args, param_names, ok_enc, err_enc, registry),
+          task_bang_def(name, param_names),
+        ].join(Pretty.newline(2))
       end
 
-      def task_run_def(name, params_str, args, param_names, ok_enc, err_enc, registry)
+      def task_run_def(name, args, param_names, ok_enc, err_enc, registry)
+        decoded_args(args, param_names, registry)
+          .then { Pretty.call("Internal.#{name}", it) }
+          .then { task_run_body(it, ok_enc, err_enc) }
+          .then { Pretty.block(boundary_def_header(name, param_names), it) }
+      end
+
+      def task_run_body(call_expr, ok_enc, err_enc)
         [
-          *decode_arg_lines(args, param_names, registry),
-          "case Internal.#{name}#{decoded_call_args(param_names)}.run",
+          "case #{call_expr}.run",
           "in Jade::Result::Ok[v]  then [\"ok\",  #{ok_enc}.call(v)]",
           "in Jade::Result::Err[e] then [\"err\", #{err_enc}.call(e)]",
           'end',
-        ]
-          .join(Pretty.newline)
-          .then { Pretty.block("def self.#{name}(#{params_str})", it) }
+        ].join(Pretty.newline)
       end
 
-      def task_bang_def(name, params_str, param_names)
+      def task_bang_def(name, param_names)
         [
           "case #{name}#{paren_or_empty(param_names)}",
           'in ["ok",  v] then v',
@@ -100,27 +121,13 @@ module Jade
           'end',
         ]
           .join(Pretty.newline)
-          .then { Pretty.block("def self.#{name}!(#{params_str})", it) }
+          .then do
+            Pretty.block(boundary_def_header("#{name}!", param_names), it)
+          end
       end
 
       def task_return?(type)
         type in Type::Application(constructor: Type::Constructor(name: 'Task.Task'))
-      end
-
-      def decode_arg_lines(args, param_names, registry)
-        args
-          .zip(param_names)
-          .each_with_index.map do |(arg_type, pname), i|
-            Codegen::Boundary::Cache.decoder_for(arg_type, registry)
-              .then { "#{decoded_name(i)} = Jade::Interop::Boundary.decode_or_raise(#{it}, #{pname})" }
-          end
-      end
-
-      def decoded_call_args(param_names)
-        param_names
-          .each_index
-          .map { decoded_name(it) }
-          .then { paren_or_empty(it) }
       end
 
       def paren_or_empty(items)
@@ -168,10 +175,6 @@ module Jade
             "return type #{ret} has no Encodable instance"
           end
         end
-      end
-
-      def decoded_name(index)
-        "__d#{index}__"
       end
 
       def fn_type_for(symbol, registry)

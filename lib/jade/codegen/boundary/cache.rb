@@ -25,22 +25,31 @@ module Jade
         end
 
         def collect(body, registry)
-          decoder_types = []
-          encoder_types = []
-
-          body.expressions
-            .filter { it.is_a?(AST::FunctionDeclaration) }
-            .each do |node|
-              types = boundary_types(node, registry) or next
-
-              decoder_types.concat(types[:decoders])
-              encoder_types.concat(types[:encoders])
+          per_fn = body
+            .expressions
+            .filter_map do
+              boundary_types(it, registry) if it.is_a?(AST::FunctionDeclaration)
             end
 
           {
-            decoders: decoder_types.uniq.each_with_index.map { |t, i| [t, "BOUNDARY_DEC_#{i}"] }.to_h,
-            encoders: encoder_types.uniq.each_with_index.map { |t, i| [t, "BOUNDARY_ENC_#{i}"] }.to_h,
+            decoders: cache_map(per_fn.flat_map { it[:decoders] }, 'DEC') { |t|
+              Boundary::Specialized.decode_expr(t, '_')
+            },
+            encoders: cache_map(per_fn.flat_map { it[:encoders] }, 'ENC') { |t|
+              Boundary::Specialized.identity_encoder?(t)
+            },
           }
+        end
+
+        # Types with a specialized inline emission don't need a cached
+        # constant — the wrapper emits the validation directly.
+        def cache_map(types, tag, &specialized)
+          types
+            .reject(&specialized)
+            .uniq
+            .each_with_index
+            .map { |t, i| [t, "BOUNDARY_#{tag}_#{i}"] }
+            .to_h
         end
 
         def constants(cache, registry)
