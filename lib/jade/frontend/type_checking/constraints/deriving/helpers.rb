@@ -51,6 +51,23 @@ module Jade
                   .apply(args)
               end
             end
+
+            # Returns the wrapping variant; nil if the union isn't a newtype
+            # (single variant, single non-record positional arg).
+            #
+            # User-defined unions store variants as Symbol::Constructor;
+            # stdlib unions store them as Symbol::Variant. Both have an
+            # `args` accessor that's what we care about.
+            def newtype_variant(union_sym, registry)
+              return nil unless union_sym.variants.length == 1
+
+              variant = registry.lookup(union_sym.variants.first)
+              return nil unless variant.is_a?(Symbol::Constructor) || variant.is_a?(Symbol::Variant)
+              return nil unless variant.args.length == 1
+              return nil if variant.args.first.is_a?(Symbol::RecordType)
+
+              variant
+            end
           end
         end
       end
