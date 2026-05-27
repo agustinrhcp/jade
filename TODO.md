@@ -161,3 +161,5 @@ break the generator for real users.
 When jade-sql moves to its own gem, add an integration spec:
 generate from a multi-table fixture SQL, feed through `test_compiler`,
 assert it compiles, and that a simple `from(persons) |> to_sql` works.
+
+
