@@ -122,6 +122,51 @@ module Jade
       end
     end
 
+    describe 'record alias crosses the boundary via Encode' do
+      before do
+        test_compiler.require('users_encode', source)
+      end
+
+      let(:source) do
+        <<~JADE
+          module UsersEncode exposing (alice)
+
+          type alias User = { name: String, age: Int }
+
+
+          def alice -> User
+            { name: "Alice", age: 30 }
+        JADE
+      end
+
+      it 'auto-derives Encodable for a record alias' do
+        encoded = UsersEncode.alice
+        expect(encoded).to eql({ 'name' => 'Alice', 'age' => 30 })
+      end
+    end
+
+    describe 'record alias crosses the boundary via Decode' do
+      before do
+        test_compiler.require('users_decode', source)
+      end
+
+      let(:source) do
+        <<~JADE
+          module UsersDecode exposing (name_of)
+
+          type alias User = { name: String, age: Int }
+
+
+          def name_of(u: User) -> String
+            u.name
+        JADE
+      end
+
+      it 'auto-derives Decodable for a record alias' do
+        expect(UsersDecode.name_of({ 'name' => 'Bob', 'age' => 0 })).to eql 'Bob'
+      end
+    end
+
     describe 'aliasing a function type' do
       before do
         test_compiler.require('handlers', source)

@@ -34,6 +34,9 @@ module Jade
                   failed(constraint, entry_name)
                 end
 
+              in Type::AnonymousRecord(fields:)
+                derive_anonymous_record(constraint, fields, lookup, entry_name)
+
               else
                 failed(constraint, entry_name)
               end
@@ -86,7 +89,14 @@ module Jade
 
             def derive_struct(constraint, struct_sym, type_args, registry, lookup, entry_name)
               fields = struct_fields(struct_sym, type_args, registry)
+              derive_record(constraint, fields, lookup, entry_name)
+            end
 
+            def derive_anonymous_record(constraint, fields, lookup, entry_name)
+              derive_record(constraint, fields.to_a, lookup, entry_name)
+            end
+
+            def derive_record(constraint, fields, lookup, entry_name)
               field_deps = fields
                 .map { |_, field_type| Type.constraint(INTERFACE, field_type, nil) }
 
