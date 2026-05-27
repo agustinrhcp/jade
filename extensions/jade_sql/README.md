@@ -168,6 +168,29 @@ For predicates that lift a non-null column into the nullable side,
 p.id |> nullable |> eq(o.person_id)  -- Expr(Int) → Expr(Maybe(Int))
 ```
 
+### Phantom-type rewrap with `cast`
+
+`cast(e: Expr(a)) -> Expr(b)` widens a column's phantom type — useful
+for projecting a `VARCHAR` column into a typed enum field whose
+`Decodable(b)` instance does the actual parsing at row decode:
+
+```jade
+struct Transaction = { id: Int, kind: Kind, ... }
+
+-- kind column is VARCHAR; Kind has a Decodable(Kind) impl that parses
+-- "income" / "expense" into the variants.
+select(Transaction(_, _, ...))
+  |> field(t.id)
+  |> field(t.kind |> cast)   -- Expr(String) → Expr(Kind)
+```
+
+Same shape as `nullable` — pure phantom-type rewrap, no runtime
+transformation. The runtime decoder (`Decodable(Kind)`) is what
+actually converts the column value; `cast` just teaches the SQL
+builder that the projection is intended. If `Decodable(b)` can't
+parse the column's actual values, the failure surfaces at row
+decode time, not at type check.
+
 ## Build mutations
 
 Define codec interfaces for your domain type:
@@ -229,10 +252,14 @@ patients()
 
 `returning` is the mutation-side counterpart to `select` for queries.
 It takes a closure that receives the table's column accessors and
-builds a `Selector` projecting them into a target type:
+builds a Q-wrapped selector projecting them into a target type. The
+Q wrapper is just to share the same `select`/`field` builders as
+queries — `returning` extracts the inner `Selector` and discards the
+empty Q state.
 
 ```jade
-import Sql exposing(Selector, select, field)
+import Sql exposing(Selector)
+import Sql.Query exposing(select, field)
 import Sql.Mutation exposing(insert, returning, to_sql)
 
 -- INSERT INTO patients (name, balance) VALUES (?, ?) RETURNING p.id, p.name, p.balance
@@ -244,10 +271,16 @@ np
   |> field(p.name)
   |> field(p.balance)
 })
-|> to_sql                    -- or |> run_one to execute
+|> to_sql                    -- or |> fetch_one to run
 ```
 
-Combined with `Sql.Run.run_one`, the inserted row decodes into the
+Bonus: the projector can be defined once and shared between SELECT
+queries and RETURNING — both contexts now take the same `cols ->
+Q(Selector(target))` shape, so a single `def patient_projector(p)`
+works for `from(patients) |> patient_projector` (query) and
+`... |> returning(patient_projector)` (RETURNING).
+
+Combined with `Sql.fetch_one`, the inserted row decodes into the
 target struct:
 
 ```jade
@@ -258,8 +291,7 @@ def create(np: NewPatient) -> Task(Patient, SqlError)
     |> field(p.name)
     |> field(p.balance)
   })
-  |> run_one
-end
+  |> fetch_one
 ```
 
 `insert` / `update` / `delete` need `SqlMapper(a)` + `Identified(a)`.
@@ -337,38 +369,37 @@ without extra wiring.
 
 ## Run queries and mutations
 
-`Sql.Run` exposes the runners as a polymorphic interface over anything
-`Renderable` (Q, Mutation, ...) plus a raw-SQL escape hatch:
+`Sql` exposes `fetch_one` / `fetch_many` for reads and `execute` for
+writes — all polymorphic over anything `Renderable` (Q, Mutation, …) —
+plus `*_raw` siblings that take a `(String, List(Value))` pair for the
+escape hatch:
 
 ```jade
-import Sql.Run exposing(SqlError, run_count, run_one, run_many, execute_count, execute_one, execute_many)
+import Sql exposing (SqlError, execute, execute_raw, fetch_many, fetch_one)
 
 -- Affected count for INSERT/UPDATE/DELETE
 def update_paul(p: Patient) -> Task(Int, SqlError)
-  p |> update(patients()) |> run_count
-end
+  p |> update(patients()) |> execute
 
 -- A single row, decoded into Patient
 def find(id: Int) -> Task(Patient, SqlError)
-  patient_by_id_query(id) |> run_one
-end
+  patient_by_id_query(id) |> fetch_one
 
 -- Many rows, decoded
-def all() -> Task(List(Patient), SqlError)
-  all_patients_query() |> run_many
-end
+def all -> Task(List(Patient), SqlError)
+  all_patients_query() |> fetch_many
 
 -- Raw SQL escape hatch — bypass the typed builders
-def count_active() -> Task(Int, SqlError)
-  execute_count(("SELECT COUNT(*) FROM patients WHERE archived = ?", [Encode.encode(False)]))
-end
+def count_active -> Task(Int, SqlError)
+  execute_raw(("SELECT COUNT(*) FROM patients WHERE archived = ?", [Encode.encode(False)]))
 ```
 
-`run_count` / `run_one` / `run_many` accept anything that implements
-`Sql.Renderable` (Q, Mutation). Internally they call `render(r) |> execute_*`,
+`fetch_one` / `fetch_many` / `execute` accept anything that implements
+`Sql.Renderable` (Q, Mutation). Internally they call `render(r) |> *_raw`,
 where `render` is the interface method that resolves to each container's
-`to_sql`. For raw SQL, skip the builder and call `execute_*` directly with
-a `(String, List(Value))` pair.
+`to_sql`. For raw SQL, skip the builder and call `fetch_one_raw` /
+`fetch_many_raw` / `execute_raw` directly with a `(String, List(Value))`
+pair.
 
 Row decoding is automatic — the caller's type (`Patient`, `List(Patient)`)
 threads its `Decodable` instance into the polymorphic port. The runtime
@@ -377,8 +408,8 @@ at the boundary.
 
 `SqlError` variants:
 - `DbError(String)` — AR `StatementInvalid` message
-- `NotFound` — `run_one` with zero rows
-- `NotUnique` — `run_one` with more than one row
+- `NotFound` — `fetch_one` with zero rows
+- `NotUnique` — `fetch_one` with more than one row
 
 A decode mismatch (column type doesn't match the field type) raises on
 the Ruby side rather than becoming a recoverable error — schema drift is
@@ -427,8 +458,8 @@ end
 ```
 
 The three ports are `port_execute_count`, `port_execute_one`,
-`port_execute_many` — `Sql.Run.execute_*` and `Sql.Run.run_*` ultimately
-dispatch through these. Stub them with
+`port_execute_many` — `Sql.execute*` / `Sql.fetch_*` and their `*_raw`
+siblings ultimately dispatch through these. Stub them with
 `all_calls_to(JadeSql::Runtime.port_execute_*) { |t, pair| ... }`.
 
 ## File layout
@@ -437,14 +468,16 @@ dispatch through these. Stub them with
 extensions/jade_sql/
   jade-sql.gemspec
   lib/
-    jade-sql.rb              # registers the extension
+    jade-sql.rb              # registers the extension + Sql::Errors + raise_typed!
     jade-sql/
-      sql.jd                 # Sql module — Value, Expr, Table, codec interfaces
+      sql.jd                 # Sql — Expr, Table, codecs, fetch_*/execute, SqlError
       sql/
         query.jd             # Sql.Query — bind-chain Q, from/join/where/select
         mutation.jd          # Sql.Mutation — codec-driven insert/update/delete
-        run.jd               # Sql.Run — Task ports + run_count/one/many
+        loader.jd            # Sql.Loader — group_by, lookup_or for assoc bundling
+        uuid.jd              # Sql.Uuid — opaque Uuid type + v4/v7 generation
       runtime.rb             # AR-backed task port (opt-in)
+      uuid_runtime.rb        # SecureRandom-backed Uuid v4/v7 ports
       tasks.rake             # jade:schema task
       bin/
         generate_schema.rb   # schema generator (CLI + library)

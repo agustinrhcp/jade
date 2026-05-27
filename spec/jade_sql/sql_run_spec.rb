@@ -22,7 +22,7 @@ module JadeSql
 end
 
 module Jade
-  describe 'Sql.Run' do
+  describe "Sql.fetch / execute" do
     include_context 'with test compiler'
     include Jade::Tasks::RSpec
 
@@ -40,14 +40,14 @@ module Jade
         import Sql.Query exposing (Q, field, from, select, where)
         import Decode exposing (Value)
         import Encode
-        import Sql.Run exposing (
+        import Sql exposing (
           SqlError,
-          execute_count,
-          execute_many,
-          execute_one,
-          run_count,
-          run_many,
-          run_one,
+          execute,
+          execute_raw,
+          fetch_many,
+          fetch_many_raw,
+          fetch_one,
+          fetch_one_raw,
         )
 
 
@@ -83,21 +83,21 @@ module Jade
 
 
         def count_via_execute -> Task(Int, SqlError)
-          execute_count(("SELECT COUNT(*) FROM patients", []))
+          execute_raw(("SELECT COUNT(*) FROM patients", []))
 
 
         def list_via_execute -> Task(List(Patient), SqlError)
-          execute_many(("SELECT * FROM patients", []))
+          fetch_many_raw(("SELECT * FROM patients", []))
 
 
         def find_via_run -> Task(Patient, SqlError)
-          execute_one(
+          fetch_one_raw(
             ("SELECT * FROM patients WHERE name = ?", [Encode.encode("Paul")]),
           )
 
 
         def all_via_run -> Task(List(Patient), SqlError)
-          execute_many(("SELECT * FROM patients", []))
+          fetch_many_raw(("SELECT * FROM patients", []))
 
 
         def paul_query -> Q(Selector(Patient))
@@ -111,13 +111,13 @@ module Jade
 
 
         def paul_via_run -> Task(Patient, SqlError)
-          paul_query |> run_one
+          paul_query |> fetch_one
       JADE
     end
 
     before { test_compiler.require('app', source) }
 
-    describe 'execute_count' do
+    describe "execute (alias for run_count over Renderable)" do
       it 'returns the affected count from the port' do
         all_calls_to(JadeSql::Runtime.port_execute_count) { |t, _pair| t.ok(7) }
 
@@ -130,7 +130,7 @@ module Jade
           t.err(JadeSql::SqlErrors.db_error("syntax error"))
         end
 
-        expect(App::Internal.count_via_execute.run).to be_err(look_like("Sql::Run::DbError", "syntax error"))
+        expect(App::Internal.count_via_execute.run).to be_err(look_like("Sql::DbError", "syntax error"))
       end
 
       it 'surfaces a NotFound from port_execute_one' do
@@ -138,7 +138,7 @@ module Jade
           t.err(JadeSql::SqlErrors.not_found)
         end
 
-        expect(App::Internal.find_via_run.run).to be_err(look_like("Sql::Run::NotFound"))
+        expect(App::Internal.find_via_run.run).to be_err(look_like("Sql::NotFound"))
       end
 
       it 'surfaces a NotUnique from port_execute_one' do
@@ -146,7 +146,7 @@ module Jade
           t.err(JadeSql::SqlErrors.not_unique)
         end
 
-        expect(App::Internal.find_via_run.run).to be_err(look_like("Sql::Run::NotUnique"))
+        expect(App::Internal.find_via_run.run).to be_err(look_like("Sql::NotUnique"))
       end
     end
 
@@ -184,7 +184,7 @@ module Jade
       end
     end
 
-    describe 'run_one via Renderable (Q)' do
+    describe 'fetch_one via Renderable (Q)' do
       it 'renders the Q via to_sql and decodes the row' do
         all_calls_to(JadeSql::Runtime.port_execute_one) do |t, pair|
           # Verify Q.to_sql rendered the query the way we expect.
@@ -248,31 +248,31 @@ module Jade
     end
   end
 
-  describe 'Sql::Run.raise_typed!' do
-    it 'raises Sql::Run::Errors::DbError for ["DbError", msg]' do
-      expect { Sql::Run.raise_typed!(["DbError", "syntax error"]) }
-        .to raise_error(Sql::Run::Errors::DbError, "syntax error")
+  describe 'Sql.raise_typed!' do
+    it 'raises Sql::Errors::DbError for ["DbError", msg]' do
+      expect { Sql.raise_typed!(["DbError", "syntax error"]) }
+        .to raise_error(Sql::Errors::DbError, "syntax error")
     end
 
-    it 'raises Sql::Run::Errors::NotFound for ["NotFound"]' do
-      expect { Sql::Run.raise_typed!(["NotFound"]) }
-        .to raise_error(Sql::Run::Errors::NotFound)
+    it 'raises Sql::Errors::NotFound for ["NotFound"]' do
+      expect { Sql.raise_typed!(["NotFound"]) }
+        .to raise_error(Sql::Errors::NotFound)
     end
 
-    it 'raises Sql::Run::Errors::NotUnique for ["NotUnique"]' do
-      expect { Sql::Run.raise_typed!(["NotUnique"]) }
-        .to raise_error(Sql::Run::Errors::NotUnique)
+    it 'raises Sql::Errors::NotUnique for ["NotUnique"]' do
+      expect { Sql.raise_typed!(["NotUnique"]) }
+        .to raise_error(Sql::Errors::NotUnique)
     end
 
-    it 'falls back to Sql::Run::Errors::Error for an unknown type' do
-      expect { Sql::Run.raise_typed!(["Unknown", "x"]) }
-        .to raise_error(Sql::Run::Errors::Error, "x")
+    it 'falls back to Sql::Errors::Error for an unknown type' do
+      expect { Sql.raise_typed!(["Unknown", "x"]) }
+        .to raise_error(Sql::Errors::Error, "x")
     end
 
-    it 'DbError, NotFound, NotUnique are all subclasses of Sql::Run::Errors::Error' do
-      expect(Sql::Run::Errors::DbError.ancestors).to include(Sql::Run::Errors::Error)
-      expect(Sql::Run::Errors::NotFound.ancestors).to include(Sql::Run::Errors::Error)
-      expect(Sql::Run::Errors::NotUnique.ancestors).to include(Sql::Run::Errors::Error)
+    it 'DbError, NotFound, NotUnique are all subclasses of Sql::Errors::Error' do
+      expect(Sql::Errors::DbError.ancestors).to include(Sql::Errors::Error)
+      expect(Sql::Errors::NotFound.ancestors).to include(Sql::Errors::Error)
+      expect(Sql::Errors::NotUnique.ancestors).to include(Sql::Errors::Error)
     end
   end
 end

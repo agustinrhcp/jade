@@ -154,6 +154,25 @@ module Jade
       end
     end
 
+    describe 'cast' do
+      it 'rewraps the phantom type without touching sql or params' do
+        test_compiler.require('app', <<~JADE)
+          module App exposing (recast)
+
+          import Sql exposing (Expr, cast, column)
+
+
+          def recast -> Expr(Bool)
+            column("p", "kind") |> cast
+        JADE
+
+        App::Internal.recast.then do |expr|
+          expect(expr.sql).to eql 'p.kind'
+          expect(expr.params).to eql []
+        end
+      end
+    end
+
     describe 'from + where via postfix' do
       let(:source) do
         <<~JADE
@@ -915,14 +934,13 @@ module Jade
             assign,
             column,
             eq,
-            field,
             pk_values,
-            select,
             set_,
             table,
             to_assigns,
             to_expr,
           )
+          import Sql.Query exposing (Q, field, select)
           import Sql.Mutation exposing (
             Mutation,
             delete,

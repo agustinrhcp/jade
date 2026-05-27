@@ -4,23 +4,30 @@ module Sql exposing (
   Identified,
   Renderable,
   Selector(..),
+  SqlError(..),
   SqlMapper,
   Table,
   TableRef(..),
   aliased,
   and,
   assign,
+  cast,
   column,
   columns,
   eq,
-  field,
+  execute,
+  execute_raw,
+  fetch_many,
+  fetch_many_raw,
+  fetch_one,
+  fetch_one_raw,
+  in,
   is_not_null,
   is_null,
   maybe_columns,
   nullable,
   pk_values,
   render,
-  select,
   set_,
   table,
   to_assigns,
@@ -28,7 +35,7 @@ module Sql exposing (
 )
 
 import Encode exposing (Encodable, encode)
-import Decode exposing (Value)
+import Decode exposing (Decodable, Decoder, Value)
 
 
 struct Expr(a) = {
@@ -41,14 +48,6 @@ struct Selector(a) = {
   columns_sql: List(String),
   params: List(Value)
 }
-
-
-def select(make: a -> b) -> Selector(a -> b)
-  Selector([], [])
-
-
-def field(s: Selector(a -> b), e: Expr(a)) -> Selector(b)
-  Selector(s.columns_sql ++ [e.sql], s.params ++ e.params)
 
 
 struct Table(c, m) = {
@@ -130,8 +129,26 @@ def nullable(e: Expr(a)) -> Expr(Maybe(a))
   Expr(e.sql, e.params)
 
 
+def cast(e: Expr(a)) -> Expr(b)
+  Expr(e.sql, e.params)
+
+
 def and(left: Expr(Bool), right: Expr(Bool)) -> Expr(Bool)
   Expr(left.sql ++ " AND " ++ right.sql, left.params ++ right.params)
+
+
+def in(col: Expr(a), values: List(a)) -> Expr(Bool)
+  case values
+  of [] -> Expr("FALSE", [])
+  of _ -> in_nonempty(col, List.map(values, encode))
+
+
+def in_nonempty(col: Expr(a), encoded: List(Value)) -> Expr(Bool)
+  placeholders = encoded
+    |> List.map((_) -> { "?" })
+    |> String.join(", ")
+
+  Expr(col.sql ++ " IN (" ++ placeholders ++ ")", col.params ++ encoded)
 
 
 def table(
@@ -154,3 +171,65 @@ def maybe_columns(t: Table(c, m), alias_: String) -> m
 
 def aliased(t: Table(c, m), alias_: String) -> Table(c, m)
   Table(t.name, alias_, t.cols, t.maybe_cols, t.pk_columns)
+
+
+type SqlError
+  = DbError(String)
+  | NotFound
+  | NotUnique
+
+
+implements Encodable(SqlError) with
+  encoder: encode_sql_error
+
+
+def encode_sql_error(e: SqlError) -> Value
+  case e
+  of DbError(msg) -> Encode.variant("DbError", [Encode.string(msg)])
+  of NotFound -> Encode.variant("NotFound", [])
+  of NotUnique -> Encode.variant("NotUnique", [])
+
+
+implements Decodable(SqlError) with
+  decoder: sql_error_decoder
+
+
+def sql_error_decoder -> Decoder(SqlError)
+  Decode.type_
+    |> Decode.variant("DbError", db_error_decoder)
+    |> Decode.variant("NotFound", Decode.succeed(NotFound))
+    |> Decode.variant("NotUnique", Decode.succeed(NotUnique))
+
+
+def db_error_decoder -> Decoder(SqlError)
+  Decode.index(1, Decode.string) |> Decode.map(DbError)
+
+
+uses JadeSql::Runtime with
+  port_execute_count : (String, List(Value)) -> Task(Int, SqlError),
+  port_execute_one : (String, List(Value)) -> Task(a, SqlError),
+  port_execute_many : (String, List(Value)) -> Task(List(a), SqlError)
+
+
+def execute_raw(p: (String, List(Value))) -> Task(Int, SqlError)
+  port_execute_count(p)
+
+
+def fetch_one_raw(p: (String, List(Value))) -> Task(a, SqlError)
+  port_execute_one(p)
+
+
+def fetch_many_raw(p: (String, List(Value))) -> Task(List(a), SqlError)
+  port_execute_many(p)
+
+
+def execute(r: r) -> Task(Int, SqlError)
+  render(r) |> execute_raw
+
+
+def fetch_one(r: r) -> Task(a, SqlError)
+  render(r) |> fetch_one_raw
+
+
+def fetch_many(r: r) -> Task(List(a), SqlError)
+  render(r) |> fetch_many_raw

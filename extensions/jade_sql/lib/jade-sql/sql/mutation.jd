@@ -21,6 +21,7 @@ import Sql exposing (
   set_,
   to_assigns,
 )
+import Sql.Query exposing (Q)
 import Decode exposing (Value)
 
 
@@ -120,8 +121,8 @@ def delete_all(t: Table(c, m), pred_fn: c -> Expr(Bool)) -> Mutation(Int, c)
   )
 
 
-def returning(m: Mutation(a, c), build: c -> Selector(b)) -> Mutation(b, c)
-  Mutation(m.kind, m.table, m.cols, m.rows, m.wheres, build(m.cols))
+def returning(m: Mutation(a, c), build: c -> Q(Selector(b))) -> Mutation(b, c)
+  Mutation(m.kind, m.table, m.cols, m.rows, m.wheres, build(m.cols).result)
 
 
 def pk_predicate(cols: List(String), values: List(Value)) -> Expr(Bool)
@@ -134,9 +135,7 @@ def pk_predicate(cols: List(String), values: List(Value)) -> Expr(Bool)
 
 def render_row(row: List(Assignment)) -> String
   cols_part = row
-    |> List.map((a) -> {
-    a.value_sql
-  })
+    |> List.map((a) -> { a.value_sql })
     |> String.join(", ")
 
   "(" ++ cols_part ++ ")"
@@ -151,9 +150,7 @@ def insert_cols_str(rows: List(List(Assignment))) -> String
   case rows
   of [] -> ""
   of [first | _] ->
-    "(" ++ String.join(List.map(first, (a) -> {
-      a.col
-    }), ", ") ++ ")"
+    "(" ++ String.join(List.map(first, (a) -> { a.col }), ", ") ++ ")"
 
 
 def insert_params(rows: List(List(Assignment))) -> List(Value)
@@ -178,9 +175,7 @@ def set_params_for(rows: List(List(Assignment))) -> List(Value)
 
 def where_sql(wheres: List(Expr(Bool))) -> String
   if List.empty?(wheres) then ""
-  else " WHERE " ++ String.join(List.map(wheres, (w) -> {
-    w.sql
-  }), " AND ")
+  else " WHERE " ++ String.join(List.map(wheres, (w) -> { w.sql }), " AND ")
 
 
 def where_params(wheres: List(Expr(Bool))) -> List(Value)
