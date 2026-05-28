@@ -28,8 +28,8 @@ module Jade
                 in Symbol::Struct
                   derive_struct(constraint, resolved_sym, args, registry, lookup, entry_name)
 
-                in Symbol::Union if newtype_variant(resolved_sym, registry)
-                  derive_newtype(constraint, resolved_sym, args, registry, lookup, entry_name)
+                in Symbol::Union if wrapping_variant(resolved_sym, registry)
+                  derive_wrapper_peel(constraint, resolved_sym, args, registry, lookup, entry_name)
 
                 else
                   failed(constraint, entry_name)
@@ -85,9 +85,8 @@ module Jade
                 .then { derive_record(constraint, fields.to_a, it, lookup, entry_name) }
             end
 
-            # Single-variant union with one non-record positional arg —
-            # the `newtype` pattern. Decode the inner value, then wrap.
-            def derive_newtype(constraint, union_sym, type_args, registry, lookup, entry_name)
+            # Single-variant wrapping union — decode the inner value, then wrap.
+            def derive_wrapper_peel(constraint, union_sym, type_args, registry, lookup, entry_name)
               variant = registry.lookup(union_sym.variants.first)
               inner_type = instantiate(
                 variant.args.first,

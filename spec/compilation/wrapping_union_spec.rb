@@ -4,15 +4,8 @@ require 'jade'
 require 'jade/module_loader'
 
 module Jade
-  describe 'Newtype peeling (single-variant unions)' do
+  describe 'Wrapping unions (single-variant peel)' do
     include_context 'with test compiler'
-
-    around do |ex|
-      ENV['JADE_SKIP_FORMAT_CHECK'] = '1'
-      ex.run
-    ensure
-      ENV.delete('JADE_SKIP_FORMAT_CHECK')
-    end
 
     describe 'Encode peels the wrapper' do
       before do
@@ -50,6 +43,7 @@ module Jade
 
           def next_id(id: UserId) -> UserId
             UserId(n) = id
+
             UserId(n + 1)
         JADE
       end
@@ -59,7 +53,7 @@ module Jade
       end
     end
 
-    describe 'parameterised newtype' do
+    describe 'parameterised wrapping union' do
       before do
         test_compiler.require('boxed', source)
       end
@@ -86,7 +80,9 @@ module Jade
         <<~JADE
           module Multi exposing (mk)
 
-          type Shape = Circle(Float) | Square(Float)
+          type Shape
+            = Circle(Float)
+            | Square(Float)
 
 
           def mk -> Shape

@@ -7,13 +7,6 @@ module Jade
   describe 'Type alias' do
     include_context 'with test compiler'
 
-    around do |ex|
-      ENV['JADE_SKIP_FORMAT_CHECK'] = '1'
-      ex.run
-    ensure
-      ENV.delete('JADE_SKIP_FORMAT_CHECK')
-    end
-
     describe 'aliasing a primitive' do
       before do
         test_compiler.require('user_id', source)
@@ -21,7 +14,7 @@ module Jade
 
       let(:source) do
         <<~JADE
-          module UserId exposing (zero, inc)
+          module UserId exposing (inc, zero)
 
           type alias UserId = Int
 
@@ -181,6 +174,7 @@ module Jade
 
           def bumped -> User
             base = { name: "Alice", age: 30 }
+
             { base | age: base.age + 1 }
         JADE
       end
@@ -269,11 +263,15 @@ module Jade
 
       let(:source) do
         <<~JADE
-          module UserWithId exposing (mk, id_of)
+          module UserWithId exposing (id_of, mk)
 
           type alias UserId = Int
 
-          struct UserRow = { id: UserId, name: String }
+
+          struct UserRow = {
+            id: UserId,
+            name: String
+          }
 
 
           def mk(id: UserId, name: String) -> UserRow
@@ -298,9 +296,10 @@ module Jade
 
       let(:source) do
         <<~JADE
-          module AliasesChain exposing (zero, plus_one)
+          module AliasesChain exposing (plus_one, zero)
 
           type alias A = Int
+
 
           type alias B = A
 

@@ -125,7 +125,7 @@ When to use what:
 | Mechanism | Identity | Construct with |
 |---|---|---|
 | `struct User = { ... }` | Nominal — distinct from same-shaped records | `User("Paul", 55)` |
-| `type User = User({ ... })` | Nominal newtype — wraps an inner shape | `User({ ... })` |
+| `type User = User({ ... })` | Nominal wrapper — distinct from the wrapped shape | `User({ ... })` |
 | `type alias User = { ... }` | Structural — a readability name | record literal `{ ... }` |
 
 Recursive aliases (`type alias L = List(L)`) are rejected — use a union (`type`) for recursive shapes.
