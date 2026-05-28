@@ -29,5 +29,22 @@ module Jade
         expect { test_compiler.require('filters', source) }.not_to raise_error
       end
     end
+
+    context 'empty list in a case-of arm of a polymorphic-return function' do
+      let(:source) do
+        <<~JADE
+          module M exposing (lookup_or_empty)
+
+          def lookup_or_empty(m: Maybe(List(a))) -> List(a)
+            case m
+            of Just(items) -> items
+            of Nothing -> []
+        JADE
+      end
+
+      it 'compiles' do
+        expect { test_compiler.require('m', source) }.not_to raise_error
+      end
+    end
   end
 end

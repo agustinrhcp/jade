@@ -50,7 +50,13 @@ module Jade
         let(:type1) { Type.parse('t1') }
         let(:type2) { Type.parse('t2') }
 
-        it { is_expected.to be_error }
+        it { is_expected.to be_ok }
+
+        describe 'the substitution' do
+          subject { super() => Ok(substitution); substitution }
+
+          its(:mappings) { is_expected.to include('t1' => Type.var('t2')) }
+        end
       end
 
       context 'unifying concrete against rigid' do
@@ -114,10 +120,10 @@ module Jade
         its(:mappings) { is_expected.to include('t1' => Type.var('t2')) }
       end
 
-      context 'when the vars are rigid' do
+      context 'when a rigid var would have to bind to a concrete type' do
         let(:rigid_vars) { [type2.args.first] }
 
-        let(:type1) { Type.parse('t1 -> t1') }
+        let(:type1) { Type.parse('Int -> t1') }
         let(:type2) { Type.function([Type.var('t2')], Type.var('t1')) }
 
         it { is_expected.to be_error }
