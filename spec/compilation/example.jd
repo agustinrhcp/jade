@@ -2,3 +2,4 @@ module Example exposing (hello)
 
 def hello(str: String) -> Bool
   String.empty?(str)
+end

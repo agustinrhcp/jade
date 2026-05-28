@@ -14,10 +14,12 @@ module Jade
 
           def pi -> Float
             3.14
+          end
 
 
           def double_pi -> Float
             pi + pi
+          end
         JADE
       end
 
@@ -35,13 +37,16 @@ module Jade
 
           def bare -> Maybe(Int)
             Nothing
+          end
 
 
           def ordering_label(x: Int, y: Int) -> String
             case Basics.compare(x, y)
-            of LT -> "less"
-            of EQ -> "equal"
-            of GT -> "greater"
+            in LT then "less"
+            in EQ then "equal"
+            in GT then "greater"
+            end
+          end
         JADE
       end
 
@@ -61,6 +66,7 @@ module Jade
 
           def x -> Maybe(Int)
             Nothing()
+          end
         JADE
 
         expect { test_compiler.require('bad_ctor', src) }
@@ -73,10 +79,12 @@ module Jade
 
           def pi -> Float
             3.14
+          end
 
 
           def twice -> Float
             pi() + pi()
+          end
         JADE
 
         expect { test_compiler.require('bad_fn', src) }
@@ -89,12 +97,14 @@ module Jade
         <<~JADE
           module ZeroArgFnReturnsFn exposing (apply_with_1)
 
-          def just_fn -> Int -> Maybe(Int)
+          def just_fn -> (Int -> Maybe(Int))
             Just
+          end
 
 
           def apply_with_1 -> Maybe(Int)
             just_fn(1)
+          end
         JADE
       end
 
@@ -111,10 +121,12 @@ module Jade
 
           def pi -> Float
             3.14
+          end
 
 
           def eval_at -> Float
             0 |> (_) -> { pi }
+          end
         JADE
       end
 

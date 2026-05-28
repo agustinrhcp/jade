@@ -2,3 +2,4 @@ module Required exposing (empty?)
 
 def empty?(str: String) -> Bool
   String.empty?(str)
+end

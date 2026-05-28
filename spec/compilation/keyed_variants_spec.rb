@@ -19,6 +19,7 @@ module Jade
 
           def make -> Stuff
             V2(paid_amount: 100, tax_amount: 20, issued_amount: 80)
+          end
         JADE
       end
 
@@ -46,8 +47,10 @@ module Jade
 
           def total(s: Stuff) -> Int
             case s
-            of V1(n) -> n
-            of V2(r) -> r.paid_amount + r.tax_amount
+            in V1(n) then n
+            in V2(r) then r.paid_amount + r.tax_amount
+            end
+          end
         JADE
       end
 
@@ -72,7 +75,9 @@ module Jade
 
           def paid(s: Stuff) -> Int
             case s
-            of V({ paid_amount: pa, tax_amount: _ }) -> pa
+            in V({ paid_amount: pa, tax_amount: _ }) then pa
+            end
+          end
         JADE
       end
 
@@ -94,7 +99,9 @@ module Jade
 
           def bump_paid(s: Stuff) -> Stuff
             case s
-            of V(r) -> V({ r | paid_amount: r.paid_amount + 1 })
+            in V(r) then V({ r | paid_amount: r.paid_amount + 1 })
+            end
+          end
         JADE
       end
 
@@ -119,12 +126,15 @@ module Jade
 
           def make_credit(id: Int) -> Source
             CreditSource(credit_id: id)
+          end
 
 
           def get_id(s: Source) -> Int
             case s
-            of CreditSource(c) -> c.credit_id
-            of ReceiptSource(c) -> c.receipt_id
+            in CreditSource(c) then c.credit_id
+            in ReceiptSource(c) then c.receipt_id
+            end
+          end
         JADE
       end
 
@@ -157,6 +167,7 @@ module Jade
 
           def make(p: Int, t: Int) -> Stuff
             V(paid_amount: p, tax_amount: t)
+          end
         JADE
       end
 
@@ -183,6 +194,7 @@ module Jade
 
             def make -> Stuff
               V(paid_amount: 100)
+            end
           JADE
         end
 
@@ -202,6 +214,7 @@ module Jade
 
             def make -> Stuff
               V(paid_amount: "oops", tax_amount: 20)
+            end
           JADE
         end
 

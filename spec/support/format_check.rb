@@ -15,7 +15,7 @@ module Jade
     def run(text)
       source = Source.new(uri: '<format-check>', text:)
       Lexer.tokenize(source)
-        .then { Parsing.parse(it, entry: source.uri) }
+        .then { Parsing.parse(it, source:) }
         .map { |(ast, comments)| Formatter.format(ast, comments:, source:) }
         .then do
           case it

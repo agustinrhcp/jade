@@ -33,22 +33,29 @@ module Jade
 
           def with_default(maybe: Maybe(a), default: a) -> a
             case maybe
-            of Just(something) -> something
-            of Nothing -> default
+            in Just(something) then something
+            in Nothing then default
+            end
+          end
 
 
           def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
             case maybe
-            of Just(something) -> something
-              |> fn
-              |> Just
-            of Nothing -> maybe
+            in Just(something)
+              something
+                |> fn
+                |> Just
+            in Nothing then Nothing
+            end
+          end
 
 
           def and_then(maybe: Maybe(a), fn: a -> Maybe(b)) -> Maybe(b)
             case maybe
-            of Just(something) -> something |> fn
-            of Nothing -> Nothing
+            in Just(something) then something |> fn
+            in Nothing then Nothing
+            end
+          end
 
 
           implements Mappable(Maybe(a)) with

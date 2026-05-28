@@ -34,50 +34,60 @@ module Jade
 
         def run_string(json: String) -> Result(String, DecodeError)
           Decode.decode_string(Decode.string, json)
+        end
 
 
         def run_int(json: String) -> Result(Int, DecodeError)
           Decode.decode_string(Decode.int, json)
+        end
 
 
         def run_field(json: String) -> Result(String, DecodeError)
           Decode.decode_string(Decode.field("name", Decode.string), json)
+        end
 
 
         def run_missing(json: String) -> Result(String, DecodeError)
           Decode.decode_string(Decode.field("age", Decode.string), json)
+        end
 
 
         def run_nullable_present(json: String) -> Result(Maybe(String), DecodeError)
           Decode.decode_string(Decode.nullable(Decode.string), json)
+        end
 
 
         def run_nullable_nil(json: String) -> Result(Maybe(String), DecodeError)
           Decode.decode_string(Decode.nullable(Decode.string), json)
+        end
 
 
         def run_optional_absent(json: String) -> Result(Maybe(String), DecodeError)
           Decode.decode_string(Decode.optional_field("x", Decode.string), json)
+        end
 
 
         def run_optional_present(json: String) -> Result(Maybe(String), DecodeError)
           Decode.decode_string(Decode.optional_field("x", Decode.string), json)
+        end
 
 
         def run_wrong_type(json: String) -> Result(Int, DecodeError)
           Decode.decode_string(Decode.int, json)
+        end
 
 
         def run_list(json: String) -> Result(List(Int), DecodeError)
           Decode.decode_string(Decode.list(Decode.int), json)
+        end
 
 
         def run_map2(json: String) -> Result(Point, DecodeError)
           decoder = Decode.succeed(Point(_, _))
             |> Decode.required("x", Decode.int)
             |> Decode.required("y", Decode.int)
-
           Decode.decode_string(decoder, json)
+        end
       JADE
     end
 
@@ -148,20 +158,20 @@ module Jade
 
           def run_all_ok(json: String) -> Result(List(Int), DecodeError)
             decoders = [Decode.field("a", Decode.int), Decode.field("b", Decode.int)]
-
             Decode.decode_string(Decode.sequence(decoders), json)
+          end
 
 
           def run_one_err(json: String) -> Result(List(Int), DecodeError)
             decoders = [Decode.field("a", Decode.int), Decode.field("b", Decode.int)]
-
             Decode.decode_string(Decode.sequence(decoders), json)
+          end
 
 
           def run_two_err(json: String) -> Result(List(Int), DecodeError)
             decoders = [Decode.field("a", Decode.int), Decode.field("b", Decode.int)]
-
             Decode.decode_string(Decode.sequence(decoders), json)
+          end
         JADE
       end
 
@@ -199,8 +209,8 @@ module Jade
             string_id = Decode.map(Decode.string, StringId)
             int_id = Decode.map(Decode.int, IntId)
             decoder = Decode.one_of([string_id, int_id])
-
             Decode.decode_string(decoder, json)
+          end
         JADE
       end
 
@@ -240,14 +250,17 @@ module Jade
               |> Decode.required("name", Decode.string)
               |> Decode.required("age", Decode.int)
               |> Decode.optional("nickname", Decode.string, "anon")
+          end
 
 
           def person_from_json(json: String) -> Result(Person, DecodeError)
             Decode.decode_string(person_decoder, json)
+          end
 
 
           def person_with_default_from_json(json: String) -> Result(Person, DecodeError)
             Decode.decode_string(person_decoder, json)
+          end
         JADE
       end
 
@@ -301,26 +314,32 @@ module Jade
 
           def int_from_json(json: String) -> Result(Int, DecodeError)
             Decode.from_json(json)
+          end
 
 
           def str_from_json(json: String) -> Result(String, DecodeError)
             Decode.from_json(json)
+          end
 
 
           def list_from_json(json: String) -> Result(List(Int), DecodeError)
             Decode.from_json(json)
+          end
 
 
           def maybe_from_json(json: String) -> Result(Maybe(Int), DecodeError)
             Decode.from_json(json)
+          end
 
 
           def person_from_json(json: String) -> Result(Person, DecodeError)
             Decode.from_json(json)
+          end
 
 
           def people_from_json(json: String) -> Result(List(Person), DecodeError)
             Decode.from_json(json)
+          end
         JADE
       end
 
@@ -381,24 +400,30 @@ module Jade
 
           def name_update(s: String) -> Update
             SetName(s)
+          end
 
 
           def age_update(a: Int) -> Update
             SetAge(a)
+          end
 
 
           def to_list(m: Maybe(Update)) -> List(Update)
             case m
-            of Just(u) -> List.singleton(u)
-            of Nothing -> []
+            in Just(u) then List.singleton(u)
+            in Nothing then []
+            end
+          end
 
 
           def collect(items: List(Maybe(Update))) -> List(Update)
             List.and_then(items, to_list)
+          end
 
 
           def make_pair(n: Maybe(Update), a: Maybe(Update)) -> List(Update)
             collect([n, a])
+          end
 
 
           def parse_updates(value: Value) -> Result(List(Update), DecodeError)
@@ -409,8 +434,8 @@ module Jade
               |> Decode.and_map(
               Decode.optional_field("age", Decode.map(Decode.int, age_update)),
             )
-
             Decode.decode(decoder, value)
+          end
         JADE
       end
 
@@ -452,6 +477,7 @@ module Jade
 
           def person_from_json(json: String) -> Result(Person, DecodeError)
             Decode.from_json(json)
+          end
         JADE
       end
 
@@ -500,8 +526,8 @@ module Jade
 
           def handle -> Task(Person, DecodeError)
             body <- get_body()
-
             Task.from_result(Decode.from_value(body))
+          end
         JADE
       end
 
@@ -536,12 +562,15 @@ module Jade
             "square",
             Decode.map(Decode.index(1, Decode.float), Square),
           )
+          end
 
 
           def area(s: Shape) -> Float
             case s
-            of Circle(r) -> 3.14 * r * r
-            of Square(side) -> side * side
+            in Circle(r) then 3.14 * r * r
+            in Square(side) then side * side
+            end
+          end
         JADE
       end
 
@@ -584,8 +613,10 @@ module Jade
 
           def encode_shape(s: Shape) -> Value
             case s
-            of Circle(r) -> Encode.variant("circle", [Encode.float(r)])
-            of Square(side) -> Encode.variant("square", [Encode.float(side)])
+            in Circle(r) then Encode.variant("circle", [Encode.float(r)])
+            in Square(side) then Encode.variant("square", [Encode.float(side)])
+            end
+          end
         JADE
       end
 

@@ -173,7 +173,8 @@ module Jade
       end
 
       State = Data.define(
-        :tokens, :position, :entry, :context_stack, :tolerant, :diagnostics
+        :tokens, :position, :entry, :context_stack, :tolerant, :diagnostics,
+        :source,
       ) do
         def initialize(
           tokens:,
@@ -181,7 +182,8 @@ module Jade
           position: 0,
           context_stack: [],
           tolerant: false,
-          diagnostics: Diagnostics::List.empty
+          diagnostics: Diagnostics::List.empty,
+          source: nil
         )
           super
         end
@@ -196,6 +198,18 @@ module Jade
 
         def eof?
           position >= tokens.length
+        end
+
+        # Two positions on the same source line. Uses the source's
+        # `line_starts` index; returns true when source is unavailable so
+        # callers degrade to "accept whatever parses" rather than spurious
+        # errors.
+        def same_line?(pos_a, pos_b)
+          return true unless source
+
+          starts = source.line_starts
+          starts.bsearch_index { |ls| ls > pos_a } ==
+            starts.bsearch_index { |ls| ls > pos_b }
         end
 
         def add_diagnostic(diagnostic)

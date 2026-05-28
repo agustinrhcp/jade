@@ -22,10 +22,12 @@ module Jade
 
         def encode_int(n: Int) -> String
           "int"
+        end
 
 
         def wrapped(value: a) -> String
           #{indented_body}
+        end
       JADE
     end
 
@@ -63,7 +65,7 @@ module Jade
 
     it 'propagates through an if-then-else branch' do
       body = <<~JADE.strip
-        if True then encode(value) else "x"
+        True ? encode(value) : "x"
       JADE
       out = compiled_for('PropIf', body)
       expect(out).to include('__wrapped__impl__')
@@ -72,7 +74,8 @@ module Jade
     it 'propagates through a case-of branch' do
       body = <<~JADE.strip
         case value
-        of _ -> encode(value)
+        else encode(value)
+        end
       JADE
       out = compiled_for('PropCase', body)
       expect(out).to include('__wrapped__impl__')
@@ -92,6 +95,7 @@ module Jade
 
         def encode_int(n: Int) -> String
           "int"
+        end
 
 
         struct Box(a) = {
@@ -102,6 +106,7 @@ module Jade
 
         def wrapped(value: a) -> Box(a)
           Box(encode(value), "tag")
+        end
       JADE
 
       test_compiler.require('propstruct', src)
@@ -124,6 +129,7 @@ module Jade
 
         def encode_int(n: Int) -> String
           "int"
+        end
 
 
         struct Box(a) = {
@@ -134,6 +140,7 @@ module Jade
 
         def wrapped(value: a) -> Box(a)
           Box([encode(value)], "tag")
+        end
       JADE
 
       test_compiler.require('proplistbox', src)

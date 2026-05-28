@@ -17,22 +17,27 @@ module Jade
 
           def s -> String
             Encode.encode_to_string(Encode.string("hello"))
+          end
 
 
           def i -> String
             Encode.encode_to_string(Encode.int(42))
+          end
 
 
           def f -> String
             Encode.encode_to_string(Encode.float(3.5))
+          end
 
 
           def b -> String
             Encode.encode_to_string(Encode.bool(True))
+          end
 
 
           def n -> String
             Encode.encode_to_string(Encode.null)
+          end
         JADE
       end
 
@@ -55,14 +60,17 @@ module Jade
 
           def maybe_present -> String
             Encode.encode_to_string(Encode.nullable(Encode.string, Just("x")))
+          end
 
 
           def maybe_nil -> String
             Encode.encode_to_string(Encode.nullable(Encode.string, Nothing))
+          end
 
 
           def list_of_ints -> String
             Encode.encode_to_string(Encode.list(Encode.int, [1, 2, 3]))
+          end
 
 
           def person_object -> String
@@ -70,8 +78,8 @@ module Jade
               Encode.field("name", Encode.string, "Pepe"),
               Encode.field("age", Encode.int, 30),
             ]
-
             Encode.encode_to_string(Encode.object(pairs))
+          end
         JADE
       end
 
@@ -118,30 +126,37 @@ module Jade
 
           def int_string(i: Int) -> String
             Encode.encode_to_string(Encode.encode(i))
+          end
 
 
           def str_string(s: String) -> String
             Encode.encode_to_string(Encode.encode(s))
+          end
 
 
           def list_string(xs: List(Int)) -> String
             Encode.encode_to_string(Encode.encode(xs))
+          end
 
 
           def maybe_just_string(m: Maybe(Int)) -> String
             Encode.encode_to_string(Encode.encode(m))
+          end
 
 
           def maybe_nothing_string(m: Maybe(Int)) -> String
             Encode.encode_to_string(Encode.encode(m))
+          end
 
 
           def person_string(p: Person) -> String
             Encode.encode_to_string(Encode.encode(p))
+          end
 
 
           def people_string(ps: List(Person)) -> String
             Encode.encode_to_string(Encode.encode(ps))
+          end
         JADE
       end
 
@@ -196,8 +211,8 @@ module Jade
 
           def roundtrip_person(p: Person) -> Result(Person, DecodeError)
             json = Encode.encode_to_string(Encode.encode(p))
-
             Decode.from_json(json)
+          end
         JADE
       end
 
@@ -227,10 +242,12 @@ module Jade
 
           def get_user -> Value
             Encode.encode(Person("Pepe", 30))
+          end
 
 
           def get_users -> Value
             Encode.encode([Person("Pepe", 30), Person("Lala", 25)])
+          end
         JADE
       end
 
@@ -265,12 +282,14 @@ module Jade
             Encode.encode_to_string(
               Encode.object([Encode.field("k", Encode.encode, s)]),
             )
+          end
 
 
           def int_field(i: Int) -> String
             Encode.encode_to_string(
               Encode.object([Encode.field("k", Encode.encode, i)]),
             )
+          end
 
 
           def object_two(name: String, age: Int) -> String
@@ -282,6 +301,7 @@ module Jade
                 ],
               ),
             )
+          end
         JADE
       end
 
@@ -311,10 +331,12 @@ module Jade
 
           def apply_encoder(enc: Int -> Value, i: Int) -> Value
             enc(i)
+          end
 
 
           def apply_int(i: Int) -> String
             Encode.encode_to_string(apply_encoder(Encode.encode, i))
+          end
         JADE
       end
 
@@ -336,14 +358,17 @@ module Jade
 
           def wrap(x: a) -> Value
             Encode.object([Encode.field("v", Encode.encode, x)])
+          end
 
 
           def wrap_string(s: String) -> String
             Encode.encode_to_string(wrap(s))
+          end
 
 
           def wrap_int(i: Int) -> String
             Encode.encode_to_string(wrap(i))
+          end
         JADE
       end
 
@@ -369,22 +394,27 @@ module Jade
 
           def my_enc(x: a) -> Value
             Encode.encode(x)
+          end
 
 
           def apply_int(enc: Int -> Value, i: Int) -> Value
             enc(i)
+          end
 
 
           def apply_string(enc: String -> Value, s: String) -> Value
             enc(s)
+          end
 
 
           def go_int(i: Int) -> String
             Encode.encode_to_string(apply_int(my_enc, i))
+          end
 
 
           def go_string(s: String) -> String
             Encode.encode_to_string(apply_string(my_enc, s))
+          end
         JADE
       end
 
@@ -410,18 +440,22 @@ module Jade
 
           def apply_int(enc: Int -> Value, i: Int) -> Value
             enc(i)
+          end
 
 
           def apply_string(enc: String -> Value, s: String) -> Value
             enc(s)
+          end
 
 
           def go_int(i: Int) -> String
             Encode.encode_to_string(apply_int(Encode.encoder, i))
+          end
 
 
           def go_string(s: String) -> String
             Encode.encode_to_string(apply_string(Encode.encoder, s))
+          end
         JADE
       end
 
@@ -447,34 +481,42 @@ module Jade
 
           def my_enc(x: a) -> Value
             Encode.encode(x)
+          end
 
 
           def apply(enc: a -> Value, x: a) -> Value
             enc(x)
+          end
 
 
           def with_user_fn(x: a) -> Value
             apply(my_enc, x)
+          end
 
 
           def with_iface(x: a) -> Value
             apply(Encode.encoder, x)
+          end
 
 
           def via_user_int(i: Int) -> String
             Encode.encode_to_string(with_user_fn(i))
+          end
 
 
           def via_user_string(s: String) -> String
             Encode.encode_to_string(with_user_fn(s))
+          end
 
 
           def via_iface_int(i: Int) -> String
             Encode.encode_to_string(with_iface(i))
+          end
 
 
           def via_iface_string(s: String) -> String
             Encode.encode_to_string(with_iface(s))
+          end
         JADE
       end
 

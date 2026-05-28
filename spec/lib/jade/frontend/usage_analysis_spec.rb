@@ -13,7 +13,7 @@ module Jade
     let(:run) do
       Lexer
         .tokenize(source)
-        .then { Parsing.parse(it, entry: source.uri) }
+        .then { Parsing.parse(it, source:) }
         .and_then do |(ast, _)|
           registry, current_entry = Frontend.entry_with_basics(ast)
           Frontend
@@ -32,9 +32,12 @@ module Jade
 
           def go(n: Int) -> Int
             helper(n)
+          end
+
 
           def helper(x: Int) -> Int
             x + 1
+          end
         JADE
       end
 
@@ -60,9 +63,12 @@ module Jade
 
           def go -> List(Int)
             List.map([1, 2, 3], double)
+          end
+
 
           def double(x: Int) -> Int
             x + x
+          end
         JADE
       end
 
@@ -84,9 +90,12 @@ module Jade
 
           def go -> Int
             1
+          end
+
 
           def unused(x: Int) -> Int
             x + 1
+          end
         JADE
       end
 
@@ -104,8 +113,10 @@ module Jade
 
           def go(m: Maybe(Int)) -> Int
             case m
-            of Just(x) -> x
-            of Nothing -> 0
+            in Just(x) then x
+            in Nothing then 0
+            end
+          end
         JADE
       end
 
@@ -128,6 +139,7 @@ module Jade
 
           def go(x: Int) -> Int
             x + x
+          end
         JADE
       end
 

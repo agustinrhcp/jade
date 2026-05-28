@@ -18,12 +18,13 @@ module Jade
 
           def example1 -> Int
             pepe = Just(1)
-
             1 + 2 * 3
+          end
 
 
           def example2 -> Int
             (1 + 2) * 3
+          end
         JADE
       end
 
@@ -39,6 +40,7 @@ module Jade
 
             def floats -> Float
               42.42
+            end
           JADE
         end
 
@@ -54,10 +56,12 @@ module Jade
 
             def neg_int -> Int
               -1
+            end
 
 
             def neg_float -> Float
               -3.14
+            end
           JADE
         end
 
@@ -74,6 +78,7 @@ module Jade
 
             def negate(a: Bool) -> Bool
               not(a)
+            end
           JADE
         end
 
@@ -95,18 +100,22 @@ module Jade
 
           def min_int(a: Int, b: Int) -> Int
             min(a, b)
+          end
 
 
           def max_int(a: Int, b: Int) -> Int
             max(a, b)
+          end
 
 
           def min_float(a: Float, b: Float) -> Float
             min(a, b)
+          end
 
 
           def max_float(a: Float, b: Float) -> Float
             max(a, b)
+          end
         JADE
       end
 
@@ -142,22 +151,27 @@ module Jade
 
           def as_float(n: Int) -> Float
             to_float(n)
+          end
 
 
           def floor_(n: Float) -> Int
             floor(n)
+          end
 
 
           def ceil_(n: Float) -> Int
             ceiling(n)
+          end
 
 
           def round_(n: Float) -> Int
             round(n)
+          end
 
 
           def trunc_(n: Float) -> Int
             truncate(n)
+          end
         JADE
       end
 

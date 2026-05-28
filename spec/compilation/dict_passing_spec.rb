@@ -20,6 +20,7 @@ module Jade
 
         def encode_int(n: Int) -> String
           "int"
+        end
 
 
         struct Box(a) = {
@@ -30,6 +31,7 @@ module Jade
 
         def wrapped(value: a) -> Box(a)
           Box(encode(value), "tag")
+        end
       JADE
 
       build_root = test_compiler.instance_variable_get(:@build_root)
@@ -61,25 +63,29 @@ module Jade
 
         def f_int(n: Int) -> Int
           1
+        end
 
 
         def g_int(n: Int) -> Int
           2
+        end
 
 
         def add(a: Int, b: Int) -> Int
           a + b
+        end
 
 
         def both(value: x) -> Int
           fx = f(value)
           gx = add(g(value), 0)
-
           fx + gx
+        end
 
 
         def call_both -> Int
           both(42)
+        end
       JADE
 
       build_root = test_compiler.instance_variable_get(:@build_root)
@@ -106,6 +112,7 @@ module Jade
 
         def encode_int(n: Int) -> String
           "int"
+        end
 
 
         implements Encoder(Maybe(a)) with
@@ -114,12 +121,15 @@ module Jade
 
         def encode_maybe(m: Maybe(a)) -> String
           case m
-          of Just(inner) -> encode(inner)
-          of Nothing -> "nil"
+          in Just(inner) then encode(inner)
+          in Nothing then "nil"
+          end
+        end
 
 
         def roundtrip -> String
           encode_maybe(Just(42))
+        end
       JADE
 
       expect(ReproNested.roundtrip).to eql 'int'
@@ -139,6 +149,7 @@ module Jade
 
         def encode_int(n: Int) -> String
           "int"
+        end
 
 
         implements Encoder(Maybe(a)) with
@@ -147,20 +158,26 @@ module Jade
 
         def encode_maybe(m: Maybe(a)) -> String
           case m
-          of Just(inner) -> encode(inner)
-          of Nothing -> "nil"
+          in Just(inner) then encode(inner)
+          in Nothing then "nil"
+          end
+        end
 
 
         def encode_list(xs: List(a)) -> String
           case xs
-          of [x | _] -> encode(x)
-          of [] -> "empty"
+          in [x | _] then encode(x)
+          in [] then "empty"
+          end
+        end
 
 
         def encode_double(mm: Maybe(Maybe(a))) -> String
           case mm
-          of Just(inner) -> encode_maybe(inner)
-          of Nothing -> "outer-nothing"
+          in Just(inner) then encode_maybe(inner)
+          in Nothing then "outer-nothing"
+          end
+        end
 
 
         struct Box(a) = { value: a }
@@ -168,11 +185,14 @@ module Jade
 
         def encode_box(b: Box(a)) -> String
           encode(b.value)
+        end
 
 
         def encode_tup(t: (a, Int)) -> String
           case t
-          of (x, _) -> encode(x)
+          in (x, _) then encode(x)
+          end
+        end
       JADE
 
       expect(ReproDeep::Internal.respond_to?(:__encode_list__impl__)).to be true
@@ -195,16 +215,19 @@ module Jade
 
         def show_int(n: Int) -> String
           "n"
+        end
 
 
         def join_shows(xs: List(a)) -> String
           xs
             |> List.map((x) -> { show(x) })
             |> String.join(", ")
+        end
 
 
         def go -> String
           join_shows([1, 2, 3])
+        end
       JADE
 
       expect(ListShow.go).to eql 'n, n, n'
@@ -220,14 +243,17 @@ module Jade
 
         def to_value(value: a) -> Value
           encode(value)
+        end
 
 
         def encode_int(n: Int) -> Value
           to_value(n)
+        end
 
 
         def encode_str(s: String) -> Value
           to_value(s)
+        end
       JADE
 
       expect(ReproDerived.encode_int(42)).to eql 42
@@ -249,11 +275,13 @@ module Jade
         # Function-typed arg: no witness for `a` extractable from `f` itself.
         def apply_then_encode(f: Int -> a) -> String
           encode(f(0))
+        end
 
 
         # Var only in return position: no arg to dispatch on.
         def default_value -> a
           default(0)
+        end
       JADE
 
       expect { ReproUnsupported.apply_then_encode(->(_) { 42 }) }

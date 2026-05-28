@@ -30,6 +30,7 @@ module Jade
 
         def empty_size -> Int
           Set.size(Set.empty)
+        end
 
 
         def insert_size -> Int
@@ -38,12 +39,14 @@ module Jade
             |> Set.insert(3)
             |> Set.insert(2)
             |> Set.size
+        end
 
 
         def add_then_member(value: Int) -> Bool
           Set.singleton(1)
             |> Set.insert(2)
             |> Set.member?(value)
+        end
 
 
         def remove_value(value: Int) -> List(Int)
@@ -51,18 +54,21 @@ module Jade
             |> Set.insert(2)
             |> Set.remove(value)
             |> Set.to_list
+        end
 
 
         def to_values -> List(Int)
           Set.singleton(1)
             |> Set.insert(2)
             |> Set.to_list
+        end
 
 
         def from_then_to -> List(Int)
           [3, 1, 2, 1, 3]
             |> Set.from_list
             |> Set.to_list
+        end
 
 
         def map_doubles -> List(Int)
@@ -71,6 +77,7 @@ module Jade
             |> Set.insert(3)
             |> Set.map((n) -> { n * 2 })
             |> Set.to_list
+        end
 
 
         def filter_evens -> List(Int)
@@ -80,6 +87,7 @@ module Jade
             |> Set.insert(4)
             |> Set.filter((n) -> { mod(n, 2) == 0 })
             |> Set.to_list
+        end
 
 
         def fold_sum -> Int
@@ -87,13 +95,14 @@ module Jade
             |> Set.insert(2)
             |> Set.insert(3)
             |> Set.fold(0, (v, acc) -> { acc + v })
+        end
 
 
         def union_keys -> List(Int)
           left = Set.singleton(1) |> Set.insert(2)
           right = Set.singleton(2) |> Set.insert(3)
-
           Set.union(left, right) |> Set.to_list
+        end
 
 
         def intersect_keys -> List(Int)
@@ -103,8 +112,8 @@ module Jade
           right = Set.singleton(2)
             |> Set.insert(3)
             |> Set.insert(4)
-
           Set.intersect(left, right) |> Set.to_list
+        end
 
 
         def diff_keys -> List(Int)
@@ -112,24 +121,28 @@ module Jade
             |> Set.insert(2)
             |> Set.insert(3)
           right = Set.singleton(2)
-
           Set.diff(left, right) |> Set.to_list
+        end
 
 
         def equal(a: Set(Int), b: Set(Int)) -> Bool
           set_eq(a, b)
+        end
 
 
         def set_eq(a: Set(Int), b: Set(Int)) -> Bool
           a == b
+        end
 
 
         def unique_via_poly(value: Int) -> Bool
           poly_member(Set.singleton(7), value)
+        end
 
 
         def poly_member(s: Set(a), value: a) -> Bool
           Set.member?(s, value)
+        end
       JADE
     end
 

@@ -184,7 +184,7 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a
-            end
+          end
         JADE
       end
 
@@ -203,7 +203,7 @@ module Jade
       its([11]) { is_expected.to be_token.of_type(:arrow).with('->').at(24...26) }
       its([12]) { is_expected.to be_token.of_type(:constant).with('Int').at(27...30) }
       its([13]) { is_expected.to be_token.of_type(:identifier).with('a').at(33...34) }
-      its([14]) { is_expected.to be_token.of_type(:identifier).with('end').at(37...40) }
+      its([14]) { is_expected.to be_token.of_type(:end).with('end').at(35...38) }
     end
 
     context 'type def' do
@@ -227,7 +227,7 @@ module Jade
 
           def hello(str: String) -> Bool
             String.empty?(str)
-            end
+          end
         JADE
       end
 
@@ -236,34 +236,34 @@ module Jade
       its([1])  { is_expected.to be_token.of_type(:constant).with('Test').at(7...11) }
     end
 
-    context 'if then else' do
+    context 'ternary' do
       let(:text) do
         <<~JADE
-          if String.empty?("") then 1 else 2
-          end
+          String.empty?("") ? 1 : 2
         JADE
       end
 
-      it { is_expected.to have(14).item.and all(be_a(Token)) }
-      its([0])  { is_expected.to be_token.of_type(:if).at(0...2) }
-      its([9])  { is_expected.to be_token.of_type(:then).at(21...25) }
-      its([11])  { is_expected.to be_token.of_type(:else).at(28...32) }
+      it { is_expected.to have(12).item.and all(be_a(Token)) }
+      its([2])  { is_expected.to be_token.of_type(:identifier).with('empty?').at(7...13) }
+      its([8])  { is_expected.to be_token.of_type(:question).with('?').at(18...19) }
+      its([10]) { is_expected.to be_token.of_type(:colon).at(22...23) }
     end
 
     context 'case of' do
       let(:text) do
         <<~JADE
           case 1
-          of _ then 2
+          else 2
           end
         JADE
       end
 
-      it { is_expected.to have(7).item.and all(be_a(Token)) }
+      it { is_expected.to have(5).item.and all(be_a(Token)) }
       its([0])  { is_expected.to be_token.of_type(:case).at(0...4) }
-      its([2])  { is_expected.to be_token.of_type(:of).at(7...9) }
-      its([3])  { is_expected.to be_token.of_type(:wildcard).at(10...11) }
-      its([6])  { is_expected.to be_token.of_type(:identifier).with('end').at(19...22) }
+      its([1])  { is_expected.to be_token.of_type(:int).with('1').at(5...6) }
+      its([2])  { is_expected.to be_token.of_type(:else).at(7...11) }
+      its([3])  { is_expected.to be_token.of_type(:int).with('2').at(12...13) }
+      its([4])  { is_expected.to be_token.of_type(:end).with('end').at(14...17) }
     end
 
     context 'comments' do

@@ -8,23 +8,28 @@ type Shape
 
 def area(shape: Shape) -> Float
   case shape
-  of Circle(r) -> 3.14159 * r * r
-  of Rectangle(w, h) -> w * h
-  of Triangle(a, b, c) ->
+  in Circle(r) then 3.14159 * r * r
+  in Rectangle(w, h) then w * h
+  in Triangle(a, b, c)
     s = (a + b + c) / 2.0
-
     s * (s - a) * (s - b) * (s - c)
+  end
+end
 
 
 def perimeter(shape: Shape) -> Float
   case shape
-  of Circle(r) -> 2.0 * 3.14159 * r
-  of Rectangle(w, h) -> 2.0 * (w + h)
-  of Triangle(a, b, c) -> a + b + c
+  in Circle(r) then 2.0 * 3.14159 * r
+  in Rectangle(w, h) then 2.0 * (w + h)
+  in Triangle(a, b, c) then a + b + c
+  end
+end
 
 
 def describe(shape: Shape) -> String
   case shape
-  of Circle(_) -> "circle"
-  of Rectangle(_, _) -> "rectangle"
-  of Triangle(_, _, _) -> "triangle"
+  in Circle(_) then "circle"
+  in Rectangle(_, _) then "rectangle"
+  in Triangle(_, _, _) then "triangle"
+  end
+end

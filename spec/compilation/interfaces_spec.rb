@@ -13,14 +13,17 @@ module Jade
 
         def int_equality(int1: Int, int2: Int) -> Bool
           int1 == int2
+        end
 
 
         def int_inequality(int1: Int, int2: Int) -> Bool
           int1 != int2
+        end
 
 
         def bool_equality(int1: Bool, int2: Bool) -> Bool
           int1 == int2
+        end
       JADE
     end
 
@@ -41,8 +44,8 @@ module Jade
 
           def fn_equality -> Bool
             one = (a, b) -> { a + b }
-
             one == one
+          end
         JADE
       end
 
@@ -59,10 +62,12 @@ module Jade
 
           def compare(a: Int, b: Int) -> Bool
             eq(a, b)
+          end
 
 
           def eq(a: a, b: a) -> Bool
             a == b
+          end
         JADE
       end
 
@@ -80,14 +85,17 @@ module Jade
 
           def poly_eq(a: a, b: a) -> Bool
             a == b
+          end
 
 
           def int_eq(a: Int, b: Int) -> Bool
             poly_eq(a, b)
+          end
 
 
           def bool_eq(a: Bool, b: Bool) -> Bool
             poly_eq(a, b)
+          end
         JADE
       end
 
@@ -123,6 +131,7 @@ module Jade
 
           def int_eq_override(one: Int, other: Int) -> Bool
             one == other
+          end
         JADE
       end
 
@@ -146,10 +155,12 @@ module Jade
 
           def eq_pepe(one: Int, other: Int) -> Bool
             one == other
+          end
 
 
           def pepe_eq(a: Pepe, b: Pepe) -> Bool
             a == b
+          end
         JADE
       end
 
@@ -166,10 +177,12 @@ module Jade
 
           def nothing_eq -> Bool
             Nothing == Nothing
+          end
 
 
           def just_eq(a: Int, b: Int) -> Bool
             Just(a) == Just(b)
+          end
         JADE
       end
 
@@ -189,10 +202,12 @@ module Jade
 
           def neq -> Bool
             { hi: "Hello" } == { hi: "hello" }
+          end
 
 
           def eq -> Bool
             { hi: "Hello" } == { hi: "Hello" }
+          end
         JADE
       end
 
@@ -217,6 +232,7 @@ module Jade
               x: 1,
               y: 2,
             }
+          end
 
 
           def neq -> Bool
@@ -227,6 +243,7 @@ module Jade
               x: 1,
               y: 3,
             }
+          end
         JADE
       end
 
@@ -251,6 +268,7 @@ module Jade
 
           def eq -> Bool
             Point(1, 2) == Point(1, 2)
+          end
         JADE
       end
 
@@ -270,6 +288,7 @@ module Jade
 
             def eq(a: Box, b: Box) -> Bool
               a == b
+            end
           JADE
         end
 
@@ -298,10 +317,12 @@ module Jade
 
           def new_person(id: Int, name: String) -> Person
             Person(id, name)
+          end
 
 
           def eq_person(one: Person, other: Person) -> Bool
             one == other
+          end
         JADE
       end
 
@@ -335,14 +356,17 @@ module Jade
 
           def eq(one: Person, other: Person) -> Bool
             one.id == other.id
+          end
 
 
           def new_person(id: Int, name: String) -> Person
             Person(id, name)
+          end
 
 
           def eq_person(one: Person, other: Person) -> Bool
             one == other
+          end
         JADE
       end
 
@@ -377,30 +401,37 @@ module Jade
 
           def score_eq(one: Score, other: Score) -> Bool
             one.value == other.value
+          end
 
 
           def score_compare(one: Score, other: Score) -> Ordering
             compare(one.value, other.value)
+          end
 
 
           def new_score(value: Int) -> Score
             Score(value)
+          end
 
 
           def lt(a: Score, b: Score) -> Bool
             a < b
+          end
 
 
           def gt(a: Score, b: Score) -> Bool
             a > b
+          end
 
 
           def lte(a: Score, b: Score) -> Bool
             a <= b
+          end
 
 
           def gte(a: Score, b: Score) -> Bool
             a >= b
+          end
         JADE
       end
 

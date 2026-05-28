@@ -13,7 +13,7 @@ module Jade
     let(:entry) do
       Lexer
         .tokenize(source)
-        .then { Parsing.parse(it, entry: source.uri) }
+        .then { Parsing.parse(it, source:) }
         .and_then do |(ast, _)|
           registry, current_entry = Frontend.entry_with_basics(ast)
           Frontend.run_entry(current_entry, registry).map { [it, registry] }
@@ -32,9 +32,12 @@ module Jade
 
           def dead(x: Int) -> Int
             x + 1
+          end
 
-          def n() -> Int
+
+          def n -> Int
             42
+          end
         JADE
       end
 
@@ -56,9 +59,12 @@ module Jade
 
           def helper(x: Int) -> Int
             x + 1
+          end
 
-          def n() -> Int
+
+          def n -> Int
             helper(42)
+          end
         JADE
       end
 
@@ -70,13 +76,16 @@ module Jade
     describe 'an exposed but unreferenced function' do
       let(:text) do
         <<~JADE
-          module M exposing (n, also_exposed)
+          module M exposing (also_exposed, n)
 
           def also_exposed(x: Int) -> Int
             x + 1
+          end
 
-          def n() -> Int
+
+          def n -> Int
             42
+          end
         JADE
       end
 

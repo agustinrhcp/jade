@@ -17,7 +17,8 @@ module Jade
           module Fact exposing (fact)
 
           def fact(n: Int) -> Int
-            if n == 0 then 1 else n * fact(n - 1)
+            n == 0 ? 1 : n * fact(n - 1)
+          end
         JADE
       end
 
@@ -36,7 +37,8 @@ module Jade
           module Fib exposing (fib)
 
           def fib(n: Int) -> Int
-            if (n <= 1) then n else fib(n - 1) + fib(n - 2)
+            (n <= 1) ? n : fib(n - 1) + fib(n - 2)
+          end
         JADE
       end
 
@@ -56,8 +58,10 @@ module Jade
 
           def length(xs: List(Int), acc: Int) -> Int
             case xs
-            of [] -> acc
-            of [_ | rest] -> length(rest, acc + 1)
+            in [] then acc
+            in [_ | rest] then length(rest, acc + 1)
+            end
+          end
         JADE
       end
 
@@ -84,8 +88,10 @@ module Jade
 
           def sum(xs: List(Int), acc: Int) -> Int
             case xs
-            of [] -> acc
-            of [x | rest] -> sum(rest, acc + x)
+            in [] then acc
+            in [x | rest] then sum(rest, acc + x)
+            end
+          end
         JADE
       end
 
@@ -104,7 +110,8 @@ module Jade
           module TrCountdown exposing (count)
 
           def count(n: Int, acc: Int) -> Int
-            if (n == 0) then acc else count(n - 1, acc + 1)
+            (n == 0) ? acc : count(n - 1, acc + 1)
+          end
         JADE
       end
 
@@ -124,8 +131,10 @@ module Jade
 
           def length(xs: List(Int)) -> Int
             case xs
-            of [] -> 0
-            of [_ | rest] -> 1 + length(rest)
+            in [] then 0
+            in [_ | rest] then 1 + length(rest)
+            end
+          end
         JADE
       end
 
@@ -156,8 +165,10 @@ module Jade
 
           def sum(xs: List(Int)) -> Int
             case xs
-            of [] -> 0
-            of [x | rest] -> x + sum(rest)
+            in [] then 0
+            in [x | rest] then x + sum(rest)
+            end
+          end
         JADE
       end
 
@@ -182,8 +193,10 @@ module Jade
 
           def f(xs: List(Int)) -> Int
             case xs
-            of [] -> 0
-            of [_ | rest] -> List.length(rest) + f(rest)
+            in [] then 0
+            in [_ | rest] then List.length(rest) + f(rest)
+            end
+          end
         JADE
       end
 
@@ -209,8 +222,10 @@ module Jade
 
           def f(xs: List(Int)) -> Int
             case xs
-            of [] -> 0
-            of [_ | rest] -> (-> { 1 + f(rest) })()
+            in [] then 0
+            in [_ | rest] then (-> { 1 + f(rest) })()
+            end
+          end
         JADE
       end
 

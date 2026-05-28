@@ -18,18 +18,22 @@ module Jade
 
           def add(a: Int, b: Int) -> Int
             a + b
+          end
 
 
           def add5(x: Int) -> Int
             add(_, 5)(x)
+          end
 
 
           def add5_left(x: Int) -> Int
             add(5, _)(x)
+          end
 
 
           def curried_sum(a: Int, b: Int) -> Int
             add(_, _)(a)(b)
+          end
         JADE
       end
 
@@ -60,10 +64,12 @@ module Jade
 
           def just_holed(x: Int) -> Pair(Int, String)
             Pair(_, "fixed")(x)
+          end
 
 
           def build_first(x: Int, y: String) -> Pair(Int, String)
             Pair(_, _)(x)(y)
+          end
         JADE
       end
 

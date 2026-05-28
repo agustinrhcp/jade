@@ -22,6 +22,7 @@ module Jade
 
           def empty -> List(Filter(c))
             []
+          end
         JADE
       end
 
@@ -37,8 +38,10 @@ module Jade
 
           def lookup_or_empty(m: Maybe(List(a))) -> List(a)
             case m
-            of Just(items) -> items
-            of Nothing -> []
+            in Just(items) then items
+            in Nothing then []
+            end
+          end
         JADE
       end
 

@@ -13,25 +13,31 @@ module Jade
 
         def make_pair(a: Int, b: String) -> (Int, String)
           (a, b)
+        end
 
 
         def get_first(pair: (Int, String)) -> Int
           Tuple.first(pair)
+        end
 
 
         def get_second(pair: (Int, String)) -> String
           Tuple.second(pair)
+        end
 
 
         def swap(pair: (Int, String)) -> (String, Int)
           (Tuple.second(pair), Tuple.first(pair))
+        end
 
 
         def pattern_matching(int: Int, str: String) -> Int
           case (int, str)
-          of (1, "1") -> 1
-          of (2, "2") -> 2
-          of _ -> 0
+          in (1, "1") then 1
+          in (2, "2") then 2
+          else 0
+          end
+        end
       JADE
     end
 
@@ -58,10 +64,12 @@ module Jade
 
         def mk -> (Int, String)
           Tuple.Tuple2(1, "x")
+        end
 
 
         def swap(t: (a, b)) -> (b, a)
           Tuple.Tuple2(Tuple.second(t), Tuple.first(t))
+        end
       JADE
 
       expect(Quali::Internal.mk).to eql Tuple::Tuple2[1, "x"]
@@ -80,10 +88,11 @@ module Jade
         test_compiler.require('BigVal', <<~JADE)
           module BigVal exposing (big)
 
-
           def big -> Int
             case (1, 2, 3, 4, 5)
-            of _ -> 0
+            else 0
+            end
+          end
         JADE
       }.to raise_error(CompilationError, /Tuple of 5 items is too big — tuples cap at 4/)
     end
@@ -93,10 +102,11 @@ module Jade
         test_compiler.require('BigPat', <<~JADE)
           module BigPat exposing (big)
 
-
           def big(t: (Int, Int, Int, Int)) -> Int
             case t
-            of (a, _, _, _, _) -> a
+            in (a, _, _, _, _) then a
+            end
+          end
         JADE
       }.to raise_error(CompilationError, /Tuple of 5 items is too big/)
     end
@@ -106,9 +116,9 @@ module Jade
         test_compiler.require('BigType', <<~JADE)
           module BigType exposing (big)
 
-
           def big(t: (Int, Int, Int, Int, Int)) -> Int
             99
+          end
         JADE
       }.to raise_error(CompilationError, /Tuple of 5 items is too big/)
     end
