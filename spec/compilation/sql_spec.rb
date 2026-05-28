@@ -55,6 +55,7 @@ module Jade
 
           def table(name: String, alias_: String, columns: String -> a) -> Table(a)
             Table(name, alias_, columns)
+          end
 
 
           def column(
@@ -67,8 +68,8 @@ module Jade
               |> String.empty?
               |> Basics.not })
               |> String.join(".")
-
             Expr(sql, type_)
+          end
 
 
           def from(table_: Table(a), select_fn: a -> QueryOptions) -> Query
@@ -78,6 +79,7 @@ module Jade
                 |> table_.columns
                 |> select_fn,
             )
+          end
         JADE
       end
 

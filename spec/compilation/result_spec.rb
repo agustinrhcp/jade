@@ -13,16 +13,19 @@ module Jade
 
         def int_to_r(int: Int) -> Result(Int, String)
           case int
-          of 1 -> Ok(1)
-          of 2 -> Ok(3)
-          of 3 -> Ok(5)
-          of _ -> Err("Not 1, 2 or 3")
+          in 1 then Ok(1)
+          in 2 then Ok(3)
+          in 3 then Ok(5)
+          else Err("Not 1, 2 or 3")
+          end
+        end
 
 
         def int_to_r_times_2(int: Int) -> Result(Int, String)
           int
             |> int_to_r
             |> Result.map((n) -> { n * 2 })
+        end
 
 
         def int_to_r_times_2_to_r(int: Int) -> Result(Int, String)
@@ -30,12 +33,14 @@ module Jade
             |> int_to_r
             |> Result.map((n) -> { n * 2 })
             |> Result.and_then(int_to_r)
+        end
 
 
         def int_to_r_to_maybe(int: Int) -> Maybe(Int)
           int
             |> int_to_r
             |> Result.to_maybe
+        end
       JADE
     end
 
@@ -50,10 +55,12 @@ module Jade
 
           def recover(r: Result(Int, String)) -> Result(Int, String)
             Result.on_error(r, (e) -> { Ok(0) })
+          end
 
 
           def passthrough(r: Result(Int, String)) -> Result(Int, String)
             Result.on_error(r, (e) -> { Err(e ++ "!") })
+          end
         JADE
       end
 

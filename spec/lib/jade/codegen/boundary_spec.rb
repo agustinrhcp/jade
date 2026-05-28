@@ -285,6 +285,7 @@ module Jade
 
           def my_decoder -> Decoder(Wrapper)
             Decode.map(Decode.field("name", Decode.string), Wrapper)
+          end
         JADE
       end
 

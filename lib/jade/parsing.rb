@@ -35,12 +35,13 @@ module Jade
     # to one of these (or EOF) when it can't make progress in tolerant mode.
     TOP_LEVEL_SYNC = %i[def type struct import uses implements interface module].freeze
 
-    def parse(tokens, entry:, parser: program, tolerant: false)
+    def parse(tokens, source:, parser: program, tolerant: false)
       comments = tokens.select { it.type == :comment }
       state = State.new(
         tokens:    tokens.reject { it.type == :comment },
-        entry:,
+        entry:    source.uri,
         tolerant:,
+        source:,
       )
 
       result = parser.call(state)
@@ -56,8 +57,22 @@ module Jade
           Ok[[nil, comments, diagnostics]]
         end
       else
-        # Strict mode: existing behavior — Ok([ast, comments]) or Err(err).
         result
+          .and_then { |(ast, end_state)|
+            end_state.eof? ?
+              Ok[[ast, end_state]] :
+              end_state.current.then { |tok|
+                Err[[
+                  UnexpectedTokenError.new(
+                    entry:    end_state.entry,
+                    span:     tok.range,
+                    actual:   tok,
+                    expected: "end of input",
+                  ),
+                  end_state,
+                ]]
+              }
+          }
           .map { [it.first, comments] }
           .map_error(&:first)
       end
@@ -76,10 +91,6 @@ module Jade
 
     parser(:program) { module_ | program_body }
 
-    # In tolerant mode, parse failures inside the program body are absorbed:
-    # the failing item is replaced with a diagnostic and parsing resumes at
-    # the next top-level keyword (or EOF). In strict mode, behaves like
-    # `sequence(declaration | statement)`.
     parser(:program_body) {
       (declaration | statement).then { |item|
         P.new do |state|
@@ -104,14 +115,17 @@ module Jade
     parser(:expression) {
       (
         (case_of | if_then_else | lambda | infix_expression) >>
-          optional(postfix_if_tail, default: [nil, nil])
-      ).map(&AST.maybe_postfix_if)
+          optional(ternary_tail, default: [nil, nil])
+      ).map(&AST.maybe_ternary)
     }
 
-    parser(:postfix_if_tail, private: true) {
-      type(:if).skip >>
+    # Right-associative: ternary in `b` extends (`a ? b : c ? d : e` →
+    # `a ? b : (c ? d : e)`); ternary in `a` doesn't because that side
+    # is parsed by `infix_expression`, which stops before `?`.
+    parser(:ternary_tail, private: true) {
+      type(:question).skip >>
         lazy { expression } >>
-        type(:else).skip >>
+        type(:colon).skip >>
         lazy { expression }
     }
 
@@ -138,8 +152,6 @@ module Jade
         end
     }
 
-    # Lambdas: `(p, q) -> { body }` or bare `-> { body }` for nullary.
-    # Both arms produce [lead_token, params_list] so the AST builder is uniform.
     parser(:lambda) {
       (
         (
@@ -155,16 +167,15 @@ module Jade
       ).map(&AST.lambda)
     }
 
-    # Single-expression form only: `if c then EXPR else EXPR`. No `end`,
-    # no greedy else-body to absorb trailing statements.
     parser(:if_then_else) {
       (
         type(:if) >>
           lazy { expression } >>
           type(:then).skip >>
-          lazy { expression }.map { AST::Body.new(expressions: [it], range: it.range) } >>
+          body >>
           type(:else).skip >>
-          lazy { expression }.map { AST::Body.new(expressions: [it], range: it.range) }
+          body >>
+          type(:end)
       ).map(&AST.if_then_else)
     }
 
@@ -172,13 +183,68 @@ module Jade
       (
         type(:case) >>
           lazy { expression } >>
-          sequence(case_of_branch).map { [it] }
+          many(case_of_branch).map { [it] } >>
+          optional(case_else_branch, default: nil) >>
+          type(:end)
       ).map(&AST.case_of)
     }
 
+    # `then` is optional before a branch body. The formatter emits it for
+    # inline single-expression branches and strips it for multi-statement
+    # bodies. The catch — `in <pat> "12"` (body on the same source line
+    # as `in`, no `then`) is almost always a forgotten `then`, so we
+    # raise a targeted error instead of silently treating it as a body.
+    # `else` doesn't get the same check: `else <expr>` is the natural
+    # inline form (no `then` keyword on else-branches).
     parser(:case_of_branch) {
-      (type(:of) >> pattern >> type(:arrow).skip >> body).map(&AST.case_of_branch)
+      P.new do |state|
+        in_tok = state.current
+        next type(:in).call(state) unless in_tok&.type == :in
+
+        pattern.call(state.advance).and_then do |(pat, s)|
+          checked_branch_body(in_tok).call(s).map do |(body_node, s2)|
+            [AST.case_of_branch.call([in_tok, pat, body_node]), s2]
+          end
+        end
+      end
     }
+
+    parser(:case_else_branch) {
+      P.new do |state|
+        else_tok = state.current
+        next type(:else).call(state) unless else_tok&.type == :else
+
+        body_after_optional_then(state.advance).map do |(body_node, s)|
+          [AST.case_else_branch.call([else_tok, body_node]), s]
+        end
+      end
+    }
+
+    def body_after_optional_then(state)
+      state.current&.type == :then ? body.call(state.advance) : body.call(state)
+    end
+
+    def checked_branch_body(in_tok)
+      P.new do |state|
+        next body.call(state.advance) if state.current&.type == :then
+
+        next_tok = state.current
+        if next_tok && state.same_line?(in_tok.range.begin, next_tok.range.begin)
+          next Err[[
+            MissingThenError.new(
+              entry:    state.entry,
+              span:     next_tok.range,
+              actual:   next_tok,
+              expected: :then,
+              committed: true,
+            ),
+            state,
+          ]]
+        end
+
+        body.call(state)
+      end
+    end
 
     parser(:pattern) {
       wildcard_pattern | list_pattern | literal_pattern | binding_pattern |
@@ -340,7 +406,6 @@ module Jade
 
     parser(:expose_type) { constant.map(&AST.expose_type) }
 
-    # Function declarations: `def f(p, q) -> T ...` or nullary `def f -> T ...`.
     parser(:function_declaration) {
       (
         type(:def) >>
@@ -354,7 +419,8 @@ module Jade
             ) >>
             type(:arrow).skip >>
             type_expression >>
-            sequence(statement).map(&AST.body)
+            sequence(statement).map(&AST.body) >>
+            type(:end)
           ).commit
       ).map(&AST.function_declaration)
        .context("function declaration")

@@ -18,8 +18,10 @@ module Jade
 
         def my_function(thing: MyType) -> String
           case thing
-          of MyType -> "My type"
-          of SomeOtherType(some_other) -> some_other
+          in MyType then "My type"
+          in SomeOtherType(some_other) then some_other
+          end
+        end
       JADE
     end
 
@@ -32,6 +34,7 @@ module Jade
 
         def hello -> String
           MyType() |> Exposing.my_function
+        end
       JADE
     end
 
@@ -54,6 +57,7 @@ module Jade
 
           def hello -> String
             MyType() |> Exposing.my_function
+          end
         JADE
       end
 
@@ -77,6 +81,7 @@ module Jade
 
           def hello -> String
             MyType |> Exposing.my_function
+          end
         JADE
       end
 
@@ -101,6 +106,7 @@ module Jade
 
           def hello -> String
             Exposing.MyType |> Exposing.my_function
+          end
         JADE
       end
 
@@ -126,8 +132,10 @@ module Jade
 
             def my_function(thing: MyType) -> String
               case thing
-              of MyType -> "My type"
-              of SomeOtherType(some_other) -> some_other
+              in MyType then "My type"
+              in SomeOtherType(some_other) then some_other
+              end
+            end
           JADE
         end
 
@@ -148,6 +156,7 @@ module Jade
 
           def hello(exposing_type: Exposing.MyType) -> String
             exposing_type |> Exposing.my_function
+          end
         JADE
       end
 
@@ -174,8 +183,10 @@ module Jade
 
           def my_function(thing: MyType) -> String
             case thing
-            of MyType -> "My type"
-            of SomeOtherType(some_other) -> some_other
+            in MyType then "My type"
+            in SomeOtherType(some_other) then some_other
+            end
+          end
         JADE
       end
 
@@ -188,6 +199,7 @@ module Jade
 
           def hello -> String
             MyType() |> Exposing.my_function
+          end
         JADE
       end
 
@@ -209,8 +221,10 @@ module Jade
 
           def my_function(thing: MyType) -> String
             case thing
-            of MyType -> "My type"
-            of SomeOtherType(some_other) -> some_other
+            in MyType then "My type"
+            in SomeOtherType(some_other) then some_other
+            end
+          end
         JADE
       end
 
@@ -223,6 +237,7 @@ module Jade
 
           def hello -> String
             MyType() |> Exposing.my_function
+          end
         JADE
       end
 
@@ -245,6 +260,7 @@ module Jade
 
           def greet(p: Person) -> String
             "Hello, " ++ p.name
+          end
         JADE
       end
 
@@ -258,6 +274,7 @@ module Jade
 
             def hello -> String
               greet(Person("Paul", 55))
+            end
           JADE
         end
 
@@ -280,6 +297,7 @@ module Jade
 
             def hello -> String
               greet(Person("Paul", 55))
+            end
           JADE
         end
 
@@ -304,6 +322,7 @@ module Jade
 
             def greet(p: Person) -> String
               "Hello, " ++ p.name
+            end
           JADE
         end
 
@@ -316,6 +335,7 @@ module Jade
 
             def hello -> String
               greet(Person("Paul", 55))
+            end
           JADE
         end
 
@@ -335,6 +355,7 @@ module Jade
 
           def id(thing: a) -> a
             thing
+          end
         JADE
       end
 
@@ -351,8 +372,8 @@ module Jade
             int_from_string = string
               |> String.to_int
               |> Maybe.with_default(0)
-
             int + int_from_string
+          end
         JADE
       end
 
@@ -384,6 +405,7 @@ module Jade
 
           def make -> Foo
             Foo(1, 2)
+          end
         JADE
       end
 

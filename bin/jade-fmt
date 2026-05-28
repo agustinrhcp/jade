@@ -52,7 +52,7 @@ source_text =
 source = Jade::Source.new(uri: file || 'stdin', text: source_text)
 tokens = Jade::Lexer.tokenize(source)
 
-case Jade::Parsing.parse(tokens, entry: source.uri)
+case Jade::Parsing.parse(tokens, source:)
 in Jade::Ok([ast, comments])
   formatted = Jade::Formatter.format(ast, comments:, source:) + "\n"
 

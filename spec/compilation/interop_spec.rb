@@ -40,10 +40,12 @@ module Jade
 
         def today -> Task(Int, Never)
           internal_today()
+        end
 
 
         def today_plus_n_days(n: Int) -> Task(Int, Never)
           internal_today_plus_n_days(n)
+        end
       JADE
     end
 
@@ -76,6 +78,7 @@ module Jade
 
           def today -> Task({ year: Int, month: Int, day: Int }, Never)
             internal_today()
+          end
         JADE
       end
 
@@ -97,6 +100,7 @@ module Jade
 
             def today -> Task(a, Never)
               internal_today()
+            end
           JADE
         end
 
@@ -114,6 +118,7 @@ module Jade
 
             def run_(n: Int) -> Task(Int, Char)
               Task.succeed(n)
+            end
           JADE
         end
 
@@ -157,6 +162,7 @@ module Jade
 
             def today -> Task(Date, Never)
               internal_today()
+            end
           JADE
         end
 
@@ -182,6 +188,7 @@ module Jade
 
             def today -> Task(Date, Never)
               internal_today()
+            end
           JADE
         end
 
@@ -214,6 +221,7 @@ module Jade
 
             def today -> Task(Maybe({ year: Int, month: Int, day: Int }), Never)
               internal_today()
+            end
           JADE
         end
 
@@ -235,6 +243,7 @@ module Jade
 
             def today -> { year: Int, month: Int, day: Int }
               internal_today()
+            end
           JADE
         end
 
@@ -255,6 +264,7 @@ module Jade
 
             def today -> Task(Task(Int, Never), Never)
               internal_today()
+            end
           JADE
         end
 
@@ -284,6 +294,7 @@ module Jade
 
           def fetch -> Task(Int, String)
             fetch_data()
+          end
         JADE
       end
 
@@ -312,6 +323,7 @@ module Jade
 
           def fetch -> Task(Int, Never)
             fetch_number()
+          end
         JADE
       end
 
@@ -341,6 +353,7 @@ module Jade
 
           def fetch -> Task(Int, Never)
             fetch_number()
+          end
         JADE
       end
 
@@ -374,15 +387,15 @@ module Jade
           def sum -> Task(Int, String)
             one <- get_one()
             two <- get_two()
-
             Task.succeed(one + two)
+          end
 
 
           def short_circuits -> Task(Int, String)
             one <- get_error()
             two <- get_two()
-
             Task.succeed(one + two)
+          end
         JADE
       end
 
@@ -424,6 +437,7 @@ module Jade
 
           def fetch -> Task(Value, Never)
             fetch_anything()
+          end
         JADE
       end
 
@@ -460,6 +474,7 @@ module Jade
 
           def fetch -> Task(User, Never)
             fetch_user()
+          end
         JADE
       end
 
@@ -498,6 +513,7 @@ module Jade
 
           def fetch -> Task(User, Never)
             fetch_user()
+          end
         JADE
       end
 
@@ -534,11 +550,13 @@ module Jade
               Decode.string,
               (s) -> {
                 case s
-                of "active" -> Decode.succeed(Active)
-                of "inactive" -> Decode.succeed(Inactive)
-                of _ -> Decode.fail("unknown status: " ++ s)
+                in "active" then Decode.succeed(Active)
+                in "inactive" then Decode.succeed(Inactive)
+                else Decode.fail("unknown status: " ++ s)
+                end
               },
             )
+          end
 
 
           implements Decodable(Status) with
@@ -553,14 +571,17 @@ module Jade
 
           def active -> Task(Status, Never)
             fetch_active()
+          end
 
 
           def inactive -> Task(Status, Never)
             fetch_inactive()
+          end
 
 
           def bogus -> Task(Status, Never)
             fetch_bogus()
+          end
         JADE
       end
 
@@ -611,14 +632,17 @@ module Jade
 
           def patient -> Task(Patient, Never)
             fetch_patient()
+          end
 
 
           def bad -> Task(Patient, Never)
             fetch_bad()
+          end
 
 
           def echo_patient(p: Patient) -> Task(Patient, Patient)
             echo(p)
+          end
         JADE
       end
 
@@ -667,10 +691,12 @@ module Jade
 
             def parse_ok -> Task(Patient, Int)
               try_fetch_ok()
+            end
 
 
             def parse_err -> Task(Patient, Int)
               try_fetch_err()
+            end
           JADE
         end
 
@@ -713,10 +739,12 @@ module Jade
 
             def some -> Task(Maybe(Patient), Never)
               fetch_some()
+            end
 
 
             def none -> Task(Maybe(Patient), Never)
               fetch_none()
+            end
           JADE
         end
 
@@ -758,6 +786,7 @@ module Jade
 
             def fetch -> Task(List(Maybe(Patient)), Never)
               fetch_list_maybe()
+            end
           JADE
         end
 
@@ -797,6 +826,7 @@ module Jade
 
             def fetch -> Task(List(Patient), Never)
               fetch_list()
+            end
           JADE
         end
 
@@ -836,10 +866,12 @@ module Jade
 
           def today -> Task({ year: Int, month: Int, day: Int }, Never)
             today_()
+          end
 
 
           def year(date: { year: Int, month: Int, day: Int }) -> Int
             date.year
+          end
         JADE
       end
 

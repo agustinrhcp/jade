@@ -15,15 +15,15 @@ module Jade
           def chain(a: Maybe(Int), b: Maybe(Int)) -> Maybe(Int)
             x <- a
             y <- b
-
             Just(x + y)
+          end
 
 
           def chain_nothing(a: Maybe(Int)) -> Maybe(Int)
             x <- a
             y <- Nothing
-
             Just(x + y)
+          end
         JADE
       end
 
@@ -53,22 +53,24 @@ module Jade
 
           def validate(n: Int) -> Result(Int, String)
             case n
-            of 0 -> Err("cannot be zero")
-            of _ -> Ok(n)
+            in 0 then Err("cannot be zero")
+            else Ok(n)
+            end
+          end
 
 
           def chain(a: Int, b: Int) -> Result(Int, String)
             x <- validate(a)
             y <- validate(b)
-
             Ok(x + y)
+          end
 
 
           def chain_err(a: Int, b: Int) -> Result(Int, String)
             x <- validate(a)
             y <- Err("forced")
-
             Ok(x + y)
+          end
         JADE
       end
 
@@ -109,12 +111,13 @@ module Jade
 
           def and_then_box(m: Box, f: Box -> Box) -> Box
             f(m)
+          end
 
 
           def chain(a: Box) -> Box
             x <- a
-
             Box(1)
+          end
         JADE
       end
 
@@ -131,10 +134,12 @@ module Jade
 
           def add_one_maybe(m: Maybe(Int)) -> Maybe(Int)
             map(m, (x) -> { x + 1 })
+          end
 
 
           def add_one_result(r: Result(Int, String)) -> Result(Int, String)
             map(r, (x) -> { x + 1 })
+          end
         JADE
       end
 

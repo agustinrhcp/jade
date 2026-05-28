@@ -24,6 +24,7 @@ module Jade
 
         def oops -> Int
           "not an int"
+        end
       JADE
     end
 
@@ -68,6 +69,7 @@ module Jade
 
         def n -> Int
           42
+        end
       JADE
 
       registry = ModuleLoader.load(src, 'ok.jd', tolerant: true)
@@ -83,6 +85,7 @@ module Jade
 
         def run -> Int
           oops()
+        end
       JADE
 
       registry = ModuleLoader.load(src, 'consumer.jd', tolerant: true)

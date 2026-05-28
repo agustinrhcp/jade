@@ -12,6 +12,7 @@ module Jade
 
         def str_to_int(str: String) -> Maybe(Int)
           String.to_int(str)
+        end
       JADE
     end
 
@@ -48,22 +49,28 @@ module Jade
 
         def first_char(s: String) -> Maybe(Char)
           case String.uncons(s)
-          of Just((c, _)) -> Just(c)
-          of Nothing -> Nothing
+          in Just((c, _)) then Just(c)
+          in Nothing then Nothing
+          end
+        end
 
 
         def prepend(c: Char, s: String) -> String
           String.cons(c, s)
+        end
 
 
         def single(c: Char) -> String
           String.from_char(c)
+        end
 
 
         def walk(s: String) -> List(Char)
           case String.uncons(s)
-          of Just((c, rest)) -> [c] ++ walk(rest)
-          of Nothing -> []
+          in Just((c, rest)) then [c] ++ walk(rest)
+          in Nothing then []
+          end
+        end
       JADE
     end
 
@@ -97,6 +104,7 @@ module Jade
 
         def double(s: String) -> String
           String.map(s, (c) -> { c })
+        end
       JADE
     end
 
@@ -117,10 +125,12 @@ module Jade
 
           def greet(name: String) -> String
             "Hello, " ++ name ++ "!"
+          end
 
 
           def join(a: String, b: String, sep: String) -> String
             a ++ sep ++ b
+          end
         JADE
       end
 
@@ -139,6 +149,7 @@ module Jade
 
           def combine(a: List(Int), b: List(Int)) -> List(Int)
             a ++ b
+          end
         JADE
       end
 
@@ -160,18 +171,22 @@ module Jade
 
         def newline -> String
           "Hello\nWorld"
+        end
 
 
         def tab -> String
           "col1\tcol2"
+        end
 
 
         def backslash -> String
           "back\\slash"
+        end
 
 
         def quote -> String
           "say \"hi\""
+        end
       JADE
     end
 
@@ -217,58 +232,71 @@ module Jade
 
         def trim_(s: String) -> String
           String.trim(s)
+        end
 
 
         def ltrim(s: String) -> String
           String.trim_left(s)
+        end
 
 
         def rtrim(s: String) -> String
           String.trim_right(s)
+        end
 
 
         def lwr(s: String) -> String
           String.to_lower(s)
+        end
 
 
         def upr(s: String) -> String
           String.to_upper(s)
+        end
 
 
         def has?(s: String, sub: String) -> Bool
           String.contains?(s, sub)
+        end
 
 
         def starts?(s: String, p: String) -> Bool
           String.starts_with?(s, p)
+        end
 
 
         def ends?(s: String, p: String) -> Bool
           String.ends_with?(s, p)
+        end
 
 
         def rep(s: String, t: String, r: String) -> String
           String.replace(s, t, r)
+        end
 
 
         def ws(s: String) -> List(String)
           String.words(s)
+        end
 
 
         def mlines(s: String) -> List(String)
           String.lines(s)
+        end
 
 
         def char_count(s: String) -> Int
           s
             |> String.to_list
             |> List.length
+        end
 
 
         def round_trip(s: String) -> String
           s
             |> String.to_list
             |> String.from_list
+        end
       JADE
     end
 

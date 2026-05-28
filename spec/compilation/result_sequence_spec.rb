@@ -13,14 +13,17 @@ module Jade
 
         def all_ok -> Result(List(Int), String)
           Result.sequence([Ok(1), Ok(2), Ok(3)])
+        end
 
 
         def with_err -> Result(List(Int), String)
           Result.sequence([Ok(1), Err("oops"), Ok(3)])
+        end
 
 
         def first_err_wins -> Result(List(Int), String)
           Result.sequence([Ok(1), Err("first"), Err("second")])
+        end
       JADE
     end
 

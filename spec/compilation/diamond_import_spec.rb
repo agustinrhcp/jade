@@ -24,6 +24,7 @@ module Jade
 
         def foo -> Int
           0
+        end
       JADE
     end
 
@@ -37,6 +38,7 @@ module Jade
 
         def run -> Int
           0
+        end
       JADE
     end
 
@@ -61,6 +63,7 @@ module Jade
 
           def run -> Int
             0
+          end
         JADE
       end
 

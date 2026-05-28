@@ -15,6 +15,7 @@ module Jade
 
         def n(a: Int) -> Int
           a + 1
+        end
       JADE
     end
 

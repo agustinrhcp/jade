@@ -15,7 +15,7 @@ module Jade
     let(:generation) do
       Lexer
         .tokenize(source)
-        .then { Parsing.parse(it, entry: source.uri) }
+        .then { Parsing.parse(it, source:) }
         .and_then { |(ast, _)| Frontend.run(ast) }
         .map  { Codegen.generate(*it) }
     end
@@ -70,6 +70,7 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a
+          end
         JADE
       end
 
@@ -81,8 +82,10 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a + b
+          end
           def call_add -> Int
             add(1, 2)
+          end
         JADE
       end
 
@@ -126,6 +129,7 @@ module Jade
         <<~JADE
           def empty?(str: String) -> Bool
             String.empty?(str)
+          end
         JADE
       end
 
@@ -139,6 +143,7 @@ module Jade
 
           def hello(str: String) -> Bool
             String.empty?(str)
+          end
         JADE
       end
 
@@ -166,7 +171,7 @@ module Jade
     context 'if then else' do
       let(:text) do
         <<~JADE
-          if String.empty?("") then 1 else 2
+          String.empty?("") ? 1 : 2
         JADE
       end
 
@@ -177,8 +182,9 @@ module Jade
       let(:text) do
         <<~JADE
           case 1
-          of 1 -> 1
-          of _ -> 2
+          in 1 then 1
+          else 2
+          end
         JADE
       end
 
@@ -188,8 +194,9 @@ module Jade
         let(:text) do
           <<~JADE
             case 1
-            of 1 -> 1
-            of x -> x
+            in 1 then 1
+            in x then x
+            end
           JADE
         end
 
@@ -203,8 +210,9 @@ module Jade
               = Just(a)
               | Nothing
             case Just(1)
-            of Nothing -> 0
-            of Just(x) -> x
+            in Nothing then 0
+            in Just(x) then x
+            end
           JADE
         end
 
@@ -215,8 +223,9 @@ module Jade
         let(:text) do
           <<~JADE
             case { name: "Pepe" }
-            of { name: "Pepe" } -> True
-            of _ -> False
+            in { name: "Pepe" } then True
+            else False
+            end
           JADE
         end
 
@@ -310,6 +319,7 @@ module Jade
             today : Task(Int, Never)
           def real_today -> Task(Int, Never)
             today()
+          end
         JADE
       end
 
@@ -417,6 +427,7 @@ module Jade
             <<~JADE
               def test -> Bool
                 Nothing == Just(1)
+              end
             JADE
           end
 
@@ -427,6 +438,7 @@ module Jade
               <<~JADE
                 def test -> Bool
                   Nothing != Just(1)
+                end
               JADE
             end
 
@@ -438,6 +450,7 @@ module Jade
               <<~JADE
                 def test -> Bool
                   Ok("OK") != Err(404)
+                end
               JADE
             end
 
@@ -456,6 +469,7 @@ module Jade
                   salute: "Hei",
                   n: 2,
                 }
+              end
             JADE
           end
 
@@ -511,6 +525,7 @@ module Jade
                 (==): eq_pepe
               def eq_pepe(one: Pepe, other: Pepe) -> Bool
                 True
+              end
             JADE
           end
 

@@ -18,8 +18,8 @@ module Jade
 
           def get_name(m: Maybe({ name: String })) -> Maybe(String)
             { name: } <- m
-
             Just(name)
+          end
         JADE
       end
 
@@ -36,8 +36,8 @@ module Jade
 
           def sum_pair(pair: (Int, Int)) -> Int
             f = ((a, b)) -> { a + b }
-
             f(pair)
+          end
         JADE
       end
 
@@ -53,8 +53,8 @@ module Jade
 
           def get_name_direct(person: { name: String, age: Int }) -> String
             f = ({ name: }) -> { name }
-
             f(person)
+          end
         JADE
       end
 
@@ -70,8 +70,10 @@ module Jade
 
           def sum_list(list: List(Int)) -> Int
             case list
-            of [] -> 0
-            of [x | xs] -> x + sum_list(xs)
+            in [] then 0
+            in [x | xs] then x + sum_list(xs)
+            end
+          end
         JADE
       end
 
@@ -88,8 +90,10 @@ module Jade
 
           def first_or_zero(list: List(Int)) -> Int
             case list
-            of [] -> 0
-            of [x | _] -> x
+            in [] then 0
+            in [x | _] then x
+            end
+          end
         JADE
       end
 
@@ -112,8 +116,10 @@ module Jade
 
           def head_id(xs: List(Charge)) -> Int
             case xs
-            of [] -> 0
-            of [c | rest] -> c.id
+            in [] then 0
+            in [c | rest] then c.id
+            end
+          end
         JADE
       end
 
@@ -143,6 +149,7 @@ module Jade
 
         def make -> T
           T(int(1))
+        end
       JADE
 
       test_compiler.require('opaque_app', <<~JADE)
@@ -153,8 +160,8 @@ module Jade
 
         def go -> T
           a = make
-
           a
+        end
       JADE
 
       expect(OpaqueApp::Internal.go).to be_a(OpaqueLib::T)

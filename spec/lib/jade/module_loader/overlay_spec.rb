@@ -24,6 +24,7 @@ module Jade
 
         def n -> Int
           42
+        end
       JADE
     end
 
@@ -36,6 +37,7 @@ module Jade
 
         def m -> Int
           n
+        end
       JADE
     end
 

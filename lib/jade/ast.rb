@@ -171,9 +171,7 @@ module Jade
 
     def function_declaration
       ->(tokens) do
-        tokens => [def_token, name, params_list, return_type, body]
-
-        range_end = body.range&.end || return_type.range.end
+        tokens => [def_token, name, params_list, return_type, body, end_token]
 
         FunctionDeclaration.new(
           name: name.value,
@@ -181,7 +179,7 @@ module Jade
           return_type:,
           body:,
           trailing_comma: params_list.trailing_comma,
-          range: def_token.range.begin...range_end,
+          range: def_token.range.begin...end_token.range.end,
         )
       end
     end
@@ -362,45 +360,58 @@ module Jade
     end
 
     def if_then_else
-      ->((if_token, condition, if_branch, else_branch)) do
+      ->((if_token, condition, if_branch, else_branch, end_token)) do
         IfThenElse[
           condition,
           if_branch,
           else_branch,
-          if_token.range.begin...else_branch.range.end,
+          if_token.range.begin...end_token.range.end,
         ]
       end
     end
 
-    def maybe_postfix_if
-      ->((expr, condition, else_expr)) do
-        next expr if condition.nil?
+    # `cond ? a : b` desugars to IfThenElse with single-expression bodies.
+    # The block form (`if cond then BODY else BODY end`) builds the same
+    # AST shape, so downstream passes don't need to distinguish.
+    def maybe_ternary
+      ->((cond, if_expr, else_expr)) do
+        next cond if if_expr.nil?
 
         IfThenElse[
-          condition,
-          Body.new(expressions: [expr], range: expr.range),
+          cond,
+          Body.new(expressions: [if_expr], range: if_expr.range),
           Body.new(expressions: [else_expr], range: else_expr.range),
-          expr.range.begin...else_expr.range.end,
+          cond.range.begin...else_expr.range.end,
         ]
       end
     end
 
     def case_of
-      ->((case_token, expression, branches)) do
+      ->((case_token, expression, branches, else_branch, end_token)) do
         CaseOf[
           expression,
-          branches,
-          case_token.range.begin...branches.last.range.end,
+          else_branch ? [*branches, else_branch] : branches,
+          case_token.range.begin...end_token.range.end,
         ]
       end
     end
 
     def case_of_branch
-      ->((of_token, pattern, body)) do
+      ->((in_token, pattern, body)) do
         CaseOfBranch[
           pattern,
           body,
-          of_token.range.begin...(body.range.end),
+          in_token.range.begin...body.range.end,
+        ]
+      end
+    end
+
+    def case_else_branch
+      ->((else_token, body)) do
+        CaseOfBranch[
+          Pattern::Wildcard.new(range: else_token.range),
+          body,
+          else_token.range.begin...body.range.end,
         ]
       end
     end

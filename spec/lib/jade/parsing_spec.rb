@@ -10,7 +10,7 @@ module Jade
       Source.new(uri: 'test', text:)
     end
 
-    let(:parse) { Lexer.tokenize(source).then { Parsing.parse(it, entry: source.uri) } }
+    let(:parse) { Lexer.tokenize(source).then { Parsing.parse(it, source:) } }
     subject { parse => Ok([node, _]); node }
 
     context 'literals' do
@@ -177,6 +177,7 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Int
             a
+          end
         JADE
       end
 
@@ -190,6 +191,7 @@ module Jade
           <<~JADE
             def two -> Int
               2
+            end
           JADE
         end
 
@@ -204,6 +206,7 @@ module Jade
         <<~JADE
           def add(a: Int, b: Int) -> Pepe.Lala
             a + b
+          end
         JADE
       end
 
@@ -226,8 +229,10 @@ module Jade
         <<~JADE
           def map(result: Result(a, e), fn: a -> b) -> Result(b, e)
             case result
-            of Ok(something) -> Just(fn(somethig))
-            of _ -> result
+            in Ok(something) then Just(fn(somethig))
+            else result
+            end
+          end
         JADE
       end
 
@@ -241,8 +246,10 @@ module Jade
         <<~JADE
           def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
             case maybe
-            of Just(something) -> fn(somethig)
-            of Nothing -> maybe
+            in Just(something) then fn(somethig)
+            in Nothing then maybe
+            end
+          end
         JADE
       end
 
@@ -264,8 +271,10 @@ module Jade
           <<~JADE
             def and_then(maybe: Maybe(a), fn: a -> Maybe(b)) -> Maybe(b)
               case maybe
-              of Just(something) -> fn(something)
-              of Nothing -> Nothing
+              in Just(something) then fn(something)
+              in Nothing then Nothing
+              end
+            end
           JADE
         end
 
@@ -297,6 +306,7 @@ module Jade
         <<~JADE
           def run(f: () -> Int) -> Int
             f()
+          end
         JADE
       end
 
@@ -322,6 +332,7 @@ module Jade
           <<~JADE
             def something(tuple: (Int, String)) -> Int
               1
+            end
           JADE
         end
 
@@ -344,6 +355,7 @@ module Jade
           <<~JADE
             def something(a: Int) -> (String, Int)
               1
+            end
           JADE
         end
 
@@ -364,6 +376,7 @@ module Jade
           <<~JADE
             def something(a: Int) -> (String, Int, Bool)
               1
+            end
           JADE
         end
 
@@ -706,6 +719,7 @@ module Jade
         <<~JADE
           def empty?(str: String) -> String
             String.empty?(str)
+          end
         JADE
       end
 
@@ -733,6 +747,7 @@ module Jade
 
           def hello(str: String) -> Bool
             String.empty?(str)
+          end
         JADE
       end
 
@@ -757,6 +772,7 @@ module Jade
 
             def hello(str: String) -> Bool
               String.empty?(str)
+            end
           JADE
         end
 
@@ -765,70 +781,70 @@ module Jade
       end
     end
 
-    context 'if then else' do
-      include_context "single expression body"
-
-      let(:text) do
-        <<~JADE
-          if String.empty?("") then 1 else 2
-        JADE
-      end
-
-      it { is_expected.to be_a(AST::IfThenElse) }
-      its(:condition) { is_expected.to be_a AST::FunctionCall }
-
-      its(:if_branch) { is_expected.to be_a AST::Body }
-      its(:else_branch) { is_expected.to be_a AST::Body }
-
-      describe 'if branch' do
-        subject { super().if_branch.expressions }
-
-        it { is_expected.to have(1).item.and all(be_a(AST::Literal)) }
-      end
-
-      describe 'else branch' do
-        subject { super().if_branch.expressions }
-
-        it { is_expected.to have(1).item.and all(be_a(AST::Literal)) }
-      end
-    end
-
-    context 'postfix if' do
+    context 'ternary `?:`' do
       context 'simple form' do
-        let(:text) { '1 if x == 0 else 2' }
+        include_context "single expression body"
 
-        it { is_expected.to be_a(AST::Body) }
+        let(:text) { 'x == 0 ? 1 : 2' }
 
-        describe 'the expression' do
-          subject { super().expressions.first }
-
-          it { is_expected.to be_a(AST::IfThenElse) }
-          its(:condition) { is_expected.to be_a(AST::InfixApplication) }
-          its(:if_branch) { is_expected.to be_a(AST::Body) }
-          its(:else_branch) { is_expected.to be_a(AST::Body) }
-        end
+        it { is_expected.to be_a(AST::IfThenElse) }
+        its(:condition) { is_expected.to be_a(AST::InfixApplication) }
+        its(:if_branch) { is_expected.to be_a(AST::Body) }
+        its(:else_branch) { is_expected.to be_a(AST::Body) }
       end
 
-      context 'cascaded' do
-        let(:text) { '"a" if c1 else "b" if c2 else "c"' }
+      context 'function-call condition' do
+        include_context "single expression body"
 
-        describe 'right-associative parse' do
-          subject { super().expressions.first }
+        let(:text) { 'String.empty?("") ? 1 : 2' }
 
-          it { is_expected.to be_a(AST::IfThenElse) }
-          its(:'if_branch.expressions.first.value') { is_expected.to eql 'a' }
-          its(:'else_branch.expressions.first') { is_expected.to be_a(AST::IfThenElse) }
-        end
+        it { is_expected.to be_a(AST::IfThenElse) }
+        its(:condition) { is_expected.to be_a(AST::FunctionCall) }
       end
 
-      context 'with infix in the leading expression' do
-        let(:text) { 'n * 2 if big else n' }
+      context 'right-associative chain' do
+        include_context "single expression body"
+
+        let(:text) { 'c1 ? "a" : c2 ? "b" : "c"' }
+
+        it { is_expected.to be_a(AST::IfThenElse) }
+        its(:'if_branch.expressions.first.value') { is_expected.to eql 'a' }
+        its(:'else_branch.expressions.first') { is_expected.to be_a(AST::IfThenElse) }
+      end
+
+      context 'with infix in the condition' do
+        include_context "single expression body"
+
+        let(:text) { 'big ? n * 2 : n' }
 
         describe 'the if-branch' do
-          subject { super().expressions.first.if_branch.expressions.first }
+          subject { super().if_branch.expressions.first }
 
           it { is_expected.to be_a(AST::InfixApplication) }
         end
+      end
+
+      context 'as a function call argument' do
+        include_context "single expression body"
+
+        let(:text) { 'f(c ? a : b)' }
+
+        it { is_expected.to be_a(AST::FunctionCall) }
+        its(:'args.first') { is_expected.to be_a(AST::IfThenElse) }
+      end
+
+      context 'spanning multiple lines (formatter round-trip shape)' do
+        include_context "single expression body"
+
+        let(:text) do
+          <<~JADE
+            c ? a_long_then_value : an_even_longer_else_value
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::IfThenElse) }
+        its(:'if_branch.expressions.first') { is_expected.to be_a(AST::VariableReference) }
+        its(:'else_branch.expressions.first') { is_expected.to be_a(AST::VariableReference) }
       end
     end
 
@@ -955,8 +971,9 @@ module Jade
       let(:text) do
         <<~JADE
           case 1
-          of 1 -> 1
-          of _ -> 2
+          in 1 then 1
+          else 2
+          end
         JADE
       end
 
@@ -983,8 +1000,9 @@ module Jade
         let(:text) do
           <<~JADE
             case Just(1)
-            of Nothing -> 0
-            of Just(x) -> x
+            in Nothing then 0
+            in Just(x) then x
+            end
           JADE
         end
 
@@ -1012,7 +1030,8 @@ module Jade
         let(:text) do
           <<~JADE
             case { name: "Pepe" }
-            of { name: } -> name
+            in { name: } then name
+            end
           JADE
         end
 
@@ -1039,7 +1058,8 @@ module Jade
           let(:text) do
             <<~JADE
               case { name: "Pepe" }
-              of { name: } -> name
+              in { name: } then name
+              end
             JADE
           end
 
@@ -1125,8 +1145,8 @@ module Jade
           <<~JADE
             def pauls_birthday -> Person
               paul_before_today = paul()
-
               { paul_before_today | age: paul_before_today.age + 1 }
+            end
           JADE
         end
 
@@ -1177,6 +1197,7 @@ module Jade
               name: "Paul",
               age: 55,
             }
+          end
         JADE
       end
 
@@ -1212,6 +1233,7 @@ module Jade
           <<~JADE
             def name(thing: { a | name: String }) -> String
               thing.name
+            end
           JADE
         end
 
@@ -1327,7 +1349,7 @@ module Jade
 
   describe 'parse errors' do
     let(:source) { Source.new(uri: 'test', text:) }
-    subject(:result) { Lexer.tokenize(source).then { Parsing.parse(it, entry: source.uri) } }
+    subject(:result) { Lexer.tokenize(source).then { Parsing.parse(it, source:) } }
 
     shared_examples 'a committed parse error' do
       it 'returns Err' do
@@ -1363,7 +1385,7 @@ module Jade
 
       include_examples 'a committed parse error'
 
-      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected end of input, expected lbrace') }
+      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected lbrace') }
     end
 
     context 'incomplete type declaration' do
@@ -1418,6 +1440,26 @@ module Jade
       include_examples 'a committed parse error'
 
       it { result => Err(err); expect(err.message).to eq('While parsing implementation: Unexpected end of input, expected identifier') }
+    end
+
+    context 'case branch needs `then` before an inline body' do
+      let(:text) do
+        <<~JADE
+          def f -> String
+            case 1
+            in Pepe "12"
+            end
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it 'message points the user at `then`' do
+        result => Err(err)
+        expect(err.message).to include('needs `then`')
+        expect(err.message).to include('on the same line as `in`')
+      end
     end
 
     context 'bad declaration mid-file does not silently truncate' do

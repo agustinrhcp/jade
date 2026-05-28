@@ -77,9 +77,9 @@ module Jade
     private
 
     def evaluate(src, registry, current_entry, scope, env, var_gen)
-      Source.new(nil, src)
-        .then { Lexer.tokenize(it) }
-        .then { Parsing.parse(it) }
+      source = Source.new(nil, src)
+      Lexer.tokenize(source)
+        .then { Parsing.parse(it, source:) }
         .on_err { return Err[it.message] } => Ok(ast)
 
       Frontend::FixityFixer.fix(ast)

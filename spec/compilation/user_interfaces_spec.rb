@@ -22,6 +22,7 @@ module Jade
 
           def int_show(n: Int) -> String
             "int"
+          end
         JADE
       end
 
@@ -45,10 +46,12 @@ module Jade
 
           def int_show(n: Int) -> String
             "an int"
+          end
 
 
           def show_int(n: Int) -> String
             show(n)
+          end
         JADE
       end
 
@@ -78,18 +81,22 @@ module Jade
 
           def int_show(n: Int) -> String
             "int"
+          end
 
 
           def str_show(s: String) -> String
             "str"
+          end
 
 
           def show_int(n: Int) -> String
             show(n)
+          end
 
 
           def show_str(s: String) -> String
             show(s)
+          end
         JADE
       end
 
@@ -116,14 +123,17 @@ module Jade
 
           def int_show(n: Int) -> String
             "int"
+          end
 
 
           def helper(x: a) -> String
             show(x)
+          end
 
 
           def show_int_via_helper(n: Int) -> String
             helper(n)
+          end
         JADE
       end
 
@@ -153,10 +163,12 @@ module Jade
 
           def show_int(n: Int) -> String
             show(n)
+          end
 
 
           def show_str(s: String) -> String
             show(s)
+          end
         JADE
       end
 
@@ -188,6 +200,7 @@ module Jade
 
           def tag_today -> Int
             tag(Calendar.from_calendar_date(2026, Calendar.Jan, 1))
+          end
         JADE
       end
 
@@ -213,6 +226,7 @@ module Jade
 
           def run(n: Int) -> String
             show(n)
+          end
         JADE
       end
 
@@ -237,6 +251,7 @@ module Jade
 
           def run(s: String) -> String
             echo(s)
+          end
         JADE
       end
 

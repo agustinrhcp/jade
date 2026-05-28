@@ -11,7 +11,7 @@ module Jade
     def parse(text)
       source = Source.new(uri: 'test.jd', text: text)
       tokens = Lexer.tokenize(source)
-      Parsing.parse(tokens, entry: source.uri, tolerant: true)
+      Parsing.parse(tokens, source:, tolerant: true)
     end
 
     def format_ast(ast, source_text)
@@ -26,12 +26,15 @@ module Jade
 
           def a -> Int
             1
+          end
 
           def b -> Int
             @@@ broken
+          end
 
           def c -> Int
             3
+          end
         JADE
 
         result => Ok([ast, _, diagnostics])
@@ -44,9 +47,11 @@ module Jade
           module M exposing (b)
 
           def a -> @@@
+          end
 
           def b -> Int
             2
+          end
         JADE
 
         result => Ok([ast, _, diagnostics])
@@ -60,8 +65,10 @@ module Jade
 
           def a -> Int
             1
+          end
 
           def b -> @@@
+          end
         JADE
 
         result => Ok([ast, _, diagnostics])
@@ -74,11 +81,14 @@ module Jade
           module M exposing (c)
 
           def a -> @@@
+          end
 
           def b -> @@@
+          end
 
           def c -> Int
             3
+          end
         JADE
 
         result => Ok([ast, _, diagnostics])
@@ -92,11 +102,13 @@ module Jade
 
           def a -> Int
             1
+          end
 
           @@@ stray garbage @@@
 
           def b -> Int
             2
+          end
         JADE
 
         result => Ok([ast, _, diagnostics])
@@ -118,12 +130,15 @@ module Jade
 
           def a -> Int
             1
+          end
 
           def b -> Int
             @@@ broken
+          end
 
           def c -> Int
             3
+          end
         JADE
 
         result => Ok([ast, _, _])
@@ -141,7 +156,11 @@ module Jade
           module M exposing (x)
 
           def x -> Int
-            f(1, 2,)
+            f(
+              1,
+              2,
+            )
+          end
         JADE
 
         result => Ok([ast, _, diagnostics])
@@ -154,7 +173,12 @@ module Jade
           module M exposing (xs)
 
           def xs -> List(Int)
-            [1, 2, 3,]
+            [
+              1,
+              2,
+              3,
+            ]
+          end
         JADE
 
         result => Ok([_, _, diagnostics])
@@ -166,7 +190,11 @@ module Jade
           module M exposing (r)
 
           def r -> { a: Int, b: Int }
-            { a: 1, b: 2, }
+            {
+              a: 1,
+              b: 2,
+            }
+          end
         JADE
 
         result => Ok([_, _, diagnostics])
@@ -179,11 +207,12 @@ module Jade
 
           interface I(a) with
             f : a -> a,
-            g : a -> a,
+            g : a -> a
+
 
           implements I(Int) with
             f: f_int,
-            g: g_int,
+            g: g_int
         JADE
 
         result => Ok([_, _, diagnostics])
@@ -196,7 +225,7 @@ module Jade
 
           uses Ruby::Date with
             today : Int,
-            tomorrow : Int,
+            tomorrow : Int
         JADE
 
         result => Ok([_, _, diagnostics])
@@ -207,8 +236,9 @@ module Jade
         result = parse(<<~JADE)
           module M exposing (f)
 
-          def f(x: Maybe(Int,)) -> Int
+          def f(x: Maybe(Int)) -> Int
             0
+          end
         JADE
 
         result => Ok([_, _, diagnostics])
@@ -220,7 +250,7 @@ module Jade
       it 'still fails strict parse on broken input' do
         source = Source.new(uri: 'test.jd', text: 'def a -> @@@')
         tokens = Lexer.tokenize(source)
-        result = Parsing.parse(tokens, entry: source.uri)
+        result = Parsing.parse(tokens, source:)
 
         expect(result).to be_a(Err)
       end
@@ -231,9 +261,10 @@ module Jade
 
           def a -> Int
             1
+          end
         JADE
         tokens = Lexer.tokenize(source)
-        result = Parsing.parse(tokens, entry: source.uri)
+        result = Parsing.parse(tokens, source:)
 
         expect(result).to be_a(Ok)
       end

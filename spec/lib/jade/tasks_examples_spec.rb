@@ -48,8 +48,8 @@ describe 'tasks mocker — DateTasks example' do
 
       def run(offset: Int) -> Task(Int, Never)
         _ <- today()
-
         plus_days(offset)
+      end
     JADE
   end
 

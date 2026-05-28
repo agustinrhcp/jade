@@ -19,7 +19,8 @@ module Jade
       'then',
       'else',
       'case',
-      'of',
+      'in',
+      'end',
       'as',
       'uses',
       'with',
@@ -67,6 +68,9 @@ module Jade
 
       '_' => :wildcard, # also used as placeholder
       '::' => :coloncolon,
+      # Ternary `cond ? a : b`. Predicate-`?` attaches via the identifier
+      # regex (`\??`), so this only fires when `?` stands alone.
+      '?' => :question,
 
       '&&' => :andand,
       '||' => :oror,

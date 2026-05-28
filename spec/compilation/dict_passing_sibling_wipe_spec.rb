@@ -25,22 +25,27 @@ module Jade
 
         def show_int(n: Int) -> String
           "int"
+        end
 
 
         def show_str(s: String) -> String
           "str"
+        end
 
 
         def two_shows(x: a, y: b) -> String
           show(x) ++ "-" ++ show(y)
+        end
 
 
         def wrap(x: a, y: b) -> String
           two_shows(x, y)
+        end
 
 
         def go -> String
           wrap(42, "hi")
+        end
       JADE
 
       expect(ReproWipe.go).to eql 'int-str'

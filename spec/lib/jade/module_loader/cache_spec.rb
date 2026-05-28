@@ -36,6 +36,7 @@ module Jade
 
         def n -> Int
           42
+        end
       JADE
     end
 
@@ -48,6 +49,7 @@ module Jade
 
         def m -> Int
           n
+        end
       JADE
     end
 
@@ -93,10 +95,12 @@ module Jade
 
         def n -> Int
           42
+        end
 
 
         def two -> Int
           2
+        end
       JADE
       write('leaf', bumped)
       compile

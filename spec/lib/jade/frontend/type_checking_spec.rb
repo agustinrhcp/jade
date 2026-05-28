@@ -19,7 +19,7 @@ module Jade
       let(:type_check) do
         Lexer
           .tokenize(source)
-          .then { Parsing.parse(it, entry: source.uri) }
+          .then { Parsing.parse(it, source:) }
           .and_then { |(ast, _)| Frontend.run_up_to_semantic_analysis(ast) }
           # TODO: Make this prettier
           .and_then do |entry, registry|
@@ -56,6 +56,7 @@ module Jade
           <<~JADE
             def add(a: Int, b: Int) -> Int
               a
+            end
           JADE
         end
 
@@ -81,8 +82,8 @@ module Jade
             <<~JADE
               def add(a: Int, b: Int) -> Int
                 c = 10
-
                 c
+              end
             JADE
           end
 
@@ -95,6 +96,7 @@ module Jade
             <<~JADE
               def add(a: Int, b: Int) -> Int
                 "Hello"
+              end
             JADE
           end
 
@@ -114,6 +116,7 @@ module Jade
             <<~JADE
               def nope(result: a) -> Result(a, String)
                 Ok(result)
+              end
             JADE
           end
 
@@ -126,6 +129,7 @@ module Jade
             <<~JADE
               def nope(result: a) -> Result(a, error)
                 Ok(result)
+              end
             JADE
           end
 
@@ -138,6 +142,7 @@ module Jade
             <<~JADE
               def example -> Result(List(Int), String)
                 Ok([])
+              end
             JADE
           end
 
@@ -200,8 +205,10 @@ module Jade
           <<~JADE
             def add(a: Int, b: Int) -> Int
               a + b
+            end
             def call_add -> Int
               add(1, 2)
+            end
           JADE
         end
 
@@ -212,8 +219,10 @@ module Jade
             <<~JADE
               def add(a: Int, b: Int) -> Int
                 a + b
+              end
               def call_add -> Int
                 add(1, "Hello")
+              end
             JADE
           end
 
@@ -233,6 +242,7 @@ module Jade
             def add(a: Int, b: Int) -> Int
               a + b
               add(1, "Hello")
+            end
           JADE
         end
       end
@@ -308,7 +318,7 @@ module Jade
       context 'if then else' do
         let(:text) do
           <<~JADE
-            if String.empty?("") then 1 else 2
+            String.empty?("") ? 1 : 2
           JADE
         end
 
@@ -318,7 +328,7 @@ module Jade
         context 'when the condition is not a boolean' do
           let(:text) do
             <<~JADE
-              if "" then 1 else 2
+              "" ? 1 : 2
             JADE
           end
 
@@ -336,7 +346,7 @@ module Jade
         context 'when the branches have different types' do
           let(:text) do
             <<~JADE
-              if String.empty?("") then 1 else "two"
+              String.empty?("") ? 1 : "two"
             JADE
           end
 
@@ -356,8 +366,9 @@ module Jade
         let(:text) do
           <<~JADE
             case 1
-            of 1 -> 1
-            of _ -> 2
+            in 1 then 1
+            else 2
+            end
           JADE
         end
 
@@ -368,8 +379,9 @@ module Jade
           let(:text) do
             <<~JADE
               case 1
-              of "" -> 1
-              of _ -> 2
+              in "" then 1
+              else 2
+              end
             JADE
           end
 
@@ -388,8 +400,9 @@ module Jade
           let(:text) do
             <<~JADE
               case 1
-              of 1 -> 1
-              of _ -> "two"
+              in 1 then 1
+              else "two"
+              end
             JADE
           end
 
@@ -408,8 +421,9 @@ module Jade
           let(:text) do
             <<~JADE
               case 1
-              of 1 -> 1
-              of x -> x
+              in 1 then 1
+              in x then x
+              end
             JADE
           end
 
@@ -424,8 +438,9 @@ module Jade
                 = Just(a)
                 | Nothing
               case Just(1)
-              of Nothing -> 0
-              of Just(x) -> x
+              in Nothing then 0
+              in Just(x) then x
+              end
             JADE
           end
 
@@ -453,6 +468,7 @@ module Jade
             <<~JADE
               def f -> a
                 1
+              end
             JADE
           end
 
@@ -468,7 +484,8 @@ module Jade
             let(:text) do
               <<~JADE
                 def f(x: a) -> a
-                  if True then x else 1
+                  True ? x : 1
+                end
               JADE
             end
 
@@ -487,6 +504,7 @@ module Jade
               <<~JADE
                 def f(x: a) -> { id: a }
                   { id: 1 }
+                end
               JADE
             end
 
@@ -505,6 +523,7 @@ module Jade
             <<~JADE
               def f(x: a) -> a
                 x
+              end
             JADE
           end
 
@@ -518,6 +537,7 @@ module Jade
                 x
                 f(1)
                 f("one")
+              end
             JADE
           end
 
@@ -529,6 +549,7 @@ module Jade
             <<~JADE
               def f(x: a) -> b
                 f(x)
+              end
             JADE
           end
 
@@ -623,6 +644,7 @@ module Jade
               }
               def person(name: String, age: Int) -> Person
                 Person(name, age)
+              end
             JADE
           end
 
@@ -639,6 +661,7 @@ module Jade
               }
               def person(name: String, age: Int) -> { name: String, age: String }
                 Person(name, age)
+              end
             JADE
           end
 
@@ -659,8 +682,10 @@ module Jade
               }
               def name(named: { a | name: String }) -> String
                 named.name
+              end
               def call_it -> String
                 name(Person("Paul", 55))
+              end
             JADE
           end
 
@@ -678,6 +703,7 @@ module Jade
                 Person(name, id)
                 Person("Paul", 1)
                 Person("Frank", "asdf-1234")
+              end
             JADE
           end
 
@@ -690,6 +716,7 @@ module Jade
             <<~JADE
               def id(rec: { a | id: id }) -> id
                 rec.id
+              end
             JADE
           end
 
@@ -703,6 +730,7 @@ module Jade
           <<~JADE
             def neq(a: a, b: a) -> Bool
               a != b
+            end
           JADE
         end
 

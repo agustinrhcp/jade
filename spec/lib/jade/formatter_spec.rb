@@ -12,7 +12,7 @@ module Jade
 
     subject do
       Lexer.tokenize(source)
-        .then { Parsing.parse(it, entry: source.uri) }
+        .then { Parsing.parse(it, source:) }
         .map { |(ast, comments)| Formatter.format(ast, comments:, source:) } => Ok(result)
 
       result
@@ -157,13 +157,13 @@ module Jade
     context 'if/then/else' do
       let(:text) do
         <<~JADE.strip
-          if x == 0 then 1 else 2
+          x == 0 ? 1 : 2
         JADE
       end
 
       it do
         is_expected.to eql <<~JADE.strip
-          if x == 0 then 1 else 2
+          x == 0 ? 1 : 2
         JADE
       end
 
@@ -171,14 +171,46 @@ module Jade
         let(:text) do
           <<~JADE.strip
             def abs(x: Int) -> Int
-              if x < 0 then 0 - x else x
+              x < 0 ? 0 - x : x
+            end
           JADE
         end
 
         it do
           is_expected.to eql <<~JADE.strip
             def abs(x: Int) -> Int
-              if x < 0 then 0 - x else x
+              x < 0 ? 0 - x : x
+            end
+          JADE
+        end
+      end
+
+      context 'block form with multi-statement branches' do
+        let(:text) do
+          <<~JADE.strip
+            def f(c: Bool) -> Int
+              if c then
+                x = 1
+                x + 1
+              else
+                y = 2
+                y * 3
+              end
+            end
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            def f(c: Bool) -> Int
+              if c then
+                x = 1
+                x + 1
+              else
+                y = 2
+                y * 3
+              end
+            end
           JADE
         end
       end
@@ -189,16 +221,18 @@ module Jade
         let(:text) do
           <<~JADE.strip
             case x
-            of True -> 1
-            of False -> 0
+            in True then 1
+            in False then 0
+            end
           JADE
         end
 
         it do
           is_expected.to eql <<~JADE.strip
             case x
-            of True -> 1
-            of False -> 0
+            in True then 1
+            in False then 0
+            end
           JADE
         end
       end
@@ -207,14 +241,16 @@ module Jade
         let(:text) do
           <<~JADE.strip
             case x
-            of _ -> 0
+            else 0
+            end
           JADE
         end
 
         it do
           is_expected.to eql <<~JADE.strip
             case x
-            of _ -> 0
+            else 0
+            end
           JADE
         end
       end
@@ -223,16 +259,18 @@ module Jade
         let(:text) do
           <<~JADE.strip
             case m
-            of Just(x) -> x
-            of Nothing -> 0
+            in Just(x) then x
+            in Nothing then 0
+            end
           JADE
         end
 
         it do
           is_expected.to eql <<~JADE.strip
             case m
-            of Just(x) -> x
-            of Nothing -> 0
+            in Just(x) then x
+            in Nothing then 0
+            end
           JADE
         end
       end
@@ -241,14 +279,16 @@ module Jade
         let(:text) do
           <<~JADE.strip
             case pair
-            of (a, b) -> a
+            in (a, b) then a
+            end
           JADE
         end
 
         it do
           is_expected.to eql <<~JADE.strip
             case pair
-            of (a, b) -> a
+            in (a, b) then a
+            end
           JADE
         end
       end
@@ -257,14 +297,16 @@ module Jade
         let(:text) do
           <<~JADE.strip
             case p
-            of { x: a, y: b } -> a
+            in { x: a, y: b } then a
+            end
           JADE
         end
 
         it do
           is_expected.to eql <<~JADE.strip
             case p
-            of { x: a, y: b } -> a
+            in { x: a, y: b } then a
+            end
           JADE
         end
       end
@@ -274,12 +316,14 @@ module Jade
           <<~JADE.strip
             def clamp(value: Int, min: Int, max: Int) -> Int
               case value < min
-              of True -> min
-              of False -> (
+              in True then min
+              in False
                 case value > max
-                of True -> max
-                of False -> value
-              )
+                in True then max
+                in False then value
+                end
+              end
+            end
           JADE
         end
 
@@ -287,12 +331,14 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def clamp(value: Int, min: Int, max: Int) -> Int
               case value < min
-              of True -> min
-              of False -> (
+              in True then min
+              in False
                 case value > max
-                of True -> max
-                of False -> value
-              )
+                in True then max
+                in False then value
+                end
+              end
+            end
           JADE
         end
       end
@@ -301,16 +347,18 @@ module Jade
         let(:text) do
           <<~JADE.strip
             case n
-            of 0 -> "zero"
-            of _ -> "other"
+            in 0 then "zero"
+            else "other"
+            end
           JADE
         end
 
         it do
           is_expected.to eql <<~JADE.strip
             case n
-            of 0 -> "zero"
-            of _ -> "other"
+            in 0 then "zero"
+            else "other"
+            end
           JADE
         end
       end
@@ -322,6 +370,7 @@ module Jade
           <<~JADE.strip
             def add(a: Int, b: Int) -> Int
               a + b
+            end
           JADE
         end
 
@@ -329,6 +378,7 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def add(a: Int, b: Int) -> Int
               a + b
+            end
           JADE
         end
       end
@@ -338,8 +388,8 @@ module Jade
           <<~JADE.strip
             def compute(x: Int) -> Int
               y = x + 1
-
               y * 2
+            end
           JADE
         end
 
@@ -347,8 +397,8 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def compute(x: Int) -> Int
               y = x + 1
-
               y * 2
+            end
           JADE
         end
       end
@@ -358,6 +408,7 @@ module Jade
           <<~JADE.strip
             def zero -> Int
               0
+            end
           JADE
         end
 
@@ -365,6 +416,7 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def zero -> Int
               0
+            end
           JADE
         end
       end
@@ -490,6 +542,7 @@ module Jade
 
             def add(a: Int, b: Int) -> Int
               a + b
+            end
           JADE
         end
 
@@ -499,6 +552,7 @@ module Jade
 
             def add(a: Int, b: Int) -> Int
               a + b
+            end
           JADE
         end
       end
@@ -510,6 +564,7 @@ module Jade
 
             def bar -> Int
               1
+            end
           JADE
         end
 
@@ -519,6 +574,7 @@ module Jade
 
             def bar -> Int
               1
+            end
           JADE
         end
       end
@@ -532,6 +588,7 @@ module Jade
 
             def wrap(x: Int) -> Maybe(Int)
               Just(x)
+            end
           JADE
         end
 
@@ -543,6 +600,7 @@ module Jade
           <<~JADE.strip
             def run(f: () -> Int) -> Int
               f()
+            end
           JADE
         end
 
@@ -550,6 +608,7 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def run(f: () -> Int) -> Int
               f()
+            end
           JADE
         end
       end
@@ -559,6 +618,7 @@ module Jade
           <<~JADE.strip
             def apply(f: Int -> Int, x: Int) -> Int
               f(x)
+            end
           JADE
         end
 
@@ -566,6 +626,7 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def apply(f: Int -> Int, x: Int) -> Int
               f(x)
+            end
           JADE
         end
       end
@@ -575,6 +636,7 @@ module Jade
           <<~JADE.strip
             def apply(f: Int, String -> Bool, x: Int) -> Bool
               f(x, "a")
+            end
           JADE
         end
 
@@ -586,6 +648,7 @@ module Jade
           <<~JADE.strip
             def get_name(p: { name: String, age: Int }) -> String
               p.name
+            end
           JADE
         end
 
@@ -593,6 +656,7 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def get_name(p: { name: String, age: Int }) -> String
               p.name
+            end
           JADE
         end
       end
@@ -602,6 +666,7 @@ module Jade
           <<~JADE.strip
             def fst(pair: (Int, String)) -> Int
               pair
+            end
           JADE
         end
 
@@ -609,6 +674,7 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def fst(pair: (Int, String)) -> Int
               pair
+            end
           JADE
         end
       end
@@ -619,8 +685,8 @@ module Jade
         <<~JADE.strip
           def chain(m: Maybe(Int)) -> Maybe(Int)
             x <- m
-
             Just(x)
+          end
         JADE
       end
 
@@ -628,30 +694,30 @@ module Jade
         is_expected.to eql <<~JADE.strip
           def chain(m: Maybe(Int)) -> Maybe(Int)
             x <- m
-
             Just(x)
+          end
         JADE
       end
     end
 
-    context 'bindings separated from return expression' do
+    context 'multiple bindings before return expression' do
       let(:text) do
         <<~JADE.strip
           def example(m: Maybe(Int)) -> Maybe(Int)
             a <- m
             b <- m
-
             a + b
+          end
         JADE
       end
 
-      it 'adds a blank line between bindings and the return expression' do
+      it 'does not insert blank lines between bindings and return expression' do
         is_expected.to eql <<~JADE.strip
           def example(m: Maybe(Int)) -> Maybe(Int)
             a <- m
             b <- m
-
             a + b
+          end
         JADE
       end
     end
@@ -747,44 +813,48 @@ module Jade
         let(:text) do
           <<~JADE.strip
             case xs
-            of [] -> 0
+            in [] then 0
+            end
           JADE
         end
 
-        it { is_expected.to include "of [] -> 0" }
+        it { is_expected.to include "in [] then 0" }
       end
 
       context 'cons with rest' do
         let(:text) do
           <<~JADE.strip
             case xs
-            of [head | tail] -> 1
+            in [head | tail] then 1
+            end
           JADE
         end
 
-        it { is_expected.to include "of [head | tail] -> 1" }
+        it { is_expected.to include "in [head | tail] then 1" }
       end
 
       context 'multiple heads with rest' do
         let(:text) do
           <<~JADE.strip
             case xs
-            of [a, b | rest] -> 2
+            in [a, b | rest] then 2
+            end
           JADE
         end
 
-        it { is_expected.to include "of [a, b | rest] -> 2" }
+        it { is_expected.to include "in [a, b | rest] then 2" }
       end
 
       context 'wildcard rest' do
         let(:text) do
           <<~JADE.strip
             case xs
-            of [a | _] -> 1
+            in [a | _] then 1
+            end
           JADE
         end
 
-        it { is_expected.to include "of [a | _] -> 1" }
+        it { is_expected.to include "in [a | _] then 1" }
       end
     end
 
@@ -795,6 +865,7 @@ module Jade
 
           def greet(name: String) -> String
             greet_helper(name)
+          end
         JADE
       end
 
@@ -804,7 +875,7 @@ module Jade
         second_source = Source.new(uri: 'test', text: first_pass)
         second_pass =
           Lexer.tokenize(second_source)
-            .then { Parsing.parse(it, entry: second_source.uri) }
+            .then { Parsing.parse(it, source: second_source) }
             .map { |(ast, comments)| Formatter.format(ast, comments:, source: second_source) }
             .then { it => Ok(r); r }
 
@@ -829,6 +900,7 @@ module Jade
             # Adds two integers.
             def add(a: Int, b: Int) -> Int
               a + b
+            end
           JADE
         end
 
@@ -837,13 +909,14 @@ module Jade
             # Adds two integers.
             def add(a: Int, b: Int) -> Int
               a + b
+            end
           JADE
         end
       end
 
       context 'trailing comment on a variable binding' do
         let(:text) { "x = 1 # init\nx" }
-        it { is_expected.to eql "x = 1 # init\n\nx" }
+        it { is_expected.to eql "x = 1 # init\nx" }
       end
 
       context 'multiple leading comments' do
@@ -856,9 +929,9 @@ module Jade
           <<~JADE.strip
             def foo(x: Int) -> Int
               y = x + 1
-
               # result
               y
+            end
           JADE
         end
 
@@ -866,9 +939,9 @@ module Jade
           is_expected.to eql <<~JADE.strip
             def foo(x: Int) -> Int
               y = x + 1
-
               # result
               y
+            end
           JADE
         end
       end
@@ -877,20 +950,22 @@ module Jade
         let(:text) do
           <<~JADE.strip
             case x
-            of True ->
+            in True
               # yes
               1
-            of False -> 0
+            in False then 0
+            end
           JADE
         end
 
         it do
           is_expected.to eql <<~JADE.strip
             case x
-            of True ->
+            in True
               # yes
               1
-            of False -> 0
+            in False then 0
+            end
           JADE
         end
       end
@@ -901,6 +976,7 @@ module Jade
             # makes a date
             def today(y: Calendar.Date) -> Calendar.Date
               y
+            end
           JADE
         end
 
@@ -909,6 +985,7 @@ module Jade
             # makes a date
             def today(y: Calendar.Date) -> Calendar.Date
               y
+            end
           JADE
         end
       end

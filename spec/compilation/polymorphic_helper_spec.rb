@@ -25,13 +25,13 @@ module Jade
         ) -> Task(List(WithAssoc(p, a)), e)
           ids = List.map(primaries, primary_key)
           assocs <- fetch_assocs(ids)
-
           Task.succeed(
             List.map(
               primaries,
               (p) -> { WithAssoc(p, List.filter(assocs, (a) -> { assoc_key(a) == primary_key(p) })) },
             ),
           )
+        end
       JADE
     end
 
@@ -50,6 +50,7 @@ module Jade
 
         def fetch(ids: List(Int)) -> Task(List(Pet), String)
           Task.succeed([])
+        end
 
 
         def test_call(
@@ -60,6 +61,7 @@ module Jade
           }, fetch, (pt) -> {
             pt.owner_id
           })
+        end
       JADE
     end
 

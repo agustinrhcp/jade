@@ -100,7 +100,7 @@ module Jade
 
     def load_(source, registry, entry: false)
       Lexer.tokenize(source)
-        .then { Parsing.parse(it, entry: source.uri) }
+        .then { Parsing.parse(it, source:) }
         .on_err do |err|
           Diagnostics::List
             .empty

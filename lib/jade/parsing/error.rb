@@ -83,6 +83,22 @@ module Jade
       end
     end
 
+    # Specific case-branch shape: `in <pat> <body>` on the same source
+    # line, no `then` between them. Almost always the user meant
+    # `in <pat> then <body>` for an inline branch.
+    class MissingThenError < Error
+      def message
+        "#{context_prefix}Case branch needs `then` before an inline body " \
+          "(got #{@actual.value.inspect} on the same line as `in`). " \
+          "Write `in <pat> then <expr>`, or put the body on the next " \
+          "line for the multi-statement form."
+      end
+
+      def label
+        "missing `then`"
+      end
+    end
+
     class InvalidOperatorError < Error
       HINTS = {
         '/=' => 'Use `!=` for inequality.',

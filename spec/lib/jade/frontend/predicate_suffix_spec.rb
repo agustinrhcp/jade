@@ -8,7 +8,7 @@ module Jade
 
     let(:frontend) do
       Lexer.tokenize(source)
-        .then { Parsing.parse(it, entry: source.uri) }
+        .then { Parsing.parse(it, source:) }
         .and_then { |(ast, _)| Frontend.run(ast) }
     end
 
@@ -19,6 +19,7 @@ module Jade
 
           def positive?(n: Int) -> Bool
             n > 0
+          end
         JADE
       end
 
@@ -34,6 +35,7 @@ module Jade
 
           def bad? -> Int
             42
+          end
         JADE
       end
 
@@ -51,6 +53,7 @@ module Jade
 
           def positive(n: Int) -> Bool
             n > 0
+          end
         JADE
       end
 
@@ -66,11 +69,15 @@ module Jade
 
           def empty?(xs: List(Int)) -> Bool
             case xs
-            of [] -> True
-            of _ -> False
+            in [] then True
+            else False
+            end
+          end
+
 
           def run(xs: List(Int)) -> Bool
             empty?(xs)
+          end
         JADE
       end
 
@@ -94,8 +101,8 @@ module Jade
 
             def f -> Bool
               empty? = True
-
               empty?
+            end
           JADE
         end
 
@@ -109,6 +116,7 @@ module Jade
 
             def f(empty?: Bool) -> Bool
               empty?
+            end
           JADE
         end
 
@@ -122,6 +130,7 @@ module Jade
 
             def f -> (Bool -> Bool)
               (empty?) -> { empty? }
+            end
           JADE
         end
 
@@ -135,8 +144,8 @@ module Jade
 
             def f(m: Maybe(Bool)) -> Bool
               Just(empty?) = m
-
               empty?
+            end
           JADE
         end
 

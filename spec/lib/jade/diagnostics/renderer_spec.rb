@@ -105,6 +105,7 @@ module Jade
         Source.new(uri: 'multi.jd', text: <<~JADE)
           def add(a: Int, b: Int) -> Int
             a + "hello"
+          end
         JADE
       end
 
@@ -133,6 +134,7 @@ module Jade
         Source.new(uri: 'block.jd', text: <<~JADE)
           def pauls_age -> Int
             42
+          end
         JADE
       end
 
@@ -149,13 +151,14 @@ module Jade
           1 | def pauls_age -> Int
             | ^^^^^^^^^^^^^^^^^^^^
           2 |   42
-            | ^^^^ declared here
+          3 | end
+            | ^^^ declared here
             |
         TEXT
       end
 
       it 'shows the annotation under the last line' do
-        expect(output).to include('^^^^ declared here')
+        expect(output).to include('^^^ declared here')
       end
 
       it 'shows all subsequent lines as context' do

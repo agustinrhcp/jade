@@ -43,42 +43,56 @@ module Jade
 
           def map(result: Result(a, e), fn: a -> b) -> Result(b, e)
             case result
-            of Ok(something) -> something
-              |> fn
-              |> Ok
-            of Err(error) -> Err(error)
+            in Ok(something)
+              something
+                |> fn
+                |> Ok
+            in Err(error) then Err(error)
+            end
+          end
 
 
           def and_then(result: Result(a, e), fn: a -> Result(b, e)) -> Result(b, e)
             case result
-            of Ok(something) -> something |> fn
-            of Err(error) -> Err(error)
+            in Ok(something) then something |> fn
+            in Err(error) then Err(error)
+            end
+          end
 
 
           def with_default(result: Result(a, e), default: a) -> a
             case result
-            of Ok(something) -> something
-            of _ -> default
+            in Ok(something) then something
+            else default
+            end
+          end
 
 
           def to_maybe(result: Result(a, e)) -> Maybe(a)
             case result
-            of Ok(something) -> Just(something)
-            of _ -> Nothing
+            in Ok(something) then Just(something)
+            else Nothing
+            end
+          end
 
 
           def from_maybe(maybe: Maybe(a), error: e) -> Result(a, e)
             case maybe
-            of Just(something) -> Ok(something)
-            of Nothing -> Err(error)
+            in Just(something) then Ok(something)
+            in Nothing then Err(error)
+            end
+          end
 
 
           def map_error(result: Result(a, e), fn: e -> x) -> Result(a, x)
             case result
-            of Err(error) -> error
-              |> fn
-              |> Err
-            of Ok(something) -> Ok(something)
+            in Err(error)
+              error
+                |> fn
+                |> Err
+            in Ok(something) then Ok(something)
+            end
+          end
 
 
           def sequence(results: List(Result(a, e))) -> Result(List(a), e)
@@ -88,16 +102,18 @@ module Jade
               (acc, result) -> {
                 list <- acc
                 value <- result
-
                 Ok(list ++ [value])
               },
             )
+          end
 
 
           def on_error(result: Result(a, e), fn: e -> Result(a, f)) -> Result(a, f)
             case result
-            of Err(error) -> error |> fn
-            of Ok(_) -> result
+            in Err(error) then error |> fn
+            in Ok(_) then result
+            end
+          end
 
 
           implements Mappable(Result(a, e)) with

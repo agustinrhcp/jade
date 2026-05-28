@@ -15,8 +15,9 @@ module Jade
         <<~JADE
           module Leaf exposing (n)
 
-          def n() -> Int
+          def n -> Int
             42
+          end
         JADE
       end
 
@@ -203,8 +204,9 @@ module Jade
           <<~JADE
             module Other exposing (m)
 
-            def m() -> Int
+            def m -> Int
               "boom"
+            end
           JADE
         end
 
@@ -230,15 +232,17 @@ module Jade
       describe 'documentSymbol' do
         let(:module_text) do
           <<~JADE
-            module Leaf exposing (n, Color)
+            module Leaf exposing (Color, n)
 
             type Color
               = Red
               | Green
               | Blue
 
-            def n() -> Int
+
+            def n -> Int
               42
+            end
           JADE
         end
 
@@ -301,9 +305,12 @@ module Jade
 
             def helper(x: Int) -> Int
               x + 1
+            end
 
-            def n() -> Int
+
+            def n -> Int
               helper(42)
+            end
           JADE
         end
 
@@ -350,9 +357,12 @@ module Jade
 
             def eq_check(a: a, b: a) -> Bool
               a == b
+            end
+
 
             def caller(x: Int) -> Bool
               eq_check(x, x)
+            end
           JADE
           _, outbound = open_and_hover(text:, at: 'eq_check(x, x)')
           expect(outbound.first[:result][:contents][:value]).to include('Eq a => ')
@@ -371,10 +381,12 @@ module Jade
 
             def and_then_box(m: Box, f: Box -> Box) -> Box
               f(m)
+            end
 
 
             def run(b: Box) -> Box
               b
+            end
           JADE
           _, outbound = open_and_hover(text:, at: 'Box) -> Box')
           val = outbound.first[:result][:contents][:value]
@@ -390,6 +402,7 @@ module Jade
               def run(x: Int) -> Int
                 doubled = x * 2
                 doubled + 1
+              end
             JADE
           end
 
@@ -424,9 +437,12 @@ module Jade
 
             def helper(x: Int) -> Int
               x + 1
+            end
 
-            def n() -> Int
+
+            def n -> Int
               helper(42)
+            end
           JADE
         end
 
@@ -458,7 +474,7 @@ module Jade
         end
 
         it 'returns nil for stdlib calls (no decl_span yet)' do
-          text = "module Leaf exposing (n)\n\ndef n() -> Int\n  String.length(\"hi\")\n"
+          text = "module Leaf exposing (n)\n\ndef n() -> Int\n  String.length(\"hi\")\nend\n"
           _, outbound = open_and_define(text:, at: 'String.length')
           expect(outbound.first[:result]).to be_nil
         end

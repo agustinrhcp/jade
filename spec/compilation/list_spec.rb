@@ -23,38 +23,47 @@ module Jade
 
         def strs_to_list(str: String, str2: String) -> List(String)
           [str, str2]
+        end
 
 
         def list_length(list: List(a)) -> Int
           List.length(list)
+        end
 
 
         def list_singleton(element: a) -> List(a)
           List.singleton(element)
+        end
 
 
         def repeat(element: a, times: Int) -> List(a)
           List.repeat(element, times)
+        end
 
 
         def range(start: Int, end_: Int) -> List(Int)
           List.range(start, end_)
+        end
 
 
         def empty?(list: List(a)) -> Bool
           List.empty?(list)
+        end
 
 
         def maptiply(list: List(Int)) -> List(Int)
           list |> List.map((n) -> { n * 2 })
+        end
 
 
         def maptindexply(list: List(Int)) -> List(Int)
           list |> List.indexed_map((index, n) -> { n * index })
+        end
 
 
         def str_fold(list: List(String), initial: String) -> String
           list |> List.fold(initial, (acc, item) -> { String.concat([acc, item]) })
+        end
       JADE
     end
 
@@ -102,22 +111,27 @@ module Jade
 
           def sort_ints(list: List(Int)) -> List(Int)
             List.sort(list)
+          end
 
 
           def sort_floats(list: List(Float)) -> List(Float)
             List.sort(list)
+          end
 
 
           def sort_strings(list: List(String)) -> List(String)
             List.sort(list)
+          end
 
 
           def sort_by_neg(list: List(Int)) -> List(Int)
             list |> List.sort_by((n) -> { 0 - n })
+          end
 
 
           def sort_by_str_len(list: List(String)) -> List(String)
             list |> List.sort_by(String.length)
+          end
         JADE
       end
 
@@ -170,107 +184,130 @@ module Jade
           implements Encodable(IS) with
             encoder: (p) -> {
               case p
-              of IS(i, s) -> Encode.tuple(Encode.int, Encode.string, (i, s))
+              in IS(i, s) then Encode.tuple(Encode.int, Encode.string, (i, s))
+              end
             }
 
 
           implements Decodable(IS) with
             decoder: -> { Decode.tuple(Decode.int, Decode.string) |> Decode.map((t) -> {
               case t
-              of (i, s) -> IS(i, s)
+              in (i, s) then IS(i, s)
+              end
             }) }
 
 
           implements Encodable(Buckets) with
             encoder: (b) -> {
               case b
-              of Buckets(l, r) ->
+              in Buckets(l, r)
                 Encode.tuple(Encode.list(Encode.int, _), Encode.list(Encode.int, _), (l, r))
+              end
             }
 
 
           implements Encodable(Unzipped) with
             encoder: (u) -> {
               case u
-              of Unzipped(l, r) ->
+              in Unzipped(l, r)
                 Encode.tuple(
                   Encode.list(Encode.int, _),
                   Encode.list(Encode.string, _),
                   (l, r),
                 )
+              end
             }
 
 
           def any_neg(list: List(Int)) -> Bool
             list |> List.any?((n) -> { n < 0 })
+          end
 
 
           def all_pos(list: List(Int)) -> Bool
             list |> List.all?((n) -> { n > 0 })
+          end
 
 
           def first_even(list: List(Int)) -> Maybe(Int)
             list |> List.find((n) -> { mod(n, 2) == 0 })
+          end
 
 
           def evens_doubled(list: List(Int)) -> List(Int)
             list |> List.filter_map((n) -> {
-              if mod(n, 2) == 0 then Just(n * 2) else Nothing
+              mod(n, 2) == 0 ? Just(n * 2) : Nothing
             })
+          end
 
 
           def tk(list: List(Int), n: Int) -> List(Int)
             List.take(list, n)
+          end
 
 
           def dr(list: List(Int), n: Int) -> List(Int)
             List.drop(list, n)
+          end
 
 
           def part_evens(list: List(Int)) -> Buckets
             case list |> List.partition((n) -> { mod(n, 2) == 0 })
-            of (pass, rest) -> Buckets(pass, rest)
+            in (pass, rest) then Buckets(pass, rest)
+            end
+          end
 
 
           def cat(lists: List(List(Int))) -> List(Int)
             List.concat(lists)
+          end
 
 
           def zip_pairs(a: List(Int), b: List(String)) -> List(IS)
             List.zip(a, b) |> List.map((t) -> {
               case t
-              of (i, s) -> IS(i, s)
+              in (i, s) then IS(i, s)
+              end
             })
+          end
 
 
           def unzip_pairs(pairs: List(IS)) -> Unzipped
             case pairs
               |> List.map((p) -> {
               case p
-              of IS(i, s) -> (i, s)
+              in IS(i, s) then (i, s)
+              end
             })
               |> List.unzip
-            of (a, b) -> Unzipped(a, b)
+            in (a, b) then Unzipped(a, b)
+            end
+          end
 
 
           def has_two?(list: List(Int)) -> Bool
             List.member?(list, 2)
+          end
 
 
           def max_ints(list: List(Int)) -> Maybe(Int)
             List.maximum(list)
+          end
 
 
           def min_ints(list: List(Int)) -> Maybe(Int)
             List.minimum(list)
+          end
 
 
           def max_strs(list: List(String)) -> Maybe(String)
             List.maximum(list)
+          end
 
 
           def min_strs(list: List(String)) -> Maybe(String)
             List.minimum(list)
+          end
         JADE
       end
 
@@ -345,6 +382,7 @@ module Jade
 
           def boom(list: List(Int)) -> List(Int)
             List.sort_with(list, int_compare)
+          end
         JADE
       end
 

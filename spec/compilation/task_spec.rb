@@ -13,22 +13,27 @@ module Jade
 
         def always_ok -> Task(Int, String)
           Task.succeed(42)
+        end
 
 
         def always_err -> Task(Int, String)
           Task.fail("oops")
+        end
 
 
         def mapped -> Task(Int, String)
           map(Task.succeed(1), (n) -> { n + 1 })
+        end
 
 
         def chained -> Task(Int, String)
           and_then(Task.succeed(1), (n) -> { Task.succeed(n + 1) })
+        end
 
 
         def chained_err -> Task(Int, String)
           and_then(Task.succeed(1), (n) -> { Task.fail("chained error") })
+        end
       JADE
     end
 
@@ -94,18 +99,21 @@ module Jade
 
           def all_ok -> Task(List(Int), String)
             Task.sequence([Task.succeed(1), Task.succeed(2), Task.succeed(3)])
+          end
 
 
           def first_fails -> Task(List(Int), String)
             Task.sequence(
               [Task.fail("first"), Task.succeed(2), Task.succeed(3)],
             )
+          end
 
 
           def second_fails -> Task(List(Int), String)
             Task.sequence(
               [Task.succeed(1), Task.fail("second"), Task.succeed(3)],
             )
+          end
         JADE
       end
 
@@ -135,14 +143,17 @@ module Jade
 
           def pass_through -> Task(Int, String)
             Task.on_error(Task.succeed(42), (e) -> { Task.succeed(0) })
+          end
 
 
           def recover -> Task(Int, String)
             Task.on_error(Task.fail("oops"), (e) -> { Task.succeed(0) })
+          end
 
 
           def remap -> Task(Int, String)
             Task.on_error(Task.fail("oops"), (e) -> { Task.fail(e ++ "!") })
+          end
         JADE
       end
 
@@ -169,15 +180,15 @@ module Jade
           def sum -> Task(Int, String)
             one <- Task.succeed(1)
             two <- Task.succeed(2)
-
             Task.succeed(one + two)
+          end
 
 
           def short_circuits -> Task(Int, String)
             one <- Task.fail("first error")
             two <- Task.succeed(2)
-
             Task.succeed(one + two)
+          end
         JADE
       end
 
@@ -221,10 +232,12 @@ module Jade
 
           def echo(n: Int, xs: List(String)) -> Task(String, String)
             Task.succeed(String.from_int(n) ++ ":" ++ String.concat(xs))
+          end
 
 
           def fail_with(reason: String) -> Task(Int, String)
             Task.fail(reason)
+          end
         JADE
       end
 

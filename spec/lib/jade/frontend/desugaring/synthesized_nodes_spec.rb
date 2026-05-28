@@ -16,7 +16,7 @@ module Jade
     subject do
       Lexer
         .tokenize(source)
-        .then { Parsing.parse(it, entry: source.uri) }
+        .then { Parsing.parse(it, source:) }
         .then { it => Ok([node, _]); node }
         .then { Frontend::Desugaring.desugar(it) }
         .then { it => AST::Body(expressions:); expressions.last }
