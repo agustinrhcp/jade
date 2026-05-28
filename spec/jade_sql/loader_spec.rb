@@ -15,18 +15,19 @@ module JadeSql
 end
 
 module Jade
-  describe 'Sql.in' do
+  describe 'Sql.in_' do
     include_context 'with test compiler'
 
     let(:source) do
       <<~JADE
         module App exposing (in_some_ids)
 
-        import Sql exposing (Expr, column, in)
+        import Sql exposing (Expr, column, in_)
 
 
         def in_some_ids(ids: List(Int)) -> Expr(Bool)
-          column("p", "id") |> in(ids)
+          column("p", "id") |> in_(ids)
+        end
       JADE
     end
 
@@ -65,10 +66,12 @@ module Jade
 
           def group(orders: List(Order)) -> Dict(Int, List(Order))
             group_by(orders, (o) -> { o.patient_id })
+          end
 
 
           def lookup(grouped: Dict(Int, List(Order)), id: Int) -> List(Order)
             lookup_or_empty(grouped, id)
+          end
         JADE
       end
 
@@ -144,6 +147,7 @@ module Jade
                 lookup_or_empty(addrs_by_pid, p.id),
               ) },
             )
+          end
         JADE
       end
 
@@ -214,6 +218,7 @@ module Jade
               orders,
               (o) -> { OrderWithItems(o, lookup_or_empty(items_by_oid, o.id)) },
             )
+          end
 
 
           def bundle(
@@ -228,6 +233,7 @@ module Jade
               patients,
               (p) -> { PatientView(p, lookup_or_empty(owi_by_pid, p.id)) },
             )
+          end
         JADE
       end
 

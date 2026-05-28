@@ -50,7 +50,7 @@ module JadeSql
     def format(text)
       source = ::Jade::Source.new(uri: '<schema>', text: text)
       ::Jade::Lexer.tokenize(source)
-        .then { ::Jade::Parsing.parse(it, entry: source.uri) }
+        .then { ::Jade::Parsing.parse(it, source:) }
         .map { |(ast, comments)| ::Jade::Formatter.format(ast, comments:, source:) }
         .then do
           case it
@@ -177,6 +177,7 @@ module JadeSql
             (a) -> { Maybe#{camel(t.name)}Cols(#{maybe_fields}) },
             #{pk_list},
           )
+        end
       JADE
     end
 

@@ -50,6 +50,7 @@ def insert(value: a, t: Table(c, m)) -> Mutation(Int, c)
     [],
     Selector([], []),
   )
+end
 
 
 def insert_all(values: List(a), t: Table(c, m)) -> Mutation(Int, c)
@@ -61,6 +62,7 @@ def insert_all(values: List(a), t: Table(c, m)) -> Mutation(Int, c)
     [],
     Selector([], []),
   )
+end
 
 
 def update(value: a, t: Table(c, m)) -> Mutation(Int, c)
@@ -74,6 +76,7 @@ def update(value: a, t: Table(c, m)) -> Mutation(Int, c)
     [pk_pred],
     Selector([], []),
   )
+end
 
 
 def delete(value: a, t: Table(c, m)) -> Mutation(Int, c)
@@ -87,6 +90,7 @@ def delete(value: a, t: Table(c, m)) -> Mutation(Int, c)
     [pk_pred],
     Selector([], []),
   )
+end
 
 
 def update_all(
@@ -105,6 +109,7 @@ def update_all(
     [pred],
     Selector([], []),
   )
+end
 
 
 def delete_all(t: Table(c, m), pred_fn: c -> Expr(Bool)) -> Mutation(Int, c)
@@ -119,10 +124,12 @@ def delete_all(t: Table(c, m), pred_fn: c -> Expr(Bool)) -> Mutation(Int, c)
     [pred],
     Selector([], []),
   )
+end
 
 
 def returning(m: Mutation(a, c), build: c -> Q(Selector(b))) -> Mutation(b, c)
   Mutation(m.kind, m.table, m.cols, m.rows, m.wheres, build(m.cols).result)
+end
 
 
 def pk_predicate(cols: List(String), values: List(Value)) -> Expr(Bool)
@@ -131,6 +138,7 @@ def pk_predicate(cols: List(String), values: List(Value)) -> Expr(Bool)
     |> String.join(" AND ")
 
   Expr(sql, values)
+end
 
 
 def render_row(row: List(Assignment)) -> String
@@ -139,18 +147,21 @@ def render_row(row: List(Assignment)) -> String
     |> String.join(", ")
 
   "(" ++ cols_part ++ ")"
+end
 
 
 def returning_clause(s: Selector(ret)) -> String
-  if List.empty?(s.columns_sql) then ""
-  else " RETURNING " ++ String.join(s.columns_sql, ", ")
+  List.empty?(s.columns_sql) ? "" : " RETURNING " ++ String.join(s.columns_sql, ", ")
+end
 
 
 def insert_cols_str(rows: List(List(Assignment))) -> String
   case rows
-  of [] -> ""
-  of [first | _] ->
+  in [] then ""
+  in [first | _]
     "(" ++ String.join(List.map(first, (a) -> { a.col }), ", ") ++ ")"
+  end
+end
 
 
 def insert_params(rows: List(List(Assignment))) -> List(Value)
@@ -159,27 +170,35 @@ def insert_params(rows: List(List(Assignment))) -> List(Value)
     [],
     (acc, row) -> { acc ++ List.fold(row, [], (acc2, a) -> { acc2 ++ a.params }) },
   )
+end
 
 
 def set_sqls_for(rows: List(List(Assignment))) -> List(String)
   case rows
-  of [first | _] -> List.map(first, (a) -> { a.col ++ " = " ++ a.value_sql })
-  of [] -> []
+  in [first | _] then List.map(first, (a) -> { a.col ++ " = " ++ a.value_sql })
+  in [] then []
+  end
+end
 
 
 def set_params_for(rows: List(List(Assignment))) -> List(Value)
   case rows
-  of [first | _] -> List.fold(first, [], (acc, a) -> { acc ++ a.params })
-  of [] -> []
+  in [first | _] then List.fold(first, [], (acc, a) -> { acc ++ a.params })
+  in [] then []
+  end
+end
 
 
 def where_sql(wheres: List(Expr(Bool))) -> String
-  if List.empty?(wheres) then ""
-  else " WHERE " ++ String.join(List.map(wheres, (w) -> { w.sql }), " AND ")
+  List.empty?(wheres)
+    ? ""
+    : " WHERE " ++ String.join(List.map(wheres, (w) -> { w.sql }), " AND ")
+end
 
 
 def where_params(wheres: List(Expr(Bool))) -> List(Value)
   List.fold(wheres, [], (acc, w) -> { acc ++ w.params })
+end
 
 
 def render_insert(m: Mutation(ret, c)) -> (String, List(Value))
@@ -196,6 +215,7 @@ def render_insert(m: Mutation(ret, c)) -> (String, List(Value))
     ++ returning_clause(m.returning_selector)
 
   Tuple.Tuple2(sql, insert_params(m.rows) ++ m.returning_selector.params)
+end
 
 
 def render_update(m: Mutation(ret, c)) -> (String, List(Value))
@@ -211,6 +231,7 @@ def render_update(m: Mutation(ret, c)) -> (String, List(Value))
     sql,
     set_params_for(m.rows) ++ where_params(m.wheres) ++ m.returning_selector.params,
   )
+end
 
 
 def render_delete(m: Mutation(ret, c)) -> (String, List(Value))
@@ -220,14 +241,18 @@ def render_delete(m: Mutation(ret, c)) -> (String, List(Value))
     ++ returning_clause(m.returning_selector)
 
   Tuple.Tuple2(sql, where_params(m.wheres) ++ m.returning_selector.params)
+end
 
 
 def to_sql(m: Mutation(ret, c)) -> (String, List(Value))
   case m.kind
-  of InsertK -> render_insert(m)
-  of UpdateK -> render_update(m)
-  of DeleteK -> render_delete(m)
+  in InsertK then render_insert(m)
+  in UpdateK then render_update(m)
+  in DeleteK then render_delete(m)
+  end
+end
 
 
 implements Renderable(Mutation(ret, c)) with
   render: to_sql
+end

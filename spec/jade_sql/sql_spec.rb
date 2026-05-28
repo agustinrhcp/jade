@@ -18,6 +18,7 @@ module Jade
 
           def make_col -> Expr(a)
             column("p", "name")
+          end
         JADE
 
         App::Internal.make_col.then do |expr|
@@ -37,6 +38,7 @@ module Jade
 
           def make_expr -> Expr(Int)
             to_expr(42)
+          end
         JADE
 
         App::Internal.make_expr.then do |expr|
@@ -54,6 +56,7 @@ module Jade
 
           def make_expr -> Expr(String)
             to_expr("paul")
+          end
         JADE
 
         App::Internal.make_expr.then do |expr|
@@ -70,6 +73,7 @@ module Jade
 
           def make_expr -> Expr(Maybe(Int))
             to_expr(Just(12))
+          end
         JADE
 
         App::Internal.make_expr.then do |expr|
@@ -86,6 +90,7 @@ module Jade
 
           def make_expr -> Expr(Maybe(Int))
             to_expr(Nothing)
+          end
         JADE
 
         App::Internal.make_expr.then do |expr|
@@ -104,6 +109,7 @@ module Jade
 
           def predicate -> Expr(Bool)
             column("p", "age") |> eq(to_expr(18))
+          end
         JADE
 
         App::Internal.predicate.then do |expr|
@@ -123,6 +129,7 @@ module Jade
 
           def predicate -> Expr(Bool)
             column("p", "age") |> is_null
+          end
         JADE
 
         App::Internal.predicate.then do |expr|
@@ -145,6 +152,7 @@ module Jade
             b = column("p", "b") |> eq(to_expr(2))
 
             a |> and(b)
+          end
         JADE
 
         App::Internal.predicate.then do |expr|
@@ -164,6 +172,7 @@ module Jade
 
           def recast -> Expr(Bool)
             column("p", "kind") |> cast
+          end
         JADE
 
         App::Internal.recast.then do |expr|
@@ -202,12 +211,14 @@ module Jade
               (a) -> { MaybePersonsCols(column(a, "id"), column(a, "name")) },
               ["id"],
             )
+          end
 
 
           def named_paul -> Q(PersonsCols)
             p_cols = columns(persons, "p")
 
             from(persons) |> where(p_cols.name |> eq(to_expr("Paul")))
+          end
         JADE
       end
 
@@ -260,6 +271,7 @@ module Jade
               (a) -> { MaybePersonsCols(column(a, "id")) },
               ["id"],
             )
+          end
 
 
           def orders -> Table(OrdersCols, MaybeOrdersCols)
@@ -270,12 +282,14 @@ module Jade
               (a) -> { MaybeOrdersCols(column(a, "id"), column(a, "person_id")) },
               ["id"],
             )
+          end
 
 
           def persons_with_orders -> Q(OrdersCols)
             p <- from(persons)
 
             join(orders, (o) -> { p.id |> eq(o.person_id) })
+          end
         JADE
       end
 
@@ -324,6 +338,7 @@ module Jade
               (a) -> { MaybePersonsCols(column(a, "id"), column(a, "parent_id")) },
               ["id"],
             )
+          end
 
 
           def parents_and_kids -> Q(PersonsCols)
@@ -332,6 +347,7 @@ module Jade
             persons
               |> aliased("c")
               |> join((c) -> { p.id |> eq(c.parent_id) })
+          end
         JADE
       end
 
@@ -384,6 +400,7 @@ module Jade
               (a) -> { MaybePersonsCols(column(a, "id")) },
               ["id"],
             )
+          end
 
 
           def orders -> Table(OrdersCols, MaybeOrdersCols)
@@ -394,12 +411,14 @@ module Jade
               (a) -> { MaybeOrdersCols(column(a, "id"), column(a, "person_id")) },
               ["id"],
             )
+          end
 
 
           def persons_with_optional_orders -> Q(MaybeOrdersCols)
             p <- from(persons)
 
             left_join(orders, (o) -> { p.id |> eq(o.person_id) })
+          end
         JADE
       end
 
@@ -449,6 +468,7 @@ module Jade
               (a) -> { MaybePersonsCols(column(a, "id"), column(a, "company_id")) },
               ["id"],
             )
+          end
 
 
           def companies -> Table(CompaniesCols, MaybeCompaniesCols)
@@ -459,12 +479,14 @@ module Jade
               (a) -> { MaybeCompaniesCols(column(a, "id")) },
               ["id"],
             )
+          end
 
 
           def persons_with_companies -> Q(CompaniesCols)
             p <- from(persons)
 
             join(companies, (c) -> { p.company_id |> eq(c.id |> nullable) })
+          end
         JADE
       end
 
@@ -516,6 +538,7 @@ module Jade
               (a) -> { MaybePersonsCols(column(a, "id"), column(a, "name"), column(a, "age")) },
               ["id"],
             )
+          end
 
 
           def adults_query -> Q(Selector(Person))
@@ -525,6 +548,7 @@ module Jade
               |> field(p.id)
               |> field(p.name)
               |> field(p.age)
+          end
         JADE
       end
 
@@ -590,6 +614,7 @@ module Jade
               (a) -> { MaybePersonsCols(column(a, "id"), column(a, "name"), column(a, "age")) },
               ["id"],
             )
+          end
 
 
           def orders -> Table(OrdersCols, MaybeOrdersCols)
@@ -600,6 +625,7 @@ module Jade
               (a) -> { MaybeOrdersCols(column(a, "id"), column(a, "person_id"), column(a, "total")) },
               ["id"],
             )
+          end
 
 
           def query -> Q(Selector(Row))
@@ -612,10 +638,12 @@ module Jade
               |> field(o.total)
               |> where(p.age |> is_not_null)
               |> where(o.total |> eq(to_expr(100)))
+          end
 
 
           def rendered -> (String, List(Value))
             query |> to_sql
+          end
         JADE
       end
 
@@ -694,6 +722,7 @@ module Jade
               ) },
               ["id"],
             )
+          end
 
 
           def projected -> Q(Selector(Person))
@@ -703,6 +732,7 @@ module Jade
               |> field(p.id)
               |> field(p.name)
               |> field(p.age)
+          end
 
 
           def sorted_asc_q -> Q(Selector(Person))
@@ -713,6 +743,7 @@ module Jade
               |> field(p.name)
               |> field(p.age)
               |> order(p.name)
+          end
 
 
           def sorted_desc_q -> Q(Selector(Person))
@@ -723,6 +754,7 @@ module Jade
               |> field(p.name)
               |> field(p.age)
               |> order_desc(p.age)
+          end
 
 
           def multi_sorted_q -> Q(Selector(Person))
@@ -734,6 +766,7 @@ module Jade
               |> field(p.age)
               |> order_desc(p.age)
               |> order(p.name)
+          end
 
 
           def grouped_q -> Q(Selector(Person))
@@ -745,22 +778,27 @@ module Jade
               |> field(p.age)
               |> group(p.age)
               |> group(p.name)
+          end
 
 
           def sorted_asc -> (String, List(Value))
             sorted_asc_q |> to_sql
+          end
 
 
           def sorted_desc -> (String, List(Value))
             sorted_desc_q |> to_sql
+          end
 
 
           def multi_sorted -> (String, List(Value))
             multi_sorted_q |> to_sql
+          end
 
 
           def grouped -> (String, List(Value))
             grouped_q |> to_sql
+          end
 
 
           def sorted_then_paged -> (String, List(Value))
@@ -769,6 +807,7 @@ module Jade
               |> limit(10)
               |> offset(20)
               |> to_sql
+          end
         JADE
       end
 
@@ -849,6 +888,7 @@ module Jade
               (a) -> { MaybePersonsCols(column(a, "id"), column(a, "name")) },
               ["id"],
             )
+          end
 
 
           def projected -> Q(Selector(Person))
@@ -857,12 +897,14 @@ module Jade
             select(Person(_, _))
               |> field(p.id)
               |> field(p.name)
+          end
 
 
           def page_one -> (String, List(Value))
             projected
               |> limit(10)
               |> to_sql
+          end
 
 
           def page_two -> (String, List(Value))
@@ -870,16 +912,19 @@ module Jade
               |> limit(10)
               |> offset(10)
               |> to_sql
+          end
 
 
           def only_offset -> (String, List(Value))
             projected
               |> offset(20)
               |> to_sql
+          end
 
 
           def no_paging -> (String, List(Value))
             projected |> to_sql
+          end
         JADE
       end
 
@@ -997,14 +1042,17 @@ module Jade
               ) },
               ["id"],
             )
+          end
 
 
           implements SqlMapper(Patient) with
             to_assigns: encode_patient
+          end
 
 
           implements Identified(Patient) with
             pk_values: encode_patient_pk
+          end
 
 
           def encode_patient(p: Patient) -> List(Assignment)
@@ -1012,40 +1060,47 @@ module Jade
               assign("name", p.name),
               assign("balance", p.balance),
             ]
+          end
 
 
           def encode_patient_pk(p: Patient) -> List(Value)
             [encode(p.id)]
+          end
 
 
           def insert_paul -> (String, List(Value))
             Patient(0, "Paul", 100)
               |> insert(patients)
               |> to_sql
+          end
 
 
           def insert_from_assigns -> (String, List(Value))
             [assign("name", "Paul"), assign("balance", 100)]
               |> insert(patients)
               |> to_sql
+          end
 
 
           def update_paul -> (String, List(Value))
             Patient(42, "Paul", 100)
               |> update(patients)
               |> to_sql
+          end
 
 
           def delete_paul -> (String, List(Value))
             Patient(42, "Paul", 100)
               |> delete(patients)
               |> to_sql
+          end
 
 
           def insert_many -> (String, List(Value))
             [Patient(0, "Paul", 100), Patient(0, "Frank", 200)]
               |> insert_all(patients)
               |> to_sql
+          end
 
 
           def update_all_to_zero -> (String, List(Value))
@@ -1055,12 +1110,14 @@ module Jade
             (p) -> { [p.archived |> set_(to_expr(True))] },
           )
               |> to_sql
+          end
 
 
           def delete_archived -> (String, List(Value))
             patients
               |> delete_all((p) -> { p.archived |> eq(to_expr(True)) })
               |> to_sql
+          end
 
 
           def insert_paul_returning -> (String, List(Value))
@@ -1073,6 +1130,7 @@ module Jade
               |> field(p.balance) },
           )
               |> to_sql
+          end
 
 
           def update_paul_returning -> (String, List(Value))
@@ -1085,6 +1143,7 @@ module Jade
               |> field(p.balance) },
           )
               |> to_sql
+          end
 
 
           def delete_paul_returning -> (String, List(Value))
@@ -1097,6 +1156,7 @@ module Jade
               |> field(p.balance) },
           )
               |> to_sql
+          end
         JADE
       end
 

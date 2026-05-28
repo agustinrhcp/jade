@@ -21,7 +21,7 @@ module Sql exposing (
   fetch_many_raw,
   fetch_one,
   fetch_one_raw,
-  in,
+  in_,
   is_not_null,
   is_null,
   maybe_columns,
@@ -74,73 +74,91 @@ struct Assignment = {
 
 def set_(col: Expr(a), value: Expr(a)) -> Assignment
   Assignment(strip_alias(col.sql), value.sql, value.params)
+end
 
 
 def assign(col: String, value: a) -> Assignment
   Assignment(col, "?", [encode(value)])
+end
 
 
 def strip_alias(sql: String) -> String
   parts = String.split(sql, ".")
 
   case parts
-  of [] -> sql
-  of [name] -> name
-  of [_ | rest] -> String.join(rest, ".")
+  in [] then sql
+  in [name] then name
+  in [_ | rest] then String.join(rest, ".")
+  end
+end
 
 
 interface SqlMapper(a) with
   to_assigns : a -> List(Assignment)
+end
 
 
 implements SqlMapper(List(Assignment)) with
   to_assigns: (a) -> { a }
+end
 
 
 interface Identified(a) with
   pk_values : a -> List(Value)
+end
 
 
 interface Renderable(r) with
   render : r -> (String, List(Value))
+end
 
 
 def column(alias_: String, name: String) -> Expr(a)
   Expr(alias_ ++ "." ++ name, [])
+end
 
 
 def to_expr(value: a) -> Expr(a)
   Expr("?", [encode(value)])
+end
 
 
 def eq(left: Expr(a), right: Expr(a)) -> Expr(Bool)
   Expr(left.sql ++ " = " ++ right.sql, left.params ++ right.params)
+end
 
 
 def is_null(e: Expr(a)) -> Expr(Bool)
   Expr(e.sql ++ " IS NULL", e.params)
+end
 
 
 def is_not_null(e: Expr(a)) -> Expr(Bool)
   Expr(e.sql ++ " IS NOT NULL", e.params)
+end
 
 
 def nullable(e: Expr(a)) -> Expr(Maybe(a))
   Expr(e.sql, e.params)
+end
 
 
 def cast(e: Expr(a)) -> Expr(b)
   Expr(e.sql, e.params)
+end
 
 
 def and(left: Expr(Bool), right: Expr(Bool)) -> Expr(Bool)
   Expr(left.sql ++ " AND " ++ right.sql, left.params ++ right.params)
+end
 
 
-def in(col: Expr(a), values: List(a)) -> Expr(Bool)
+def in_(col: Expr(a), values: List(a)) -> Expr(Bool)
   case values
-  of [] -> Expr("FALSE", [])
-  of _ -> in_nonempty(col, List.map(values, encode))
+  in [] then Expr("FALSE", [])
+  else in_nonempty(col, List.map(values, encode))
+  end
+end
 
 
 def in_nonempty(col: Expr(a), encoded: List(Value)) -> Expr(Bool)
@@ -149,6 +167,7 @@ def in_nonempty(col: Expr(a), encoded: List(Value)) -> Expr(Bool)
     |> String.join(", ")
 
   Expr(col.sql ++ " IN (" ++ placeholders ++ ")", col.params ++ encoded)
+end
 
 
 def table(
@@ -159,18 +178,22 @@ def table(
   pk_columns: List(String),
 ) -> Table(c, m)
   Table(name, alias_, cols, maybe_cols, pk_columns)
+end
 
 
 def columns(t: Table(c, m), alias_: String) -> c
   alias_ |> t.cols
+end
 
 
 def maybe_columns(t: Table(c, m), alias_: String) -> m
   alias_ |> t.maybe_cols
+end
 
 
 def aliased(t: Table(c, m), alias_: String) -> Table(c, m)
   Table(t.name, alias_, t.cols, t.maybe_cols, t.pk_columns)
+end
 
 
 type SqlError
@@ -181,17 +204,21 @@ type SqlError
 
 implements Encodable(SqlError) with
   encoder: encode_sql_error
+end
 
 
 def encode_sql_error(e: SqlError) -> Value
   case e
-  of DbError(msg) -> Encode.variant("DbError", [Encode.string(msg)])
-  of NotFound -> Encode.variant("NotFound", [])
-  of NotUnique -> Encode.variant("NotUnique", [])
+  in DbError(msg) then Encode.variant("DbError", [Encode.string(msg)])
+  in NotFound then Encode.variant("NotFound", [])
+  in NotUnique then Encode.variant("NotUnique", [])
+  end
+end
 
 
 implements Decodable(SqlError) with
   decoder: sql_error_decoder
+end
 
 
 def sql_error_decoder -> Decoder(SqlError)
@@ -199,37 +226,46 @@ def sql_error_decoder -> Decoder(SqlError)
     |> Decode.variant("DbError", db_error_decoder)
     |> Decode.variant("NotFound", Decode.succeed(NotFound))
     |> Decode.variant("NotUnique", Decode.succeed(NotUnique))
+end
 
 
 def db_error_decoder -> Decoder(SqlError)
   Decode.index(1, Decode.string) |> Decode.map(DbError)
+end
 
 
 uses JadeSql::Runtime with
   port_execute_count : (String, List(Value)) -> Task(Int, SqlError),
   port_execute_one : (String, List(Value)) -> Task(a, SqlError),
   port_execute_many : (String, List(Value)) -> Task(List(a), SqlError)
+end
 
 
 def execute_raw(p: (String, List(Value))) -> Task(Int, SqlError)
   port_execute_count(p)
+end
 
 
 def fetch_one_raw(p: (String, List(Value))) -> Task(a, SqlError)
   port_execute_one(p)
+end
 
 
 def fetch_many_raw(p: (String, List(Value))) -> Task(List(a), SqlError)
   port_execute_many(p)
+end
 
 
 def execute(r: r) -> Task(Int, SqlError)
   render(r) |> execute_raw
+end
 
 
 def fetch_one(r: r) -> Task(a, SqlError)
   render(r) |> fetch_one_raw
+end
 
 
 def fetch_many(r: r) -> Task(List(a), SqlError)
   render(r) |> fetch_many_raw
+end

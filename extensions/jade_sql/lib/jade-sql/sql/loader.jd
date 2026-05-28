@@ -14,13 +14,17 @@ def group_by(items: List(a), key: a -> k) -> Dict(k, List(a))
       k = key(item)
 
       case Dict.get(acc, k)
-      of Just(existing) -> Dict.insert(acc, k, existing ++ [item])
-      of Nothing -> Dict.insert(acc, k, [item])
+      in Just(existing) then Dict.insert(acc, k, existing ++ [item])
+      in Nothing then Dict.insert(acc, k, [item])
+      end
     },
   )
+end
 
 
 def lookup_or_empty(grouped: Dict(k, List(a)), key: k) -> List(a)
   case Dict.get(grouped, key)
-  of Just(items) -> items
-  of Nothing -> []
+  in Just(items) then items
+  in Nothing then []
+  end
+end

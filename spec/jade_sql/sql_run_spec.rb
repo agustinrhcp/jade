@@ -80,24 +80,29 @@ module Jade
             (a) -> { MaybePatientsCols(column(a, "id"), column(a, "name"), column(a, "balance")) },
             ["id"],
           )
+        end
 
 
         def count_via_execute -> Task(Int, SqlError)
           execute_raw(("SELECT COUNT(*) FROM patients", []))
+        end
 
 
         def list_via_execute -> Task(List(Patient), SqlError)
           fetch_many_raw(("SELECT * FROM patients", []))
+        end
 
 
         def find_via_run -> Task(Patient, SqlError)
           fetch_one_raw(
             ("SELECT * FROM patients WHERE name = ?", [Encode.encode("Paul")]),
           )
+        end
 
 
         def all_via_run -> Task(List(Patient), SqlError)
           fetch_many_raw(("SELECT * FROM patients", []))
+        end
 
 
         def paul_query -> Q(Selector(Patient))
@@ -108,10 +113,12 @@ module Jade
             |> field(p.name)
             |> field(p.balance)
             |> where(p.name |> eq(to_expr("Paul")))
+        end
 
 
         def paul_via_run -> Task(Patient, SqlError)
           paul_query |> fetch_one
+        end
       JADE
     end
 

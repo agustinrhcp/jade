@@ -63,6 +63,7 @@ struct Q(a) = {
 
 implements Chainable(Q(a)) with
   and_then: q_and_then
+end
 
 
 def q_and_then(q: Q(a), fn: a -> Q(b)) -> Q(b)
@@ -78,18 +79,22 @@ def q_and_then(q: Q(a), fn: a -> Q(b)) -> Q(b)
     merge_paging(q.offset_, next_.offset_),
     next_.result,
   )
+end
 
 
 def merge_paging(prev: Maybe(Int), next_: Maybe(Int)) -> Maybe(Int)
   case next_
-  of Just(_) -> next_
-  of Nothing -> prev
+  in Just(_) then next_
+  in Nothing then prev
+  end
+end
 
 
 def from(t: Table(c, m)) -> Q(c)
   cols_ = t.alias_ |> t.cols
 
   Q([TableRef(t.name, t.alias_)], [], [], [], [], Nothing, Nothing, cols_)
+end
 
 
 def join(t: Table(c, m), on_: c -> Expr(Bool)) -> Q(c)
@@ -106,6 +111,7 @@ def join(t: Table(c, m), on_: c -> Expr(Bool)) -> Q(c)
     Nothing,
     cols_,
   )
+end
 
 
 def left_join(t: Table(c, m), on_: c -> Expr(Bool)) -> Q(m)
@@ -123,6 +129,7 @@ def left_join(t: Table(c, m), on_: c -> Expr(Bool)) -> Q(m)
     Nothing,
     cols_maybe,
   )
+end
 
 
 def where(q: Q(a), predicate: Expr(Bool)) -> Q(a)
@@ -136,6 +143,7 @@ def where(q: Q(a), predicate: Expr(Bool)) -> Q(a)
     q.offset_,
     q.result,
   )
+end
 
 
 def group(q: Q(a), e: Expr(b)) -> Q(a)
@@ -149,6 +157,7 @@ def group(q: Q(a), e: Expr(b)) -> Q(a)
     q.offset_,
     q.result,
   )
+end
 
 
 def order(q: Q(a), e: Expr(b)) -> Q(a)
@@ -162,6 +171,7 @@ def order(q: Q(a), e: Expr(b)) -> Q(a)
     q.offset_,
     q.result,
   )
+end
 
 
 def order_desc(q: Q(a), e: Expr(b)) -> Q(a)
@@ -175,6 +185,7 @@ def order_desc(q: Q(a), e: Expr(b)) -> Q(a)
     q.offset_,
     q.result,
   )
+end
 
 
 def limit(q: Q(a), n: Int) -> Q(a)
@@ -188,6 +199,7 @@ def limit(q: Q(a), n: Int) -> Q(a)
     q.offset_,
     q.result,
   )
+end
 
 
 def offset(q: Q(a), n: Int) -> Q(a)
@@ -201,10 +213,12 @@ def offset(q: Q(a), n: Int) -> Q(a)
     Just(n),
     q.result,
   )
+end
 
 
 def select(make: a -> b) -> Q(Selector(a -> b))
   Q([], [], [], [], [], Nothing, Nothing, Selector([], []))
+end
 
 
 def field(qs: Q(Selector(a -> b)), e: Expr(a)) -> Q(Selector(b))
@@ -218,38 +232,49 @@ def field(qs: Q(Selector(a -> b)), e: Expr(a)) -> Q(Selector(b))
     qs.offset_,
     Selector(qs.result.columns_sql ++ [e.sql], qs.result.params ++ e.params),
   )
+end
 
 
 def join_keyword(k: JoinKind) -> String
   case k
-  of InnerJ -> "INNER JOIN"
-  of LeftJ -> "LEFT JOIN"
+  in InnerJ then "INNER JOIN"
+  in LeftJ then "LEFT JOIN"
+  end
+end
 
 
 def render_join(j: Join) -> String
   join_keyword(j.kind) ++ " " ++ j.name ++ " " ++ j.alias_ ++ " ON " ++ j.on.sql
+end
 
 
 def render_order_term(t: OrderTerm) -> String
   case t.dir
-  of Asc -> t.sql
-  of Desc -> t.sql ++ " DESC"
+  in Asc then t.sql
+  in Desc then t.sql ++ " DESC"
+  end
+end
 
 
 def render_from(tables: List(TableRef)) -> String
   case tables
-  of [] -> ""
-  of [first | _] -> " FROM " ++ first.name ++ " " ++ first.alias_
+  in [] then ""
+  in [first | _] then " FROM " ++ first.name ++ " " ++ first.alias_
+  end
+end
 
 
 def render_int_clause(keyword: String, m: Maybe(Int)) -> String
   case m
-  of Just(n) -> keyword ++ String.from_int(n)
-  of Nothing -> ""
+  in Just(n) then keyword ++ String.from_int(n)
+  in Nothing then ""
+  end
+end
 
 
 implements Renderable(Q(Selector(a))) with
   render: to_sql
+end
 
 
 def to_sql(q: Q(Selector(a))) -> (String, List(Value))
@@ -258,12 +283,15 @@ def to_sql(q: Q(Selector(a))) -> (String, List(Value))
   joins_clause = q.joins
     |> List.map((j) -> { " " ++ render_join(j) })
     |> String.concat
-  where_clause = if List.empty?(q.wheres) then ""
-  else " WHERE " ++ String.join(List.map(q.wheres, (w) -> { w.sql }), " AND ")
-  group_clause = if List.empty?(q.groups) then ""
-  else " GROUP BY " ++ String.join(List.map(q.groups, (g) -> { g.sql }), ", ")
-  order_clause = if List.empty?(q.orders) then ""
-  else " ORDER BY " ++ String.join(List.map(q.orders, render_order_term), ", ")
+  where_clause = List.empty?(q.wheres)
+    ? ""
+    : " WHERE " ++ String.join(List.map(q.wheres, (w) -> { w.sql }), " AND ")
+  group_clause = List.empty?(q.groups)
+    ? ""
+    : " GROUP BY " ++ String.join(List.map(q.groups, (g) -> { g.sql }), ", ")
+  order_clause = List.empty?(q.orders)
+    ? ""
+    : " ORDER BY " ++ String.join(List.map(q.orders, render_order_term), ", ")
   limit_clause = render_int_clause(" LIMIT ", q.limit_)
   offset_clause = render_int_clause(" OFFSET ", q.offset_)
   join_ps = List.fold(q.joins, [], (acc, j) -> { acc ++ j.on.params })
@@ -282,3 +310,4 @@ def to_sql(q: Q(Selector(a))) -> (String, List(Value))
       ++ offset_clause,
     q.result.params ++ join_ps ++ where_ps ++ group_ps ++ order_ps,
   )
+end

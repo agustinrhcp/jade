@@ -21,20 +21,25 @@ module Jade
 
           def parse_good -> Maybe(Uuid)
             parse("550e8400-e29b-41d4-a716-446655440000")
+          end
 
 
           def parse_bad -> Maybe(Uuid)
             parse("not-a-uuid")
+          end
 
 
           def parse_upper -> Maybe(Uuid)
             parse("550E8400-E29B-41D4-A716-446655440000")
+          end
 
 
           def str_good -> String
             case parse("550E8400-E29B-41D4-A716-446655440000")
-            of Just(u) -> to_string(u)
-            of Nothing -> ""
+            in Just(u) then to_string(u)
+            in Nothing then ""
+            end
+          end
         JADE
       end
 
@@ -65,12 +70,14 @@ module Jade
             u <- v4
 
             Task.succeed(to_string(u))
+          end
 
 
           def gen_v7 -> Task(String, Never)
             u <- v7
 
             Task.succeed(to_string(u))
+          end
         JADE
       end
 
@@ -108,8 +115,10 @@ module Jade
 
           def encoded -> Value
             case parse("550e8400-e29b-41d4-a716-446655440000")
-            of Just(u) -> Encode.encode(u)
-            of Nothing -> Encode.null
+            in Just(u) then Encode.encode(u)
+            in Nothing then Encode.null
+            end
+          end
         JADE
       end
 
