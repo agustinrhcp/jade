@@ -201,18 +201,24 @@ def where_params(wheres: List(Expr(Bool))) -> List(Value)
 end
 
 
+def strip_table_alias(sql: String, alias_: String) -> String
+  String.replace(sql, alias_ ++ ".", "")
+end
+
+
 def render_insert(m: Mutation(ret, c)) -> (String, List(Value))
   cols_str = insert_cols_str(m.rows)
   values_str = m.rows
     |> List.map(render_row)
     |> String.join(", ")
+  returning_ = strip_table_alias(returning_clause(m.returning_selector), m.table.alias_)
   sql = "INSERT INTO "
     ++ m.table.name
     ++ " "
     ++ cols_str
     ++ " VALUES "
     ++ values_str
-    ++ returning_clause(m.returning_selector)
+    ++ returning_
 
   Tuple.Tuple2(sql, insert_params(m.rows) ++ m.returning_selector.params)
 end
@@ -220,12 +226,14 @@ end
 
 def render_update(m: Mutation(ret, c)) -> (String, List(Value))
   set_clause = "SET " ++ String.join(set_sqls_for(m.rows), ", ")
+  where = strip_table_alias(where_sql(m.wheres), m.table.alias_)
+  returning_ = strip_table_alias(returning_clause(m.returning_selector), m.table.alias_)
   sql = "UPDATE "
     ++ m.table.name
     ++ " "
     ++ set_clause
-    ++ where_sql(m.wheres)
-    ++ returning_clause(m.returning_selector)
+    ++ where
+    ++ returning_
 
   Tuple.Tuple2(
     sql,
@@ -235,10 +243,12 @@ end
 
 
 def render_delete(m: Mutation(ret, c)) -> (String, List(Value))
+  where = strip_table_alias(where_sql(m.wheres), m.table.alias_)
+  returning_ = strip_table_alias(returning_clause(m.returning_selector), m.table.alias_)
   sql = "DELETE FROM "
     ++ m.table.name
-    ++ where_sql(m.wheres)
-    ++ returning_clause(m.returning_selector)
+    ++ where
+    ++ returning_
 
   Tuple.Tuple2(sql, where_params(m.wheres) ++ m.returning_selector.params)
 end

@@ -1197,29 +1197,29 @@ module Jade
 
       it 'update_all renders bulk UPDATE with predicate' do
         sql, params = App::Internal.update_all_to_zero.then { [it._1, it._2] }
-        expect(sql).to eql 'UPDATE patients SET archived = ? WHERE p.balance = ?'
+        expect(sql).to eql 'UPDATE patients SET archived = ? WHERE balance = ?'
         expect(params).to eql [true, 0]
       end
 
       it 'delete_all renders bulk DELETE with predicate' do
         sql, params = App::Internal.delete_archived.then { [it._1, it._2] }
-        expect(sql).to eql 'DELETE FROM patients WHERE p.archived = ?'
+        expect(sql).to eql 'DELETE FROM patients WHERE archived = ?'
         expect(params).to eql [true]
       end
 
       it 'insert + returning projects the table columns into RETURNING' do
         sql, _ = App::Internal.insert_paul_returning.then { [it._1, it._2] }
-        expect(sql).to eql 'INSERT INTO patients (name, balance) VALUES (?, ?) RETURNING p.id, p.name, p.balance'
+        expect(sql).to eql 'INSERT INTO patients (name, balance) VALUES (?, ?) RETURNING id, name, balance'
       end
 
       it 'update + returning appends RETURNING with the projected columns' do
         sql, _ = App::Internal.update_paul_returning.then { [it._1, it._2] }
-        expect(sql).to eql 'UPDATE patients SET name = ?, balance = ? WHERE id = ? RETURNING p.id, p.name, p.balance'
+        expect(sql).to eql 'UPDATE patients SET name = ?, balance = ? WHERE id = ? RETURNING id, name, balance'
       end
 
       it 'delete + returning appends RETURNING with the projected columns' do
         sql, _ = App::Internal.delete_paul_returning.then { [it._1, it._2] }
-        expect(sql).to eql 'DELETE FROM patients WHERE id = ? RETURNING p.id, p.name, p.balance'
+        expect(sql).to eql 'DELETE FROM patients WHERE id = ? RETURNING id, name, balance'
       end
     end
 

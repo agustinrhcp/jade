@@ -427,9 +427,6 @@ a programmer bug.
 - **No preloads (eager-loading).** Building a `Patient` together with
   its `orders` requires two queries and manual zipping. A DataLoader
   layer is planned — see `~/vault/claude/jade/notes/preloads-in-jade.md`.
-- **`update_all`/`delete_all` predicates use aliased columns.** The SQL
-  ends up with `p.balance = ?` rather than `balance = ?`. Cosmetic for
-  most DBs; the SQL is correct.
 - **`?` inside string literals.** The runtime translates `?` to `$n`
   on Postgres for AR's `exec_query`/`exec_update` path; a literal `?`
   inside a string in user-supplied SQL would be mis-translated. Fix
