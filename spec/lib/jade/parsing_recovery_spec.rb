@@ -208,11 +208,13 @@ module Jade
           interface I(a) with
             f : a -> a,
             g : a -> a
+          end
 
 
           implements I(Int) with
             f: f_int,
             g: g_int
+          end
         JADE
 
         result => Ok([_, _, diagnostics])
@@ -226,6 +228,7 @@ module Jade
           uses Ruby::Date with
             today : Int,
             tomorrow : Int
+          end
         JADE
 
         result => Ok([_, _, diagnostics])

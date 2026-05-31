@@ -377,6 +377,7 @@ module Jade
 
             implements Chainable(Box) with
               and_then: and_then_box
+            end
 
 
             def and_then_box(m: Box, f: Box -> Box) -> Box

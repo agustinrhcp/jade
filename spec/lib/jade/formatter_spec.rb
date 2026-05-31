@@ -730,11 +730,13 @@ module Jade
 
             implements Chainable(Maybe(a)) with
               and_then: and_then_maybe
+            end
           JADE
         end
 
         it { is_expected.to include "implements Chainable(Maybe(a)) with" }
         it { is_expected.to include "and_then: and_then_maybe" }
+        it { is_expected.to include "end" }
       end
 
       context 'with extends' do
@@ -744,6 +746,7 @@ module Jade
 
             implements Chainable(Maybe(a)) extends Functor with
               and_then: and_then_maybe
+            end
           JADE
         end
 
@@ -757,6 +760,7 @@ module Jade
 
             implements Chainable(Maybe(a)) with
               and_then: (m) -> { m }
+            end
           JADE
         end
 
@@ -772,11 +776,13 @@ module Jade
 
             interface Show(a) with
               show : a -> String
+            end
           JADE
         end
 
         it { is_expected.to include "interface Show(a) with" }
         it { is_expected.to include "  show : a -> String" }
+        it { is_expected.to include "end" }
       end
 
       context 'multiple functions' do
@@ -787,12 +793,14 @@ module Jade
             interface Default(a) with
               default : a,
               alt : a -> a
+            end
           JADE
         end
 
         it { is_expected.to include "interface Default(a) with" }
         it { is_expected.to include "  default : a" }
         it { is_expected.to include "  alt : a -> a" }
+        it { is_expected.to include "end" }
       end
     end
 

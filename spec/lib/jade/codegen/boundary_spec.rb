@@ -281,6 +281,7 @@ module Jade
 
           implements Decodable(Wrapper) with
             decoder: my_decoder
+          end
 
 
           def my_decoder -> Decoder(Wrapper)

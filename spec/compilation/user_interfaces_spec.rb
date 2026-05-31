@@ -14,10 +14,12 @@ module Jade
 
           interface Show(a) with
             show : a -> String
+          end
 
 
           implements Show(Int) with
             show: int_show
+          end
 
 
           def int_show(n: Int) -> String
@@ -38,10 +40,12 @@ module Jade
 
           interface Show(a) with
             show : a -> String
+          end
 
 
           implements Show(Int) with
             show: int_show
+          end
 
 
           def int_show(n: Int) -> String
@@ -69,14 +73,17 @@ module Jade
 
           interface Show(a) with
             show : a -> String
+          end
 
 
           implements Show(Int) with
             show: int_show
+          end
 
 
           implements Show(String) with
             show: str_show
+          end
 
 
           def int_show(n: Int) -> String
@@ -115,10 +122,12 @@ module Jade
 
           interface Show(a) with
             show : a -> String
+          end
 
 
           implements Show(Int) with
             show: int_show
+          end
 
 
           def int_show(n: Int) -> String
@@ -151,14 +160,17 @@ module Jade
 
           interface Show(a) with
             show : a -> String
+          end
 
 
           implements Show(Int) with
             show: (n) -> { "int" }
+          end
 
 
           implements Show(String) with
             show: (s) -> { "str" }
+          end
 
 
           def show_int(n: Int) -> String
@@ -190,12 +202,14 @@ module Jade
 
           interface Marker(a) with
             tag : a -> Int
+          end
 
 
           implements Marker(Calendar.Date) with
             tag: (d) -> {
               d.year
             }
+          end
 
 
           def tag_today -> Int
@@ -218,10 +232,12 @@ module Jade
 
           interface Show(a) with
             show : a -> String
+          end
 
 
           implements Show(Int) with
             show: identity
+          end
 
 
           def run(n: Int) -> String
@@ -243,10 +259,12 @@ module Jade
 
           interface Echo(a) with
             echo : a -> a
+          end
 
 
           implements Echo(String) with
             echo: identity
+          end
 
 
           def run(s: String) -> String

@@ -127,6 +127,7 @@ module Jade
 
           implements Eq(Int) with
             (==): int_eq_override
+          end
 
 
           def int_eq_override(one: Int, other: Int) -> Bool
@@ -151,6 +152,7 @@ module Jade
 
           implements Eq(Pepe) with
             (==): eq_pepe
+          end
 
 
           def eq_pepe(one: Int, other: Int) -> Bool
@@ -313,6 +315,7 @@ module Jade
 
           implements Eq(Person) with
             (==): (one, other) -> { one.id == other.id }
+          end
 
 
           def new_person(id: Int, name: String) -> Person
@@ -352,6 +355,7 @@ module Jade
 
           implements Eq(Person) with
             (==): eq
+          end
 
 
           def eq(one: Person, other: Person) -> Bool
@@ -393,10 +397,12 @@ module Jade
 
           implements Eq(Score) with
             (==): score_eq
+          end
 
 
           implements Comparable(Score) extends Eq with
             compare: score_compare
+          end
 
 
           def score_eq(one: Score, other: Score) -> Bool

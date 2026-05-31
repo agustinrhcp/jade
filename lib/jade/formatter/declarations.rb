@@ -115,8 +115,11 @@ module Jade
           .map { format_node(it, source:).then(&and_indent(indent + 1)) }
           .join(",\n")
 
-        "uses #{interop_module.name} with\n#{funcs_str}"
-          .then(&and_indent(indent))
+        [
+          "uses #{interop_module.name} with".then(&and_indent(indent)),
+          funcs_str,
+          "end".then(&and_indent(indent)),
+        ].join("\n")
       end
     end
 
@@ -134,6 +137,7 @@ module Jade
         [
           "interface #{name}(#{type_param.name}) with".then(&and_indent(indent)),
           fns_str,
+          "end".then(&and_indent(indent)),
         ].join("\n")
       end
     end
@@ -152,7 +156,11 @@ module Jade
           .map { format_node(it, indent: indent + 1, source:) }
           .join(",\n")
 
-        [header.then(&and_indent(indent)), fns_str].join("\n")
+        [
+          header.then(&and_indent(indent)),
+          fns_str,
+          "end".then(&and_indent(indent)),
+        ].join("\n")
       end
     end
 

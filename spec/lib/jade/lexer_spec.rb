@@ -282,10 +282,11 @@ module Jade
         <<~JADE
           uses Ruby::Mod with
             date : () -> Int
+          end
         JADE
       end
 
-      it { is_expected.to have(11).item.and all(be_a(Token)) }
+      it { is_expected.to have(12).item.and all(be_a(Token)) }
       its([0])  { is_expected.to be_token.of_type(:uses).at(0...4) }
       its([2])  { is_expected.to be_token.of_type(:coloncolon).at(9...11) }
       its([4])  { is_expected.to be_token.of_type(:with).at(15...19) }

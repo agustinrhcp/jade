@@ -1263,6 +1263,7 @@ module Jade
         <<~JADE
           uses Jade::Date with
             today : Int
+          end
         JADE
       end
 
@@ -1283,6 +1284,7 @@ module Jade
             uses Jade::Date with
               today : Int,
               today_plus_days : Int -> Int
+            end
           JADE
         end
 
@@ -1340,6 +1342,7 @@ module Jade
         <<~JADE
           implements Eq(Pepe) with
             (==): eq_pepe
+          end
         JADE
       end
 

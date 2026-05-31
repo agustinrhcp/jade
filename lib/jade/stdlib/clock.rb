@@ -56,6 +56,7 @@ module Jade
 
           uses Jade::Clock::Runtime with
             now_raw : Task({ millis: Int }, Never)
+          end
 
 
           def now -> Task(Instant, Never)
@@ -303,10 +304,12 @@ module Jade
 
           implements Comparable(Instant) with
             compare: compare_instant
+          end
 
 
           implements Eq(Instant) with
             (==): instant_eq
+          end
 
 
           def parse_instant(s: String) -> Decoder(Instant)
@@ -316,18 +319,22 @@ module Jade
 
           implements Decodable(Instant) with
             decoder: -> { Decode.string |> Decode.and_then(parse_instant) }
+          end
 
 
           implements Encodable(Instant) with
             encoder: (i) -> { Encode.string(to_iso(i)) }
+          end
 
 
           implements Decodable(Duration) with
             decoder: -> { Decode.map(Decode.int, Duration) }
+          end
 
 
           implements Encodable(Duration) with
             encoder: (d) -> { Encode.int(in_millis(d)) }
+          end
           JADE
       end
     end

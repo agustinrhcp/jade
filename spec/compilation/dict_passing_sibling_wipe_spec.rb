@@ -13,14 +13,17 @@ module Jade
 
         interface Show(a) with
           show : a -> String
+        end
 
 
         implements Show(Int) with
           show: show_int
+        end
 
 
         implements Show(String) with
           show: show_str
+        end
 
 
         def show_int(n: Int) -> String

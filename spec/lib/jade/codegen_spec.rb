@@ -317,6 +317,7 @@ module Jade
         <<~JADE
           uses Jade::Date with
             today : Task(Int, Never)
+          end
           def real_today -> Task(Int, Never)
             today()
           end
@@ -484,6 +485,7 @@ module Jade
               type Pepe = Pepe(Int)
               implements Eq(Pepe) with
                 (==): (pepe, other_pepe) -> { True }
+              end
             JADE
           end
 
@@ -505,6 +507,7 @@ module Jade
               }
               implements Eq(Person) with
                 (==): (one, other) -> { one.id == other.id }
+              end
             JADE
           end
 
@@ -523,6 +526,7 @@ module Jade
               type Pepe = Pepe(Int)
               implements Eq(Pepe) with
                 (==): eq_pepe
+              end
               def eq_pepe(one: Pepe, other: Pepe) -> Bool
                 True
               end
@@ -544,6 +548,7 @@ module Jade
               type Pepe = Pepe(Int)
               implements Eq(Pepe) with
                 (==): (Pepe(x), Pepe(y)) -> { x == y }
+              end
             JADE
           end
 
