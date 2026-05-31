@@ -18,6 +18,7 @@ module Jade
         when 'textDocument/documentSymbol' then on_document_symbol(state, message)
         when 'textDocument/hover' then on_hover(state, message)
         when 'textDocument/definition' then on_definition(state, message)
+        when 'textDocument/references' then on_references(state, message)
         else on_unknown(state, message)
         end
       end
@@ -44,6 +45,7 @@ module Jade
             documentSymbolProvider: true,
             hoverProvider: true,
             definitionProvider: true,
+            referencesProvider: true,
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
@@ -93,6 +95,34 @@ module Jade
         message['params']
           .then { definition_for(state, it['textDocument']['uri'], it['position']) }
           .then { [state, [respond(message['id'], it)]] }
+      end
+
+      def on_references(state, message)
+        params = message['params']
+        references_for(
+          state,
+          params['textDocument']['uri'],
+          params['position'],
+          include_declaration: params.dig('context', 'includeDeclaration'),
+        ).then { [state, [respond(message['id'], it)]] }
+      end
+
+      def references_for(state, uri, position, include_declaration:)
+        return nil unless state.registry
+
+        rel = Converters.relative_path(uri, state.source_root)
+        entry = state.registry.modules.each_value.find { it.source&.uri == rel }
+        return nil unless entry
+
+        Converters
+          .position_to_offset(entry.source, position['line'], position['character'])
+          .then { entry.ast.find_at_path(it) }
+          .then do |path|
+            Converters.references_for_path(
+              path, state.registry, entry, state.source_root,
+              include_declaration:,
+            )
+          end
       end
 
       def definition_for(state, uri, position)

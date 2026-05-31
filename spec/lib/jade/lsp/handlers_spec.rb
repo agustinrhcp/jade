@@ -492,6 +492,57 @@ module Jade
         end
       end
 
+      describe 'references' do
+        let(:text) do
+          <<~JADE
+            module M exposing (run)
+
+            def helper(x: Int) -> Int
+              x + 1
+            end
+
+            def run() -> Int
+              helper(1) + helper(2)
+            end
+          JADE
+        end
+
+        def open_and_find_refs(at:, include_declaration:)
+          File.write(File.join(src, 'leaf.jd'), text)
+          state, _ = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+          offset = text.index(at)
+          line = text[0...offset].count("\n")
+          character = offset - (text.rindex("\n", offset) || -1) - 1
+          Handlers.dispatch(state, {
+            'method' => 'textDocument/references',
+            'id' => 21,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'position' => { 'line' => line, 'character' => character },
+              'context' => { 'includeDeclaration' => include_declaration },
+            },
+          })
+        end
+
+        it 'returns every call site (without declaration by default)' do
+          _, outbound = open_and_find_refs(at: 'helper(1)', include_declaration: false)
+          expect(outbound.first[:result].size).to eq 2
+        end
+
+        it 'includes the declaration when includeDeclaration is true' do
+          _, outbound = open_and_find_refs(at: 'helper(1)', include_declaration: true)
+          expect(outbound.first[:result].size).to eq 3
+        end
+
+        it 'returns nil when cursor is not on a resolvable symbol' do
+          _, outbound = open_and_find_refs(at: 'module M', include_declaration: true)
+          expect(outbound.first[:result]).to be_nil
+        end
+      end
+
       describe 'unknown method' do
         it 'responds with method-not-found for a request' do
           _, outbound = Handlers.dispatch(State.empty, { 'method' => 'foo/bar', 'id' => 7 })
