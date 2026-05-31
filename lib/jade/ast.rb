@@ -626,11 +626,11 @@ module Jade
     end
 
     def interop_import_declaration
-      ->((uses_token, interop_module, _with_token, interop_functions)) do
+      ->((uses_token, interop_module, _with_token, interop_functions, end_token)) do
         InteropImportDeclaration[
           interop_module,
           interop_functions,
-          uses_token.range.begin...interop_functions.last.range.end,
+          uses_token.range.begin...end_token.range.end,
         ]
       end
     end
@@ -667,14 +667,13 @@ module Jade
     end
 
     def implementation
-      ->((implements_token, interface, applied_type, extends, functions)) do
-        range_end = functions.last&.range&.end || applied_type.range.end
+      ->((implements_token, interface, applied_type, extends, functions, end_token)) do
         Implementation[
           interface.value,
           applied_type,
           extends.map(&:value),
           functions,
-          implements_token.range.begin...range_end,
+          implements_token.range.begin...end_token.range.end,
         ]
       end
     end
@@ -695,12 +694,12 @@ module Jade
     end
 
     def interface_declaration
-      ->((interface_token, name, type_param, functions)) do
+      ->((interface_token, name, type_param, functions, end_token)) do
         InterfaceDeclaration[
           name.value,
           type_param,
           functions,
-          interface_token.range.begin...functions.last.range.end,
+          interface_token.range.begin...end_token.range.end,
         ]
       end
     end

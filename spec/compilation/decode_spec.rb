@@ -516,6 +516,7 @@ module Jade
 
           uses Jade::TestBodyParser with
             get_body : Task(Value, Never)
+          end
 
 
           struct Person = {

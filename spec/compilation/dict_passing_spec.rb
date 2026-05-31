@@ -12,10 +12,12 @@ module Jade
 
         interface Encoder(a) with
           encode : a -> String
+        end
 
 
         implements Encoder(Int) with
           encode: encode_int
+        end
 
 
         def encode_int(n: Int) -> String
@@ -47,18 +49,22 @@ module Jade
 
         interface A(x) with
           f : x -> Int
+        end
 
 
         interface B(x) with
           g : x -> Int
+        end
 
 
         implements A(Int) with
           f: f_int
+        end
 
 
         implements B(Int) with
           g: g_int
+        end
 
 
         def f_int(n: Int) -> Int
@@ -104,10 +110,12 @@ module Jade
 
         interface Encoder(a) with
           encode : a -> String
+        end
 
 
         implements Encoder(Int) with
           encode: encode_int
+        end
 
 
         def encode_int(n: Int) -> String
@@ -117,6 +125,7 @@ module Jade
 
         implements Encoder(Maybe(a)) with
           encode: encode_maybe
+        end
 
 
         def encode_maybe(m: Maybe(a)) -> String
@@ -141,10 +150,12 @@ module Jade
 
         interface Encoder(a) with
           encode : a -> String
+        end
 
 
         implements Encoder(Int) with
           encode: encode_int
+        end
 
 
         def encode_int(n: Int) -> String
@@ -154,6 +165,7 @@ module Jade
 
         implements Encoder(Maybe(a)) with
           encode: encode_maybe
+        end
 
 
         def encode_maybe(m: Maybe(a)) -> String
@@ -207,10 +219,12 @@ module Jade
 
         interface Show(a) with
           show : a -> String
+        end
 
 
         implements Show(Int) with
           show: show_int
+        end
 
 
         def show_int(n: Int) -> String
@@ -266,10 +280,12 @@ module Jade
 
         interface Encoder(a) with
           encode : a -> String
+        end
 
 
         interface Default(a) with
           default : Int -> a
+        end
 
 
         # Function-typed arg: no witness for `a` extractable from `f` itself.

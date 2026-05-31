@@ -20,17 +20,15 @@ module Jade
 
       # `|>` chains of 3 or more arms always render as a ladder; the
       # vertical shape reads as "transform stage by stage". Two-arm
-      # chains stay inline.
+      # chains stay inline unless they bust the line budget.
       def format_pipe_chain(node, indent, source:)
-        chain = collect_chain(node, '|>')
+        chain  = collect_chain(node, '|>')
+        inline = chain.map { format_node(it, source:) }.join(' |> ')
 
-        if chain.length > 2
+        if chain.length > 2 || too_long?(inline, indent)
           format_ladder(chain, '|>', indent, source:)
         else
-          chain
-            .map { format_node(it, source:) }
-            .join(' |> ')
-            .then(&and_indent(indent))
+          inline.then(&and_indent(indent))
         end
       end
 

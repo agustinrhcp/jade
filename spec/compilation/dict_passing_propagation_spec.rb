@@ -14,10 +14,12 @@ module Jade
 
         interface Encoder(a) with
           encode : a -> String
+        end
 
 
         implements Encoder(Int) with
           encode: encode_int
+        end
 
 
         def encode_int(n: Int) -> String
@@ -87,10 +89,12 @@ module Jade
 
         interface Encoder(a) with
           encode : a -> String
+        end
 
 
         implements Encoder(Int) with
           encode: encode_int
+        end
 
 
         def encode_int(n: Int) -> String
@@ -121,10 +125,12 @@ module Jade
 
         interface Encoder(a) with
           encode : a -> String
+        end
 
 
         implements Encoder(Int) with
           encode: encode_int
+        end
 
 
         def encode_int(n: Int) -> String

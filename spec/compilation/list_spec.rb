@@ -187,14 +187,17 @@ module Jade
               in IS(i, s) then Encode.tuple(Encode.int, Encode.string, (i, s))
               end
             }
+          end
 
 
           implements Decodable(IS) with
-            decoder: -> { Decode.tuple(Decode.int, Decode.string) |> Decode.map((t) -> {
+            decoder: -> { Decode.tuple(Decode.int, Decode.string)
+              |> Decode.map((t) -> {
               case t
               in (i, s) then IS(i, s)
               end
             }) }
+          end
 
 
           implements Encodable(Buckets) with
@@ -204,6 +207,7 @@ module Jade
                 Encode.tuple(Encode.list(Encode.int, _), Encode.list(Encode.int, _), (l, r))
               end
             }
+          end
 
 
           implements Encodable(Unzipped) with
@@ -217,6 +221,7 @@ module Jade
                 )
               end
             }
+          end
 
 
           def any_neg(list: List(Int)) -> Bool
@@ -264,11 +269,12 @@ module Jade
 
 
           def zip_pairs(a: List(Int), b: List(String)) -> List(IS)
-            List.zip(a, b) |> List.map((t) -> {
-              case t
-              in (i, s) then IS(i, s)
-              end
-            })
+            List.zip(a, b)
+              |> List.map((t) -> {
+            case t
+            in (i, s) then IS(i, s)
+            end
+          })
           end
 
 

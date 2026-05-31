@@ -36,6 +36,7 @@ module Jade
         uses Jade::TestDate with
           internal_today : Task(Int, Never),
           internal_today_plus_n_days : Int -> Task(Int, Never)
+        end
 
 
         def today -> Task(Int, Never)
@@ -74,6 +75,7 @@ module Jade
 
           uses Jade::TestBetterDate with
             internal_today : Task({ year: Int, month: Int, day: Int }, Never)
+          end
 
 
           def today -> Task({ year: Int, month: Int, day: Int }, Never)
@@ -96,6 +98,7 @@ module Jade
 
             uses Jade::TestBetterDate with
               internal_today : Task(a, Never)
+            end
 
 
             def today -> Task(a, Never)
@@ -158,6 +161,7 @@ module Jade
 
             uses Jade::TestStructDate with
               internal_today : Task(Date, Never)
+            end
 
 
             def today -> Task(Date, Never)
@@ -184,6 +188,7 @@ module Jade
 
             uses Jade::TestBetterDate with
               internal_today : Task(Date, Never)
+            end
 
 
             def today -> Task(Date, Never)
@@ -217,6 +222,7 @@ module Jade
 
             uses Jade::TestMaybeDate with
               internal_today : Task(Maybe({ year: Int, month: Int, day: Int }), Never)
+            end
 
 
             def today -> Task(Maybe({ year: Int, month: Int, day: Int }), Never)
@@ -239,6 +245,7 @@ module Jade
 
             uses Jade::TestBetterDate with
               internal_today : { year: Int, month: Int, day: Int }
+            end
 
 
             def today -> { year: Int, month: Int, day: Int }
@@ -260,6 +267,7 @@ module Jade
 
             uses Jade::TestBetterDate with
               internal_today : Task(Task(Int, Never), Never)
+            end
 
 
             def today -> Task(Task(Int, Never), Never)
@@ -290,6 +298,7 @@ module Jade
 
           uses Jade::TestFallible with
             fetch_data : Task(Int, String)
+          end
 
 
           def fetch -> Task(Int, String)
@@ -319,6 +328,7 @@ module Jade
 
           uses Jade::TestBadPort with
             fetch_number : Task(Int, Never)
+          end
 
 
           def fetch -> Task(Int, Never)
@@ -349,6 +359,7 @@ module Jade
 
           uses Jade::TestWrongInner with
             fetch_number : Task(Int, Never)
+          end
 
 
           def fetch -> Task(Int, Never)
@@ -382,6 +393,7 @@ module Jade
             get_one : Task(Int, String),
             get_two : Task(Int, String),
             get_error : Task(Int, String)
+          end
 
 
           def sum -> Task(Int, String)
@@ -433,6 +445,7 @@ module Jade
 
           uses Jade::TestPassThrough with
             fetch_anything : Task(Value, Never)
+          end
 
 
           def fetch -> Task(Value, Never)
@@ -470,6 +483,7 @@ module Jade
 
           uses Jade::TestNamedStruct with
             fetch_user : Task(User, Never)
+          end
 
 
           def fetch -> Task(User, Never)
@@ -509,6 +523,7 @@ module Jade
 
           uses Jade::TestMissingField with
             fetch_user : Task(User, Never)
+          end
 
 
           def fetch -> Task(User, Never)
@@ -561,12 +576,14 @@ module Jade
 
           implements Decodable(Status) with
             decoder: status_decoder
+          end
 
 
           uses Jade::TestUnionPort with
             fetch_active : Task(Status, Never),
             fetch_inactive : Task(Status, Never),
             fetch_bogus : Task(Status, Never)
+          end
 
 
           def active -> Task(Status, Never)
@@ -628,6 +645,7 @@ module Jade
             fetch_patient : Task(a, Never),
             fetch_bad : Task(a, Never),
             echo : Patient -> Task(a, a)
+          end
 
 
           def patient -> Task(Patient, Never)
@@ -687,6 +705,7 @@ module Jade
             uses Jade::TestPolyBothArms with
               try_fetch_ok : Task(a, e),
               try_fetch_err : Task(a, e)
+            end
 
 
             def parse_ok -> Task(Patient, Int)
@@ -735,6 +754,7 @@ module Jade
             uses Jade::TestPolyMaybe with
               fetch_some : Task(Maybe(a), Never),
               fetch_none : Task(Maybe(a), Never)
+            end
 
 
             def some -> Task(Maybe(Patient), Never)
@@ -782,6 +802,7 @@ module Jade
 
             uses Jade::TestPolyListMaybe with
               fetch_list_maybe : Task(List(Maybe(a)), Never)
+            end
 
 
             def fetch -> Task(List(Maybe(Patient)), Never)
@@ -822,6 +843,7 @@ module Jade
 
             uses Jade::TestPolyList with
               fetch_list : Task(List(a), Never)
+            end
 
 
             def fetch -> Task(List(Patient), Never)
@@ -862,6 +884,7 @@ module Jade
 
           uses Jade::Stdlib::Date with
             today_ : Task({ year: Int, month: Int, day: Int }, Never)
+          end
 
 
           def today -> Task({ year: Int, month: Int, day: Int }, Never)

@@ -124,9 +124,12 @@ module Jade
     # is parsed by `infix_expression`, which stops before `?`.
     parser(:ternary_tail, private: true) {
       type(:question).skip >>
-        lazy { expression } >>
-        type(:colon).skip >>
-        lazy { expression }
+        (
+          lazy { expression } >>
+          type(:colon).skip >>
+          lazy { expression }
+        ).commit
+        .context("ternary")
     }
 
     parser(:tuple) {
@@ -170,23 +173,29 @@ module Jade
     parser(:if_then_else) {
       (
         type(:if) >>
-          lazy { expression } >>
-          type(:then).skip >>
-          body >>
-          type(:else).skip >>
-          body >>
-          type(:end)
+          (
+            lazy { expression } >>
+            type(:then).skip >>
+            body >>
+            type(:else).skip >>
+            body >>
+            type(:end)
+          ).commit
       ).map(&AST.if_then_else)
+       .context("if/then/else")
     }
 
     parser(:case_of) {
       (
         type(:case) >>
-          lazy { expression } >>
-          many(case_of_branch).map { [it] } >>
-          optional(case_else_branch, default: nil) >>
-          type(:end)
+          (
+            lazy { expression } >>
+            many(case_of_branch).map { [it] } >>
+            optional(case_else_branch, default: nil) >>
+            type(:end)
+          ).commit
       ).map(&AST.case_of)
+       .context("case")
     }
 
     # `then` is optional before a branch body. The formatter emits it for
@@ -546,7 +555,7 @@ module Jade
     parser(:interop_import_declaration) {
       (
         type(:uses) >>
-          (interop_module_name >> type(:with) >> interop_functions >> none.skip)
+          (interop_module_name >> type(:with) >> interop_functions >> type(:end))
             .commit
       ).map(&AST.interop_import_declaration)
        .context("interop import declaration")
@@ -589,7 +598,8 @@ module Jade
             type(:rparen).skip >>
             optional(extends_list, default: []).map { [it] } >>
             type(:with).skip >>
-            optional(fns, default: []).map { [it] }
+            optional(fns, default: []).map { [it] } >>
+            type(:end)
           ).commit
       ).map(&AST.implementation)
        .context("implementation")
@@ -608,7 +618,8 @@ module Jade
             type_param >>
             type(:rparen).skip >>
             type(:with).skip >>
-            optional(fns, default: []).map { [it] }
+            optional(fns, default: []).map { [it] } >>
+            type(:end)
           ).commit
       ).map(&AST.interface_declaration)
        .context("interface declaration")

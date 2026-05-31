@@ -88,6 +88,7 @@ module Jade
 
           uses Jade::Calendar::Runtime with
             today_raw : Task({ year: Int, month: Int, day: Int }, Never)
+          end
 
 
           def today -> Task(Date, Never)
@@ -349,10 +350,12 @@ module Jade
 
           implements Comparable(Month) with
             compare: compare_month
+          end
 
 
           implements Eq(Month) with
             (==): month_eq
+          end
 
 
           def compare_date(a: Date, b: Date) -> Ordering
@@ -374,10 +377,12 @@ module Jade
 
           implements Comparable(Date) with
             compare: compare_date
+          end
 
 
           implements Eq(Date) with
             (==): date_eq
+          end
 
 
           def parse_date(s: String) -> Decoder(Date)
@@ -387,10 +392,12 @@ module Jade
 
           implements Decodable(Date) with
             decoder: -> { Decode.string |> Decode.and_then(parse_date) }
+          end
 
 
           implements Encodable(Date) with
             encoder: (d) -> { Encode.string(to_iso_string(d)) }
+          end
         JADE
       end
     end

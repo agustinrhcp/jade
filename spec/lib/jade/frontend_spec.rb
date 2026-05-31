@@ -1067,6 +1067,7 @@ module Jade
         <<~JADE
           uses Jade::Date with
             today : Task(Int, Never)
+          end
         JADE
       end
 
@@ -1078,6 +1079,7 @@ module Jade
             uses Jade::Date with
               today : Task(Int, Never),
               today_plus_n_days : Int -> Task(Int, Never)
+            end
           JADE
         end
 
@@ -1093,6 +1095,7 @@ module Jade
         <<~JADE
           uses Jade::Date with
             today : Task(Int, Never)
+          end
           def real_today -> Task(Int, Never)
             today()
           end
@@ -1148,6 +1151,7 @@ module Jade
           <<~JADE
             uses Jade::Date with
               today : Task(Maybe, Never)
+            end
           JADE
         end
 
@@ -1210,6 +1214,7 @@ module Jade
           <<~JADE
             interface Show(a) with
               show : String(Int) -> a
+            end
           JADE
         end
 
@@ -1230,6 +1235,7 @@ module Jade
           <<~JADE
             interface Show(a) with
               show : a -> Int(a)
+            end
           JADE
         end
 
@@ -1252,6 +1258,7 @@ module Jade
           <<~JADE
             interface Pepe(a) with
               show : Int -> String
+            end
           JADE
         end
 
@@ -1273,6 +1280,7 @@ module Jade
           <<~JADE
             interface Show(a) with
               show : a -> String
+            end
           JADE
         end
 
@@ -1286,6 +1294,7 @@ module Jade
           <<~JADE
             interface Default(a) with
               default : Int -> a
+            end
           JADE
         end
 
@@ -1496,6 +1505,7 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) with
             (==): eq_pepe
+          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
@@ -1512,6 +1522,7 @@ module Jade
         <<~JADE
           implements Eq(Int) with
             (==): int_eq_override
+          end
           def int_eq_override(one: Int, other: Int) -> Bool
             True
           end
@@ -1530,6 +1541,7 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) with
             eq: eq_pepe
+          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
@@ -1548,6 +1560,7 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) with
 
+          end
         JADE
       end
 
@@ -1563,6 +1576,7 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) extends GhostInterface with
             (==): eq_pepe
+          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
@@ -1581,6 +1595,7 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) extends Comparable with
             (==): eq_pepe
+          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
@@ -1599,8 +1614,10 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) with
             (==): eq_pepe
+          end
           implements Comparable(Pepe) extends Eq, GhostInterface with
             compare: compare_pepe
+          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
@@ -1622,8 +1639,10 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) extends Comparable with
             (==): eq_pepe
+          end
           implements Comparable(Pepe) extends Eq with
             compare: compare_pepe
+          end
           def eq_pepe(one: Pepe, other: Pepe) -> Bool
             True
           end
@@ -1721,6 +1740,7 @@ module Jade
           type Pepe = Pepe(Int)
           implements Eq(Pepe) with
             (==): (one, other) -> { one == other }
+          end
         JADE
       end
 
@@ -1792,6 +1812,7 @@ module Jade
           <<~JADE
             implements Eq(Nope) with
               (==): (a, b) -> { True }
+            end
           JADE
         end
 

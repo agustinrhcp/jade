@@ -118,10 +118,12 @@ module Jade
 
           implements Mappable(Result(a, e)) with
             map: map
+          end
 
 
           implements Chainable(Result(a, e)) with
             and_then: and_then
+          end
         JADE
       end
     end
