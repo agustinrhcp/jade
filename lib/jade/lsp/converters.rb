@@ -60,6 +60,18 @@ module Jade
         nil
       end
 
+      def references_for_path(
+        path, registry, entry, source_root, include_declaration:
+      )
+        symbol = innermost_resolved(path, registry, entry)
+        return nil unless symbol
+
+        refs = usage_locations(symbol, registry, source_root)
+        return refs unless include_declaration
+
+        refs + declaration_locations(symbol, registry, source_root)
+      end
+
       def to_document_symbol(node, source)
         case node
         in AST::FunctionDeclaration(name:, range:)
@@ -120,6 +132,25 @@ module Jade
           .fetch(symbol.module_name)
           .source
           .then { build_location(it, symbol.decl_span, source_root) }
+      end
+
+      def usage_locations(symbol, registry, source_root)
+        registry
+          .modules
+          .each_value
+          .flat_map do |entry|
+            next [] unless entry.source && entry.usage_index
+
+            entry
+              .usage_index
+              .for(symbol)
+              .map { build_location(entry.source, it.range, source_root) }
+          end
+      end
+
+      def declaration_locations(symbol, registry, source_root)
+        definition_location(symbol, registry, source_root)
+          .then { it ? [it] : [] }
       end
 
       def build_location(source, span, source_root)
