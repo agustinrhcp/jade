@@ -61,10 +61,11 @@ Type map: `bigint`/`integer`/`smallint` → `Int`, `varchar`/`text`/`char` →
 For each table, the generator emits:
 
 ```jade
-struct PatientsCols       = { id: Expr(Int), name: Expr(String), ... }
-struct MaybePatientsCols  = { id: Expr(Maybe(Int)), name: Expr(Maybe(String)), ... }
+struct PatientsCols      = { id: Expr(Int), name: Expr(String), ... }
+struct MaybePatientsCols = { id: Expr(Maybe(Int)), name: Expr(Maybe(String)), ... }
+struct PatientsRow       = { id: Int, name: String, ... }
 
-def patients() -> Table(PatientsCols, MaybePatientsCols)
+def patients -> Table(PatientsCols, MaybePatientsCols)
   table("patients", "patients", ..., ["id"])
 end
 ```
@@ -76,15 +77,15 @@ table name; override per-call with `aliased` (see joins below).
 ## Build queries
 
 ```jade
-import Sql exposing(Expr, column, eq, is_not_null, to_expr)
-import Sql.Query exposing(Q, Selector, from, join, where, select, field, to_sql)
+import Sql exposing(Expr, Selector, column, eq, is_not_null, to_expr)
+import Sql.Query exposing(Q, from, join, where, select, field, to_sql)
 import Schema exposing(patients, orders)
 
 struct Row = { id: Int, name: String, total: Int }
 
-def rich_patients() -> Q(Selector(Row))
-  p <- from(patients())
-  o <- join(orders(), (o) -> { p.id |> eq(o.person_id) })
+def rich_patients -> Q(Selector(Row))
+  p <- from(patients)
+  o <- join(orders, (o) -> { p.id |> eq(o.person_id) })
 
   select(Row(_, _, _))
   |> field(p.id)
@@ -111,7 +112,7 @@ accumulate in declared order:
 ```jade
 import Sql.Query exposing(order, order_desc, group)
 
-rich_patients()
+rich_patients
   |> group(p.country)
   |> group(p.city)
   |> order_desc(o.total)
@@ -133,7 +134,7 @@ returned `List(Value)` is unaffected:
 import Sql.Query exposing(limit, offset)
 
 def page(n: Int) -> Q(Selector(Row))
-  rich_patients()
+  rich_patients
     |> limit(20)
     |> offset(n * 20)
 end
@@ -147,8 +148,8 @@ Calling `limit`/`offset` more than once overrides the previous value
 The schema's default alias = table name. Override with `aliased`:
 
 ```jade
-p <- from(patients())
-c <- patients() |> aliased("c") |> join((c) -> { p.id |> eq(c.parent_id) })
+p <- from(patients)
+c <- patients |> aliased("c") |> join((c) -> { p.id |> eq(c.parent_id) })
 ```
 
 ### Left joins with nullable views
@@ -156,8 +157,8 @@ c <- patients() |> aliased("c") |> join((c) -> { p.id |> eq(c.parent_id) })
 `left_join` switches the joined table to its maybe-column view:
 
 ```jade
-p <- from(persons())
-o <- left_join(orders(), (o) -> { p.id |> eq(o.person_id) })
+p <- from(persons)
+o <- left_join(orders, (o) -> { p.id |> eq(o.person_id) })
 -- `o` is MaybeOrdersCols; field types are Expr(Maybe(Int)) etc.
 ```
 
@@ -232,18 +233,18 @@ Then the mutation API works on values directly:
 ```jade
 import Sql.Mutation exposing(insert, update, delete, insert_all, update_all, delete_all, to_sql)
 
-p |> insert(patients()) |> to_sql        -- INSERT INTO patients (name, balance) VALUES (?, ?)
-p |> update(patients()) |> to_sql        -- UPDATE patients SET name = ?, balance = ? WHERE id = ?
-p |> delete(patients()) |> to_sql        -- DELETE FROM patients WHERE id = ?
+p |> insert(patients) |> to_sql        -- INSERT INTO patients (name, balance) VALUES (?, ?)
+p |> update(patients) |> to_sql        -- UPDATE patients SET name = ?, balance = ? WHERE id = ?
+p |> delete(patients) |> to_sql        -- DELETE FROM patients WHERE id = ?
 
-[p1, p2] |> insert_all(patients()) |> to_sql
+[p1, p2] |> insert_all(patients) |> to_sql
 
-patients()
+patients
 |> update_all((p) -> { p.balance |> eq(to_expr(0)) },
               (p) -> { [p.archived |> set_(to_expr(True))] })
 |> to_sql
 
-patients()
+patients
 |> delete_all((p) -> { p.archived |> eq(to_expr(True)) })
 |> to_sql
 ```
@@ -262,9 +263,9 @@ import Sql exposing(Selector)
 import Sql.Query exposing(select, field)
 import Sql.Mutation exposing(insert, returning, to_sql)
 
--- INSERT INTO patients (name, balance) VALUES (?, ?) RETURNING p.id, p.name, p.balance
+-- INSERT INTO patients (name, balance) VALUES (?, ?) RETURNING id, name, balance
 np
-|> insert(patients())
+|> insert(patients)
 |> returning((p) -> {
   select(Patient(_, _, _))
   |> field(p.id)
@@ -285,13 +286,14 @@ target struct:
 
 ```jade
 def create(np: NewPatient) -> Task(Patient, SqlError)
-  np |> insert(patients()) |> returning((p) -> {
+  np |> insert(patients) |> returning((p) -> {
     select(Patient(_, _, _))
     |> field(p.id)
     |> field(p.name)
     |> field(p.balance)
   })
   |> fetch_one
+end
 ```
 
 `insert` / `update` / `delete` need `SqlMapper(a)` + `Identified(a)`.
@@ -305,7 +307,7 @@ built it (e.g. from a sparse changeset):
 ```jade
 sparse_changes
 |> List.and_then(field_to_assigns)
-|> insert(_, patients())
+|> insert(_, patients)
 ```
 
 ### Timestamps
@@ -338,7 +340,7 @@ end
 def create(p: Patient, now: Instant) -> Mutation(Int, PatientsCols)
   encode_patient(p)
     |> with_timestamps(now)
-    |> insert(_, patients())
+    |> insert(_, patients)
 end
 ```
 
@@ -356,6 +358,7 @@ import Sql.Uuid exposing (Uuid, v4, v7, parse, to_string)
 -- App-side generation (idempotency keys, child-row pre-linking, …):
 def make_request_id -> Task(Uuid, Never)
   v7    -- time-ordered, friendlier to DB index locality than v4
+end
 ```
 
 `v4` and `v7` are zero-arg Tasks (`def v4 -> Task(Uuid, Never)`); call
@@ -379,19 +382,23 @@ import Sql exposing (SqlError, execute, execute_raw, fetch_many, fetch_one)
 
 -- Affected count for INSERT/UPDATE/DELETE
 def update_paul(p: Patient) -> Task(Int, SqlError)
-  p |> update(patients()) |> execute
+  p |> update(patients) |> execute
+end
 
 -- A single row, decoded into Patient
 def find(id: Int) -> Task(Patient, SqlError)
   patient_by_id_query(id) |> fetch_one
+end
 
 -- Many rows, decoded
 def all -> Task(List(Patient), SqlError)
-  all_patients_query() |> fetch_many
+  all_patients_query |> fetch_many
+end
 
 -- Raw SQL escape hatch — bypass the typed builders
 def count_active -> Task(Int, SqlError)
   execute_raw(("SELECT COUNT(*) FROM patients WHERE archived = ?", [Encode.encode(False)]))
+end
 ```
 
 `fetch_one` / `fetch_many` / `execute` accept anything that implements
@@ -421,9 +428,9 @@ a programmer bug.
   `bytea` (binary).
 - **RETURNING is column-name-list only.** Expression returning
   (e.g. `RETURNING id + 1`) needs raw SQL.
-- **No transactions.** Each `run_*` runs in its own AR connection
-  invocation. `ActiveRecord::Base.transaction` works at the Ruby layer
-  but isn't exposed in Jade yet.
+- **No transactions.** Each `fetch_*` / `execute` runs in its own AR
+  connection invocation. `ActiveRecord::Base.transaction` works at the
+  Ruby layer but isn't exposed in Jade yet.
 - **No preloads (eager-loading).** Building a `Patient` together with
   its `orders` requires two queries and manual zipping. A DataLoader
   layer is planned — see `~/vault/claude/jade/notes/preloads-in-jade.md`.
@@ -449,7 +456,7 @@ describe MyApp do
       ])
     end
 
-    expect(MyApp.list.call.run).to be_ok
+    expect(MyApp.list.run).to be_ok
   end
 end
 ```
@@ -471,7 +478,7 @@ extensions/jade_sql/
       sql/
         query.jd             # Sql.Query — bind-chain Q, from/join/where/select
         mutation.jd          # Sql.Mutation — codec-driven insert/update/delete
-        loader.jd            # Sql.Loader — group_by, lookup_or for assoc bundling
+        loader.jd            # Sql.Loader — group_by, lookup_or_empty for assoc bundling
         uuid.jd              # Sql.Uuid — opaque Uuid type + v4/v7 generation
       runtime.rb             # AR-backed task port (opt-in)
       uuid_runtime.rb        # SecureRandom-backed Uuid v4/v7 ports
