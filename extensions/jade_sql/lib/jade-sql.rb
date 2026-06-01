@@ -1,6 +1,6 @@
 require 'jade'
 
-Jade.register_extension(File.expand_path('jade-sql', __dir__))
+Jade.extension(__FILE__)
 
 require_relative 'jade-sql/uuid_runtime'
 
