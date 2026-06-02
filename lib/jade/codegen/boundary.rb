@@ -80,6 +80,11 @@ module Jade
           decoder_for(inner, registry)
             &.then { "#{intr('Decode.nullable')}.call(#{it})" }
 
+        in ['Dict.Dict', [k_t, v_t]]
+          k_dec = decoder_for(k_t, registry)
+          v_dec = decoder_for(v_t, registry)
+          "#{intr('Decode.dict')}.curry[#{k_dec}][#{v_dec}]" if k_dec && v_dec
+
         else
           decoder_dispatch(name, args, registry)
         end
@@ -105,6 +110,11 @@ module Jade
         in ['Maybe.Maybe', [inner]]
           encoder_for(inner, registry)
             &.then { "#{intr('Encode.nullable')}.curry[#{it}]" }
+
+        in ['Dict.Dict', [k_t, v_t]]
+          k_enc = encoder_for(k_t, registry)
+          v_enc = encoder_for(v_t, registry)
+          "#{intr('Encode.dict')}.curry[#{k_enc}][#{v_enc}]" if k_enc && v_enc
 
         # Task isn't a value-encodable type. `return_eligible?` and
         # `task_arms` handle Task in return position; here we just say

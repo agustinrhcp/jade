@@ -40,6 +40,13 @@ module Jade
     end
   end
 
+  module Bytes
+    Bytes = Data.define(:bin) do
+      def to_s = "Bytes(#{bin.bytesize})"
+      def +(other) = Bytes.new(bin + other.bin)
+    end
+  end
+
   module Dict
     Dict = Data.define(:hash) do
       def to_s
@@ -76,6 +83,7 @@ module Jade
       require "jade/stdlib/task"
       require "jade/stdlib/decode"
       require "jade/stdlib/encode"
+      require "jade/stdlib/bytes"
       require "jade/stdlib/dict"
       require "jade/stdlib/set"
     end

@@ -9,6 +9,7 @@ module Jade
       import Maybe
       import Result
       import List
+      import Dict
 
       union :DecodeError
       variant :MissingField, of: :DecodeError, args: ['String']
@@ -85,6 +86,17 @@ module Jade
         'Decoder(List(a))',
       ) { |decoder|
         Jade::Decode::Decoder[Jade::Decode::Desc::Lst[decoder.desc]]
+      }
+
+      # Decodes either a Hash (natural Ruby/JSON object form) or a list
+      # of `[k, v]` pairs (what Encode.dict emits — also the only shape
+      # that round-trips non-String key types).
+      function(
+        'dict',
+        { k_dec: 'Decoder(k)', v_dec: 'Decoder(v)' },
+        'Decoder(Dict(k, v))',
+      ) { |k_dec, v_dec|
+        Jade::Decode::Decoder[Jade::Decode::Desc::Dct[k_dec.desc, v_dec.desc]]
       }
 
       # Mapping

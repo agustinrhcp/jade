@@ -107,6 +107,14 @@ module Jade
         'Tuple.first'       => ->(t)           { "#{t}._1" },
         'Tuple.second'      => ->(t)           { "#{t}._2" },
 
+        'Bytes.empty'        => ->()            { "Jade::Bytes::Bytes[String.new(encoding: Encoding::BINARY)]" },
+        'Bytes.width'        => ->(b)           { "#{b}.bin.bytesize" },
+        'Bytes.to_list'      => ->(b)           { "#{b}.bin.bytes" },
+        'Bytes.from_string'  => ->(s)           { "Jade::Bytes::Bytes[#{s}.b]" },
+        'Bytes.to_string'    => ->(b)           { "#{b}.bin.dup.force_encoding(Encoding::UTF_8).then { it.valid_encoding? ? Jade::Maybe::Just[it] : Jade::Maybe::Nothing[] }" },
+        'Bytes.bytes_eq'     => ->(a, b)        { "(#{a}.bin == #{b}.bin)" },
+        'Bytes.bytes_append' => ->(a, b)        { "Jade::Bytes::Bytes[#{a}.bin + #{b}.bin]" },
+
         'Dict.empty'      => ->()           { "Jade::Dict::Dict[{}]" },
         'Dict.singleton'  => ->(k, v)       { "Jade::Dict::Dict[{ #{k} => #{v} }]" },
         'Dict.get'        => ->(d, k)       { "#{d}.hash.then { |h| #{k}.then { |k| h.key?(k) ? Jade::Maybe::Just[h[k]] : Jade::Maybe::Nothing[] } }" },
@@ -164,6 +172,7 @@ module Jade
         Decode.bool
         Decode.decode
         Decode.decode_string
+        Decode.dict
         Decode.fail
         Decode.field
         Decode.float
@@ -186,6 +195,7 @@ module Jade
         Decode.type_
         Decode.variant
         Encode.bool
+        Encode.dict
         Encode.encode_to_string
         Encode.field
         Encode.float
@@ -208,6 +218,7 @@ module Jade
         Task.run
         Task.sequence
         Task.succeed
+        Bytes.from_list
         Dict.get
         Dict.update
         Dict.map

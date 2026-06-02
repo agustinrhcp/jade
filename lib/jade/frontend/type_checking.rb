@@ -27,7 +27,7 @@ module Jade
           .then { Generalizer.generalize(it.first.env) }
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
           .then { finalize(*it, registry) }
-          .map { Canonicalize.run(entry.ast, it) }
+          .map { Canonicalize.run(entry.ast, it, registry) }
           .map { it.canonicalize_node_types }
           .map { entry.with(env: it) }
           .and_then { PortResolution.resolve(it, registry) }

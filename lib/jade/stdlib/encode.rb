@@ -9,6 +9,7 @@ module Jade
       import Maybe
       import List
       import Tuple
+      import Dict
 
       interface(
         'Encodable',
@@ -43,6 +44,17 @@ module Jade
         'Value',
       ) { |encoder, items|
         items.map { encoder.call(it) }
+      }
+
+      # Dict encodes as a list of `[k_encoded, v_encoded]` pairs — JSON
+      # objects only support String keys, so list-of-pairs is the only
+      # shape that survives non-String key types round-trip.
+      function(
+        'dict',
+        { k_enc: 'k -> Value', v_enc: 'v -> Value', dict: 'Dict(k, v)' },
+        'Value',
+      ) { |k_enc, v_enc, dict|
+        dict.hash.map { |k, v| [k_enc.call(k), v_enc.call(v)] }
       }
 
       function(

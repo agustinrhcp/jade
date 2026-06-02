@@ -256,4 +256,50 @@ module Jade
       expect(Pepe.lookup_via_poly('miss')).to be_nil
     end
   end
+
+  describe 'Dict at the Ruby boundary' do
+    include_context 'with test compiler'
+
+    let(:source) do
+      <<~JADE
+        module Pepe exposing (round_trip, size_of, sum_values)
+
+        import Dict exposing (Dict)
+
+
+        def size_of(d: Dict(String, Int)) -> Int
+          Dict.size(d)
+        end
+
+
+        def sum_values(d: Dict(String, Int)) -> Int
+          Dict.fold(d, 0, (_k, v, acc) -> { acc + v })
+        end
+
+
+        def round_trip(d: Dict(String, Int)) -> Dict(String, Int)
+          d
+        end
+      JADE
+    end
+
+    before { test_compiler.require('pepe', source) }
+
+    it 'accepts a Ruby Hash for Dict(String, Int) args' do
+      expect(Pepe.size_of({})).to eql 0
+      expect(Pepe.size_of({ 'a' => 1, 'b' => 2 })).to eql 2
+    end
+
+    it 'reads values out of the decoded Dict' do
+      expect(Pepe.sum_values({ 'a' => 10, 'b' => 32 })).to eql 42
+    end
+
+    it 'returns list-of-pairs on the encode side' do
+      expect(Pepe.round_trip({ 'a' => 1 })).to eql [['a', 1]]
+    end
+
+    it 'also accepts a list of [k, v] pairs (Encode.dict round-trip shape)' do
+      expect(Pepe.size_of([['a', 1], ['b', 2]])).to eql 2
+    end
+  end
 end
