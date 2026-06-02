@@ -17,11 +17,14 @@ The server is just `bin/jade-lsp` on stdio. Point your editor's LSP client at it
 ### Neovim
 
 ```lua
+-- Tell Neovim to treat *.jd files as filetype "jd"
+vim.filetype.add({ extension = { jd = 'jd' } })
+
 vim.lsp.start({
   name = 'jade-lsp',
   cmd = { '/path/to/jade/bin/jade-lsp' },
   root_dir = vim.fs.dirname(vim.fs.find({ 'Gemfile', '.git' }, { upward = true })[1]),
-  filetypes = { 'jade' },
+  filetypes = { 'jd' },
 })
 ```
 
