@@ -2,434 +2,109 @@
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/agustinrhcp/jade/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/agustinrhcp/jade/tree/master)
 
-A statically typed, functional language that compiles to Ruby. It focuses on simple, predictable code, with type inference, exhaustive pattern matching, and straightforward interop with Ruby.
+A functional, type-safe language that compiles to readable Ruby. Inspired by Elm.
 
----
+## What it looks like
 
-## Using Jade from Ruby
+```jade
+def greet(user: Maybe(User)) -> String
+  case user
+  in Just(u) then "Hello, " ++ u.name
+  in Nothing then "Hello, stranger"
+  end
+end
+```
+
+compiles to:
+
+```ruby
+def greet(user)
+  case user
+  in Jade::Maybe::Just(u) then "Hello, " + u.name
+  in Jade::Maybe::Nothing then "Hello, stranger"
+  end
+end
+```
+
+No runtime VM. No FFI. The compiled output is Ruby you'd write yourself.
+
+## Will my agents work?
+
+Yes. Claude Code, Cursor, and friends handle Jade well out of the box — the syntax is close enough to ML-family languages (Elm, OCaml, Haskell) that models have strong priors about it, and the generated Ruby gives them a second source of truth to check their work against.
+
+Even better with the LSP: the same type errors, inferred types, and jump-to-definition the editor uses are visible to your agent. For agents that don't speak LSP, `bin/jade-q` exposes the same compiler intelligence as one-shot JSON queries — hover, defn, refs, symbols. Worth wiring up if you're leaning on agents heavily. See [docs/lsp.md](docs/lsp.md).
+
+## Why
+
+**No more `nil` checks scattered through every method.** Jade has `Maybe(a)` and the compiler tells you when you forgot the empty case. Same for `Result` — errors are values, not exceptions hidden three layers deep.
+
+**Union types and exhaustive pattern matching.** Model your domain precisely. When you add a case, every match site that needs updating becomes a compile error, not a 2am Sentry alert.
+
+**Faster feedback.** The type checker catches a wide class of bugs before you've left the editor. Type errors inline, jump-to-definition, hover for inferred types, autocomplete that knows what you mean. Works in any editor that speaks LSP.
+
+## Side-effect-free testing by default
+
+This is the one that changes how you work day-to-day.
+
+Jade functions are pure by default. IO lives in `Task`, in explicit `uses` blocks, at the edges of your program. Everything in the middle — the actual business logic — is just functions over values.
+
+The bulk of your test suite stops needing mocks. You pass in data, you assert on the return value. Tests run in milliseconds and read like the spec they're testing. When you do need to stub a `Task` at a boundary, the API for that lives in [docs/testing.md](docs/testing.md) — but it's one place at the edge, not 30 lines deep in a unit test.
+
+The boundary between "logic" and "IO" stops being a convention you try to maintain and becomes something the compiler enforces.
+
+## Without losing the Ruby ecosystem
+
+Jade isn't trying to replace Ruby — it's a better way to author it. Existing Ruby calls into Jade, Jade calls into Ruby. Gems work. Rails works. The details are their own conversation: see [docs/interop.md](docs/interop.md).
+
+## Performance
+
+Compiled Jade is consistent. The same source produces the same Ruby every time — no JIT-style spookiness, no behaviour-dependent fast paths, no hidden dispatch tables. You can read what runs.
+
+In practice that lands a little faster than the Ruby most people write under deadline pressure, because the codegen takes time to think about shapes a human author wouldn't bother with — flat method dispatch, inlined intrinsics, YJIT-friendly record layouts. There are no published benchmarks; this isn't selling a speedup. The point is that the abstraction is roughly free.
+
+## If it doesn't work out
+
+You leave. Run the compiler one last time, commit the `.rb`, drop the `.jd`. No lock-in, no rewrite, no migration. The `jade-eject` skill mechanises the gem-removal step, but the output is already plain Ruby you can ship without it.
+
+Worst case: "I wrote Ruby with a nicer authoring layer for a while."
+
+## Install
+
+Jade isn't on RubyGems yet — install from a local path or a git ref:
 
 ```ruby
 # Gemfile
 gem 'jade', path: '/path/to/jade'
+# or:
+# gem 'jade', git: 'https://github.com/agustinrhcp/jade'
 ```
 
 ```ruby
 require 'jade'
 
 Jade.setup do |config|
-  config.source_root = 'src'    # where your .jd files live
-  config.build_dir   = '.jade'  # where compiled .rb files are written
+  config.source_root = 'src'
+  config.build_dir   = '.jade'
 end
 
 Jade.require('my_module')
 
-# The module is now available as a Ruby constant
-MyModule.my_function.call('hello')
+MyModule.my_function('hello')
 ```
 
----
+## Status
 
-## Language Tour
+What works: full type checker with inference, pattern matching with completeness checks, generic ports, `Decode` / `Encode` with auto-derivation for structs, `Decode.Params` for partial inputs, language server (hover, goto-definition, find-references, diagnostics, document symbols), pretty-printed Ruby codegen with stdlib operations compiled inline, tail-recursive functions compiled to loops, JSON in / JSON out end-to-end.
 
-### Functions
+What doesn't yet: partial record types in user signatures, ranges, automatic `Comparable` / `Show` for user types *(in progress)*, Elm encoder generation for full-stack projects *(in design)*.
 
-```jade
-module Greetings exposing (greet)
+Not great for: throwaway scripts, libraries you ship to other Ruby projects (they'd inherit the gem dependency), performance-critical hot paths (output is YJIT-friendly but unbenchmarked).
 
-def greet(name: String) -> String
-  "Hello, " ++ name ++ "!"
-end
-```
+## Docs
 
-### Nullary references as values
-
-Zero-parameter functions and zero-arity constructors are values at the reference site. The `()` stays at the definition site for grep-ability, but call parens at the use site are a type error.
-
-```jade
-def pi() -> Float
-  3.14
-end
-
-area = pi * radius * radius     -- not pi()
-flag = True                     -- not True()
-none = Nothing                  -- not Nothing()
-```
-
-Constructors with payloads are unchanged: `Just(x)`, `Ok(value)`.
-
-### Types
-
-Jade infers types throughout — annotations are only required on function signatures.
-
-**Primitives:** `Int`, `Float`, `Bool`, `String`, `Char`
-
-`Char` literals use single quotes: `'a'`, `'Z'`, `'\n'`.
-
-**Union types:**
-```jade
-type Shape = Circle(Float) | Rectangle(Float, Float)
-```
-
-A variant payload may also be keyed — useful when positional args become hard to read:
-
-```jade
-type Charge
-  = Refund(Int)
-  | Settled(paid_amount: Int, tax_amount: Int, issued_amount: Int)
-
-Settled(paid_amount: 100, tax_amount: 20, issued_amount: 80)
-
-case charge
-of Refund(n) then n
-of Settled(r) then r.paid_amount + r.tax_amount
-of Settled(paid_amount: pa, tax_amount: _, issued_amount: _) then pa
-end
-```
-
-The payload is an anonymous record, so `r.paid_amount` and `{ r | paid_amount: 0 }` work as usual.
-
-**Structs (named records):**
-```jade
-struct Person = { name: String, age: Int }
-
-p1 = Person("Paul", 55)              # positional
-p2 = Person(name: "Paul", age: 55)   # kwargs (canonical)
-p3 = { p1 | age: 56 }                # update (result is a Person)
-p4 = p1 |> .age=(57)                 # update sugar in pipelines
-```
-
-Anonymous records do not coerce into nominal structs. To build a `Person`, use one of the forms above; passing `{ name: "Paul", age: 55 }` where `Person` is expected is a type error.
-
-**Anonymous records:**
-```jade
-def origin() -> { x: Int, y: Int }
-  { x: 0, y: 0 }
-end
-```
-
-**Tuples:**
-```jade
-def swap(pair: (Int, String)) -> (String, Int)
-  (a, b) = pair
-  (b, a)
-end
-```
-
-**Generic types:**
-```jade
-type Result(a, e) = Ok(a) | Err(e)
-```
-
-**`Never`** is a bottom type representing an impossible value. It marks a union variant that can never be constructed — the exhaustiveness checker understands this, so you can destructure without matching the impossible case:
-
-```jade
-# Ok is the only possible case, so destructuring works
-def unwrap(r: Result(Int, Never)) -> Int
-  Ok(n) = r
-  n
-end
-```
-
-### `if` / `else`
-
-For boolean branches, use `if`/`then`/`else` — every `if` is an expression, so it must always have an `else`.
-
-```jade
-def absolute(n: Int) -> Int
-  if n < 0 then 0 - n else n end
-end
-
-def sign(n: Int) -> Int
-  if n < 0 then
-    -1
-  else
-    if n > 0 then 1 else 0 end
-  end
-end
-```
-
-For matching on data shapes (variants, lists, records, tuples), use `case` — see below.
-
-### Pattern Matching
-
-The compiler enforces exhaustiveness — missing a case is a type error.
-
-```jade
-def describe(shape: Shape) -> String
-  case shape
-  of Circle(_)      then "a circle"
-  of Rectangle(_, _) then "a rectangle"
-  end
-end
-```
-
-**List patterns:**
-```jade
-def sum(list: List(Int)) -> Int
-  case list
-  of [] then 0
-  of [x | xs] then x + sum(xs)
-  end
-end
-```
-
-The rest of a list pattern (after `|`) must be a name (`xs`) or wildcard (`_`).
-
-**Destructuring with `=`:**
-```jade
-{ name:, age: } = person
-(first, second) = pair
-```
-
-(For lists, use `case` — the exhaustiveness checker will flag a partial `=` binding.)
-
-**Monadic bind with `<-`** works with any `Chainable` type (`Task`, `Maybe`, `Result`, etc.):
-```jade
-def fetch_sum() -> Task(Int, String)
-  one <- get_one()
-  two <- get_two()
-  Task.succeed(one + two)
-end
-```
-Each `<-` line unwraps the value from the container. If any step fails or is `Nothing`, the rest of the chain is skipped.
-
-### Lambdas
-
-```jade
-double = (x) -> { x * 2 }
-add    = (a, b) -> { a + b }
-```
-
-### Pipe Operators
-
-```jade
-result = numbers
-  |> List.filter((x) -> { x > 0 })
-  |> List.map((x) -> { x * 2 })
-```
-
-### Placeholders (currying)
-
-A `_` in a function-call argument position curries the call. Each `_` becomes a
-nested unary lambda parameter, in left-to-right order. Non-`_` arguments are
-captured by the lambda:
-
-```jade
-add5  = add(_, 5)         -- Int -> Int
-incr  = add(1, _)         -- Int -> Int
-mkPair = Pair(_, _)       -- a -> b -> Pair(a, b)
-```
-
-Useful for applicative-style pipelines:
-
-```jade
-Decode.succeed(Person(_, _, _))
-  |> Decode.required("name", Decode.string)
-  |> Decode.required("age", Decode.int)
-```
-
-`_` is only valid as a direct argument inside a call — not as a bare expression
-or operator operand.
-
-### String and List Concatenation
-
-`++` works on both `String` and `List` via the `Appendable` interface:
-
-```jade
-full = first ++ " " ++ last
-all  = list_a ++ list_b
-```
-
-### Interfaces
-
-Interfaces are like typeclasses. `Eq`, `Comparable`, and `Appendable` are built-in.
-
-```jade
-# Works for any type with an Eq instance
-def are_equal(a: a, b: a) -> Bool
-  a == b
-end
-
-# Works for any type with a Comparable instance
-def larger(a: a, b: a) -> a
-  case compare(a, b)
-  of GT then a
-  of _  then b
-  end
-end
-```
-
-**Custom interfaces:**
-```jade
-implements Show(Person) with
-  show: (p) -> { p.name ++ " (age " ++ String.from_int(p.age) ++ ")" }
-end
-```
-
-### Modules and Imports
-
-```jade
-module MyModule exposing (foo, bar)
-
-import Maybe exposing (Maybe(..), map)
-import List
-```
-
-### Interop with Ruby
-
-Jade has no side effects — all interaction with the outside world goes through `uses` blocks. Every port must return a `Task`, making side effects explicit in the type system.
-
-```jade
-uses Time with
-  now: Task(Int, Never)
-end
-
-def current_time() -> Task(Int, Never)
-  now()
-end
-```
-
-On the Ruby side, register ports with `Jade::Port`. The block receives a helper `t` for `t.ok(value)` / `t.err(error)`:
-
-```ruby
-module Time
-  extend Jade::Port
-
-  task :now do |t|
-    t.ok(::Time.now.to_i)
-  end
-end
-```
-
-Tasks don't run until `.run` is called:
-
-```ruby
-Jade.require('my_module')
-
-task = MyModule.current_time.call   # nothing runs yet
-result = task.run                   # => Jade::Result::Ok[1234567890]
-```
-
-The block must return `t.ok(value)` or `t.err(error)` — never another `Task`. Composition (`map`, `and_then`, `sequence`) lives in Jade.
-
-Jade guards values at the interop boundary — if Ruby returns the wrong type, you get a `Guard::Error` rather than silent corruption.
-
----
-
-## Testing
-
-### Setup
-
-```ruby
-# spec_helper.rb — strict: every Task must be stubbed
-RSpec.configure { |c| c.include Jade::Tasks::RSpec }
-
-# rails_helper.rb — loose: real bodies run unless stubbed
-RSpec.configure { |c| c.include Jade::Tasks::RSpec::Loose }
-```
-
-### Stubbing
-
-`next_call_to(task, ...)` queues a one-shot answer. `all_calls_to(task, ...)` sets a persistent answer used on every call. Both accept a value or a block.
-
-```ruby
-it 'sends a welcome email after sign-up' do
-  all_calls_to(User::Create)      { |t, email, _pw| t.ok(User.new(email:)) }
-  all_calls_to(User::SendWelcome) { |t, _user|      t.ok(nil) }
-
-  expect(SignUp.run.call('a@b.com', 'pw').run).to be_ok
-
-  expect(User::Create).to have_been_called.with('a@b.com', 'pw')
-  expect(User::SendWelcome).to have_been_called.once
-end
-
-# Sequential answers across calls
-next_call_to(Random.number, 1)
-next_call_to(Random.number, 2)
-all_calls_to(Random.number, 0)        # call 1: 1, call 2: 2, call 3+: 0
-```
-
-`have_been_called` chains: `.with(...)`, `.times(n)`, `.once`, plus `not_to`.
-
-### Matchers
-
-```ruby
-expect(result).to be_ok                  # is Ok
-expect(result).to be_ok(42)              # Ok(42)
-expect(result).to be_err(:not_found)
-expect(maybe).to  be_just(5)
-expect(maybe).to  be_nothing
-expect(shape).to  be_circle              # any union variant gets a predicate
-
-expect(result).to be_ok(have_attributes(year: 2026, month: 5))
-expect(result).to be_ok(kind_of(Integer))
-
-expect(value).to look_like(:Circle, 5.0)
-expect(value).to look_like(Shapes::Circle, 5.0)
-expect(value).to look_like(:Point, x: 1, y: 2)
-expect(value).to look_like(:Pair, [:Circle, 5.0], 42)   # Pair(Circle(5.0), 42)
-```
-
-Pass a class constant or `'Module::Name'` string when the short name is ambiguous.
-
----
-
-## Standard Library
-
-| Module | Contents |
-|--------|----------|
-| `Maybe` | `Just(a)` / `Nothing`, `map`, `and_then`, `with_default` |
-| `Result` | `Ok(a)` / `Err(e)`, `map`, `and_then`, `map_error`, `on_error`, `sequence` |
-| `List` | `map`, `filter`, `fold`, `zip`, `sort`, `length`, `range`, and more |
-| `String` | `length`, `reverse`, `split`, `trim`, `to_int`, `contains`, `uncons`, `cons`, `from_char`, `map`, and more |
-| `Char` | `to_code`, `from_code`, `is_digit`, `is_alpha`, `is_alpha_num`, `is_upper`, `is_lower` |
-| `Tuple` | `first`, `second`, `map_first`, `map_second` |
-| `Task` | `succeed`, `fail`, `map`, `and_then`, `on_error`, `sequence` |
-| `Decode` | `string`, `int`, `float`, `bool`, `list`, `field`, `at`, `succeed`, `required`, `optional`, ... |
-| `Encode` | `string`, `int`, `float`, `bool`, `list`, `object`, plus `Encodable` derivation for user types |
-| `Bytes` | opaque `Bytes` type, `width`, `empty`, `from_list`/`to_list`, `from_string`/`to_string`, `Eq`/`Appendable` |
-| `Dict` | `Dict(k, v)`, `empty`, `singleton`, `get`, `member`, `insert`, `update`, `remove`, `size`, `is_empty`, `keys`, `values`, `to_list`, `from_list`, `map`, `filter`, `fold`, `union`, `merge` |
-| `Set` | `Set(a)`, `empty`, `singleton`, `insert`, `remove`, `member?`, `size`, `empty?`, `to_list`, `from_list`, `map`, `filter`, `fold`, `union`, `intersect`, `diff` |
-| `Basics` | `Eq`, `Comparable`, `Appendable`, `Mappable`, `Chainable`, `Ordering` |
-
----
-
-## Examples
-
-See the [`examples/`](examples/) directory:
-
-| File | Covers |
-|------|--------|
-| [`basics_examples.jd`](examples/basics_examples.jd) | Arithmetic, strings, conditionals |
-| [`pattern_matching.jd`](examples/pattern_matching.jd) | Lists, literal patterns, recursion |
-| [`maybe_examples.jd`](examples/maybe_examples.jd) | Safe nullability and chaining |
-| [`records.jd`](examples/records.jd) | Structs, record update, destructuring |
-| [`custom_types.jd`](examples/custom_types.jd) | Union types and exhaustive matching |
-| [`interfaces.jd`](examples/interfaces.jd) | Generic functions with inferred constraints |
-| [`interop.jd`](examples/interop.jd) | Calling Ruby from Jade safely |
-
----
-
-## Roadmap
-
-### Compiler
-- **Incremental compilation** — currently recompiles everything on every run
-- **Better error messages** — parsing errors are structured and include source location, but coverage is still limited; more error sites need to be wired up
-- **Multi-error collection** — parser returns the first error; should collect all errors in one pass
-- **Module name validation** — enforce that a module's declared name matches its file path
-
-### Language Features
-- **Ranges** — `1..10`, `1...10`
-
-### Type System
-- **Unresolved constraint error messages** — constraint propagation works but error messages need improvement
-- **Row polymorphism** — partial record types in function signatures
-
-### Tooling
-- **Language Server (LSP)** — go-to-definition, hover types, inline errors
-- **Diagnostics** — structured error output for editor integration
-- **`jade fmt`** — formatter CLI entrypoint (formatter exists internally)
-
-### Infrastructure
-- **Reference index pass** — track symbol usages for unused import detection and dead code warnings
-- **Gem / extension registration** — allow third-party gems to register Jade modules and stdlib extensions
+- [docs/syntax.md](docs/syntax.md) — language reference
+- [docs/interop.md](docs/interop.md) — Ruby ↔ Jade boundary, ports, decoding
+- [docs/testing.md](docs/testing.md) — stubbing API and RSpec matchers
+- [docs/stdlib.md](docs/stdlib.md) — module-by-module breakdown
+- [docs/lsp.md](docs/lsp.md) — language server setup
+- [examples/](examples/) — runnable `.jd` files
