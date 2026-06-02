@@ -76,30 +76,6 @@ This should fail, Int has no vars
 Interop must return a Task
 
 
-### Sql.Uuid: short (Base64) display form
-
-UUID's 36-char canonical form is too noisy for URLs / admin UIs / logs.
-Add `Sql.Uuid.to_b64(u) -> String` and `from_b64(s) -> Maybe(Uuid)` that
-round-trip the 16 raw bytes through url-safe Base64 (no padding) — 22
-chars instead of 36, same v7 time-ordering preserved.
-
-Implementing this in pure Jade is ~150 LOC because Jade has no bit ops
-and no String-Bytes interop. Wait for the `bytes-decodable` branch to
-land (adds `Bytes`, `Bytes.Encode`, `Bytes.Decode` stdlib modules with
-Base64 codecs). Then `Sql.Uuid.to_b64` collapses to:
-
-```jade
-def to_b64(u: Uuid) -> String
-  Uuid(s) = u
-  s |> String.replace("-", "") |> Bytes.from_hex |> Bytes.to_base64
-```
-
-Prereqs:
-- `bytes-decodable` merged to master.
-- Add `Bytes.from_hex(String) -> Maybe(Bytes)` and `Bytes.to_hex(Bytes) -> String`.
-- Add `Bytes.to_url_safe_base64(Bytes) -> String` and `from_url_safe_base64(String) -> Maybe(Bytes)` (the existing Encodable uses standard base64 with `+/`; url-safe needs `-_`).
-
-
 ### jade-sql: round-trip test for schema generator output
 
 The schema generator (`jade:schema` rake task) emits a `schema.jd` file

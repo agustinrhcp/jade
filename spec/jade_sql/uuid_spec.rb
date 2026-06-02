@@ -103,6 +103,90 @@ module Jade
 
     end
 
+    describe 'Base64 short form (to_b64 / from_b64)' do
+      let(:source) do
+        <<~JADE
+          module App exposing (
+            from_b64_bad,
+            from_b64_good,
+            from_b64_wrong_size,
+            round_trip,
+            to_b64_known,
+          )
+
+          import Sql.Uuid exposing (Uuid, from_b64, parse, to_b64, to_string)
+
+
+          def to_b64_known -> String
+            case parse("550e8400-e29b-41d4-a716-446655440000")
+            in Just(u) then to_b64(u)
+            in Nothing then ""
+            end
+          end
+
+
+          def round_trip(s: String) -> String
+            case parse(s)
+            in Just(u)
+              case from_b64(to_b64(u))
+              in Just(back) then to_string(back)
+              in Nothing then "lost"
+              end
+            in Nothing then "bad-input"
+            end
+          end
+
+
+          def from_b64_good -> Maybe(String)
+            case from_b64("VQ6EAOKbQdSnFkRmVUQAAA")
+            in Just(u) then Just(to_string(u))
+            in Nothing then Nothing
+            end
+          end
+
+
+          def from_b64_bad -> Maybe(Uuid)
+            from_b64("not!base64")
+          end
+
+
+          def from_b64_wrong_size -> Maybe(Uuid)
+            from_b64("aGVsbG8")
+          end
+        JADE
+      end
+
+      before { test_compiler.require('app', source) }
+
+      it 'encodes the canonical form to a 22-char url-safe base64 string' do
+        result = App::Internal.to_b64_known
+        expect(result.length).to eql 22
+        expect(result).to match(/\A[A-Za-z0-9_-]+\z/)
+      end
+
+      it 'round-trips canonical -> b64 -> canonical' do
+        expect(App::Internal.round_trip("550e8400-e29b-41d4-a716-446655440000"))
+          .to eql "550e8400-e29b-41d4-a716-446655440000"
+        expect(App::Internal.round_trip("00000000-0000-0000-0000-000000000000"))
+          .to eql "00000000-0000-0000-0000-000000000000"
+        expect(App::Internal.round_trip("ffffffff-ffff-ffff-ffff-ffffffffffff"))
+          .to eql "ffffffff-ffff-ffff-ffff-ffffffffffff"
+      end
+
+      it 'parses a known b64 form back to the expected canonical Uuid' do
+        expect(App::Internal.from_b64_good)
+          .to eql Jade::Maybe::Just["550e8400-e29b-41d4-a716-446655440000"]
+      end
+
+      it 'rejects non-base64 input' do
+        expect(App::Internal.from_b64_bad).to eql Jade::Maybe::Nothing[]
+      end
+
+      it 'rejects b64 of the wrong byte length' do
+        expect(App::Internal.from_b64_wrong_size).to eql Jade::Maybe::Nothing[]
+      end
+    end
+
     describe 'Encodable' do
       let(:source) do
         <<~JADE

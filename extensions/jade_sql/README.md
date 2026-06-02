@@ -370,6 +370,23 @@ canonical 8-4-4-4-12 form (case-insensitive, stored lowercase).
 Uuids flow through SQL params, RETURNING decoding, and JSON boundaries
 without extra wiring.
 
+#### Short (Base64) display form
+
+The canonical 36-char form is too noisy for URLs / admin UIs / logs.
+`to_b64` / `from_b64` round-trip a Uuid through 22-char url-safe
+Base64 (no padding), preserving the v7 time-ordering:
+
+```jade
+import Sql.Uuid exposing (to_b64, from_b64)
+
+to_b64(u)                              -- "VQ6EAOKbQdSnFkRmVUQAAA"
+from_b64("VQ6EAOKbQdSnFkRmVUQAAA")     -- Just(u)
+from_b64("nope")                       -- Nothing
+```
+
+`from_b64` returns `Nothing` for non-base64 input or for valid base64
+that decodes to a length other than 16 bytes.
+
 ## Run queries and mutations
 
 `Sql` exposes `fetch_one` / `fetch_many` for reads and `execute` for

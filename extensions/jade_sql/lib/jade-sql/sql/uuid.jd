@@ -1,6 +1,8 @@
 module Sql.Uuid exposing (
   Uuid,
+  from_b64,
   parse,
+  to_b64,
   to_string,
   v4,
   v7,
@@ -8,6 +10,7 @@ module Sql.Uuid exposing (
 
 import Decode exposing (Decodable, Decoder, Value)
 import Encode exposing (Encodable)
+import Bytes exposing (Bytes)
 
 
 type Uuid = Uuid(String)
@@ -86,4 +89,38 @@ end
 
 implements Encodable(Uuid) with
   encoder: (u) -> { Encode.string(to_string(u)) }
+end
+
+
+def to_b64(u: Uuid) -> String
+  Uuid(s) = u
+
+  s
+    |> String.replace("-", "")
+    |> Bytes.from_hex
+    |> Maybe.map(Bytes.to_base64_url)
+    |> Maybe.with_default("")
+end
+
+
+def from_b64(s: String) -> Maybe(Uuid)
+  Bytes.from_base64_url(s) |> Maybe.and_then(uuid_from_bytes)
+end
+
+
+def uuid_from_bytes(b: Bytes) -> Maybe(Uuid)
+  Bytes.width(b) == 16 ? parse(canonical_form(Bytes.to_hex(b))) : Nothing
+end
+
+
+def canonical_form(hex32: String) -> String
+  String.slice(hex32, 0, 8)
+    ++ "-"
+    ++ String.slice(hex32, 8, 12)
+    ++ "-"
+    ++ String.slice(hex32, 12, 16)
+    ++ "-"
+    ++ String.slice(hex32, 16, 20)
+    ++ "-"
+    ++ String.slice(hex32, 20, 32)
 end
