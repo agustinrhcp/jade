@@ -12,8 +12,11 @@ module Sql exposing (
   and,
   assign,
   cast,
+  coalesce,
   column,
   columns,
+  count,
+  count_all,
   eq,
   execute,
   execute_raw,
@@ -25,10 +28,12 @@ module Sql exposing (
   is_not_null,
   is_null,
   maybe_columns,
+  neg,
   nullable,
   pk_values,
   render,
   set_,
+  sum,
   table,
   to_assigns,
   to_expr,
@@ -150,6 +155,36 @@ end
 
 def and(left: Expr(Bool), right: Expr(Bool)) -> Expr(Bool)
   Expr(left.sql ++ " AND " ++ right.sql, left.params ++ right.params)
+end
+
+
+# SUM may return NULL on an empty group, so the result is Expr(Maybe(Int)).
+# Wrap with `coalesce(sum(x), to_expr(0))` for a strict total.
+def sum(e: Expr(Int)) -> Expr(Maybe(Int))
+  Expr("SUM(" ++ e.sql ++ ")", e.params)
+end
+
+
+def count(e: Expr(a)) -> Expr(Int)
+  Expr("COUNT(" ++ e.sql ++ ")", e.params)
+end
+
+
+def count_all -> Expr(Int)
+  Expr("COUNT(*)", [])
+end
+
+
+def coalesce(maybe_e: Expr(Maybe(a)), default: Expr(a)) -> Expr(a)
+  Expr(
+    "COALESCE(" ++ maybe_e.sql ++ ", " ++ default.sql ++ ")",
+    maybe_e.params ++ default.params,
+  )
+end
+
+
+def neg(e: Expr(Int)) -> Expr(Int)
+  Expr("-(" ++ e.sql ++ ")", e.params)
 end
 
 

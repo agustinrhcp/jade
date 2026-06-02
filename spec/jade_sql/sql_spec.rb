@@ -182,6 +182,81 @@ module Jade
       end
     end
 
+    describe 'aggregates / coalesce / neg' do
+      let(:source) do
+        <<~JADE
+          module App exposing (
+            coalesced,
+            count_col,
+            count_star,
+            negated,
+            sum_col,
+          )
+
+          import Sql exposing (
+            Expr,
+            coalesce,
+            column,
+            count,
+            count_all,
+            neg,
+            sum,
+            to_expr,
+          )
+
+
+          def sum_col -> Expr(Maybe(Int))
+            column("p", "amount") |> sum
+          end
+
+
+          def count_col -> Expr(Int)
+            column("p", "id") |> count
+          end
+
+
+          def count_star -> Expr(Int)
+            count_all
+          end
+
+
+          def coalesced -> Expr(Int)
+            coalesce(sum(column("p", "amount")), to_expr(0))
+          end
+
+
+          def negated -> Expr(Int)
+            column("p", "amount") |> neg
+          end
+        JADE
+      end
+
+      before { test_compiler.require('app', source) }
+
+      it 'sum wraps a column' do
+        App::Internal.sum_col.then do |expr|
+          expect(expr.sql).to eql 'SUM(p.amount)'
+          expect(expr.params).to eql []
+        end
+      end
+
+      it 'count and count_all' do
+        App::Internal.count_col.then { |e| expect(e.sql).to eql 'COUNT(p.id)' }
+        App::Internal.count_star.then { |e| expect(e.sql).to eql 'COUNT(*)' }
+      end
+
+      it 'coalesce wraps a Maybe expr with a default' do
+        App::Internal.coalesced.then do |expr|
+          expect(expr.sql).to eql 'COALESCE(SUM(p.amount), ?)'
+          expect(expr.params).to eql [0]
+        end
+      end
+
+      it 'neg negates an Int expr' do
+        App::Internal.negated.then { |e| expect(e.sql).to eql '-(p.amount)' }
+      end
+    end
+
     describe 'from + where via postfix' do
       let(:source) do
         <<~JADE

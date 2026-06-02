@@ -120,9 +120,11 @@ rich_patients
 -- ... GROUP BY p.country, p.city ORDER BY o.total DESC, p.name
 ```
 
-Aggregate functions (`COUNT`, `SUM`, ...) and `HAVING` aren't built in
-yet — for those, use the raw-SQL escape hatch (`execute_*`) until
-they land.
+`HAVING` and `CASE` aren't built in yet — for filtering aggregates or
+conditional expressions, fall back to the raw-SQL escape hatch
+(`execute_*`). Basic aggregates (`SUM`, `COUNT`) and the
+null-handling primitive (`coalesce`) are typed; see *Aggregates,
+COALESCE* below.
 
 ### Pagination
 
@@ -191,6 +193,35 @@ actually converts the column value; `cast` just teaches the SQL
 builder that the projection is intended. If `Decodable(b)` can't
 parse the column's actual values, the failure surfaces at row
 decode time, not at type check.
+
+### Aggregates, COALESCE
+
+A small typed surface for SQL functions that would otherwise force you
+into hand-built `Expr` strings. All compose with the rest of the
+builder — params stitch in declaration order automatically.
+
+| Function                                       | SQL                | Notes                                  |
+|------------------------------------------------|--------------------|----------------------------------------|
+| `sum(Expr(Int)) -> Expr(Maybe(Int))`           | `SUM(e)`           | `NULL` on empty group → `Maybe`.       |
+| `count(Expr(a)) -> Expr(Int)`                  | `COUNT(e)`         | Counts non-null rows for the column.   |
+| `count_all -> Expr(Int)`                       | `COUNT(*)`         | Total row count.                       |
+| `coalesce(Expr(Maybe(a)), Expr(a)) -> Expr(a)` | `COALESCE(e, def)` | Drops the `Maybe` with a fallback.     |
+| `neg(Expr(Int)) -> Expr(Int)`                  | `-(e)`             | Unary minus.                           |
+
+Worked example — total amount across all rows, coalesced to 0 in case
+the table is empty:
+
+```jade
+import Sql exposing (coalesce, column, count_all, sum, to_expr)
+
+select(Totals(_, _))
+  |> field(count_all)
+  |> field(coalesce(sum(column("t", "amount")), to_expr(0)))
+-- SELECT COUNT(*), COALESCE(SUM(t.amount), ?)
+```
+
+For `CASE WHEN`, `HAVING`, and arithmetic, fall back to the raw-`Expr`
+escape hatch until they get a typed builder.
 
 ## Build mutations
 
