@@ -21,6 +21,7 @@ module Jade
 
           def mint -> UserId
             UserId(42)
+          end
         JADE
       end
 
@@ -45,6 +46,7 @@ module Jade
             UserId(n) = id
 
             UserId(n + 1)
+          end
         JADE
       end
 
@@ -67,6 +69,7 @@ module Jade
 
           def mk -> Box(Int)
             Box(7)
+          end
         JADE
       end
 
@@ -87,6 +90,7 @@ module Jade
 
           def mk -> Shape
             Circle(1.0)
+          end
         JADE
       end
 

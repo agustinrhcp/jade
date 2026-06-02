@@ -21,10 +21,12 @@ module Jade
 
           def zero -> UserId
             0
+          end
 
 
           def inc(id: UserId) -> UserId
             id + 1
+          end
         JADE
       end
 
@@ -48,10 +50,12 @@ module Jade
 
           def origin -> Point
             (0, 0)
+          end
 
 
           def sum_coords(p: Point) -> Int
             Tuple.first(p) + Tuple.second(p)
+          end
         JADE
       end
 
@@ -75,10 +79,12 @@ module Jade
 
           def found -> UserResult
             Ok(42)
+          end
 
 
           def missing -> UserResult
             Err("not found")
+          end
         JADE
       end
 
@@ -102,10 +108,12 @@ module Jade
 
           def mk(x: Int, y: Int) -> Pair(Int)
             (x, y)
+          end
 
 
           def swap(p: Pair(Int)) -> Pair(Int)
             (Tuple.second(p), Tuple.first(p))
+          end
         JADE
       end
 
@@ -129,6 +137,7 @@ module Jade
 
           def alice -> User
             { name: "Alice", age: 30 }
+          end
         JADE
       end
 
@@ -152,6 +161,7 @@ module Jade
 
           def name_of(u: User) -> String
             u.name
+          end
         JADE
       end
 
@@ -176,6 +186,7 @@ module Jade
             base = { name: "Alice", age: 30 }
 
             { base | age: base.age + 1 }
+          end
         JADE
       end
 
@@ -198,6 +209,7 @@ module Jade
 
           def apply_int(f: IntFn, x: Int) -> Int
             f(x)
+          end
         JADE
       end
 
@@ -216,6 +228,7 @@ module Jade
 
           def whatever -> Int
             0
+          end
         JADE
       end
 
@@ -248,6 +261,7 @@ module Jade
 
           def next_id(id: UserId) -> UserId
             id + 1
+          end
         JADE
       end
 
@@ -276,10 +290,12 @@ module Jade
 
           def mk(id: UserId, name: String) -> UserRow
             UserRow(id, name)
+          end
 
 
           def id_of(row: UserRow) -> UserId
             row.id
+          end
         JADE
       end
 
@@ -306,10 +322,12 @@ module Jade
 
           def zero -> B
             0
+          end
 
 
           def plus_one(b: B) -> A
             b + 1
+          end
         JADE
       end
 
@@ -329,6 +347,7 @@ module Jade
 
           def whatever(x: UserId(Int)) -> Int
             x
+          end
         JADE
       end
 
@@ -345,6 +364,7 @@ module Jade
 
           interface Show(a) with
             show : a -> String
+          end
 
 
           type alias UserId = Int
@@ -352,10 +372,12 @@ module Jade
 
           implements Show(UserId) with
             show: id_show
+          end
 
 
           def id_show(n: UserId) -> String
             "id"
+          end
         JADE
       end
 
@@ -375,6 +397,7 @@ module Jade
 
           def whatever -> Int
             0
+          end
         JADE
       end
 
