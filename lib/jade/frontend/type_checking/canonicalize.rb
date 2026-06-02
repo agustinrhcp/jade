@@ -13,46 +13,46 @@ module Jade
       module Canonicalize
         extend self
 
-        def run(ast, env)
-          walk(ast, env.substitution)
+        def run(ast, env, registry)
+          walk(ast, env.substitution, registry, env.entry_name)
           env
         end
 
         private
 
-        def walk(node, sub)
+        def walk(node, sub, registry, entry_name)
           case node
           in AST::FunctionCall(callee:, args:)
-            canonicalize_dictionaries(node, sub)
-            walk(callee, sub)
-            args.each { walk(it, sub) }
+            canonicalize_dictionaries(node, sub, registry, entry_name)
+            walk(callee, sub, registry, entry_name)
+            args.each { walk(it, sub, registry, entry_name) }
 
           in AST::QualifiedAccess | AST::VariableReference
-            canonicalize_dictionaries(node, sub)
+            canonicalize_dictionaries(node, sub, registry, entry_name)
 
-          in AST::Module(body:)             then walk(body, sub)
-          in AST::Body(expressions:)        then expressions.each { walk(it, sub) }
-          in AST::FunctionDeclaration(body:) then walk(body, sub)
-          in AST::Implementation(functions:) then functions.each { walk(it, sub) }
-          in AST::ImplementationFunction(fn:) then walk(fn, sub)
-          in AST::Assign(expression:)       then walk(expression, sub)
-          in AST::Lambda(body:)             then walk(body, sub)
-          in AST::Grouping(expression:)     then walk(expression, sub)
-          in AST::List(items:)              then items.each { walk(it, sub) }
-          in AST::RecordLiteral(fields:)    then fields.each { walk(it, sub) }
-          in AST::RecordField(value:)       then walk(value, sub)
+          in AST::Module(body:)             then walk(body, sub, registry, entry_name)
+          in AST::Body(expressions:)        then expressions.each { walk(it, sub, registry, entry_name) }
+          in AST::FunctionDeclaration(body:) then walk(body, sub, registry, entry_name)
+          in AST::Implementation(functions:) then functions.each { walk(it, sub, registry, entry_name) }
+          in AST::ImplementationFunction(fn:) then walk(fn, sub, registry, entry_name)
+          in AST::Assign(expression:)       then walk(expression, sub, registry, entry_name)
+          in AST::Lambda(body:)             then walk(body, sub, registry, entry_name)
+          in AST::Grouping(expression:)     then walk(expression, sub, registry, entry_name)
+          in AST::List(items:)              then items.each { walk(it, sub, registry, entry_name) }
+          in AST::RecordLiteral(fields:)    then fields.each { walk(it, sub, registry, entry_name) }
+          in AST::RecordField(value:)       then walk(value, sub, registry, entry_name)
           in AST::RecordUpdate(base:, fields:)
-            walk(base, sub)
-            fields.each { walk(it, sub) }
-          in AST::RecordAccess(target:)     then walk(target, sub)
+            walk(base, sub, registry, entry_name)
+            fields.each { walk(it, sub, registry, entry_name) }
+          in AST::RecordAccess(target:)     then walk(target, sub, registry, entry_name)
           in AST::IfThenElse(condition:, if_branch:, else_branch:)
-            walk(condition, sub)
-            walk(if_branch, sub)
-            walk(else_branch, sub)
+            walk(condition, sub, registry, entry_name)
+            walk(if_branch, sub, registry, entry_name)
+            walk(else_branch, sub, registry, entry_name)
           in AST::CaseOf(expression:, branches:)
-            walk(expression, sub)
-            branches.each { walk(it, sub) }
-          in AST::CaseOfBranch(body:)       then walk(body, sub)
+            walk(expression, sub, registry, entry_name)
+            branches.each { walk(it, sub, registry, entry_name) }
+          in AST::CaseOfBranch(body:)       then walk(body, sub, registry, entry_name)
 
           # Leaves: cannot contain a FunctionCall. Listed explicitly so
           # adding a new node type forces a decision here rather than
@@ -70,19 +70,25 @@ module Jade
           end
         end
 
-        # If the marker's var substituted to a concrete type (e.g. a call
-        # inside a non-polymorphic body where the type was a Var at attach
-        # time but later unified to Int), leave the marker alone. Codegen's
-        # dict_env lookup will miss and the call site falls back to runtime
-        # dispatch, matching the pre-canonicalize behavior.
-        def canonicalize_dictionaries(node, sub)
+        # Rewrite var-typed dictionary markers through the final substitution.
+        # If the var resolved to a concrete type (e.g. `Decodable α` where a
+        # pattern-binding unified α with Int), resolve the impl now so codegen
+        # can dispatch directly — previously this only handled var-stayed-var
+        # and the substituted-to-concrete case crashed codegen's dict lookup.
+        def canonicalize_dictionaries(node, sub, registry, entry_name)
           node.dictionaries.each_with_index do |entry, i|
             next unless entry.is_a?(Type::Constraint)
 
             applied = sub.apply(entry.type)
-            next unless applied.is_a?(Type::Var)
+            resolved = entry.with(type: applied)
 
-            node.dictionaries[i] = entry.with(type: applied)
+            if applied.is_a?(Type::Var)
+              node.dictionaries[i] = resolved
+            else
+              Constraints
+                .resolve(resolved, registry, entry_name)
+                .map { node.dictionaries[i] = it }
+            end
           end
         end
       end

@@ -62,6 +62,9 @@ module Jade
         in 'Params'
           'Decode.Params'
 
+        in 'Bytes'
+          'Bytes'
+
         in 'Dict'
           'Dict'
 

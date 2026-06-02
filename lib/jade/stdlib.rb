@@ -7,11 +7,12 @@ require 'jade/stdlib/char'
 require 'jade/stdlib/string'
 require 'jade/stdlib/result'
 require 'jade/stdlib/task'
+require 'jade/stdlib/dict'
+require 'jade/stdlib/set'
 require 'jade/stdlib/decode'
 require 'jade/stdlib/decode/params'
 require 'jade/stdlib/encode'
-require 'jade/stdlib/dict'
-require 'jade/stdlib/set'
+require 'jade/stdlib/bytes'
 require 'jade/stdlib/calendar'
 require 'jade/stdlib/clock'
 
@@ -22,6 +23,7 @@ module Jade
     INTRINSICS = %w[
       Basics String List Tuple Char Task
       Decode Encode
+      Bytes
       Dict Set
     ].freeze
     COMPILED = %w[Maybe Result Decode.Params Calendar Clock].freeze
@@ -29,14 +31,15 @@ module Jade
     STDLIBS = [
       Stdlib::Basics, Stdlib::Maybe, Stdlib::Tuple, Stdlib::List, Stdlib::Char,
       Stdlib::String, Stdlib::Result, Stdlib::Task,
-      Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
       Stdlib::Dict, Stdlib::Set,
+      Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
+      Stdlib::Bytes,
       Stdlib::Calendar, Stdlib::Clock,
     ]
     # Loaded into the registry but not auto-imported into user modules.
     EXTENSIONS = [
-      Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
       Stdlib::Dict, Stdlib::Set,
+      Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
       Stdlib::Calendar, Stdlib::Clock,
     ]
 

@@ -100,9 +100,11 @@ module Jade
           .to be_nil
       end
 
-      it 'returns nil for Dict(String, Int) (no Decodable impl yet)' do
+      it 'curries Decode.dict with both arm decoders for Dict(String, Int)' do
         expect(described_class.decoder_for(dict_t(string_t, int_t), registry))
-          .to be_nil
+          .to eql 'Jade::Runtime.intr("Decode.dict").curry[' \
+                  'Jade::Runtime.intr("Decode.string").call][' \
+                  'Jade::Runtime.intr("Decode.int").call]'
       end
 
       it 'returns nil for Task in arg position (Task is a return-only type at the boundary)' do
@@ -155,9 +157,11 @@ module Jade
           .to be_nil
       end
 
-      it 'returns nil for Dict(String, Int) (no Encodable impl yet)' do
+      it 'curries Encode.dict with both arm encoders for Dict(String, Int)' do
         expect(described_class.encoder_for(dict_t(string_t, int_t), registry))
-          .to be_nil
+          .to eql 'Jade::Runtime.intr("Encode.dict").curry[' \
+                  'Jade::Runtime.intr("Encode.string")][' \
+                  'Jade::Runtime.intr("Encode.int")]'
       end
 
       it 'returns nil for Task — return-position only, handled via task_arms' do

@@ -131,6 +131,34 @@ module Jade
       end
     end
 
+    # Regression: a case-pattern destructuring the result of a constrained
+    # call (here Decode.from_json with `Decodable a`) used to leave the
+    # call's dictionary marker as a var, crashing codegen with
+    # "no dict in scope for Decode.Decodable". Canonicalize now resolves
+    # the impl when the var has been substituted to a concrete type.
+    context 'pattern bind propagates type back through a constrained call' do
+      let(:source) do
+        <<~JADE
+          module PatternBind exposing (parse)
+
+          import Decode
+
+
+          def parse(json: String) -> Maybe(Int)
+            case Decode.from_json(json)
+            in Ok(n) then Just(n)
+            in Err(_) then Nothing
+            end
+          end
+        JADE
+      end
+
+      it 'resolves Decodable Int from the Ok-arm binding' do
+        expect(PatternBind.parse('42')).to eql 42
+        expect(PatternBind.parse('"nope"')).to be_nil
+      end
+    end
+
   end
 
   describe 'Pattern analysis on opaque types' do

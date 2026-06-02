@@ -23,6 +23,7 @@ module Jade
       Optional = Data.define(:key, :inner, :default)
       Idx      = Data.define(:index, :inner)
       Lst      = Data.define(:inner)
+      Dct      = Data.define(:k_inner, :v_inner)
       Map      = Data.define(:fn, :d)
       Succeed  = Data.define(:value)
       AndMap   = Data.define(:wrapped, :value_d)
@@ -144,6 +145,9 @@ module Jade
           end
           errors.empty? ? ok(values) : err(wrap_errors(errors))
 
+        in Desc::Dct[k_inner, v_inner]
+          interp_dict(k_inner, v_inner, value)
+
         in Desc::Map[fn, d]
           case interp(d, value)
           in Jade::Result::Ok[v] then ok(fn.call(v))
@@ -236,6 +240,49 @@ module Jade
 
       def wrap_errors(errors)
         errors.length == 1 ? errors.first : Jade::Decode::Multiple[errors]
+      end
+
+      # Two accepted wire shapes for Dict: a Hash (the natural Ruby form
+      # and what String-keyed JSON parses to) and an Array of [k, v] pairs
+      # (the form Encode.dict emits — survives non-String keys).
+      def interp_dict(k_inner, v_inner, value)
+        if (h = coerce_hash(value))
+          h.each_pair.map { |k, v| [[k, v], k.to_s] }
+            .then { decode_dict_entries(k_inner, v_inner, it, :at_field) }
+        elsif (arr = coerce_array(value))
+          arr.each_with_index.map { |pair, i| [pair, i] }
+            .then { decode_dict_entries(k_inner, v_inner, it, :at_index) }
+        else
+          type_err("Object or Array", value)
+        end
+      end
+
+      def decode_dict_entries(k_inner, v_inner, entries, position)
+        h = {}
+        errors = []
+        entries.each do |pair, pos|
+          case pair
+          in [k_raw, v_raw]
+            k_res = interp(k_inner, k_raw)
+            v_res = interp(v_inner, v_raw)
+            if k_res.is_a?(Jade::Result::Ok) && v_res.is_a?(Jade::Result::Ok)
+              h[k_res._1] = v_res._1
+            else
+              [k_res, v_res].each do |r|
+                errors << wrap_pos(position, pos, r._1) if r.is_a?(Jade::Result::Err)
+              end
+            end
+          else
+            errors << wrap_pos(position, pos, Jade::Decode::WrongType["Array[2]", ruby_type_name(pair)])
+          end
+        end
+        errors.empty? ? ok(Jade::Dict::Dict[h]) : err(wrap_errors(errors))
+      end
+
+      def wrap_pos(position, pos, inner)
+        position == :at_index \
+          ? Jade::Decode::AtIndex[pos, inner]
+          : Jade::Decode::AtField[pos, inner]
       end
 
       def coerce_hash(value)
