@@ -19,6 +19,7 @@ module Jade
         when 'textDocument/hover' then on_hover(state, message)
         when 'textDocument/definition' then on_definition(state, message)
         when 'textDocument/references' then on_references(state, message)
+        when 'textDocument/completion' then on_completion(state, message)
         else on_unknown(state, message)
         end
       end
@@ -46,11 +47,11 @@ module Jade
             hoverProvider: true,
             definitionProvider: true,
             referencesProvider: true,
+            completionProvider: { resolveProvider: false },
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
           .then { [state.with_root(root), [respond(message['id'], it)]] }
-        
       end
 
       def negotiate_encoding(params)
@@ -105,6 +106,10 @@ module Jade
           params['position'],
           include_declaration: params.dig('context', 'includeDeclaration'),
         ).then { [state, [respond(message['id'], it)]] }
+      end
+
+      def on_completion(state, message)
+        [state, [respond(message['id'], Converters.completion_items)]]
       end
 
       def references_for(state, uri, position, include_declaration:)
