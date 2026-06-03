@@ -45,6 +45,11 @@ module Jade
         Jade::Symbol::Struct,
       ].freeze
 
+      # LSP CompletionItemKind values we use.
+      COMPLETION_KIND_SNIPPET = 15
+      # LSP InsertTextFormat: 1 = PlainText, 2 = Snippet (with tab stops).
+      INSERT_FORMAT_SNIPPET = 2
+
       def definition_for_path(path, registry, entry, source_root)
         innermost_resolved(path, registry, entry)
           .then { definition_location(it, registry, source_root) }
@@ -58,6 +63,18 @@ module Jade
           .first
       rescue StandardError
         nil
+      end
+
+      def completion_items
+        Snippets::ALL.map do |snippet|
+          {
+            label: snippet.label,
+            kind: COMPLETION_KIND_SNIPPET,
+            detail: snippet.detail,
+            insertText: snippet.body,
+            insertTextFormat: INSERT_FORMAT_SNIPPET,
+          }
+        end
       end
 
       def references_for_path(

@@ -67,6 +67,12 @@ module Jade
           expect(outbound.first[:result][:capabilities][:definitionProvider]).to eq true
         end
 
+        it 'advertises completionProvider' do
+          _, outbound = subject
+          provider = outbound.first[:result][:capabilities][:completionProvider]
+          expect(provider).to include(resolveProvider: false)
+        end
+
         it 'advertises utf-8 when the client supports it' do
           _, outbound = Handlers.dispatch(State.empty, {
             'method' => 'initialize',
@@ -541,6 +547,38 @@ module Jade
         it 'returns nil when cursor is not on a resolvable symbol' do
           _, outbound = open_and_find_refs(at: 'module M', include_declaration: true)
           expect(outbound.first[:result]).to be_nil
+        end
+      end
+
+      describe 'completion' do
+        let(:items) do
+          _, out = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/completion',
+            'id' => 31,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'position' => { 'line' => 0, 'character' => 0 },
+            },
+          })
+          out.first[:result]
+        end
+
+        it 'returns a list of snippet items' do
+          expect(items).not_to be_empty
+          expect(items).to all(include(insertTextFormat: 2))
+        end
+
+        it 'includes structural keyword snippets' do
+          expect(items.map { it[:label] }).to include(
+            'def', 'type', 'struct', 'case', 'if', 'module',
+            'import', 'interface', 'implements', 'uses', 'lambda',
+          )
+        end
+
+        it 'def snippet closes with end and has tab stops' do
+          def_item = items.find { it[:label] == 'def' }
+          expect(def_item[:insertText]).to end_with("\nend")
+          expect(def_item[:insertText]).to include('${1:')
         end
       end
 
