@@ -89,6 +89,27 @@ module Jade
         refs + declaration_locations(symbol, registry, source_root)
       end
 
+      def prepare_rename_for_path(path, registry, entry, offset)
+        node = innermost_resolvable_node(path, registry, entry)
+        return nil unless node
+
+        symbol = resolve_symbol(node, registry, entry)
+        return nil unless renameable?(symbol, registry)
+
+        identifier_span(node, symbol, entry.source)
+          .then { it.cover?(offset) ? span_to_range(entry.source, it) : nil }
+      end
+
+      def rename_for_path(path, registry, entry, source_root, new_name)
+        symbol = innermost_resolved(path, registry, entry)
+        return nil unless renameable?(symbol, registry)
+
+        rename_edits(symbol, registry, entry, source_root)
+          .group_by { it[:uri] }
+          .transform_values { it.map { |e| { range: e[:range], newText: new_name } } }
+          .then { { changes: it } }
+      end
+
       def to_document_symbol(node, source)
         case node
         in AST::FunctionDeclaration(name:, range:)
@@ -168,6 +189,72 @@ module Jade
       def declaration_locations(symbol, registry, source_root)
         definition_location(symbol, registry, source_root)
           .then { it ? [it] : [] }
+      end
+
+      # Rename targets must have a declaration we can point at AND live
+      # in a module whose source we can write back. Stdlib and interop
+      # modules are excluded for both reasons. Locals (Symbol::Variable)
+      # carry no module — they live in the file the cursor is in.
+      def renameable?(symbol, registry)
+        return false unless symbol&.respond_to?(:decl_span) && symbol.decl_span
+        return true if symbol.is_a?(Jade::Symbol::Variable)
+
+        registry
+          .modules[symbol.module_name]
+          .then { it && it.source && !Stdlib.is_stdlib?(it) }
+      end
+
+      def rename_edits(symbol, registry, entry, source_root)
+        [decl_edit(symbol, registry, entry, source_root)] +
+          usage_edits(symbol, registry, source_root)
+      end
+
+      def decl_edit(symbol, registry, entry, source_root)
+        decl_source(symbol, registry, entry)
+          .then { build_location(it, narrowed_decl_span(it, symbol), source_root) }
+      end
+
+      # Locals (Variable) belong to the file the cursor is in; module
+      # symbols belong to their declaring module.
+      def decl_source(symbol, registry, entry)
+        symbol.is_a?(Jade::Symbol::Variable) ?
+          entry.source :
+          registry.modules.fetch(symbol.module_name).source
+      end
+
+      # Function/Variable decl_spans are already name-only; Union /
+      # Struct / Variant / Interface decl_spans cover the entire
+      # declaration. Search the source slice for the identifier so the
+      # rename edit replaces just the name in both cases.
+      def narrowed_decl_span(source, symbol)
+        span = symbol.decl_span
+        offset = source.text.byteslice(span.begin, span.size)&.index(symbol.name)
+        return span unless offset
+
+        (span.begin + offset)...(span.begin + offset + symbol.name.bytesize)
+      end
+
+      # Reference ranges from usage_index cover the whole node (e.g.
+      # `M.foo` for QualifiedAccess), so we trim to the trailing
+      # identifier. For bare VariableReference / ConstructorReference
+      # the range already equals the identifier — trimming is a no-op.
+      def usage_edits(symbol, registry, source_root)
+        registry
+          .modules
+          .each_value
+          .flat_map do |entry|
+            next [] unless entry.source && entry.usage_index
+
+            entry
+              .usage_index
+              .for(symbol)
+              .map { trail_identifier_span(it.range, symbol.name) }
+              .map { build_location(entry.source, it, source_root) }
+          end
+      end
+
+      def trail_identifier_span(range, name)
+        (range.end - name.bytesize)...range.end
       end
 
       def build_location(source, span, source_root)
@@ -288,10 +375,30 @@ module Jade
       # symbol. Stops at the most specific resolvable node so a stdlib
       # call doesn't fall through to its enclosing function declaration.
       def innermost_resolved(path, registry, entry)
-        path
-          .reverse
-          .filter_map { resolve_symbol(it, registry, entry) }
-          .first
+        innermost_resolvable_node(path, registry, entry)
+          &.then { resolve_symbol(it, registry, entry) }
+      end
+
+      def innermost_resolvable_node(path, registry, entry)
+        path.reverse.find { resolve_symbol(it, registry, entry) }
+      end
+
+      # For prepareRename / rename — identifier-only span of `node`.
+      # QualifiedAccess ranges include the `Module.` prefix, so trim
+      # to the trailing identifier. Declaration nodes fall back to
+      # narrowing `symbol.decl_span` (which is the whole declaration
+      # for Union / Struct / Variant / Interface, name-only for
+      # Function / Variable).
+      def identifier_span(node, symbol, source)
+        case node
+        in AST::QualifiedAccess
+          trail_identifier_span(node.range, symbol.name)
+        in AST::VariableReference | AST::ConstructorReference |
+           AST::ExposeValue | AST::ExposeType | AST::ExposeTypeExpand
+          node.range
+        else
+          narrowed_decl_span(source, symbol)
+        end
       end
 
       def resolve_symbol(node, registry, entry)
@@ -302,8 +409,17 @@ module Jade
            AST::InterfaceDeclaration | AST::VariantDeclaration
           node.symbol.then { resolve_ref(it, registry) }
 
+        in AST::FunctionDeclarationParam(name:, range:)
+          Jade::Symbol::Variable.new(name:, decl_span: range)
+
         in AST::TypeName(type:)
           entry.types[type].then { resolve_ref(it, registry) }
+
+        in AST::ExposeValue(name:)
+          entry.lookup_value(name)&.then { resolve_ref(it, registry) }
+
+        in AST::ExposeType | AST::ExposeTypeExpand
+          entry.lookup_type(node.name)&.then { resolve_ref(it, registry) }
 
         else
           nil
