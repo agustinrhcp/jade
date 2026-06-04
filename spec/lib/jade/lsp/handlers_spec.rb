@@ -73,6 +73,12 @@ module Jade
           expect(provider).to include(resolveProvider: false)
         end
 
+        it 'advertises renameProvider with prepareRename' do
+          _, outbound = subject
+          provider = outbound.first[:result][:capabilities][:renameProvider]
+          expect(provider).to include(prepareProvider: true)
+        end
+
         it 'advertises utf-8 when the client supports it' do
           _, outbound = Handlers.dispatch(State.empty, {
             'method' => 'initialize',
@@ -547,6 +553,229 @@ module Jade
         it 'returns nil when cursor is not on a resolvable symbol' do
           _, outbound = open_and_find_refs(at: 'module M', include_declaration: true)
           expect(outbound.first[:result]).to be_nil
+        end
+      end
+
+      describe 'rename' do
+        let(:text) do
+          <<~JADE
+            module M exposing (run)
+
+            def helper(x: Int) -> Int
+              x + 1
+            end
+
+            def run() -> Int
+              helper(1) + helper(2)
+            end
+          JADE
+        end
+
+        def open_and_dispatch(method:, id:, at:, extra: {})
+          File.write(File.join(src, 'leaf.jd'), text)
+          state, _ = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+          offset = text.index(at)
+          line = text[0...offset].count("\n")
+          character = offset - (text.rindex("\n", offset) || -1) - 1
+          Handlers.dispatch(state, {
+            'method' => method,
+            'id' => id,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'position' => { 'line' => line, 'character' => character },
+              **extra,
+            },
+          })
+        end
+
+        describe 'prepareRename' do
+          it 'returns the identifier range on a call site' do
+            _, outbound = open_and_dispatch(
+              method: 'textDocument/prepareRename', id: 41, at: 'helper(1)',
+            )
+            result = outbound.first[:result]
+            expect(result).not_to be_nil
+            expect(result[:start][:character]).to be < result[:end][:character]
+          end
+
+          it 'returns nil for stdlib calls' do
+            stdlib_text = "module Leaf exposing (n)\n\ndef n() -> Int\n  String.length(\"hi\")\nend\n"
+            File.write(File.join(src, 'leaf.jd'), stdlib_text)
+            state, _ = Handlers.dispatch(initialized_state, {
+              'method' => 'textDocument/didOpen',
+              'params' => { 'textDocument' => { 'uri' => uri, 'text' => stdlib_text } },
+            })
+            offset = stdlib_text.index('String.length')
+            line = stdlib_text[0...offset].count("\n")
+            character = offset - (stdlib_text.rindex("\n", offset) || -1) - 1
+            _, outbound = Handlers.dispatch(state, {
+              'method' => 'textDocument/prepareRename',
+              'id' => 42,
+              'params' => {
+                'textDocument' => { 'uri' => uri },
+                'position' => { 'line' => line, 'character' => character },
+              },
+            })
+            expect(outbound.first[:result]).to be_nil
+          end
+
+          it 'returns nil when the cursor is not on a resolvable symbol' do
+            _, outbound = open_and_dispatch(
+              method: 'textDocument/prepareRename', id: 43, at: 'module M',
+            )
+            expect(outbound.first[:result]).to be_nil
+          end
+        end
+
+        describe 'rename' do
+          it 'returns a WorkspaceEdit covering decl and all usages' do
+            _, outbound = open_and_dispatch(
+              method: 'textDocument/rename', id: 51, at: 'helper(1)',
+              extra: { 'newName' => 'plus_one' },
+            )
+            result = outbound.first[:result]
+            expect(result[:changes]).to have_key(uri)
+            edits = result[:changes][uri]
+            expect(edits.size).to eq 3
+            expect(edits).to all(include(newText: 'plus_one'))
+          end
+
+          it 'returns nil for stdlib calls' do
+            stdlib_text = "module Leaf exposing (n)\n\ndef n() -> Int\n  String.length(\"hi\")\nend\n"
+            File.write(File.join(src, 'leaf.jd'), stdlib_text)
+            state, _ = Handlers.dispatch(initialized_state, {
+              'method' => 'textDocument/didOpen',
+              'params' => { 'textDocument' => { 'uri' => uri, 'text' => stdlib_text } },
+            })
+            offset = stdlib_text.index('String.length')
+            line = stdlib_text[0...offset].count("\n")
+            character = offset - (stdlib_text.rindex("\n", offset) || -1) - 1
+            _, outbound = Handlers.dispatch(state, {
+              'method' => 'textDocument/rename',
+              'id' => 52,
+              'params' => {
+                'textDocument' => { 'uri' => uri },
+                'position' => { 'line' => line, 'character' => character },
+                'newName' => 'X',
+              },
+            })
+            expect(outbound.first[:result]).to be_nil
+          end
+        end
+
+        describe 'coverage' do
+          let(:text) do
+            <<~JADE
+              module M exposing (run, Shape)
+
+              type Shape
+                = Circle(Float)
+
+              def run(s: Shape) -> Shape
+                s
+              end
+            JADE
+          end
+
+          it 'rename function: includes decl + exposing list entry' do
+            _, outbound = open_and_dispatch(
+              method: 'textDocument/rename', id: 71, at: 'def run',
+              extra: { 'newName' => 'execute' },
+            )
+            edits = outbound.first[:result][:changes][uri]
+            # decl + `exposing (run, ...)` entry = 2 edits
+            expect(edits.size).to eq 2
+            expect(edits).to all(include(newText: 'execute'))
+          end
+
+          it 'rename type: includes decl + exposing entry + type annotations' do
+            _, outbound = open_and_dispatch(
+              method: 'textDocument/rename', id: 72, at: 'type Shape',
+              extra: { 'newName' => 'Geo' },
+            )
+            edits = outbound.first[:result][:changes][uri]
+            # decl + exposing + `s: Shape` + `-> Shape` = 4 edits
+            expect(edits.size).to eq 4
+            expect(edits).to all(include(newText: 'Geo'))
+          end
+
+          it 'rename initiated from the exposing list works' do
+            _, outbound = open_and_dispatch(
+              method: 'textDocument/rename', id: 74, at: 'run, Shape',
+              extra: { 'newName' => 'execute' },
+            )
+            edits = outbound.first[:result][:changes][uri]
+            expect(edits.size).to eq 2
+            expect(edits).to all(include(newText: 'execute'))
+          end
+
+          it 'rename function param: only edits within the function body + decl' do
+            _, outbound = open_and_dispatch(
+              method: 'textDocument/rename', id: 73, at: 's: Shape',
+              extra: { 'newName' => 'shape' },
+            )
+            edits = outbound.first[:result][:changes][uri]
+            # param decl + 1 body reference = 2 edits
+            expect(edits.size).to eq 2
+            expect(edits).to all(include(newText: 'shape'))
+          end
+        end
+
+        describe 'declaration narrowing' do
+          let(:text) do
+            <<~JADE
+              module M exposing (sample)
+
+              type Shape
+                = Circle(Float)
+                | Square(Float)
+
+              def sample() -> Shape
+                Circle(1.0)
+              end
+            JADE
+          end
+
+          def replace_at(text, edit)
+            range = edit[:range]
+            offset = text.split("\n", -1)[0...range[:start][:line]].sum { it.bytesize + 1 } + range[:start][:character]
+            ending = text.split("\n", -1)[0...range[:end][:line]].sum { it.bytesize + 1 } + range[:end][:character]
+            text.byteslice(0, offset) + edit[:newText] + text.byteslice(ending..)
+          end
+
+          it 'renaming a type touches only the type name (not the whole declaration)' do
+            _, outbound = open_and_dispatch(
+              method: 'textDocument/rename', id: 61, at: 'type Shape',
+              extra: { 'newName' => 'Geo' },
+            )
+            edits = outbound.first[:result][:changes][uri]
+            decl_edit = edits.find { it[:newText] == 'Geo' }
+            slice = text.byteslice(
+              text.split("\n", -1)[0...decl_edit[:range][:start][:line]].sum { it.bytesize + 1 } + decl_edit[:range][:start][:character],
+              'Shape'.bytesize,
+            )
+            expect(slice).to eq 'Shape'
+          end
+
+          it 'renaming a variant declaration only replaces the variant name' do
+            _, outbound = open_and_dispatch(
+              method: 'textDocument/rename', id: 62, at: 'Circle(Float)',
+              extra: { 'newName' => 'Disc' },
+            )
+            edits = outbound.first[:result][:changes][uri]
+            # Two locations: the variant decl, and the call site `Circle(1.0)`.
+            expect(edits.size).to eq 2
+            edits.each do |e|
+              line = text.lines[e[:range][:start][:line]]
+              chunk = line.byteslice(
+                e[:range][:start][:character], 'Circle'.bytesize
+              )
+              expect(chunk).to eq 'Circle'
+            end
+          end
         end
       end
 

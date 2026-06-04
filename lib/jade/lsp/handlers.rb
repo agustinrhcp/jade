@@ -20,6 +20,8 @@ module Jade
         when 'textDocument/definition' then on_definition(state, message)
         when 'textDocument/references' then on_references(state, message)
         when 'textDocument/completion' then on_completion(state, message)
+        when 'textDocument/prepareRename' then on_prepare_rename(state, message)
+        when 'textDocument/rename' then on_rename(state, message)
         else on_unknown(state, message)
         end
       end
@@ -48,6 +50,7 @@ module Jade
             definitionProvider: true,
             referencesProvider: true,
             completionProvider: { resolveProvider: false },
+            renameProvider: { prepareProvider: true },
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
@@ -110,6 +113,54 @@ module Jade
 
       def on_completion(state, message)
         [state, [respond(message['id'], Converters.completion_items)]]
+      end
+
+      def on_prepare_rename(state, message)
+        message['params']
+          .then { prepare_rename_for(state, it['textDocument']['uri'], it['position']) }
+          .then { [state, [respond(message['id'], it)]] }
+      end
+
+      def on_rename(state, message)
+        params = message['params']
+        rename_for(
+          state,
+          params['textDocument']['uri'],
+          params['position'],
+          params['newName'],
+        ).then { [state, [respond(message['id'], it)]] }
+      end
+
+      def prepare_rename_for(state, uri, position)
+        return nil unless state.registry
+
+        rel = Converters.relative_path(uri, state.source_root)
+        entry = state.registry.modules.each_value.find { it.source&.uri == rel }
+        return nil unless entry
+
+        offset = Converters.position_to_offset(
+          entry.source, position['line'], position['character']
+        )
+        Converters.prepare_rename_for_path(
+          entry.ast.find_at_path(offset), state.registry, entry, offset,
+        )
+      end
+
+      def rename_for(state, uri, position, new_name)
+        return nil unless state.registry
+
+        rel = Converters.relative_path(uri, state.source_root)
+        entry = state.registry.modules.each_value.find { it.source&.uri == rel }
+        return nil unless entry
+
+        Converters
+          .position_to_offset(entry.source, position['line'], position['character'])
+          .then { entry.ast.find_at_path(it) }
+          .then do |path|
+            Converters.rename_for_path(
+              path, state.registry, entry, state.source_root, new_name,
+            )
+          end
       end
 
       def references_for(state, uri, position, include_declaration:)
