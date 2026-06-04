@@ -10,11 +10,14 @@ module Sql exposing (
   TableRef(..),
   aliased,
   and,
+  array_append,
+  array_concat,
   array_contained_by,
   array_contains,
   array_has,
   array_length,
   array_overlaps,
+  array_remove,
   assign,
   cast,
   coalesce,
@@ -32,6 +35,8 @@ module Sql exposing (
   in_,
   is_not_null,
   is_null,
+  jsonb_contains,
+  jsonb_path_exists,
   maybe_columns,
   neg,
   nullable,
@@ -227,6 +232,47 @@ end
 
 def array_length(col: Expr(List(a))) -> Expr(Int)
   Expr("cardinality(" ++ col.sql ++ ")", col.params)
+end
+
+
+def array_append(col: Expr(List(a)), value: a) -> Expr(List(a))
+  Expr(
+    "array_append(" ++ col.sql ++ ", ?)",
+    col.params ++ [encode(value)],
+  )
+end
+
+
+def array_remove(col: Expr(List(a)), value: a) -> Expr(List(a))
+  Expr(
+    "array_remove(" ++ col.sql ++ ", ?)",
+    col.params ++ [encode(value)],
+  )
+end
+
+
+def array_concat(left: Expr(List(a)), right: Expr(List(a))) -> Expr(List(a))
+  Expr(left.sql ++ " || " ++ right.sql, left.params ++ right.params)
+end
+
+
+# jsonb predicates. `value` is encoded via the caller's `Encodable(a)`
+# instance, so user code can pass a record directly:
+#
+#   jsonb_contains(column("rules", "match"), { kind: "income" })
+#
+# pg binds Ruby Hash/Array as jsonb when paired with a jsonb column.
+# The `@?` jsonpath operator needs an explicit `::jsonpath` cast since
+# the param is bound as text.
+
+
+def jsonb_contains(col: Expr(Value), value: a) -> Expr(Bool)
+  Expr(col.sql ++ " @> ?", col.params ++ [encode(value)])
+end
+
+
+def jsonb_path_exists(col: Expr(Value), path: String) -> Expr(Bool)
+  Expr(col.sql ++ " @? ?::jsonpath", col.params ++ [encode(path)])
 end
 
 

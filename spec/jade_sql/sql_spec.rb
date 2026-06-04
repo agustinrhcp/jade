@@ -150,7 +150,6 @@ module Jade
           def predicate -> Expr(Bool)
             a = column("p", "a") |> eq(to_expr(1))
             b = column("p", "b") |> eq(to_expr(2))
-
             a |> and(b)
           end
         JADE
@@ -350,6 +349,118 @@ module Jade
       end
     end
 
+    describe 'array mutation ops' do
+      let(:source) do
+        <<~JADE
+          module App exposing (added, concat_, removed)
+
+          import Sql exposing (
+            Expr,
+            array_append,
+            array_concat,
+            array_remove,
+            column,
+            to_expr,
+          )
+
+
+          def added(tag: String) -> Expr(List(String))
+            array_append(column("l", "tags"), tag)
+          end
+
+
+          def removed(tag: String) -> Expr(List(String))
+            array_remove(column("l", "tags"), tag)
+          end
+
+
+          def concat_(extra: List(String)) -> Expr(List(String))
+            array_concat(column("l", "tags"), to_expr(extra))
+          end
+        JADE
+      end
+
+      before { test_compiler.require('app', source) }
+
+      it 'array_append wraps array_append(col, ?)' do
+        App::Internal.added("food").then do |expr|
+          expect(expr.sql).to eql 'array_append(l.tags, ?)'
+          expect(expr.params).to eql ['food']
+        end
+      end
+
+      it 'array_remove wraps array_remove(col, ?)' do
+        App::Internal.removed("food").then do |expr|
+          expect(expr.sql).to eql 'array_remove(l.tags, ?)'
+          expect(expr.params).to eql ['food']
+        end
+      end
+
+      it 'array_concat emits left || right' do
+        App::Internal.concat_(["food", "fun"]).then do |expr|
+          expect(expr.sql).to eql 'l.tags || ?'
+          expect(expr.params).to eql [["food", "fun"]]
+        end
+      end
+    end
+
+    describe 'jsonb predicates' do
+      let(:source) do
+        <<~JADE
+          module App exposing (has_kind, has_path, kind_matcher)
+
+          import Decode exposing (Value)
+          import Sql exposing (
+            Expr,
+            column,
+            jsonb_contains,
+            jsonb_path_exists,
+          )
+
+
+          struct KindFilter = { kind: String }
+
+
+          def has_kind(k: String) -> Expr(Bool)
+            jsonb_contains(column("r", "match"), KindFilter(k))
+          end
+
+
+          def kind_matcher -> Expr(Bool)
+            jsonb_contains(column("r", "match"), KindFilter("income"))
+          end
+
+
+          def has_path(p: String) -> Expr(Bool)
+            jsonb_path_exists(column("r", "match"), p)
+          end
+        JADE
+      end
+
+      before { test_compiler.require('app', source) }
+
+      it 'jsonb_contains encodes the value as JSON' do
+        App::Internal.has_kind("income").then do |expr|
+          expect(expr.sql).to eql 'r.match @> ?'
+          expect(expr.params).to eql [{ "kind" => "income" }]
+        end
+      end
+
+      it 'jsonb_contains accepts struct literals' do
+        App::Internal.kind_matcher.then do |expr|
+          expect(expr.sql).to eql 'r.match @> ?'
+          expect(expr.params).to eql [{ "kind" => "income" }]
+        end
+      end
+
+      it 'jsonb_path_exists casts the path to jsonpath' do
+        App::Internal.has_path("$.kind ? (@ == \"income\")").then do |expr|
+          expect(expr.sql).to eql 'r.match @? ?::jsonpath'
+          expect(expr.params).to eql ['$.kind ? (@ == "income")']
+        end
+      end
+    end
+
     describe 'from + where via postfix' do
       let(:source) do
         <<~JADE
@@ -384,7 +495,6 @@ module Jade
 
           def named_paul -> Q(PersonsCols)
             p_cols = columns(persons, "p")
-
             from(persons) |> where(p_cols.name |> eq(to_expr("Paul")))
           end
         JADE
@@ -455,7 +565,6 @@ module Jade
 
           def persons_with_orders -> Q(OrdersCols)
             p <- from(persons)
-
             join(orders, (o) -> { p.id |> eq(o.person_id) })
           end
         JADE
@@ -511,7 +620,6 @@ module Jade
 
           def parents_and_kids -> Q(PersonsCols)
             p <- from(persons)
-
             persons
               |> aliased("c")
               |> join((c) -> { p.id |> eq(c.parent_id) })
@@ -584,7 +692,6 @@ module Jade
 
           def persons_with_optional_orders -> Q(MaybeOrdersCols)
             p <- from(persons)
-
             left_join(orders, (o) -> { p.id |> eq(o.person_id) })
           end
         JADE
@@ -652,7 +759,6 @@ module Jade
 
           def persons_with_companies -> Q(CompaniesCols)
             p <- from(persons)
-
             join(companies, (c) -> { p.company_id |> eq(c.id |> nullable) })
           end
         JADE
@@ -711,7 +817,6 @@ module Jade
 
           def adults_query -> Q(Selector(Person))
             p <- from(persons)
-
             select(Person(_, _, _))
               |> field(p.id)
               |> field(p.name)
@@ -799,7 +904,6 @@ module Jade
           def query -> Q(Selector(Row))
             p <- from(persons)
             o <- join(orders, (o) -> { p.id |> eq(o.person_id) })
-
             select(Row(_, _, _))
               |> field(p.id)
               |> field(p.name)
@@ -895,7 +999,6 @@ module Jade
 
           def projected -> Q(Selector(Person))
             p <- from(persons)
-
             select(Person(_, _, _))
               |> field(p.id)
               |> field(p.name)
@@ -905,7 +1008,6 @@ module Jade
 
           def sorted_asc_q -> Q(Selector(Person))
             p <- from(persons)
-
             select(Person(_, _, _))
               |> field(p.id)
               |> field(p.name)
@@ -916,7 +1018,6 @@ module Jade
 
           def sorted_desc_q -> Q(Selector(Person))
             p <- from(persons)
-
             select(Person(_, _, _))
               |> field(p.id)
               |> field(p.name)
@@ -927,7 +1028,6 @@ module Jade
 
           def multi_sorted_q -> Q(Selector(Person))
             p <- from(persons)
-
             select(Person(_, _, _))
               |> field(p.id)
               |> field(p.name)
@@ -939,7 +1039,6 @@ module Jade
 
           def grouped_q -> Q(Selector(Person))
             p <- from(persons)
-
             select(Person(_, _, _))
               |> field(p.id)
               |> field(p.name)
@@ -1061,7 +1160,6 @@ module Jade
 
           def projected -> Q(Selector(Person))
             p <- from(persons)
-
             select(Person(_, _))
               |> field(p.id)
               |> field(p.name)

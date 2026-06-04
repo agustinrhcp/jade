@@ -256,8 +256,55 @@ end
 on empty). Filter untagged rows with
 `array_length(column("l", "tags")) |> eq(to_expr(0))`.
 
-Out of scope (deferred): `array_append`/`array_remove`/`||` mutation
-operators, `unnest`, `array_agg`. Add when a caller hits them.
+Mutation ops for partial array updates:
+
+| Function                                                            | SQL                          |
+|---------------------------------------------------------------------|------------------------------|
+| `array_append(Expr(List(a)), a) -> Expr(List(a))`                   | `array_append(col, ?)`       |
+| `array_remove(Expr(List(a)), a) -> Expr(List(a))`                   | `array_remove(col, ?)`       |
+| `array_concat(Expr(List(a)), Expr(List(a))) -> Expr(List(a))`       | `left ‖ right`               |
+
+Use these in `update_all` to avoid rewriting an array column wholesale:
+
+```jade
+patients
+  |> update_all(
+       (p) -> { p.id |> eq(to_expr(pid)) },
+       (p) -> { [p.tags |> set_(array_append(p.tags, new_tag))] },
+     )
+-- UPDATE patients SET tags = array_append(tags, ?) WHERE id = ?
+```
+
+Out of scope: `unnest`, `array_agg`. Add when a caller hits them.
+
+### JSONB predicates
+
+| Function                                                  | SQL                |
+|-----------------------------------------------------------|--------------------|
+| `jsonb_contains(Expr(Value), a) -> Expr(Bool)`            | `col @> ?`         |
+| `jsonb_path_exists(Expr(Value), String) -> Expr(Bool)`    | `col @? ?::jsonpath` |
+
+`jsonb_contains` auto-encodes the value via its `Encodable` instance,
+so you can pass any record / scalar / list directly:
+
+```jade
+import Sql exposing (column, jsonb_contains, jsonb_path_exists)
+
+struct KindMatch = { kind: String }
+
+-- WHERE r.match @> ?       (param: { "kind": "income" })
+def matches_kind(k: String) -> Expr(Bool)
+  jsonb_contains(column("r", "match"), KindMatch(k))
+end
+
+-- WHERE r.match @? ?::jsonpath   (param: "$.amount ? (@ > 100)")
+def has_amount_gt(path: String) -> Expr(Bool)
+  jsonb_path_exists(column("r", "match"), path)
+end
+```
+
+The `@?` operator requires `jsonpath` on the right; the param binds as
+text and gets cast at the SQL level.
 
 ## Build mutations
 
