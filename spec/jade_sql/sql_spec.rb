@@ -257,6 +257,99 @@ module Jade
       end
     end
 
+    describe 'array predicates' do
+      let(:source) do
+        <<~JADE
+          module App exposing (
+            any_tag,
+            both_tags,
+            has_tag,
+            no_extra_tags,
+            tag_count,
+          )
+
+          import Sql exposing (
+            Expr,
+            array_contained_by,
+            array_contains,
+            array_has,
+            array_length,
+            array_overlaps,
+            column,
+          )
+
+
+          def any_tag(tags: List(String)) -> Expr(Bool)
+            array_overlaps(column("l", "tags"), tags)
+          end
+
+
+          def has_tag(tag: String) -> Expr(Bool)
+            array_has(column("l", "tags"), tag)
+          end
+
+
+          def both_tags(tags: List(String)) -> Expr(Bool)
+            array_contains(column("l", "tags"), tags)
+          end
+
+
+          def no_extra_tags(allowed: List(String)) -> Expr(Bool)
+            array_contained_by(column("l", "tags"), allowed)
+          end
+
+
+          def tag_count -> Expr(Int)
+            array_length(column("l", "tags"))
+          end
+        JADE
+      end
+
+      before { test_compiler.require('app', source) }
+
+      it 'array_overlaps emits col && ? with the list bound as one param' do
+        App::Internal.any_tag(["food", "fun"]).then do |expr|
+          expect(expr.sql).to eql 'l.tags && ?'
+          expect(expr.params).to eql [["food", "fun"]]
+        end
+      end
+
+      it 'array_overlaps binds an empty list as a single empty-array param' do
+        App::Internal.any_tag([]).then do |expr|
+          expect(expr.sql).to eql 'l.tags && ?'
+          expect(expr.params).to eql [[]]
+        end
+      end
+
+      it 'array_has emits ? = ANY(col) with the value before the column params' do
+        App::Internal.has_tag("food").then do |expr|
+          expect(expr.sql).to eql '? = ANY(l.tags)'
+          expect(expr.params).to eql ["food"]
+        end
+      end
+
+      it 'array_contains emits col @> ?' do
+        App::Internal.both_tags(["food", "fun"]).then do |expr|
+          expect(expr.sql).to eql 'l.tags @> ?'
+          expect(expr.params).to eql [["food", "fun"]]
+        end
+      end
+
+      it 'array_contained_by emits col <@ ?' do
+        App::Internal.no_extra_tags(["food", "fun"]).then do |expr|
+          expect(expr.sql).to eql 'l.tags <@ ?'
+          expect(expr.params).to eql [["food", "fun"]]
+        end
+      end
+
+      it 'array_length emits cardinality(col)' do
+        App::Internal.tag_count.then do |expr|
+          expect(expr.sql).to eql 'cardinality(l.tags)'
+          expect(expr.params).to eql []
+        end
+      end
+    end
+
     describe 'from + where via postfix' do
       let(:source) do
         <<~JADE

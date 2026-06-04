@@ -10,6 +10,11 @@ module Sql exposing (
   TableRef(..),
   aliased,
   and,
+  array_contained_by,
+  array_contains,
+  array_has,
+  array_length,
+  array_overlaps,
   assign,
   cast,
   coalesce,
@@ -185,6 +190,43 @@ end
 
 def neg(e: Expr(Int)) -> Expr(Int)
   Expr("-(" ++ e.sql ++ ")", e.params)
+end
+
+
+# PG array predicates.
+# All bind the array as a single param (`$1`) instead of expanding to
+# `ARRAY[$1,...,$N]`. The pg driver maps Ruby Array → PG array; PG
+# infers the element type from the column on the other side, so empty
+# arrays bind correctly and no `ARRAY[]::t[]` cast is needed.
+
+
+def encode_list(values: List(a)) -> Value
+  Encode.list((x) -> { encode(x) }, values)
+end
+
+
+def array_overlaps(col: Expr(List(a)), values: List(a)) -> Expr(Bool)
+  Expr(col.sql ++ " && ?", col.params ++ [encode_list(values)])
+end
+
+
+def array_has(col: Expr(List(a)), value: a) -> Expr(Bool)
+  Expr("? = ANY(" ++ col.sql ++ ")", [encode(value)] ++ col.params)
+end
+
+
+def array_contains(col: Expr(List(a)), values: List(a)) -> Expr(Bool)
+  Expr(col.sql ++ " @> ?", col.params ++ [encode_list(values)])
+end
+
+
+def array_contained_by(col: Expr(List(a)), values: List(a)) -> Expr(Bool)
+  Expr(col.sql ++ " <@ ?", col.params ++ [encode_list(values)])
+end
+
+
+def array_length(col: Expr(List(a))) -> Expr(Int)
+  Expr("cardinality(" ++ col.sql ++ ")", col.params)
 end
 
 

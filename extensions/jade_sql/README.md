@@ -223,6 +223,42 @@ select(Totals(_, _))
 For `CASE WHEN`, `HAVING`, and arithmetic, fall back to the raw-`Expr`
 escape hatch until they get a typed builder.
 
+### Postgres arrays
+
+Typed predicates on `text[]` / `int[]` / `uuid[]` columns. All bind
+the array as a single param (`$1`) — `pg` maps Ruby `Array` to a PG
+array natively, and PG infers the element type from the column on
+the other side of the operator. No `ARRAY[$1,...,$N]` expansion, no
+`ARRAY[]::t[]` cast needed for empty inputs.
+
+| Function                                                       | SQL                          |
+|----------------------------------------------------------------|------------------------------|
+| `array_overlaps(Expr(List(a)), List(a)) -> Expr(Bool)`         | `col && ?` (any-of)          |
+| `array_has(Expr(List(a)), a) -> Expr(Bool)`                    | `? = ANY(col)` (membership)  |
+| `array_contains(Expr(List(a)), List(a)) -> Expr(Bool)`         | `col @> ?` (all-of)          |
+| `array_contained_by(Expr(List(a)), List(a)) -> Expr(Bool)`     | `col <@ ?` (subset)          |
+| `array_length(Expr(List(a))) -> Expr(Int)`                     | `cardinality(col)`           |
+
+Example — filter the transaction-line index by any of the selected
+tag chips:
+
+```jade
+import Sql exposing (array_overlaps, column)
+
+def filter_by_tags(selected: List(String)) -> Expr(Bool)
+  array_overlaps(column("l", "tags"), selected)
+end
+-- WHERE l.tags && ?    (param: ["food","fun"])
+```
+
+`array_length` uses `cardinality(col)` rather than Postgres'
+`array_length(col, 1)` because `cardinality` is non-null (returns 0
+on empty). Filter untagged rows with
+`array_length(column("l", "tags")) |> eq(to_expr(0))`.
+
+Out of scope (deferred): `array_append`/`array_remove`/`||` mutation
+operators, `unnest`, `array_agg`. Add when a caller hits them.
+
 ## Build mutations
 
 Define codec interfaces for your domain type:
