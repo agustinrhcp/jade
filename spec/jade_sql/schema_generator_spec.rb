@@ -120,6 +120,37 @@ describe JadeSql::SchemaGenerator do
     end
   end
 
+  context 'array columns' do
+    let(:sql) do
+      <<~SQL
+        CREATE TABLE public.transaction_lines (
+            id bigint NOT NULL,
+            tags text[] NOT NULL,
+            scores integer[] NOT NULL,
+            owners uuid[] NOT NULL,
+            extras jsonb[]
+        );
+      SQL
+    end
+
+    it 'maps array SQL types to List(...) Jade types' do
+      expect(generated).to include(<<~STRUCT.strip)
+        struct TransactionLinesCols = {
+          id: Expr(Int),
+          tags: Expr(List(String)),
+          scores: Expr(List(Int)),
+          owners: Expr(List(Uuid)),
+          extras: Expr(Maybe(List(Decode.Value)))
+        }
+      STRUCT
+    end
+
+    it 'pulls in the Sql.Uuid / Decode imports for array element types' do
+      expect(generated).to include('import Sql.Uuid exposing (Uuid)')
+      expect(generated).to include('import Decode')
+    end
+  end
+
   context 'multi-column primary key' do
     let(:sql) do
       <<~SQL

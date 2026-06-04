@@ -8,7 +8,22 @@ module JadeSql
   module SchemaGenerator
     extend self
 
+    # Array variants are listed first because `\b` would otherwise match
+    # the scalar prefix of e.g. `text[]` and map it to "String".
     TYPE_MAP = {
+      /\Abigint\[\]/ => "List(Int)",
+      /\Ainteger\[\]/ => "List(Int)",
+      /\Asmallint\[\]/ => "List(Int)",
+      /\Acharacter varying\[\]/ => "List(String)",
+      /\Avarchar\[\]/ => "List(String)",
+      /\Atext\[\]/ => "List(String)",
+      /\Aboolean\[\]/ => "List(Bool)",
+      /\Abool\[\]/ => "List(Bool)",
+      /\Ajsonb?\[\]/ => "List(Decode.Value)",
+      /\Adate\[\]/ => "List(Calendar.Date)",
+      /\Atimestamp\[\]/ => "List(Clock.Instant)",
+      /\Auuid\[\]/ => "List(Uuid)",
+
       /\Abigint\b/ => "Int",
       /\Ainteger\b/ => "Int",
       /\Asmallint\b/ => "Int",
@@ -134,8 +149,10 @@ module JadeSql
     def extra_imports_for(tables)
       tables
         .flat_map { |t| t.columns.map(&:jade_type) }
+        .flat_map { |t| [t, t[/\AList\((.*)\)\z/, 1]].compact }
         .uniq
         .filter_map { |jade_type| EXTRA_IMPORTS[jade_type] }
+        .uniq
         .sort
     end
 
