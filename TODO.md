@@ -76,6 +76,36 @@ This should fail, Int has no vars
 Interop must return a Task
 
 
+### Codegen: dispatch_value non-exhaustive on Application constraints
+
+`function_call.rb:dispatch_value` only matches `Type::Constraint` with
+`type: Type::Var(id:)` and `Symbol::Implementation`. When a polymorphic
+fn body calls `encode(values: List(a))` and the type-checker has
+already partially resolved `a` to a concrete type (so the constraint
+becomes `Encodable(List(Concrete))`), the case-in falls through and
+crashes with `NoMatchingPatternError`.
+
+Repro (smallest):
+
+```jade
+def f(xs: List(a)) -> Value
+  encode(xs)
+end
+```
+
+Worked around in `jade-sql/sql.jd` by hand-composing
+`Encode.list((x) -> { encode(x) }, values)` — bypasses the lifted
+`Encodable(List(a))` derivation. Affects any caller that wants
+`encode(parameterised_type)` in a polymorphic fn body.
+
+The deriver in `frontend/type_checking/constraints/deriving/encodable.rb`
+already produces the right IR (`derive_list`, `derive_nullable`,
+`derive_struct`). The gap is in `dispatch_value` not knowing how to
+emit the dictionary for a constraint whose type is a concrete
+`Type::Application` — needs a third arm that walks the application
+and pulls the inner dict from `dict_env`.
+
+
 ### jade-sql: round-trip test for schema generator output
 
 The schema generator (`jade:schema` rake task) emits a `schema.jd` file
