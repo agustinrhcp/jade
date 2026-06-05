@@ -5,4 +5,6 @@ Gem::Specification.new do |s|
   s.authors     = ['agustin']
   s.files       = Dir['lib/**/*']
   s.require_paths = ['lib']
+
+  s.add_dependency 'base64'
 end

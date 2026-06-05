@@ -206,9 +206,7 @@ module Jade
 
 
           implements Marker(Calendar.Date) with
-            tag: (d) -> {
-              d.year
-            }
+            tag: (d) -> { d.year }
           end
 
 

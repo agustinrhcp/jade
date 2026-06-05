@@ -11,7 +11,19 @@ module Jade
         .map { snake_case(it) }
         .then { |(*rest, last)| rest + [last + '.jd'] }
         .then { File.join(*it) }
-        .then { load(source_root, it, overlays:) }
+        .then { load(resolve_root(source_root, it, name), it, overlays:) }
+    end
+
+    def self.resolve_root(source_root, uri, name)
+      return source_root if File.exist?(File.join(source_root, uri))
+
+      candidates = Jade.extensions.select { |r| File.exist?(File.join(r, uri)) }
+
+      case candidates.size
+      when 0 then source_root
+      when 1 then candidates.first
+      else raise "Module #{name} is provided by multiple extensions: #{candidates.join(', ')}"
+      end
     end
 
     def initialize(uri:, text:, line_starts: calculate_line_starts(text))

@@ -56,11 +56,7 @@ module Jade
         def test_call(
           people: List(Person),
         ) -> Task(List(WithAssoc(Person, Pet)), String)
-          with_assoc(people, (p) -> {
-            p.id
-          }, fetch, (pt) -> {
-            pt.owner_id
-          })
+          with_assoc(people, (p) -> { p.id }, fetch, (pt) -> { pt.owner_id })
         end
       JADE
     end

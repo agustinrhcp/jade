@@ -1,3 +1,4 @@
+require 'base64'
 require 'jade/stdlib/intrinsics'
 
 module Jade
@@ -61,6 +62,40 @@ module Jade
           .dup
           .force_encoding(Encoding::UTF_8)
           .then { it.valid_encoding? ? Jade::Maybe::Just[it] : Jade::Maybe::Nothing[] }
+      end
+
+      function(
+        :from_hex,
+        { s: 'String' },
+        'Maybe(Bytes)',
+      ) do |s|
+        if s.length.even? && s.match?(/\A[0-9a-fA-F]*\z/)
+          Jade::Maybe::Just[Jade::Bytes::Bytes[[s].pack('H*')]]
+        else
+          Jade::Maybe::Nothing[]
+        end
+      end
+
+      function(
+        :to_hex,
+        { bytes: 'Bytes' },
+        'String',
+      ) { it.bin.unpack1('H*') }
+
+      function(
+        :to_base64_url,
+        { bytes: 'Bytes' },
+        'String',
+      ) { ::Base64.urlsafe_encode64(it.bin, padding: false) }
+
+      function(
+        :from_base64_url,
+        { s: 'String' },
+        'Maybe(Bytes)',
+      ) do |s|
+        Jade::Maybe::Just[Jade::Bytes::Bytes[::Base64.urlsafe_decode64(s)]]
+      rescue ::ArgumentError
+        Jade::Maybe::Nothing[]
       end
 
       default_importing('Bytes')

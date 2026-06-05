@@ -160,6 +160,30 @@ module Jade
         expect(Concat.combine([], [1])).to eql [1]
       end
     end
+
+    context 'mixed with other operators' do
+      let(:source) do
+        <<~JADE
+          module Mixed exposing (mid, piped)
+
+          def piped(a: List(Int), b: List(Int)) -> List(Int)
+            a ++ b |> List.reverse
+          end
+
+
+          def mid(a: String, b: String, c: String) -> Bool
+            (a ++ b == c)
+          end
+        JADE
+      end
+
+      before { test_compiler.require('mixed', source) }
+
+      it 'binds ++ tighter than |> and looser than ==' do
+        expect(Mixed.piped([1, 2], [3, 4])).to eql [4, 3, 2, 1]
+        expect(Mixed.mid('foo', 'bar', 'foobar')).to be true
+      end
+    end
   end
 
   describe 'string escape sequences' do
@@ -339,6 +363,39 @@ module Jade
       expect(S.char_count('')).to eql 0
       expect(S.round_trip('hello')).to eql 'hello'
       expect(S.round_trip('')).to eql ''
+    end
+  end
+
+  describe 'slice' do
+    include_context 'with test compiler'
+
+    let(:source) do
+      <<~JADE
+        module S exposing (slice)
+
+        def slice(s: String, a: Int, b: Int) -> String
+          String.slice(s, a, b)
+        end
+      JADE
+    end
+
+    before { test_compiler.require('s', source) }
+
+    it 'returns the half-open substring' do
+      expect(S.slice('abcdef', 0, 3)).to eql 'abc'
+      expect(S.slice('abcdef', 2, 5)).to eql 'cde'
+    end
+
+    it 'empty for zero-length range' do
+      expect(S.slice('abc', 1, 1)).to eql ''
+    end
+
+    it 'clamps a too-large end' do
+      expect(S.slice('abc', 1, 99)).to eql 'bc'
+    end
+
+    it 'empty when start is past end of string' do
+      expect(S.slice('abc', 5, 9)).to eql ''
     end
   end
 end

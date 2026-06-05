@@ -11,6 +11,7 @@ module Jade
       <<~JADE
         module Pepe exposing (
           empty?,
+          indices_only,
           list_length,
           list_singleton,
           maptindexply,
@@ -61,6 +62,11 @@ module Jade
         end
 
 
+        def indices_only(list: List(Int)) -> List(Int)
+          list |> List.indexed_map((index, _) -> { index })
+        end
+
+
         def str_fold(list: List(String), initial: String) -> String
           list |> List.fold(initial, (acc, item) -> { String.concat([acc, item]) })
         end
@@ -93,6 +99,7 @@ module Jade
       expect(Pepe.maptiply([1, 2, 3])).to eql [2, 4, 6]
 
       expect(Pepe.maptindexply([1, 2, 3])).to eql [0, 2, 6]
+      expect(Pepe.indices_only([10, 20, 30])).to eql [0, 1, 2]
 
       expect(Pepe.str_fold([], "")).to eql ""
       expect(Pepe.str_fold(["LalaCoco"], "Pepe")).to eql "PepeLalaCoco"

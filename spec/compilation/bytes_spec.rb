@@ -10,10 +10,17 @@ module Jade
       <<~JADE
         module Pepe exposing (
           append,
+          bad_b64,
+          bad_b64_padding,
+          bad_hex,
           bad_list,
           bad_string,
           empty_width,
           eq,
+          hex_of,
+          hex_uppercase,
+          roundtrip_b64,
+          roundtrip_hex,
           roundtrip_list,
           roundtrip_string,
           width_of,
@@ -82,6 +89,57 @@ module Jade
         def same(a: Bytes, b: Bytes) -> Bool
           a == b
         end
+
+
+        def hex_of(xs: List(Int)) -> Maybe(String)
+          case Bytes.from_list(xs)
+          in Just(b) then Just(Bytes.to_hex(b))
+          in Nothing then Nothing
+          end
+        end
+
+
+        def roundtrip_hex(s: String) -> Maybe(List(Int))
+          case Bytes.from_hex(s)
+          in Just(b) then Just(Bytes.to_list(b))
+          in Nothing then Nothing
+          end
+        end
+
+
+        def hex_uppercase -> Maybe(List(Int))
+          case Bytes.from_hex("DEADBEEF")
+          in Just(b) then Just(Bytes.to_list(b))
+          in Nothing then Nothing
+          end
+        end
+
+
+        def bad_hex -> Maybe(Bytes)
+          Bytes.from_hex("zz")
+        end
+
+
+        def roundtrip_b64(xs: List(Int)) -> Maybe(List(Int))
+          case Bytes.from_list(xs)
+          in Just(raw)
+            case Bytes.from_base64_url(Bytes.to_base64_url(raw))
+            in Just(back) then Just(Bytes.to_list(back))
+            in Nothing then Nothing
+            end
+          in Nothing then Nothing
+          end
+        end
+
+
+        def bad_b64 -> Maybe(Bytes)
+          Bytes.from_base64_url("!!!")
+        end
+
+
+        def bad_b64_padding -> Maybe(Bytes)
+          Bytes.from_base64_url("Zg==")
+        end
       JADE
     end
 
@@ -123,6 +181,36 @@ module Jade
     it 'compares via Eq' do
       expect(Pepe.eq([1, 2], [1, 2])).to be true
       expect(Pepe.eq([1, 2], [1, 3])).to be false
+    end
+
+    it 'hex-encodes lower-case' do
+      expect(Pepe.hex_of([])).to eql ''
+      expect(Pepe.hex_of([0xDE, 0xAD, 0xBE, 0xEF])).to eql 'deadbeef'
+    end
+
+    it 'parses hex (case-insensitive)' do
+      expect(Pepe.roundtrip_hex('deadbeef')).to eql [0xDE, 0xAD, 0xBE, 0xEF]
+      expect(Pepe.hex_uppercase).to eql [0xDE, 0xAD, 0xBE, 0xEF]
+      expect(Pepe.roundtrip_hex('')).to eql []
+    end
+
+    it 'rejects non-hex / odd-length hex' do
+      expect(Pepe::Internal.bad_hex).to be_nothing
+      expect(Pepe.roundtrip_hex('abc')).to be_nil
+    end
+
+    it 'roundtrips through url-safe base64 (no padding)' do
+      expect(Pepe.roundtrip_b64([])).to eql []
+      expect(Pepe.roundtrip_b64([0xDE, 0xAD, 0xBE, 0xEF])).to eql [0xDE, 0xAD, 0xBE, 0xEF]
+      expect(Pepe.roundtrip_b64([0xFF, 0xFE, 0xFD])).to eql [0xFF, 0xFE, 0xFD]
+    end
+
+    it 'rejects invalid base64' do
+      expect(Pepe::Internal.bad_b64).to be_nothing
+    end
+
+    it 'accepts base64 with optional padding' do
+      expect(Pepe::Internal.bad_b64_padding).not_to be_nothing
     end
 
   end

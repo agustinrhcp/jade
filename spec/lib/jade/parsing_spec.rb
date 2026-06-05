@@ -1421,6 +1421,77 @@ module Jade
       end
     end
 
+    context 'reserved keyword used as a function name' do
+      let(:text) do
+        <<~JADE
+          def with -> Int
+            1
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it 'hints that the name is a reserved keyword' do
+        result => Err(err)
+        expect(err.message).to include('Unexpected token "with", expected identifier')
+        expect(err.message).to include('`with` is a reserved keyword')
+      end
+    end
+
+    context 'reserved keyword used as a parameter name' do
+      let(:text) do
+        <<~JADE
+          def foo(in: Int) -> Int
+            1
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it 'surfaces the reserved-keyword hint instead of backtracking' do
+        result => Err(err)
+        expect(err.message).to include('Unexpected token "in", expected identifier')
+        expect(err.message).to include('`in` is a reserved keyword')
+      end
+    end
+
+    context 'record update written with `=` (Elm style)' do
+      let(:text) do
+        <<~JADE
+          def foo(d: D) -> D
+            { d | amount = 5 }
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it 'hints that fields use `:`' do
+        result => Err(err)
+        expect(err.message).to include('Unexpected token "=", expected colon')
+        expect(err.message).to include('use `:`, not `=`')
+      end
+    end
+
+    context 'record literal written with `=` (Elm style)' do
+      let(:text) do
+        <<~JADE
+          def foo -> D
+            { amount = 5 }
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it 'hints that record fields use `:`' do
+        result => Err(err)
+        expect(err.message).to include('record fields use `:`, not `=`')
+      end
+    end
+
     context 'incomplete struct declaration' do
       let(:text) do
         <<~JADE

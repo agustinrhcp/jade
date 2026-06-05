@@ -42,6 +42,7 @@ module Jade
         '-' => Fixity[6, :left],
         '*' => Fixity[7, :left],
         '/' => Fixity[7, :left],
+        '++' => Fixity[5, :right],
         '|>' => Fixity[1, :left],
         '<|' => Fixity[1, :right],
         '==' => Fixity[4, :none],

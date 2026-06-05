@@ -148,6 +148,14 @@ module Jade
         'String',
       ) { |str, target, replacement| str.gsub(target, replacement) }
 
+      # Half-open slice. Negative offsets count from the end (Ruby `s[i...j]`
+      # semantics). Out-of-range returns an empty string rather than nil.
+      function(
+        :slice,
+        { str: 'String', start: 'Int', end_: 'Int' },
+        'String',
+      ) { |str, start, end_| str[start...end_] || '' }
+
       function(
         :words,
         { str: 'String' },

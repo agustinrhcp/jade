@@ -422,8 +422,10 @@ module Jade
             identifier >>
             (
               (type(:lparen).skip >>
-                (comma_sequence(param) | empty_comma_list) >>
-                type(:rparen).skip) |
+                (
+                  type(:rparen).skip.map { Combinators::CommaList.empty } |
+                  (comma_sequence(param) >> type(:rparen).skip).commit
+                )) |
               empty_comma_list
             ) >>
             type(:arrow).skip >>
