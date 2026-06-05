@@ -84,6 +84,11 @@ module Jade
           expect(outbound.first[:result][:capabilities][:inlayHintProvider]).to eq true
         end
 
+        it 'advertises documentFormattingProvider' do
+          _, outbound = subject
+          expect(outbound.first[:result][:capabilities][:documentFormattingProvider]).to eq true
+        end
+
         it 'advertises utf-8 when the client supports it' do
           _, outbound = Handlers.dispatch(State.empty, {
             'method' => 'initialize',
@@ -918,6 +923,44 @@ module Jade
           def_item = items.find { it[:label] == 'def' }
           expect(def_item[:insertText]).to end_with("\nend")
           expect(def_item[:insertText]).to include('${1:')
+        end
+      end
+
+      describe 'formatting' do
+        let(:unformatted) do
+          # extra blank line between `module` and `def` is canonical;
+          # the leading whitespace before `def` is the drift
+          "module M exposing (n)\n\n    def n -> Int\n  42\nend\n"
+        end
+
+        def open_and_format(text)
+          File.write(File.join(src, 'leaf.jd'), text)
+          state, _ = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+          Handlers.dispatch(state, {
+            'method' => 'textDocument/formatting',
+            'id' => 91,
+            'params' => { 'textDocument' => { 'uri' => uri } },
+          })
+        end
+
+        it 'returns a single whole-document TextEdit when text drifts' do
+          _, outbound = open_and_format(unformatted)
+          edits = outbound.first[:result]
+          expect(edits.size).to eq 1
+          expect(edits.first[:newText]).not_to eq unformatted
+        end
+
+        it 'returns an empty array when already formatted' do
+          _, outbound = open_and_format(leaf)
+          expect(outbound.first[:result]).to eq []
+        end
+
+        it 'returns nil when the buffer fails to parse' do
+          _, outbound = open_and_format("module M exposing (n)\n\ndef n -> Int\n  if then else end\nend\n")
+          expect(outbound.first[:result]).to be_nil
         end
       end
 

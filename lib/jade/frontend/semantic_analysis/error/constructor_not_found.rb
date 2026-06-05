@@ -3,9 +3,12 @@ module Jade
     module SemanticAnalysis
       module Error
         class ConstructorNotFound < Jade::Error
-          def initialize(entry, span, name:, exposed_type_module: nil)
+          attr_reader :candidates
+
+          def initialize(entry, span, name:, exposed_type_module: nil, candidates: [])
             @name = name
             @exposed_type_module = exposed_type_module
+            @candidates = candidates
             super(entry:, span:)
           end
 
@@ -19,6 +22,10 @@ module Jade
 
           def label
             "not found"
+          end
+
+          def queried_name
+            @name
           end
         end
       end

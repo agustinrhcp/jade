@@ -2,6 +2,7 @@ require 'jade/registry'
 require 'jade/symbol'
 require 'jade/type'
 require 'jade/stdlib'
+require 'jade/did_you_mean'
 
 require 'jade/frontend/comment_attacher'
 require 'jade/frontend/forward_declaration'

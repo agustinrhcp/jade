@@ -23,6 +23,7 @@ module Jade
         when 'textDocument/prepareRename' then on_prepare_rename(state, message)
         when 'textDocument/rename' then on_rename(state, message)
         when 'textDocument/inlayHint' then on_inlay_hint(state, message)
+        when 'textDocument/formatting' then on_formatting(state, message)
         else on_unknown(state, message)
         end
       end
@@ -53,6 +54,7 @@ module Jade
             completionProvider: { resolveProvider: false },
             renameProvider: { prepareProvider: true },
             inlayHintProvider: true,
+            documentFormattingProvider: true,
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
@@ -138,6 +140,19 @@ module Jade
         inlay_hints_for(
           state, params['textDocument']['uri'], params['range'],
         ).then { [state, [respond(message['id'], it)]] }
+      end
+
+      def on_formatting(state, message)
+        uri = message.dig('params', 'textDocument', 'uri')
+        edits = formatting_edits_for(state, uri)
+        [state, [respond(message['id'], edits)]]
+      end
+
+      def formatting_edits_for(state, uri)
+        text = state.buffers[uri]
+        return nil unless text
+
+        Converters.format_edits(text)
       end
 
       def inlay_hints_for(state, uri, lsp_range)

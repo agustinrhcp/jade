@@ -12,7 +12,10 @@ module Jade
           in nil
             Result
               .init(node.with(symbol: Symbol.var(name, node.range)), scope)
-              .add_errors([Error::UndefinedVariable.new(entry.name, node.range, var_ref: name)])
+              .add_errors([Error::UndefinedVariable.new(
+                entry.name, node.range, var_ref: name,
+                candidates: scope.bindings.keys,
+              )])
 
           in symbol
             Result.init(node.with(symbol:), scope)

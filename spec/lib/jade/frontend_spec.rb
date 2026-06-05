@@ -324,6 +324,27 @@ module Jade
         it { is_expected.to have(1).item }
         its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::UndefinedVariable) }
       end
+
+      context 'with a close neighbor in scope' do
+        let(:text) do
+          <<~JADE
+            helper = 1
+
+            helpr
+          JADE
+        end
+
+        subject do
+          frontend => Err(errors)
+          errors.first.to_diagnostic.annotations
+        end
+
+        it 'attaches a did-you-mean help annotation pointing at `helper`' do
+          expect(subject).to include(
+            have_attributes(kind: :help, message: a_string_including('`helper`')),
+          )
+        end
+      end
     end
 
     context 'infix operations' do

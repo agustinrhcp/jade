@@ -67,7 +67,10 @@ module Jade
         def require_type(entry, name, span)
           entry.lookup_type(name)
             &.then { Ok[it] } ||
-            Err[Error::TypeNotFound.new(entry.name, span, name:)]
+            Err[Error::TypeNotFound.new(
+              entry.name, span, name:,
+              candidates: entry.types.keys,
+            )]
         end
 
         def require_qualified_type(entry, module_path, type_name, span)
