@@ -3,9 +3,12 @@ module Jade
     module SemanticAnalysis
       module Error
         class UndefinedVariable < Jade::Error
-          def initialize(entry, span, var_ref:)
+          attr_reader :candidates
+
+          def initialize(entry, span, var_ref:, candidates: [])
             super(entry:, span:)
             @var_ref = var_ref
+            @candidates = candidates
           end
 
           def message
@@ -14,6 +17,10 @@ module Jade
 
           def label
             "undefined"
+          end
+
+          def queried_name
+            @var_ref
           end
         end
       end

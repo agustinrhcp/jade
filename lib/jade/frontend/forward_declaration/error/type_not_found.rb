@@ -3,8 +3,11 @@ module Jade
     module ForwardDeclaration
       module Error
         class TypeNotFound < Jade::Error
-          def initialize(entry, span, name:)
+          attr_reader :candidates
+
+          def initialize(entry, span, name:, candidates: [])
             @name = name
+            @candidates = candidates
             super(entry:, span:)
           end
 
@@ -14,6 +17,10 @@ module Jade
 
           def label
             "not found"
+          end
+
+          def queried_name
+            @name
           end
         end
       end

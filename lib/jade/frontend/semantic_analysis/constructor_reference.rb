@@ -18,6 +18,7 @@ module Jade
                 node.range,
                 name:,
                 exposed_type_module: exposed_type_origin(name, entry, registry),
+                candidates: scope.bindings.keys.select { it.match?(/\A[A-Z]/) },
               ))
               .then do
                 Result

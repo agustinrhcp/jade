@@ -87,6 +87,33 @@ module Jade
         collect_inlay_hints(entry.ast, entry, range_offsets)
       end
 
+      # Re-runs the parse + format pipeline on the buffer text. Returns
+      # nil if parsing fails (don't overwrite the user's broken buffer
+      # with garbage), an empty array if the text is already formatted,
+      # or a single whole-document TextEdit otherwise.
+      def format_edits(text)
+        source = Jade::Source.new(uri: 'buffer', text:)
+
+        case Jade::Parsing.parse(Jade::Lexer.tokenize(source), source:)
+        in Jade::Ok([ast, comments])
+          formatted = Jade::Formatter.format(ast, comments:, source:) + "\n"
+          formatted == text ? [] : [whole_document_edit(source, formatted)]
+        in Jade::Err
+          nil
+        end
+      end
+
+      def whole_document_edit(source, new_text)
+        last_line = source.line_starts.size - 1
+        {
+          range: {
+            start: { line: 0, character: 0 },
+            end:   { line: last_line, character: source.text.bytesize - source.line_starts[last_line] },
+          },
+          newText: new_text,
+        }
+      end
+
       def references_for_path(
         path, registry, entry, source_root, include_declaration:
       )
