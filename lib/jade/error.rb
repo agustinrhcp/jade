@@ -40,17 +40,26 @@ module Jade
         message,
         primary: Jade::Diagnostics::Label[source, span, label],
         annotations: notes + did_you_mean_notes,
+        data: suggestion_data,
       )
     end
 
     private
 
-    def did_you_mean_notes
-      return [] if queried_name.nil? || candidates.empty?
+    def suggestions
+      @_suggestions ||= queried_name && Jade::DidYouMean.suggest(queried_name, candidates)
+    end
 
-      Jade::DidYouMean
-        .suggest(queried_name, candidates)
-        .then { it.empty? ? [] : [help_annotation(it)] }
+    def did_you_mean_notes
+      return [] if suggestions.nil? || suggestions.empty?
+
+      [help_annotation(suggestions)]
+    end
+
+    def suggestion_data
+      return nil if suggestions.nil? || suggestions.empty?
+
+      { suggestions: }
     end
 
     def help_annotation(suggestions)

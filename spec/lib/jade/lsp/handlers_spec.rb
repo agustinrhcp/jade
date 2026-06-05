@@ -89,6 +89,11 @@ module Jade
           expect(outbound.first[:result][:capabilities][:documentFormattingProvider]).to eq true
         end
 
+        it 'advertises codeActionProvider' do
+          _, outbound = subject
+          expect(outbound.first[:result][:capabilities][:codeActionProvider]).to eq true
+        end
+
         it 'advertises utf-8 when the client supports it' do
           _, outbound = Handlers.dispatch(State.empty, {
             'method' => 'initialize',
@@ -371,6 +376,35 @@ module Jade
         it 'returns the enclosing function signature when hovering inside its body whitespace' do
           _, outbound = open_and_hover(text: hover_text, at: '  x + 1')
           expect(outbound.first[:result][:contents][:value]).to include('helper')
+        end
+
+        it 'prepends leading comments as a docstring' do
+          text = <<~JADE
+            module M exposing (run)
+
+            # Adds one to x.
+            # Useful for clamping.
+            def add_one(x: Int) -> Int
+              x + 1
+            end
+
+
+            def run() -> Int
+              add_one(1)
+            end
+          JADE
+          _, outbound = open_and_hover(text:, at: 'add_one(1)')
+          value = outbound.first[:result][:contents][:value]
+          expect(value).to include('Adds one to x.')
+          expect(value).to include('Useful for clamping.')
+          # docstring appears before the code-block signature
+          expect(value.index('Adds one')).to be < value.index('```jade')
+        end
+
+        it 'omits the docstring section when no leading comments exist' do
+          _, outbound = open_and_hover(text: hover_text, at: 'helper(42)')
+          value = outbound.first[:result][:contents][:value]
+          expect(value).to start_with('```jade')
         end
 
         it 'renders inferred constraints for constrained function calls' do
@@ -961,6 +995,59 @@ module Jade
         it 'returns nil when the buffer fails to parse' do
           _, outbound = open_and_format("module M exposing (n)\n\ndef n -> Int\n  if then else end\nend\n")
           expect(outbound.first[:result]).to be_nil
+        end
+      end
+
+      describe 'codeAction' do
+        let(:text) do
+          <<~JADE
+            module M exposing (run)
+
+            def run() -> Int
+              helper = 1
+              helpr
+            end
+          JADE
+        end
+
+        def open_and_diag(text)
+          File.write(File.join(src, 'leaf.jd'), text)
+          Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+        end
+
+        it 'publishes a diagnostic carrying suggestions in data' do
+          _, outbound = open_and_diag(text)
+          publish = outbound.find { it[:method] == 'textDocument/publishDiagnostics' }
+          diag = publish[:params][:diagnostics].first
+          expect(diag[:data]).to include(suggestions: ['helper'])
+        end
+
+        it 'produces a quickfix per suggestion' do
+          state, outbound = open_and_diag(text)
+          diag = outbound
+            .find { it[:method] == 'textDocument/publishDiagnostics' }
+            .dig(:params, :diagnostics, 0)
+
+          _, out = Handlers.dispatch(state, {
+            'method' => 'textDocument/codeAction',
+            'id' => 101,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'range' => diag[:range],
+              # JSON-roundtrip the diagnostic to get string keys, as a real client would.
+              'context' => { 'diagnostics' => [JSON.parse(JSON.generate(diag))] },
+            },
+          })
+          actions = out.first[:result]
+          expect(actions).to have(1).item
+          expect(actions.first).to include(
+            title: 'Replace with `helper`',
+            kind: 'quickfix',
+          )
+          expect(actions.first[:edit][:changes][uri].first[:newText]).to eq 'helper'
         end
       end
 

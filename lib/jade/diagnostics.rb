@@ -5,13 +5,13 @@ module Jade
     Label = Data.define(:source, :span, :message)
     Annotation = Data.define(:kind, :message)
 
-    Diagnostic = Data.define(:severity, :message, :primary, :secondary, :annotations) do
-      def self.error(message, primary:, secondary: [], annotations: [])
-        new(severity: :error, message:, primary:, secondary:, annotations:)
+    Diagnostic = Data.define(:severity, :message, :primary, :secondary, :annotations, :data) do
+      def self.error(message, primary:, secondary: [], annotations: [], data: nil)
+        new(severity: :error, message:, primary:, secondary:, annotations:, data:)
       end
 
-      def self.warning(message, primary:, secondary: [], annotations: [])
-        new(severity: :warning, message:, primary:, secondary:, annotations:)
+      def self.warning(message, primary:, secondary: [], annotations: [], data: nil)
+        new(severity: :warning, message:, primary:, secondary:, annotations:, data:)
       end
 
       def error?

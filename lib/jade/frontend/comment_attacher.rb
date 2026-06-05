@@ -69,8 +69,20 @@ module Jade
           .last
       end
 
+      # When `Module` or `Module.Body` shares a begin with the first
+      # real declaration (the body's range starts at its first
+      # expression's begin), bsearch may land on the wrapper. Comments
+      # belong to the declaration the user sees, so step past wrappers
+      # that share the same begin offset.
       def first_node_starting_after(pos, sorted_nodes)
-        sorted_nodes.bsearch { |n| n.range.begin >= pos }
+        candidate = sorted_nodes.bsearch { |n| n.range.begin >= pos }
+        return nil unless candidate
+
+        sorted_nodes
+          .select { |n| n.range.begin == candidate.range.begin }
+          .reject { it.is_a?(AST::Body) || it.is_a?(AST::Module) }
+          .min_by { |n| n.range.size }
+          .then { it || candidate }
       end
 
       def smallest_enclosing(pos, sorted_nodes)

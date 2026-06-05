@@ -24,6 +24,7 @@ module Jade
         when 'textDocument/rename' then on_rename(state, message)
         when 'textDocument/inlayHint' then on_inlay_hint(state, message)
         when 'textDocument/formatting' then on_formatting(state, message)
+        when 'textDocument/codeAction' then on_code_action(state, message)
         else on_unknown(state, message)
         end
       end
@@ -55,6 +56,7 @@ module Jade
             renameProvider: { prepareProvider: true },
             inlayHintProvider: true,
             documentFormattingProvider: true,
+            codeActionProvider: true,
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
@@ -146,6 +148,15 @@ module Jade
         uri = message.dig('params', 'textDocument', 'uri')
         edits = formatting_edits_for(state, uri)
         [state, [respond(message['id'], edits)]]
+      end
+
+      def on_code_action(state, message)
+        params = message['params']
+        actions = Converters.code_actions_for_diagnostics(
+          params.dig('textDocument', 'uri'),
+          params.dig('context', 'diagnostics') || [],
+        )
+        [state, [respond(message['id'], actions)]]
       end
 
       def formatting_edits_for(state, uri)

@@ -103,6 +103,29 @@ module Jade
         end
       end
 
+      # Translates suggestions stashed on diagnostic.data into one
+      # quickfix per suggestion. Helix preserves diagnostic.data
+      # round-trip in codeAction.context, so the server can be stateless.
+      def code_actions_for_diagnostics(uri, diagnostics)
+        diagnostics.flat_map do |diag|
+          (diag.dig('data', 'suggestions') || [])
+            .map { quickfix_action(uri, diag, it) }
+        end
+      end
+
+      def quickfix_action(uri, diagnostic, suggestion)
+        {
+          title: "Replace with `#{suggestion}`",
+          kind: 'quickfix',
+          diagnostics: [diagnostic],
+          edit: {
+            changes: {
+              uri => [{ range: diagnostic['range'], newText: suggestion }],
+            },
+          },
+        }
+      end
+
       def whole_document_edit(source, new_text)
         last_line = source.line_starts.size - 1
         {
@@ -178,7 +201,7 @@ module Jade
           severity: SEVERITY.fetch(diagnostic.severity, 3),
           source: 'jade',
           message: diagnostic_message(diagnostic),
-        }
+        }.then { diagnostic.data ? it.merge(data: diagnostic.data) : it }
       end
 
       def relative_path(uri, source_root)
@@ -362,8 +385,37 @@ module Jade
       end
 
       def hover_response(symbol, registry)
-        hover_body(symbol, registry)
-          .then { { contents: { kind: 'markdown', value: code_block(it) } } }
+        body = code_block(hover_body(symbol, registry))
+        docstring_for(symbol, registry)
+          .then { it ? "#{it}\n\n#{body}" : body }
+          .then { { contents: { kind: 'markdown', value: it } } }
+      end
+
+      # CommentAttacher attaches comments to the first node whose range
+      # starts at-or-after the comment. When a wrapper (Module's Body)
+      # and its first child share a range begin, the wrapper sometimes
+      # wins — so walk the path inner→outer until we find a node with
+      # leading_comments.
+      def docstring_for(symbol, registry)
+        return nil unless symbol&.respond_to?(:decl_span) && symbol.decl_span
+
+        registry
+          .modules[symbol.module_name]
+          &.ast
+          &.find_at_path(symbol.decl_span.begin)
+          &.reverse
+          &.filter_map { it.respond_to?(:leading_comments) ? it.leading_comments : nil }
+          &.find { it.any? }
+          &.then { extract_docstring(it) }
+      end
+
+      def extract_docstring(comments)
+        return nil if comments.nil? || comments.empty?
+
+        comments
+          .map { it.value.sub(/\A#\s?/, '').rstrip }
+          .join("  \n")
+          .then { it.empty? ? nil : it }
       end
 
       def hover_body(symbol, registry)
