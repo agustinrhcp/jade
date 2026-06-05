@@ -1,0 +1,268 @@
+module Sql.Mutation exposing (
+  Mutation,
+  delete,
+  delete_all,
+  insert,
+  insert_all,
+  returning,
+  to_sql,
+  update,
+  update_all,
+)
+
+import Sql exposing (
+  Assignment,
+  Expr(..),
+  Renderable,
+  Selector(..),
+  Table,
+  TableRef(..),
+  pk_values,
+  set_,
+  to_assigns,
+)
+import Sql.Query exposing (Q)
+import Decode exposing (Value)
+
+
+type MutationKind
+  = InsertK
+  | UpdateK
+  | DeleteK
+
+
+struct Mutation(ret, c) = {
+  kind: MutationKind,
+  table: TableRef,
+  cols: c,
+  rows: List(List(Assignment)),
+  wheres: List(Expr(Bool)),
+  returning_selector: Selector(ret)
+}
+
+
+def insert(value: a, t: Table(c, m)) -> Mutation(Int, c)
+  Mutation(
+    InsertK,
+    TableRef(t.name, t.alias_),
+    t.alias_ |> t.cols,
+    [to_assigns(value)],
+    [],
+    Selector([], []),
+  )
+end
+
+
+def insert_all(values: List(a), t: Table(c, m)) -> Mutation(Int, c)
+  Mutation(
+    InsertK,
+    TableRef(t.name, t.alias_),
+    t.alias_ |> t.cols,
+    List.map(values, (v) -> { to_assigns(v) }),
+    [],
+    Selector([], []),
+  )
+end
+
+
+def update(value: a, t: Table(c, m)) -> Mutation(Int, c)
+  pk_pred = pk_predicate(t.pk_columns, pk_values(value))
+
+  Mutation(
+    UpdateK,
+    TableRef(t.name, t.alias_),
+    t.alias_ |> t.cols,
+    [to_assigns(value)],
+    [pk_pred],
+    Selector([], []),
+  )
+end
+
+
+def delete(value: a, t: Table(c, m)) -> Mutation(Int, c)
+  pk_pred = pk_predicate(t.pk_columns, pk_values(value))
+
+  Mutation(
+    DeleteK,
+    TableRef(t.name, t.alias_),
+    t.alias_ |> t.cols,
+    [],
+    [pk_pred],
+    Selector([], []),
+  )
+end
+
+
+def update_all(
+  t: Table(c, m),
+  pred_fn: c -> Expr(Bool),
+  build: c -> List(Assignment),
+) -> Mutation(Int, c)
+  cols_ = t.alias_ |> t.cols
+  pred = cols_ |> pred_fn
+
+  Mutation(
+    UpdateK,
+    TableRef(t.name, t.alias_),
+    cols_,
+    [cols_ |> build],
+    [pred],
+    Selector([], []),
+  )
+end
+
+
+def delete_all(t: Table(c, m), pred_fn: c -> Expr(Bool)) -> Mutation(Int, c)
+  cols_ = t.alias_ |> t.cols
+  pred = cols_ |> pred_fn
+
+  Mutation(
+    DeleteK,
+    TableRef(t.name, t.alias_),
+    cols_,
+    [],
+    [pred],
+    Selector([], []),
+  )
+end
+
+
+def returning(m: Mutation(a, c), build: c -> Q(Selector(b))) -> Mutation(b, c)
+  Mutation(m.kind, m.table, m.cols, m.rows, m.wheres, build(m.cols).result)
+end
+
+
+def pk_predicate(cols: List(String), values: List(Value)) -> Expr(Bool)
+  sql = cols
+    |> List.map((col) -> { col ++ " = ?" })
+    |> String.join(" AND ")
+
+  Expr(sql, values)
+end
+
+
+def render_row(row: List(Assignment)) -> String
+  cols_part = row
+    |> List.map((a) -> { a.value_sql })
+    |> String.join(", ")
+
+  "(" ++ cols_part ++ ")"
+end
+
+
+def returning_clause(s: Selector(ret)) -> String
+  List.empty?(s.columns_sql) ? "" : " RETURNING " ++ String.join(s.columns_sql, ", ")
+end
+
+
+def insert_cols_str(rows: List(List(Assignment))) -> String
+  case rows
+  in [] then ""
+  in [first | _]
+    "(" ++ String.join(List.map(first, (a) -> { a.col }), ", ") ++ ")"
+  end
+end
+
+
+def insert_params(rows: List(List(Assignment))) -> List(Value)
+  List.fold(
+    rows,
+    [],
+    (acc, row) -> { acc ++ List.fold(row, [], (acc2, a) -> { acc2 ++ a.params }) },
+  )
+end
+
+
+def set_sqls_for(rows: List(List(Assignment))) -> List(String)
+  case rows
+  in [first | _] then List.map(first, (a) -> { a.col ++ " = " ++ a.value_sql })
+  in [] then []
+  end
+end
+
+
+def set_params_for(rows: List(List(Assignment))) -> List(Value)
+  case rows
+  in [first | _] then List.fold(first, [], (acc, a) -> { acc ++ a.params })
+  in [] then []
+  end
+end
+
+
+def where_sql(wheres: List(Expr(Bool))) -> String
+  List.empty?(wheres)
+    ? ""
+    : " WHERE " ++ String.join(List.map(wheres, (w) -> { w.sql }), " AND ")
+end
+
+
+def where_params(wheres: List(Expr(Bool))) -> List(Value)
+  List.fold(wheres, [], (acc, w) -> { acc ++ w.params })
+end
+
+
+def strip_table_alias(sql: String, alias_: String) -> String
+  String.replace(sql, alias_ ++ ".", "")
+end
+
+
+def render_insert(m: Mutation(ret, c)) -> (String, List(Value))
+  cols_str = insert_cols_str(m.rows)
+  values_str = m.rows
+    |> List.map(render_row)
+    |> String.join(", ")
+  returning_ = strip_table_alias(returning_clause(m.returning_selector), m.table.alias_)
+  sql = "INSERT INTO "
+    ++ m.table.name
+    ++ " "
+    ++ cols_str
+    ++ " VALUES "
+    ++ values_str
+    ++ returning_
+
+  Tuple.Tuple2(sql, insert_params(m.rows) ++ m.returning_selector.params)
+end
+
+
+def render_update(m: Mutation(ret, c)) -> (String, List(Value))
+  set_clause = "SET " ++ String.join(set_sqls_for(m.rows), ", ")
+  where = strip_table_alias(where_sql(m.wheres), m.table.alias_)
+  returning_ = strip_table_alias(returning_clause(m.returning_selector), m.table.alias_)
+  sql = "UPDATE "
+    ++ m.table.name
+    ++ " "
+    ++ set_clause
+    ++ where
+    ++ returning_
+
+  Tuple.Tuple2(
+    sql,
+    set_params_for(m.rows) ++ where_params(m.wheres) ++ m.returning_selector.params,
+  )
+end
+
+
+def render_delete(m: Mutation(ret, c)) -> (String, List(Value))
+  where = strip_table_alias(where_sql(m.wheres), m.table.alias_)
+  returning_ = strip_table_alias(returning_clause(m.returning_selector), m.table.alias_)
+  sql = "DELETE FROM "
+    ++ m.table.name
+    ++ where
+    ++ returning_
+
+  Tuple.Tuple2(sql, where_params(m.wheres) ++ m.returning_selector.params)
+end
+
+
+def to_sql(m: Mutation(ret, c)) -> (String, List(Value))
+  case m.kind
+  in InsertK then render_insert(m)
+  in UpdateK then render_update(m)
+  in DeleteK then render_delete(m)
+  end
+end
+
+
+implements Renderable(Mutation(ret, c)) with
+  render: to_sql
+end

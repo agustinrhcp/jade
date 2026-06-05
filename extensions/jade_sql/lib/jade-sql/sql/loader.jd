@@ -1,0 +1,30 @@
+module Sql.Loader exposing (
+  group_by,
+  lookup_or_empty,
+)
+
+import Dict exposing (Dict)
+
+
+def group_by(items: List(a), key: a -> k) -> Dict(k, List(a))
+  List.fold(
+    items,
+    Dict.empty,
+    (acc, item) -> {
+      k = key(item)
+
+      case Dict.get(acc, k)
+      in Just(existing) then Dict.insert(acc, k, existing ++ [item])
+      in Nothing then Dict.insert(acc, k, [item])
+      end
+    },
+  )
+end
+
+
+def lookup_or_empty(grouped: Dict(k, List(a)), key: k) -> List(a)
+  case Dict.get(grouped, key)
+  in Just(items) then items
+  in Nothing then []
+  end
+end

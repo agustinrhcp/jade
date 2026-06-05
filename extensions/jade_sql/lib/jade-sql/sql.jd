@@ -1,0 +1,394 @@
+module Sql exposing (
+  Assignment(..),
+  Expr(..),
+  Identified,
+  Renderable,
+  Selector(..),
+  SqlError(..),
+  SqlMapper,
+  Table,
+  TableRef(..),
+  aliased,
+  and,
+  array_append,
+  array_concat,
+  array_contained_by,
+  array_contains,
+  array_has,
+  array_length,
+  array_overlaps,
+  array_remove,
+  assign,
+  cast,
+  coalesce,
+  column,
+  columns,
+  count,
+  count_all,
+  eq,
+  execute,
+  execute_raw,
+  fetch_many,
+  fetch_many_raw,
+  fetch_one,
+  fetch_one_raw,
+  in_,
+  is_not_null,
+  is_null,
+  jsonb_contains,
+  jsonb_path_exists,
+  maybe_columns,
+  neg,
+  nullable,
+  pk_values,
+  render,
+  set_,
+  sum,
+  table,
+  to_assigns,
+  to_expr,
+)
+
+import Encode exposing (Encodable, encode)
+import Decode exposing (Decodable, Decoder, Value)
+
+
+struct Expr(a) = {
+  sql: String,
+  params: List(Value)
+}
+
+
+struct Selector(a) = {
+  columns_sql: List(String),
+  params: List(Value)
+}
+
+
+struct Table(c, m) = {
+  name: String,
+  alias_: String,
+  cols: String -> c,
+  maybe_cols: String -> m,
+  pk_columns: List(String)
+}
+
+
+struct TableRef = {
+  name: String,
+  alias_: String
+}
+
+
+struct Assignment = {
+  col: String,
+  value_sql: String,
+  params: List(Value)
+}
+
+
+def set_(col: Expr(a), value: Expr(a)) -> Assignment
+  Assignment(strip_alias(col.sql), value.sql, value.params)
+end
+
+
+def assign(col: String, value: a) -> Assignment
+  Assignment(col, "?", [encode(value)])
+end
+
+
+def strip_alias(sql: String) -> String
+  parts = String.split(sql, ".")
+
+  case parts
+  in [] then sql
+  in [name] then name
+  in [_ | rest] then String.join(rest, ".")
+  end
+end
+
+
+interface SqlMapper(a) with
+  to_assigns : a -> List(Assignment)
+end
+
+
+implements SqlMapper(List(Assignment)) with
+  to_assigns: (a) -> { a }
+end
+
+
+interface Identified(a) with
+  pk_values : a -> List(Value)
+end
+
+
+interface Renderable(r) with
+  render : r -> (String, List(Value))
+end
+
+
+def column(alias_: String, name: String) -> Expr(a)
+  Expr(alias_ ++ "." ++ name, [])
+end
+
+
+def to_expr(value: a) -> Expr(a)
+  Expr("?", [encode(value)])
+end
+
+
+def eq(left: Expr(a), right: Expr(a)) -> Expr(Bool)
+  Expr(left.sql ++ " = " ++ right.sql, left.params ++ right.params)
+end
+
+
+def is_null(e: Expr(a)) -> Expr(Bool)
+  Expr(e.sql ++ " IS NULL", e.params)
+end
+
+
+def is_not_null(e: Expr(a)) -> Expr(Bool)
+  Expr(e.sql ++ " IS NOT NULL", e.params)
+end
+
+
+def nullable(e: Expr(a)) -> Expr(Maybe(a))
+  Expr(e.sql, e.params)
+end
+
+
+def cast(e: Expr(a)) -> Expr(b)
+  Expr(e.sql, e.params)
+end
+
+
+def and(left: Expr(Bool), right: Expr(Bool)) -> Expr(Bool)
+  Expr(left.sql ++ " AND " ++ right.sql, left.params ++ right.params)
+end
+
+
+# SUM may return NULL on an empty group, so the result is Expr(Maybe(Int)).
+# Wrap with `coalesce(sum(x), to_expr(0))` for a strict total.
+def sum(e: Expr(Int)) -> Expr(Maybe(Int))
+  Expr("SUM(" ++ e.sql ++ ")", e.params)
+end
+
+
+def count(e: Expr(a)) -> Expr(Int)
+  Expr("COUNT(" ++ e.sql ++ ")", e.params)
+end
+
+
+def count_all -> Expr(Int)
+  Expr("COUNT(*)", [])
+end
+
+
+def coalesce(maybe_e: Expr(Maybe(a)), default: Expr(a)) -> Expr(a)
+  Expr(
+    "COALESCE(" ++ maybe_e.sql ++ ", " ++ default.sql ++ ")",
+    maybe_e.params ++ default.params,
+  )
+end
+
+
+def neg(e: Expr(Int)) -> Expr(Int)
+  Expr("-(" ++ e.sql ++ ")", e.params)
+end
+
+
+# PG array predicates.
+# All bind the array as a single param (`$1`) instead of expanding to
+# `ARRAY[$1,...,$N]`. The pg driver maps Ruby Array → PG array; PG
+# infers the element type from the column on the other side, so empty
+# arrays bind correctly and no `ARRAY[]::t[]` cast is needed.
+
+
+def encode_list(values: List(a)) -> Value
+  Encode.list((x) -> { encode(x) }, values)
+end
+
+
+def array_overlaps(col: Expr(List(a)), values: List(a)) -> Expr(Bool)
+  Expr(col.sql ++ " && ?", col.params ++ [encode_list(values)])
+end
+
+
+def array_has(col: Expr(List(a)), value: a) -> Expr(Bool)
+  Expr("? = ANY(" ++ col.sql ++ ")", [encode(value)] ++ col.params)
+end
+
+
+def array_contains(col: Expr(List(a)), values: List(a)) -> Expr(Bool)
+  Expr(col.sql ++ " @> ?", col.params ++ [encode_list(values)])
+end
+
+
+def array_contained_by(col: Expr(List(a)), values: List(a)) -> Expr(Bool)
+  Expr(col.sql ++ " <@ ?", col.params ++ [encode_list(values)])
+end
+
+
+def array_length(col: Expr(List(a))) -> Expr(Int)
+  Expr("cardinality(" ++ col.sql ++ ")", col.params)
+end
+
+
+def array_append(col: Expr(List(a)), value: a) -> Expr(List(a))
+  Expr(
+    "array_append(" ++ col.sql ++ ", ?)",
+    col.params ++ [encode(value)],
+  )
+end
+
+
+def array_remove(col: Expr(List(a)), value: a) -> Expr(List(a))
+  Expr(
+    "array_remove(" ++ col.sql ++ ", ?)",
+    col.params ++ [encode(value)],
+  )
+end
+
+
+def array_concat(left: Expr(List(a)), right: Expr(List(a))) -> Expr(List(a))
+  Expr(left.sql ++ " || " ++ right.sql, left.params ++ right.params)
+end
+
+
+# jsonb predicates. `value` is encoded via the caller's `Encodable(a)`
+# instance, so user code can pass a record directly:
+#
+#   jsonb_contains(column("rules", "match"), { kind: "income" })
+#
+# pg binds Ruby Hash/Array as jsonb when paired with a jsonb column.
+# The `@?` jsonpath operator needs an explicit `::jsonpath` cast since
+# the param is bound as text.
+
+
+def jsonb_contains(col: Expr(Value), value: a) -> Expr(Bool)
+  Expr(col.sql ++ " @> ?", col.params ++ [encode(value)])
+end
+
+
+def jsonb_path_exists(col: Expr(Value), path: String) -> Expr(Bool)
+  Expr(col.sql ++ " @? ?::jsonpath", col.params ++ [encode(path)])
+end
+
+
+def in_(col: Expr(a), values: List(a)) -> Expr(Bool)
+  case values
+  in [] then Expr("FALSE", [])
+  else in_nonempty(col, List.map(values, encode))
+  end
+end
+
+
+def in_nonempty(col: Expr(a), encoded: List(Value)) -> Expr(Bool)
+  placeholders = encoded
+    |> List.map((_) -> { "?" })
+    |> String.join(", ")
+
+  Expr(col.sql ++ " IN (" ++ placeholders ++ ")", col.params ++ encoded)
+end
+
+
+def table(
+  name: String,
+  alias_: String,
+  cols: String -> c,
+  maybe_cols: String -> m,
+  pk_columns: List(String),
+) -> Table(c, m)
+  Table(name, alias_, cols, maybe_cols, pk_columns)
+end
+
+
+def columns(t: Table(c, m), alias_: String) -> c
+  alias_ |> t.cols
+end
+
+
+def maybe_columns(t: Table(c, m), alias_: String) -> m
+  alias_ |> t.maybe_cols
+end
+
+
+def aliased(t: Table(c, m), alias_: String) -> Table(c, m)
+  Table(t.name, alias_, t.cols, t.maybe_cols, t.pk_columns)
+end
+
+
+type SqlError
+  = DbError(String)
+  | NotFound
+  | NotUnique
+
+
+implements Encodable(SqlError) with
+  encoder: encode_sql_error
+end
+
+
+def encode_sql_error(e: SqlError) -> Value
+  case e
+  in DbError(msg) then Encode.variant("DbError", [Encode.string(msg)])
+  in NotFound then Encode.variant("NotFound", [])
+  in NotUnique then Encode.variant("NotUnique", [])
+  end
+end
+
+
+implements Decodable(SqlError) with
+  decoder: sql_error_decoder
+end
+
+
+def sql_error_decoder -> Decoder(SqlError)
+  Decode.type_
+    |> Decode.variant("DbError", db_error_decoder)
+    |> Decode.variant("NotFound", Decode.succeed(NotFound))
+    |> Decode.variant("NotUnique", Decode.succeed(NotUnique))
+end
+
+
+def db_error_decoder -> Decoder(SqlError)
+  Decode.index(1, Decode.string) |> Decode.map(DbError)
+end
+
+
+uses JadeSql::Runtime with
+  port_execute_count : (String, List(Value)) -> Task(Int, SqlError),
+  port_execute_one : (String, List(Value)) -> Task(a, SqlError),
+  port_execute_many : (String, List(Value)) -> Task(List(a), SqlError)
+end
+
+
+def execute_raw(p: (String, List(Value))) -> Task(Int, SqlError)
+  port_execute_count(p)
+end
+
+
+def fetch_one_raw(p: (String, List(Value))) -> Task(a, SqlError)
+  port_execute_one(p)
+end
+
+
+def fetch_many_raw(p: (String, List(Value))) -> Task(List(a), SqlError)
+  port_execute_many(p)
+end
+
+
+def execute(r: r) -> Task(Int, SqlError)
+  render(r) |> execute_raw
+end
+
+
+def fetch_one(r: r) -> Task(a, SqlError)
+  render(r) |> fetch_one_raw
+end
+
+
+def fetch_many(r: r) -> Task(List(a), SqlError)
+  render(r) |> fetch_many_raw
+end

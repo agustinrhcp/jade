@@ -74,3 +74,33 @@ This should fail, Int has no vars
 ### Interop part II - Tasks
 
 Interop must return a Task
+
+
+### Codegen: dispatch_value non-exhaustive on Application constraints
+
+`encode(xs)` in a fn body with `xs: List(a)` crashes codegen with
+`NoMatchingPatternError` at `function_call.rb:dispatch_value`. Same
+shape for `Maybe(a)`, `Dict(k, v)`. Worked around in jade-sql by
+hand-composing `Encode.list`; the underlying bug needs a third arm
+in `dispatch_value` (mirror of `boundary.rb`'s `List`/`Maybe`/`Dict`
+handling).
+
+Full write-up in
+`~/vault/claude/jade/notes/dispatch-value-application-bug.md`
+(symptom, repro, code path, root cause, suggested fix in two passes,
+affected scope).
+
+
+### jade-sql: round-trip test for schema generator output
+
+The schema generator (`jade:schema` rake task) emits a `schema.jd` file
+from `db/structure.sql`. There are unit tests asserting the generated
+*string* contains the expected substrings, but nothing asserts the
+output actually compiles. A compiler/formatter change can silently
+break the generator for real users.
+
+When jade-sql moves to its own gem, add an integration spec:
+generate from a multi-table fixture SQL, feed through `test_compiler`,
+assert it compiles, and that a simple `from(persons) |> to_sql` works.
+
+
