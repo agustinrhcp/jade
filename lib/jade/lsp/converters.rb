@@ -134,6 +134,9 @@ module Jade
         in AST::StructDeclaration(name:, range:)
           document_symbol(name, :struct, source, range)
 
+        in AST::TypeAliasDeclaration(name:, range:)
+          document_symbol(name, :struct, source, range)
+
         in AST::InterfaceDeclaration(name:, range:, functions:)
           document_symbol(
             name, :interface, source, range,
@@ -452,6 +455,7 @@ module Jade
         in AST::VariableReference | AST::ConstructorReference |
            AST::QualifiedAccess | AST::FunctionDeclaration |
            AST::TypeDeclaration | AST::StructDeclaration |
+           AST::TypeAliasDeclaration |
            AST::InterfaceDeclaration | AST::VariantDeclaration
           node.symbol.then { resolve_ref(it, registry) }
 

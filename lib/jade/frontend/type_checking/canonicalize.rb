@@ -64,6 +64,7 @@ module Jade
              AST::InteropImportDeclaration |
              AST::TypeDeclaration |
              AST::StructDeclaration |
+             AST::TypeAliasDeclaration |
              AST::InterfaceDeclaration |
              AST::Placeholder
             nil

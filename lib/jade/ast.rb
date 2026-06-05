@@ -31,6 +31,7 @@ module Jade
     define(:TypeParam, :name)
     define(:ImportDeclaration, :module_name, :as, :exposing)
     define(:StructDeclaration, :name, :type_params, :record_type)
+    define(:TypeAliasDeclaration, :name, :type_params, :body_type)
 
     define(:ExposeAll)
     define(:ExposeNone)
@@ -662,6 +663,18 @@ module Jade
           record_type:,
           trailing_comma: type_params_list.trailing_comma,
           range: struct_token.range.begin...record_type.range.end,
+        )
+      end
+    end
+
+    def type_alias_declaration
+      ->((type_token, name, type_params_list, body_type)) do
+        TypeAliasDeclaration.new(
+          name: name.value,
+          type_params: type_params_list.items,
+          body_type:,
+          trailing_comma: type_params_list.trailing_comma,
+          range: type_token.range.begin...body_type.range.end,
         )
       end
     end

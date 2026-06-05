@@ -30,6 +30,7 @@ module Jade
         in AST::TypeDeclaration              then TypeDeclaration
         in AST::VariantDeclaration           then VariantDeclaration
         in AST::StructDeclaration            then StructDeclaration
+        in AST::TypeAliasDeclaration         then TypeAliasDeclaration
         in AST::ImportDeclaration            then ImportDeclaration
         in AST::InteropImportDeclaration     then InteropImportDeclaration
         in AST::InteropFunction              then InteropFunction

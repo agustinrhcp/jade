@@ -18,6 +18,9 @@ module Jade
         in Type::Application(constructor: Type::Constructor(name:), args:)
           decode_app(name, args, registry)
 
+        in Type::AnonymousRecord
+          derived_for(DECODABLE, type, registry)&.dig('decoder')
+
         else
           nil
         end
@@ -27,6 +30,9 @@ module Jade
         case type
         in Type::Application(constructor: Type::Constructor(name:), args:)
           encode_app(name, args, registry)
+
+        in Type::AnonymousRecord
+          derived_for(ENCODABLE, type, registry)&.dig('encoder')
 
         else
           nil
@@ -153,7 +159,11 @@ module Jade
       end
 
       def derived_dispatch(interface_qname, type_qname, args, registry)
-        type       = Type.constructor(type_qname).apply(args)
+        type = Type.constructor(type_qname).apply(args)
+        derived_for(interface_qname, type, registry)
+      end
+
+      def derived_for(interface_qname, type, registry)
         constraint = Type.constraint(interface_qname, type, nil)
 
         case Frontend::TypeChecking::Constraints.resolve(constraint, registry, nil)

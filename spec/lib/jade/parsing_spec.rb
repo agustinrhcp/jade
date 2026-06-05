@@ -1305,6 +1305,57 @@ module Jade
       it { is_expected.to be_a(AST::StructDeclaration) }
     end
 
+    describe 'type alias' do
+      include_context "single expression body"
+
+      context 'aliasing a primitive' do
+        let(:text) do
+          <<~JADE
+            type alias UserId = Int
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::TypeAliasDeclaration) }
+        its(:name) { is_expected.to eql 'UserId' }
+        its(:type_params) { is_expected.to be_empty }
+        its(:body_type) { is_expected.to be_a(AST::TypeApplication) }
+      end
+
+      context 'aliasing a tuple' do
+        let(:text) do
+          <<~JADE
+            type alias Point = (Int, Int)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::TypeAliasDeclaration) }
+        its(:body_type) { is_expected.to be_a(AST::TypeTuple) }
+      end
+
+      context 'parameterised alias' do
+        let(:text) do
+          <<~JADE
+            type alias Pair(a) = (a, a)
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::TypeAliasDeclaration) }
+        its(:type_params) { is_expected.to have(1).item }
+        its(:body_type) { is_expected.to be_a(AST::TypeTuple) }
+      end
+
+      context 'aliasing a function type' do
+        let(:text) do
+          <<~JADE
+            type alias Handler = Int -> Int
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::TypeAliasDeclaration) }
+        its(:body_type) { is_expected.to be_a(AST::TypeFunction) }
+      end
+    end
+
     describe 'not_eq' do
       include_context "single expression body"
 

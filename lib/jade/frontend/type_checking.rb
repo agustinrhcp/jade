@@ -101,6 +101,7 @@ module Jade
         in AST::QualifiedAccess then Inference::QualifiedAccess
         in AST::RecordAccess then Inference::RecordAccess
         in AST::StructDeclaration then Inference::StructDeclaration
+        in AST::TypeAliasDeclaration then Inference::TypeAliasDeclaration
         in AST::InterfaceDeclaration then Inference::InterfaceDeclaration
         in AST::RecordField then Inference::RecordField
         in AST::RecordLiteral then Inference::RecordLiteral

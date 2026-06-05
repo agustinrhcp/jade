@@ -30,9 +30,15 @@ module Jade
                 in Symbol::Struct
                   derive_struct(constraint, resolved_sym, args, registry, lookup, entry_name)
 
+                in Symbol::Union if wrapping_variant(resolved_sym, registry)
+                  derive_wrapper_peel(constraint, resolved_sym, args, registry, lookup, entry_name)
+
                 else
                   failed(constraint, entry_name)
                 end
+
+              in Type::AnonymousRecord(fields:)
+                derive_anonymous_record(constraint, fields, lookup, entry_name)
 
               else
                 failed(constraint, entry_name)
@@ -86,7 +92,35 @@ module Jade
 
             def derive_struct(constraint, struct_sym, type_args, registry, lookup, entry_name)
               fields = struct_fields(struct_sym, type_args, registry)
+              derive_record(constraint, fields, lookup, entry_name)
+            end
 
+            def derive_anonymous_record(constraint, fields, lookup, entry_name)
+              derive_record(constraint, fields.to_a, lookup, entry_name)
+            end
+
+            # Single-variant wrapping union — encode by peeling the wrapper.
+            # `UserId(42)` encodes as `42`, not as `["UserId", 42]`.
+            def derive_wrapper_peel(constraint, union_sym, type_args, registry, lookup, entry_name)
+              variant = registry.lookup(union_sym.variants.first)
+              inner_type = instantiate(
+                variant.args.first,
+                union_sym.type_params.map(&:name).zip(type_args).to_h,
+                registry,
+              )
+
+              dep = Type.constraint(INTERFACE, inner_type, nil)
+
+              lookup.call(dep).and_then do |dep_impl|
+                body = [:call,
+                  [:impl_arg, 0, 'encoder'],
+                  [[:access, [:var, 'rec'], '_1']],
+                ]
+                Ok[implementation(constraint, params: ['rec'], body:, deps: [dep_impl])]
+              end
+            end
+
+            def derive_record(constraint, fields, lookup, entry_name)
               field_deps = fields
                 .map { |_, field_type| Type.constraint(INTERFACE, field_type, nil) }
 

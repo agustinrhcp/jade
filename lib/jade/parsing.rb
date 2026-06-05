@@ -108,8 +108,8 @@ module Jade
     parser(:statement) { bind | assign | expression }
 
     parser(:declaration) {
-      function_declaration | type_declaration | import_declaration | interop_import_declaration |
-        struct_declaration | implementation | interface_declaration
+      function_declaration | type_alias_declaration | type_declaration | import_declaration |
+        interop_import_declaration | struct_declaration | implementation | interface_declaration
     }
 
     parser(:expression) {
@@ -446,6 +446,20 @@ module Jade
           ).commit
       ).map(&AST.type_declaration)
        .context("type declaration")
+    }
+
+    parser(:type_alias_declaration) {
+      (
+        type(:type) >>
+          type(:alias).skip >>
+          (
+            constant >>
+            (type_params | empty_comma_list) >>
+            type(:assign).skip >>
+            type_expression
+          ).commit
+      ).map(&AST.type_alias_declaration)
+       .context("type alias declaration")
     }
 
     parser(:record_declaration) {
