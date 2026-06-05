@@ -1,4 +1,5 @@
 require 'jade/error'
+require 'jade/lexer'
 
 module Jade
   module Parsing
@@ -59,11 +60,18 @@ module Jade
 
       def hint
         return leading_pipe_hint if leading_pipe_in_type_decl?
+        return reserved_keyword_hint if reserved_keyword_as_name?
+        return colon_not_eq_hint if eq_where_colon_expected?
+        return record_eq_hint if eq_where_record_pipe_expected?
         nil
       end
 
       def message
         "#{context_prefix}Unexpected token #{actual.value.inspect}, expected #{expected}#{" #{hint}" if hint}"
+      end
+
+      def label
+        "unexpected #{@actual.value.inspect}"
       end
 
       private
@@ -78,8 +86,34 @@ module Jade
         "(leading `|` isn't supported — write `type Foo = A | B` with no `|` before the first variant)"
       end
 
-      def label
-        "unexpected #{@actual.value.inspect}"
+      def reserved_keyword_as_name?
+        expected == :identifier && Jade::Lexer::KEYWORDS.include?(actual.value)
+      end
+
+      def reserved_keyword_hint
+        "(`#{actual.value}` is a reserved keyword — choose a different name)"
+      end
+
+      # `=` where `:` is expected: record field, param, or annotation —
+      # all written `name: value`. e.g. `{ d | f = x }` chokes on the colon.
+      def eq_where_colon_expected?
+        actual.type == :assign && expected == :colon
+      end
+
+      def colon_not_eq_hint
+        "(use `:`, not `=`)"
+      end
+
+      # A bare `{ f = x }` literal backtracks into the record-update parser
+      # and chokes on the missing `|`. The real mistake is `=` for `:`.
+      def eq_where_record_pipe_expected?
+        actual.type == :assign &&
+          expected == :pipe &&
+          !@context.include?('type declaration')
+      end
+
+      def record_eq_hint
+        "(record fields use `:`, not `=` — write `{ name: value }`)"
       end
     end
 

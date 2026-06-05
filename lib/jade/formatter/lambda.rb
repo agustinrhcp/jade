@@ -10,9 +10,9 @@ module Jade
       INLINE_BODY = [
         AST::Literal, AST::CharLiteral, AST::VariableReference,
         AST::ConstructorReference, AST::FunctionCall, AST::RecordAccess,
-        AST::InfixApplication, AST::RecordLiteral, AST::List, AST::Tuple,
-        AST::Grouping, AST::RecordUpdate, AST::RecordUpdateSugar,
-        AST::RecordAccessSugar,
+        AST::MemberAccess, AST::InfixApplication, AST::RecordLiteral,
+        AST::List, AST::Tuple, AST::Grouping, AST::RecordUpdate,
+        AST::RecordUpdateSugar, AST::RecordAccessSugar,
       ].freeze
 
       def format(node, indent:, source:)

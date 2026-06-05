@@ -25,6 +25,21 @@ module Jade
 
   extend self
 
+  def register_extension(root)
+    extensions << root
+  end
+
+  # Convenience for extension gem entry files: registers `<entry>/<basename>`
+  # by convention. Pass `__FILE__` from `lib/jade-foo.rb` to register
+  # `lib/jade-foo/` as the search root.
+  def extension(entry_file)
+    register_extension(entry_file.delete_suffix('.rb'))
+  end
+
+  def extensions
+    @extensions ||= []
+  end
+
   def setup(&block)
     @compiler = Compiler.new(&block)
   end

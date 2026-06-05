@@ -1,3 +1,5 @@
+require 'base64'
+
 require 'jade/interop/runtime'
 require 'jade/decode'
 require 'jade/interop/boundary'

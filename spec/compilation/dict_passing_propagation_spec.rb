@@ -57,9 +57,7 @@ module Jade
 
     it 'propagates through a record literal' do
       body = <<~JADE.strip
-        { a: encode(value) } |> (r) -> {
-          r.a
-        }
+        { a: encode(value) } |> (r) -> { r.a }
       JADE
       out = compiled_for('PropRec', body)
       expect(out).to include('__wrapped__impl__')

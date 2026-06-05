@@ -9,6 +9,7 @@ module Jade
         return ast if comments.empty?
 
         collect_nodes(ast)
+          .reject { |n| n.range.nil? }
           .sort_by { |n| n.range.begin }
           .then { build_map(comments, it, source) }
           .then { reattach(ast, it) }

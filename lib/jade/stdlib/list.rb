@@ -76,7 +76,7 @@ module Jade
         :indexed_map,
         { list: 'List(a)', fn: 'Int, a -> b' },
         'List(b)',
-      ) { |list, fn| list.map.with_index(&fn) }
+      ) { |list, fn| list.each_with_index.map { |x, i| fn.(i, x) } }
 
       function(
         :fold,

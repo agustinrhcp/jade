@@ -66,6 +66,7 @@ module Jade
         'String.starts_with?' => ->(s, p)      { "#{s}.start_with?(#{p})" },
         'String.ends_with?' => ->(s, p)        { "#{s}.end_with?(#{p})" },
         'String.replace'    => ->(s, t, r)     { "#{s}.gsub(#{t}, #{r})" },
+        'String.slice'      => ->(s, a, b)     { "(#{s}[#{a}...#{b}] || '')" },
         'String.words'      => ->(s)           { "#{s}.split(/\\s+/).reject(&:empty?)" },
         'String.lines'      => ->(s)           { "#{s}.split(\"\\n\", -1)" },
         'String.to_list'    => ->(s)           { "#{s}.chars" },
@@ -84,7 +85,7 @@ module Jade
         'List.tail'         => ->(xs)          { "#{xs}.drop(1)" },
         'List.map'          => ->(xs, fn)      { "#{xs}.map(&#{fn})" },
         'List.and_then'     => ->(xs, fn)      { "#{xs}.flat_map(&#{fn})" },
-        'List.indexed_map'  => ->(xs, fn)      { "#{xs}.map.with_index(&#{fn})" },
+        'List.indexed_map'  => ->(xs, fn)      { "#{xs}.each_with_index.map { |x, i| (#{fn}).(i, x) }" },
         'List.fold'         => ->(xs, init, fn) { "#{xs}.reduce(#{init}, &#{fn})" },
         'List.filter'       => ->(xs, fn)      { "#{xs}.filter(&#{fn})" },
         'List.list_append'  => ->(a, b)        { "(#{a} + #{b})" },
@@ -114,6 +115,8 @@ module Jade
         'Bytes.to_string'    => ->(b)           { "#{b}.bin.dup.force_encoding(Encoding::UTF_8).then { it.valid_encoding? ? Jade::Maybe::Just[it] : Jade::Maybe::Nothing[] }" },
         'Bytes.bytes_eq'     => ->(a, b)        { "(#{a}.bin == #{b}.bin)" },
         'Bytes.bytes_append' => ->(a, b)        { "Jade::Bytes::Bytes[#{a}.bin + #{b}.bin]" },
+        'Bytes.to_hex'         => ->(b)         { "#{b}.bin.unpack1('H*')" },
+        'Bytes.to_base64_url'  => ->(b)         { "::Base64.urlsafe_encode64(#{b}.bin, padding: false)" },
 
         'Dict.empty'      => ->()           { "Jade::Dict::Dict[{}]" },
         'Dict.singleton'  => ->(k, v)       { "Jade::Dict::Dict[{ #{k} => #{v} }]" },
@@ -150,7 +153,7 @@ module Jade
         'List.filter'      => ->(xs, params, body)         { "#{xs}.filter { |#{params}| #{body} }" },
         'List.fold'        => ->(xs, init, params, body)   { "#{xs}.reduce(#{init}) { |#{params}| #{body} }" },
         'List.and_then'    => ->(xs, params, body)         { "#{xs}.flat_map { |#{params}| #{body} }" },
-        'List.indexed_map' => ->(xs, params, body)         { "#{xs}.each_with_index.map { |#{params}| #{body} }" },
+        'List.indexed_map' => ->(xs, params, body)         { "#{xs}.each_with_index.map { |#{params.split(', ').reverse.join(', ')}| #{body} }" },
         'List.any?'        => ->(xs, params, body)         { "#{xs}.any? { |#{params}| #{body} }" },
         'List.all?'        => ->(xs, params, body)         { "#{xs}.all? { |#{params}| #{body} }" },
         'List.find'        => ->(xs, params, body)         { "#{xs}.find { |#{params}| #{body} }.then { |m| m.nil? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[m] }" },
@@ -219,6 +222,8 @@ module Jade
         Task.sequence
         Task.succeed
         Bytes.from_list
+        Bytes.from_hex
+        Bytes.from_base64_url
         Dict.get
         Dict.update
         Dict.map

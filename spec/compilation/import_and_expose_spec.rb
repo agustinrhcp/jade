@@ -416,5 +416,30 @@ module Jade
           .to raise_error(/`Foo` is exposed by `Producer` but its constructor is private/)
       end
     end
+
+    context 'comment alongside an import with no exposing clause' do
+      let(:importing_source) do
+        <<~JADE
+          module Importing exposing (hello)
+
+          import Exposing
+
+
+          # a comment makes the comment attacher walk every node,
+          # including the import's range-less ExposeNone marker
+          def hello -> String
+            Exposing.MyType |> Exposing.my_function
+          end
+        JADE
+      end
+
+      before { test_compiler.require('exposing', exposing_source) }
+
+      it 'compiles without crashing the comment attacher' do
+        expect { test_compiler.require('importing', importing_source) }
+          .to_not raise_error
+        expect(Importing.hello).to eql 'My type'
+      end
+    end
   end
 end
