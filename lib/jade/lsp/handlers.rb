@@ -22,6 +22,7 @@ module Jade
         when 'textDocument/completion' then on_completion(state, message)
         when 'textDocument/prepareRename' then on_prepare_rename(state, message)
         when 'textDocument/rename' then on_rename(state, message)
+        when 'textDocument/inlayHint' then on_inlay_hint(state, message)
         else on_unknown(state, message)
         end
       end
@@ -51,6 +52,7 @@ module Jade
             referencesProvider: true,
             completionProvider: { resolveProvider: false },
             renameProvider: { prepareProvider: true },
+            inlayHintProvider: true,
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
@@ -129,6 +131,30 @@ module Jade
           params['position'],
           params['newName'],
         ).then { [state, [respond(message['id'], it)]] }
+      end
+
+      def on_inlay_hint(state, message)
+        params = message['params']
+        inlay_hints_for(
+          state, params['textDocument']['uri'], params['range'],
+        ).then { [state, [respond(message['id'], it)]] }
+      end
+
+      def inlay_hints_for(state, uri, lsp_range)
+        return [] unless state.registry
+
+        rel = Converters.relative_path(uri, state.source_root)
+        entry = state.registry.modules.each_value.find { it.source&.uri == rel }
+        return [] unless entry
+
+        start_offset = Converters.position_to_offset(
+          entry.source, lsp_range['start']['line'], lsp_range['start']['character'],
+        )
+        end_offset = Converters.position_to_offset(
+          entry.source, lsp_range['end']['line'], lsp_range['end']['character'],
+        )
+
+        Converters.inlay_hints_for(entry, start_offset..end_offset)
       end
 
       def prepare_rename_for(state, uri, position)

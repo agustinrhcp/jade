@@ -114,11 +114,14 @@ module Jade
         .then { registry.add_module(it) }
     end
 
+    # Stdlib content is identical across calls; loading it dominates
+    # short LSP recompiles (~15ms on a tiny user file). Cache the
+    # post-Stdlib.load Registry once per process and stamp the per-call
+    # source_root + overlays on a copy. Invalidated only on restart —
+    # acceptable since compiler code changes need a restart anyway.
     def new_registry(source_root, overlays: {})
-      Registry
-        .new
-        .with(source_root:, overlays:)
-        .then { Stdlib.load(it) }
+      @stdlib_base ||= Stdlib.load(Registry.new)
+      @stdlib_base.with(source_root:, overlays:)
     end
   end
 end

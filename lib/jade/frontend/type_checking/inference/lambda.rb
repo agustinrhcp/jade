@@ -25,7 +25,10 @@ module Jade
                 case p
                 in AST::Pattern::Binding(name:)
                   pre_state.env.substitution.apply(t)
-                    .then { acc.bind(name, Scheme.mono(it)) }
+                    .then do |concrete_t|
+                      acc.bind(name, Scheme.mono(concrete_t))
+                        .then { it.with(env: it.env.pin_type(p.id, concrete_t)) }
+                    end
 
                 in AST::Pattern::Wildcard
                   acc
