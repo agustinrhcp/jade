@@ -79,6 +79,11 @@ module Jade
           expect(provider).to include(prepareProvider: true)
         end
 
+        it 'advertises inlayHintProvider' do
+          _, outbound = subject
+          expect(outbound.first[:result][:capabilities][:inlayHintProvider]).to eq true
+        end
+
         it 'advertises utf-8 when the client supports it' do
           _, outbound = Handlers.dispatch(State.empty, {
             'method' => 'initialize',
@@ -776,6 +781,111 @@ module Jade
               expect(chunk).to eq 'Circle'
             end
           end
+        end
+      end
+
+      describe 'inlayHint' do
+        let(:text) do
+          <<~JADE
+            module M exposing (run)
+
+            def run() -> Int
+              x = 42
+              y = x + 1
+              y
+            end
+          JADE
+        end
+
+        let(:hints) do
+          File.write(File.join(src, 'leaf.jd'), text)
+          state, _ = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+          last_line = text.lines.size
+          _, outbound = Handlers.dispatch(state, {
+            'method' => 'textDocument/inlayHint',
+            'id' => 81,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'range' => {
+                'start' => { 'line' => 0, 'character' => 0 },
+                'end' => { 'line' => last_line, 'character' => 0 },
+              },
+            },
+          })
+          outbound.first[:result]
+        end
+
+        it 'emits a Type hint for each let-binding' do
+          expect(hints.size).to eq 2
+          expect(hints).to all(include(kind: 1))
+        end
+
+        it 'labels the binding with its inferred type' do
+          x_hint = hints.find { it[:position][:line] == 3 }
+          expect(x_hint[:label]).to include('Int')
+        end
+
+        it 'covers case-of pattern bindings' do
+          text = <<~JADE
+            module M exposing (run)
+
+            def run(m: Maybe(Int)) -> Int
+              case m
+              in Just(n) then n
+              in Nothing then 0
+              end
+            end
+          JADE
+          File.write(File.join(src, 'leaf.jd'), text)
+          state, _ = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+          _, outbound = Handlers.dispatch(state, {
+            'method' => 'textDocument/inlayHint',
+            'id' => 82,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'range' => {
+                'start' => { 'line' => 0, 'character' => 0 },
+                'end' => { 'line' => text.lines.size, 'character' => 0 },
+              },
+            },
+          })
+          labels = outbound.first[:result].map { it[:label] }
+          # `n` inside Just(n) gets a hint
+          expect(labels).to include(a_string_including('Int'))
+        end
+
+        it 'covers lambda params' do
+          text = <<~JADE
+            module M exposing (run)
+
+            def run() -> List(Int)
+              List.map([1, 2, 3], (x) -> { x + 1 })
+            end
+          JADE
+          File.write(File.join(src, 'leaf.jd'), text)
+          state, _ = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+          _, outbound = Handlers.dispatch(state, {
+            'method' => 'textDocument/inlayHint',
+            'id' => 83,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'range' => {
+                'start' => { 'line' => 0, 'character' => 0 },
+                'end' => { 'line' => text.lines.size, 'character' => 0 },
+              },
+            },
+          })
+          labels = outbound.first[:result].map { it[:label] }
+          expect(labels).to include(a_string_including('Int'))
         end
       end
 

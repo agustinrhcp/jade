@@ -77,6 +77,16 @@ module Jade
         end
       end
 
+      # InlayHintKind: 1 = Type, 2 = Parameter
+      INLAY_HINT_TYPE = 1
+      INLAY_HINT_PARAMETER = 2
+
+      def inlay_hints_for(entry, range_offsets)
+        return [] unless entry.env
+
+        collect_inlay_hints(entry.ast, entry, range_offsets)
+      end
+
       def references_for_path(
         path, registry, entry, source_root, include_declaration:
       )
@@ -255,6 +265,42 @@ module Jade
 
       def trail_identifier_span(range, name)
         (range.end - name.bytesize)...range.end
+      end
+
+      # Walks the AST gathering inlay hints. Every Pattern::Binding
+      # with a pinned type produces a hint — naturally covers let-
+      # bindings (`x = expr`), case-of pattern bindings (`in Just(x)`),
+      # and lambda params (`(x) -> ...`) once their types are pinned.
+      def collect_inlay_hints(node, entry, range_offsets)
+        return [] unless node.is_a?(AST::Node)
+
+        own = node.is_a?(AST::Pattern::Binding) ?
+          binding_hint(node, entry, range_offsets) : nil
+
+        children_of(node)
+          .flat_map { collect_inlay_hints(it, entry, range_offsets) }
+          .then { own ? [own] + it : it }
+      end
+
+      def children_of(node)
+        (node.members - AST::Node::BOILERPLATE_FIELDS)
+          .flat_map { node.public_send(it) }
+          .flat_map { it.is_a?(Array) ? it : [it] }
+      end
+
+      def binding_hint(binding, entry, range_offsets)
+        return nil unless range_offsets.cover?(binding.range.end)
+
+        type = entry.env.node_types[binding.id]
+        return nil unless type
+
+        {
+          position: offset_to_position(entry.source, binding.range.end),
+          label: ": #{type}",
+          kind: INLAY_HINT_TYPE,
+          paddingLeft: false,
+          paddingRight: false,
+        }
       end
 
       def build_location(source, span, source_root)
