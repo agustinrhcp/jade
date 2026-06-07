@@ -33,13 +33,14 @@ module Jade
       end
 
       # `callee(a, b, c)` on one line when it fits, multi-line with trailing
-      # comma when it doesn't or when an arg is already multi-line.
-      def call(callee, args, width: 80)
-        "#{callee}(#{args.join(', ')})".then do |oneline|
+      # comma when it doesn't or when an arg is already multi-line. Pass
+      # `open:`/`close:` to emit `Struct[a, b, c]`-shaped construction.
+      def call(callee, args, width: 80, open: '(', close: ')')
+        "#{callee}#{open}#{args.join(', ')}#{close}".then do |oneline|
           if oneline.length <= width && args.none? { multiline?(it) }
             oneline
           else
-            "#{callee}(\n#{indent(args.join(",\n"))},\n)"
+            "#{callee}#{open}\n#{indent(args.join(",\n"))},\n#{close}"
           end
         end
       end

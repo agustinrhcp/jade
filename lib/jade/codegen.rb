@@ -94,8 +94,10 @@ module Jade
             "#{record_shape_constant(keys)} = Data.define(#{keys.map { ":#{it}" }.join(', ')})"
           }
 
-        boundary_cache  = Boundary::Cache.collect(body, registry)
-        boundary_consts = Boundary::Cache.constants(boundary_cache, registry)
+        boundary_cache   = Boundary::Cache.collect(body, registry)
+        boundary_consts  = Boundary::Cache.constants(boundary_cache, registry)
+        boundary_helpers = Boundary::Specialized.collect_helpers(body, registry)
+          .then { Boundary::Specialized.emit_helpers(it, registry) }
 
         outer, inner, wrappers =
           with_boundary_cache(boundary_cache) do
@@ -116,6 +118,7 @@ module Jade
           *outer,
           inner_module,
           *boundary_consts,
+          *boundary_helpers,
           *wrappers,
         ]
           .reject(&:empty?)

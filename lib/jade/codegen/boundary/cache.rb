@@ -33,10 +33,11 @@ module Jade
 
           {
             decoders: cache_map(per_fn.flat_map { it[:decoders] }, 'DEC') { |t|
-              Boundary::Specialized.decode_expr(t, '_')
+              Boundary::Specialized.decode_expr(t, '_', registry)
             },
             encoders: cache_map(per_fn.flat_map { it[:encoders] }, 'ENC') { |t|
-              Boundary::Specialized.identity_encoder?(t)
+              Boundary::Specialized.identity_encoder?(t) ||
+                Boundary::Specialized.encode_expr(t, '_', registry)
             },
           }
         end
