@@ -42,6 +42,14 @@ module Jade
         v.is_a?(::Array) && v.all? { klass === _1 } ? v : type_error!(label, v)
       end
 
+      def hash(label, v)
+        case v
+        when ::Hash then v
+        when ::Data then v.to_h.transform_keys(&:to_s)
+        else type_error!(label, v)
+        end
+      end
+
       def type_error!(label, v)
         raise Jade::Interop::DecodeError.new(
           Jade::Decode::WrongType[label, Jade::Decode.type_name(v)],

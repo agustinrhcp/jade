@@ -74,7 +74,7 @@ module Jade
       end
 
       def decode_call(arg_type, pname, registry)
-        Codegen::Boundary::Specialized.decode_expr(arg_type, pname) ||
+        Codegen::Boundary::Specialized.decode_expr(arg_type, pname, registry) ||
           Codegen::Boundary::Cache.decoder_for(arg_type, registry)
             .then { "Jade::Interop::Boundary.decode_or_raise(#{it}, #{pname})" }
       end
@@ -82,6 +82,8 @@ module Jade
       def encode_return(return_type, call_expr, registry)
         if Codegen::Boundary::Specialized.identity_encoder?(return_type)
           call_expr
+        elsif (expr = Codegen::Boundary::Specialized.encode_expr(return_type, call_expr, registry))
+          expr
         else
           encoder = Codegen::Boundary::Cache.encoder_for(return_type, registry)
           "#{encoder}.call(#{call_expr})"
