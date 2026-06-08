@@ -11,60 +11,17 @@ module Jade
 
       implementation('Eq', 'Char', '(==)' => 'char_eq')
 
-      function(
-        :to_code,
-        { char: 'Char' },
-        'Int',
-      ) { it.ord }
-
-      function(
-        :from_code,
-        { code: 'Int' },
-        'Maybe(Char)',
-      ) do |code|
-        code.chr
-          .then { Jade::Maybe::Just[it] }
-      rescue RangeError
-        Jade::Maybe::Nothing[]
-      end
-
-      function(
-        :"digit?",
-        { char: 'Char' },
-        'Bool',
-      ) { it.match?(/\d/) }
-
-      function(
-        :"alpha?",
-        { char: 'Char' },
-        'Bool',
-      ) { it.match?(/[a-zA-Z]/) }
-
-      function(
-        :"alpha_numeric?",
-        { char: 'Char' },
-        'Bool',
-      ) { it.match?(/[a-zA-Z0-9]/) }
-
-      function(
-        :"upper?",
-        { char: 'Char' },
-        'Bool',
-      ) { it.match?(/[A-Z]/) }
-
-      function(
-        :"lower?",
-        { char: 'Char' },
-        'Bool',
-      ) { it.match?(/[a-z]/) }
+      function(:to_code, { char: 'Char' }, 'Int')
+      function(:from_code, { code: 'Int' }, 'Maybe(Char)')
+      function(:"digit?", { char: 'Char' }, 'Bool')
+      function(:"alpha?", { char: 'Char' }, 'Bool')
+      function(:"alpha_numeric?", { char: 'Char' }, 'Bool')
+      function(:"upper?", { char: 'Char' }, 'Bool')
+      function(:"lower?", { char: 'Char' }, 'Bool')
 
       default_importing('Char')
 
-      function(
-        'char_eq',
-        { one: 'Char', other: 'Char' },
-        'Bool',
-      ) { |one, other| one == other }
+      function('char_eq', { one: 'Char', other: 'Char' }, 'Bool')
     end
   end
 end

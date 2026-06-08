@@ -1,5 +1,6 @@
 require 'jade/runtime'
 require 'jade/symbol'
+require 'jade/codegen/inlines'
 
 module Jade
   module Stdlib
@@ -64,6 +65,7 @@ module Jade
         qualified_fn_name = "#{module_name}.#{name}"
 
         codegen = body || "Jade::Runtime.intr('#{qualified_fn_name}')"
+        impl = runtime_impl(qualified_fn_name, params.size, block, body)
 
         Symbol
           .stdlib_function(
@@ -75,7 +77,37 @@ module Jade
           )
           .with(module_name:)
           .tap { store(it) unless private }
-          .tap { Runtime.register(qualified_fn_name, &block) }
+          .tap { Runtime.register(qualified_fn_name, &impl) }
+      end
+
+      # Approach A: the inline template is the single source of truth for a
+      # function's behaviour. A hand-written block always wins. With no block
+      # and a `body:` codegen override the function is codegen/dictionary-only
+      # (e.g. derived comparisons) and has no runtime entry. Otherwise the
+      # runtime proc is synthesised from the same template codegen emits, so the
+      # compiled and interpreted paths can't drift — and the absence of both a
+      # block and an inline is a definition error, not a lazy runtime surprise.
+      def runtime_impl(qualified_fn_name, arity, block, body)
+        case [block, body]
+        in [Proc => block, _] then block
+        in [nil, nil]
+          derive_runtime(qualified_fn_name, arity) ||
+            fail("#{qualified_fn_name}: no runtime block and no inline to derive from")
+        else nil
+        end
+      end
+
+      # Evaluated at the top level — the same constant-resolution context the
+      # template lands in when codegen splices it into compiled output — so a
+      # bare `String` means `::String`, not `Jade::Stdlib::String`. Constants
+      # resolve at call time, so there's no stdlib load-order constraint.
+      def derive_runtime(qualified_fn_name, arity)
+        Codegen::Inlines.for(qualified_fn_name).then do |template|
+          next nil unless template
+
+          args = Array.new(arity) { "a#{it}" }
+          eval("->(#{args.join(', ')}) { #{template.call(*args)} }", TOPLEVEL_BINDING)
+        end
       end
 
       def interface(name, type_param, functions, default: {})

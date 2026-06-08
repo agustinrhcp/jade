@@ -19,175 +19,43 @@ module Jade
       implementation('Appendable', 'String', '(++)' => 'str_append')
       implementation('Comparable', 'String', 'compare' => 'str_compare')
 
-      function(
-        'str_compare',
-        { a: 'String', b: 'String' },
-        'Ordering',
-      ) { |a, b| a < b ? Jade::Basics::LT[] : a > b ? Jade::Basics::GT[] : Jade::Basics::EQ[] }
-
-      function(
-        'str_append',
-        { a: 'String', b: 'String' },
-        'String',
-      ) { |a, b| a + b }
-
-      function(
-        :"empty?",
-        { str: 'String'},
-        'Bool',
-      ) { it.empty? }
-
-      function(
-        :length,
-        { str: 'String' },
-        'Int'
-      ) { it.length }
-
-      function(
-        :reverse,
-        { str: 'String'},
-        'String',
-      ) { it.reverse }
-
-      function(
-        :uncons,
-        { str: 'String' },
-        'Maybe(Tuple2(Char, String))',
-      ) do |str|
-        str.empty? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[Jade::Tuple::Tuple2[str[0], str[1..]]]
-      end
-
-      function(
-        :cons,
-        { head: 'Char', tail: 'String' },
-        'String',
-      ) { |head, tail| head + tail }
-
-      function(
-        :from_char,
-        { char: 'Char' },
-        'String',
-      ) { |char| char }
-
-      function(
-        :map,
-        { str: 'String', fn: 'Char -> Char' },
-        'String',
-      ) { |str, fn| str.chars.map(&fn).join }
-
-      function(
-        :repeat,
-        { str: 'String', times: 'Int' },
-        'String'
-      ) { |str, times| str * times }
-
-      function(
-        :to_int,
-        { str: 'String' },
-        'Maybe(Int)'
-      ) do |str|
-        begin
-          Integer(str, 10)
-            .then { Jade::Maybe::Just[it] }
-        rescue
-          Jade::Maybe::Nothing[]
-        end
-      end
-
-      function(
-        :from_int,
-        { n: 'Int' },
-        'String',
-      ) { |n| n.to_s }
-
-      function(
-        :split,
-        { str: 'String', by: 'String' },
-        'List(String)',
-      ) { |str, by| str.split(by) }
-
-      function(
-        :concat,
-        { list: 'List(String)' },
-        'String'
-      ) { it.join }
-
-      function(
-        :join,
-        { list: 'List(String)', with: 'String' },
-        'String'
-      ) { |list, with| list.join(with) }
-
-      function(:trim,       { str: 'String' }, 'String') { it.strip }
-      function(:trim_left,  { str: 'String' }, 'String') { it.lstrip }
-      function(:trim_right, { str: 'String' }, 'String') { it.rstrip }
-      function(:to_lower,   { str: 'String' }, 'String') { it.downcase }
-      function(:to_upper,   { str: 'String' }, 'String') { it.upcase }
-
-      function(
-        :"contains?",
-        { str: 'String', sub: 'String' },
-        'Bool',
-      ) { |str, sub| str.include?(sub) }
-
-      function(
-        :"starts_with?",
-        { str: 'String', prefix: 'String' },
-        'Bool',
-      ) { |str, prefix| str.start_with?(prefix) }
-
-      function(
-        :"ends_with?",
-        { str: 'String', suffix: 'String' },
-        'Bool',
-      ) { |str, suffix| str.end_with?(suffix) }
-
-      function(
-        :replace,
-        { str: 'String', target: 'String', replacement: 'String' },
-        'String',
-      ) { |str, target, replacement| str.gsub(target, replacement) }
+      function('str_compare', { a: 'String', b: 'String' }, 'Ordering')
+      function('str_append', { a: 'String', b: 'String' }, 'String')
+      function(:"empty?", { str: 'String' }, 'Bool')
+      function(:length, { str: 'String' }, 'Int')
+      function(:reverse, { str: 'String' }, 'String')
+      function(:uncons, { str: 'String' }, 'Maybe(Tuple2(Char, String))')
+      function(:cons, { head: 'Char', tail: 'String' }, 'String')
+      function(:from_char, { char: 'Char' }, 'String')
+      function(:map, { str: 'String', fn: 'Char -> Char' }, 'String')
+      function(:repeat, { str: 'String', times: 'Int' }, 'String')
+      function(:to_int, { str: 'String' }, 'Maybe(Int)')
+      function(:from_int, { n: 'Int' }, 'String')
+      function(:split, { str: 'String', by: 'String' }, 'List(String)')
+      function(:concat, { list: 'List(String)' }, 'String')
+      function(:join, { list: 'List(String)', with: 'String' }, 'String')
+      function(:trim, { str: 'String' }, 'String')
+      function(:trim_left, { str: 'String' }, 'String')
+      function(:trim_right, { str: 'String' }, 'String')
+      function(:to_lower, { str: 'String' }, 'String')
+      function(:to_upper, { str: 'String' }, 'String')
+      function(:"contains?", { str: 'String', sub: 'String' }, 'Bool')
+      function(:"starts_with?", { str: 'String', prefix: 'String' }, 'Bool')
+      function(:"ends_with?", { str: 'String', suffix: 'String' }, 'Bool')
+      function(:replace, { str: 'String', target: 'String', replacement: 'String' }, 'String')
 
       # Half-open slice. Negative offsets count from the end (Ruby `s[i...j]`
       # semantics). Out-of-range returns an empty string rather than nil.
-      function(
-        :slice,
-        { str: 'String', start: 'Int', end_: 'Int' },
-        'String',
-      ) { |str, start, end_| str[start...end_] || '' }
+      function(:slice, { str: 'String', start: 'Int', end_: 'Int' }, 'String')
 
-      function(
-        :words,
-        { str: 'String' },
-        'List(String)',
-      ) { it.split(/\s+/).reject(&:empty?) }
-
-      function(
-        :lines,
-        { str: 'String' },
-        'List(String)',
-      ) { it.split("\n", -1) }
-
-      function(
-        :to_list,
-        { str: 'String' },
-        'List(Char)',
-      ) { it.chars }
-
-      function(
-        :from_list,
-        { chars: 'List(Char)' },
-        'String',
-      ) { it.join }
+      function(:words, { str: 'String' }, 'List(String)')
+      function(:lines, { str: 'String' }, 'List(String)')
+      function(:to_list, { str: 'String' }, 'List(Char)')
+      function(:from_list, { chars: 'List(Char)' }, 'String')
 
       default_importing('String')
 
-      function(
-        'str_eq',
-        { one: 'String', other: 'String' },
-        'Bool',
-      ) { |one, other| one == other }
-
+      function('str_eq', { one: 'String', other: 'String' }, 'Bool')
     end
   end
 end

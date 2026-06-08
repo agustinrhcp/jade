@@ -15,72 +15,47 @@ module Jade
 
       implementation('Eq', 'Set', '(==)' => 'set_eq')
 
-      function(
-        :empty,
-        {},
-        'Set(a)',
-      ) { Jade::Set::Set[{}] }
+      function(:empty, {}, 'Set(a)')
 
       function(
         :singleton,
         { value: 'a' },
         'Set(a)',
         constraints: [['Basics.Eq', 'a']],
-      ) { |value| Jade::Set::Set[{ value => true }] }
+      )
 
-      function(
-        :"empty?",
-        { set: 'Set(a)' },
-        'Bool',
-      ) { it.hash.empty? }
-
-      function(
-        :size,
-        { set: 'Set(a)' },
-        'Int',
-      ) { it.hash.size }
+      function(:"empty?", { set: 'Set(a)' }, 'Bool')
+      function(:size, { set: 'Set(a)' }, 'Int')
 
       function(
         :"member?",
         { set: 'Set(a)', value: 'a' },
         'Bool',
         constraints: [['Basics.Eq', 'a']],
-      ) { |set, value| set.hash.key?(value) }
+      )
 
       function(
         :insert,
         { set: 'Set(a)', value: 'a' },
         'Set(a)',
         constraints: [['Basics.Eq', 'a']],
-      ) { |set, value| Jade::Set::Set[set.hash.merge(value => true)] }
+      )
 
       function(
         :remove,
         { set: 'Set(a)', value: 'a' },
         'Set(a)',
         constraints: [['Basics.Eq', 'a']],
-      ) do |set, value|
-        set.hash.key?(value) \
-          ? Jade::Set::Set[set.hash.except(value)]
-          : set
-      end
+      )
 
-      function(
-        :to_list,
-        { set: 'Set(a)' },
-        'List(a)',
-      ) { it.hash.keys }
+      function(:to_list, { set: 'Set(a)' }, 'List(a)')
 
       function(
         :from_list,
         { values: 'List(a)' },
         'Set(a)',
         constraints: [['Basics.Eq', 'a']],
-      ) do |values|
-        values
-          .each_with_object({}) { |v, h| h[v] = true }
-          .then { Jade::Set::Set[it] }
-      end
+      )
 
       function(
         :map,
@@ -116,7 +91,7 @@ module Jade
         { left: 'Set(a)', right: 'Set(a)' },
         'Set(a)',
         constraints: [['Basics.Eq', 'a']],
-      ) { |left, right| Jade::Set::Set[left.hash.merge(right.hash)] }
+      )
 
       function(
         :intersect,
@@ -142,11 +117,7 @@ module Jade
 
       default_importing('Set')
 
-      function(
-        'set_eq',
-        { a: 'Set(a)', b: 'Set(a)' },
-        'Bool',
-      ) { |a, b| a.hash == b.hash }
+      function('set_eq', { a: 'Set(a)', b: 'Set(a)' }, 'Bool')
     end
   end
 end

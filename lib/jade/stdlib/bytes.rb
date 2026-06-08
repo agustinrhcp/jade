@@ -17,17 +17,8 @@ module Jade
       implementation('Eq',         'Bytes', '(==)' => 'bytes_eq')
       implementation('Appendable', 'Bytes', '(++)' => 'bytes_append')
 
-      function(
-        :empty,
-        {},
-        'Bytes',
-      ) { Jade::Bytes::Bytes[::String.new(encoding: Encoding::BINARY)] }
-
-      function(
-        :width,
-        { bytes: 'Bytes' },
-        'Int',
-      ) { it.bin.bytesize }
+      function(:empty, {}, 'Bytes')
+      function(:width, { bytes: 'Bytes' }, 'Int')
 
       function(
         :from_list,
@@ -41,28 +32,9 @@ module Jade
         end
       end
 
-      function(
-        :to_list,
-        { bytes: 'Bytes' },
-        'List(Int)',
-      ) { it.bin.bytes }
-
-      function(
-        :from_string,
-        { s: 'String' },
-        'Bytes',
-      ) { Jade::Bytes::Bytes[it.b] }
-
-      function(
-        :to_string,
-        { bytes: 'Bytes' },
-        'Maybe(String)',
-      ) do |b|
-        b.bin
-          .dup
-          .force_encoding(Encoding::UTF_8)
-          .then { it.valid_encoding? ? Jade::Maybe::Just[it] : Jade::Maybe::Nothing[] }
-      end
+      function(:to_list, { bytes: 'Bytes' }, 'List(Int)')
+      function(:from_string, { s: 'String' }, 'Bytes')
+      function(:to_string, { bytes: 'Bytes' }, 'Maybe(String)')
 
       function(
         :from_hex,
@@ -76,17 +48,8 @@ module Jade
         end
       end
 
-      function(
-        :to_hex,
-        { bytes: 'Bytes' },
-        'String',
-      ) { it.bin.unpack1('H*') }
-
-      function(
-        :to_base64_url,
-        { bytes: 'Bytes' },
-        'String',
-      ) { ::Base64.urlsafe_encode64(it.bin, padding: false) }
+      function(:to_hex, { bytes: 'Bytes' }, 'String')
+      function(:to_base64_url, { bytes: 'Bytes' }, 'String')
 
       function(
         :from_base64_url,
@@ -100,17 +63,8 @@ module Jade
 
       default_importing('Bytes')
 
-      function(
-        'bytes_eq',
-        { a: 'Bytes', b: 'Bytes' },
-        'Bool',
-      ) { |a, b| a.bin == b.bin }
-
-      function(
-        'bytes_append',
-        { a: 'Bytes', b: 'Bytes' },
-        'Bytes',
-      ) { |a, b| Jade::Bytes::Bytes[a.bin + b.bin] }
+      function('bytes_eq', { a: 'Bytes', b: 'Bytes' }, 'Bool')
+      function('bytes_append', { a: 'Bytes', b: 'Bytes' }, 'Bytes')
     end
   end
 end
