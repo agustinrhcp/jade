@@ -168,6 +168,107 @@ module Jade
       end
     end
 
+    context 'boundary specialization for a flat struct' do
+      let(:text) do
+        <<~JADE
+          module Test exposing (Person, identity)
+
+          struct Person = {
+            name: String,
+            age: Int,
+          }
+
+          def identity(person: Person) -> Person
+            person
+          end
+        JADE
+      end
+
+      it 'emits a decode_<name> helper that builds the struct from a hash' do
+        is_expected.to include("def self.decode_person(value)")
+        is_expected.to include('Jade::Interop::Boundary.hash("Person", value)')
+        is_expected.to include('Jade::Interop::Boundary.string("String", h["name"])')
+        is_expected.to include('Jade::Interop::Boundary.integer("Int", h["age"])')
+      end
+
+      it 'emits an encode_<name> helper that returns a hash literal' do
+        is_expected.to include("def self.encode_person(p)")
+        is_expected.to include('"name" => p.name')
+        is_expected.to include('"age" => p.age')
+      end
+
+      it 'routes the public wrapper through the helpers' do
+        is_expected.to include("encode_person(Internal.identity(decode_person(person)))")
+      end
+
+      it 'skips the descriptor cache for the specialized type' do
+        is_expected.not_to include("BOUNDARY_DEC_")
+        is_expected.not_to include("BOUNDARY_ENC_")
+      end
+    end
+
+    context 'boundary specialization for a struct with a nested struct field' do
+      let(:text) do
+        <<~JADE
+          module Test exposing (Person, identity)
+
+          struct Address = {
+            street: String,
+            city: String,
+          }
+
+          struct Person = {
+            name: String,
+            address: Address,
+          }
+
+          def identity(person: Person) -> Person
+            person
+          end
+        JADE
+      end
+
+      it 'emits helpers for both the outer and the nested struct' do
+        is_expected.to include("def self.decode_person(value)")
+        is_expected.to include("def self.decode_address(value)")
+        is_expected.to include("def self.encode_person(p)")
+        is_expected.to include("def self.encode_address(p)")
+      end
+
+      it 'chains the outer helper through the nested helper' do
+        is_expected.to include("decode_address(h[\"address\"])")
+        is_expected.to include('"address" => encode_address(p.address)')
+      end
+
+      it 'still skips the descriptor cache' do
+        is_expected.not_to include("BOUNDARY_DEC_")
+        is_expected.not_to include("BOUNDARY_ENC_")
+      end
+    end
+
+    context 'boundary for a struct with a non-specializable field type' do
+      let(:text) do
+        <<~JADE
+          module Test exposing (Profile, identity)
+
+          struct Profile = {
+            name: String,
+            age: Maybe(Int),
+          }
+
+          def identity(profile: Profile) -> Profile
+            profile
+          end
+        JADE
+      end
+
+      it 'falls back to the descriptor cache' do
+        is_expected.not_to include("def self.decode_profile")
+        is_expected.to include("BOUNDARY_DEC_")
+        is_expected.to include("Jade::Interop::Boundary.decode_or_raise")
+      end
+    end
+
     context 'if then else' do
       let(:text) do
         <<~JADE

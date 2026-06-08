@@ -85,8 +85,9 @@ module Jade
         elsif (expr = Codegen::Boundary::Specialized.encode_expr(return_type, call_expr, registry))
           expr
         else
-          encoder = Codegen::Boundary::Cache.encoder_for(return_type, registry)
-          "#{encoder}.call(#{call_expr})"
+          Codegen::Boundary::Cache
+            .encoder_for(return_type, registry)
+            .then { |encoder| "#{encoder}.call(#{call_expr})" }
         end
       end
 
