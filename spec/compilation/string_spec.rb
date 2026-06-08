@@ -40,6 +40,54 @@ module Jade
     end
   end
 
+  describe 'indexes / slice' do
+    include_context 'with test compiler'
+
+    let(:source) do
+      <<~JADE
+        module Slicer exposing (head, pipes, tail_after)
+
+        def pipes(s: String) -> List(Int)
+          String.indexes(s, "|")
+        end
+
+
+        def head(s: String, to: Int) -> String
+          String.slice(s, 0, to)
+        end
+
+
+        def tail_after(s: String, from: Int) -> String
+          String.slice(s, from, String.length(s))
+        end
+      JADE
+    end
+
+    before do
+      test_compiler.require('slicer', source)
+    end
+
+    it 'indexes reports every pipe position' do
+      expect(Slicer.pipes('a|b|c|d|e')).to eql [1, 3, 5, 7]
+      expect(Slicer.pipes('nope')).to eql []
+    end
+
+    it 'slice extracts the leading field' do
+      expect(Slicer.head('abc|def', 3)).to eql 'abc'
+    end
+
+    it 'slice to length keeps a pipe-bearing subject intact (the parse case)' do
+      raw = 'deadbeef|2024-09-02T09:00:00Z|Ada|Refactor | rename module'
+      third = Slicer.pipes(raw)[2]
+      expect(Slicer.tail_after(raw, third + 1)).to eql 'Refactor | rename module'
+    end
+
+    it 'slice clamps out-of-range and negative bounds' do
+      expect(Slicer.head('abcdef', 100)).to eql 'abcdef'
+      expect(Slicer.tail_after('abcdef', -2)).to eql 'ef'
+    end
+  end
+
   describe 'uncons / cons / from_char / map' do
     include_context 'with test compiler'
 

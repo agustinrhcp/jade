@@ -44,6 +44,10 @@ module Jade
       function(:"ends_with?", { str: 'String', suffix: 'String' }, 'Bool')
       function(:replace, { str: 'String', target: 'String', replacement: 'String' }, 'String')
 
+      # Every start position of `sub` in `str`, left to right, non-overlapping
+      # (matches Elm's String.indexes). Empty `sub` yields an empty list.
+      function(:indexes, { str: 'String', sub: 'String' }, 'List(Int)')
+
       # Half-open slice. Negative offsets count from the end (Ruby `s[i...j]`
       # semantics). Out-of-range returns an empty string rather than nil.
       function(:slice, { str: 'String', start: 'Int', end_: 'Int' }, 'String')
