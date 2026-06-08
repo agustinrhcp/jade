@@ -16,66 +16,45 @@ module Jade
 
       implementation('Eq', 'Dict', '(==)' => 'dict_eq')
 
-      function(
-        :empty,
-        {},
-        'Dict(k, v)',
-      ) { Jade::Dict::Dict[{}] }
+      function(:empty, {}, 'Dict(k, v)')
 
       function(
         :singleton,
         { key: 'k', value: 'v' },
         'Dict(k, v)',
         constraints: [['Basics.Eq', 'k']],
-      ) { |key, value| Jade::Dict::Dict[{ key => value }] }
+      )
 
-      function(
-        :"empty?",
-        { dict: 'Dict(k, v)' },
-        'Bool',
-      ) { it.hash.empty? }
-
-      function(
-        :size,
-        { dict: 'Dict(k, v)' },
-        'Int',
-      ) { it.hash.size }
+      function(:"empty?", { dict: 'Dict(k, v)' }, 'Bool')
+      function(:size, { dict: 'Dict(k, v)' }, 'Int')
 
       function(
         :get,
         { dict: 'Dict(k, v)', key: 'k' },
         'Maybe(v)',
         constraints: [['Basics.Eq', 'k']],
-      ) do |dict, key|
-        dict.hash.key?(key) \
-          ? Jade::Maybe::Just[dict.hash[key]]
-          : Jade::Maybe::Nothing[]
-      end
+      )
 
       function(
         :"member?",
         { dict: 'Dict(k, v)', key: 'k' },
         'Bool',
         constraints: [['Basics.Eq', 'k']],
-      ) { |dict, key| dict.hash.key?(key) }
+      )
 
       function(
         :insert,
         { dict: 'Dict(k, v)', key: 'k', value: 'v' },
         'Dict(k, v)',
         constraints: [['Basics.Eq', 'k']],
-      ) { |dict, key, value| Jade::Dict::Dict[dict.hash.merge(key => value)] }
+      )
 
       function(
         :remove,
         { dict: 'Dict(k, v)', key: 'k' },
         'Dict(k, v)',
         constraints: [['Basics.Eq', 'k']],
-      ) do |dict, key|
-        dict.hash.key?(key) \
-          ? Jade::Dict::Dict[dict.hash.except(key)]
-          : dict
-      end
+      )
 
       function(
         :update,
@@ -90,34 +69,16 @@ module Jade
         end
       end
 
-      function(
-        :keys,
-        { dict: 'Dict(k, v)' },
-        'List(k)',
-      ) { it.hash.keys }
-
-      function(
-        :values,
-        { dict: 'Dict(k, v)' },
-        'List(v)',
-      ) { it.hash.values }
-
-      function(
-        :to_list,
-        { dict: 'Dict(k, v)' },
-        'List(Tuple2(k, v))',
-      ) { it.hash.map { |k, v| Jade::Tuple::Tuple2[k, v] } }
+      function(:keys, { dict: 'Dict(k, v)' }, 'List(k)')
+      function(:values, { dict: 'Dict(k, v)' }, 'List(v)')
+      function(:to_list, { dict: 'Dict(k, v)' }, 'List(Tuple2(k, v))')
 
       function(
         :from_list,
         { pairs: 'List(Tuple2(k, v))' },
         'Dict(k, v)',
         constraints: [['Basics.Eq', 'k']],
-      ) do |pairs|
-        pairs
-          .each_with_object({}) { |pair, h| h[pair._1] = pair._2 }
-          .then { Jade::Dict::Dict[it] }
-      end
+      )
 
       function(
         :map,
@@ -152,7 +113,7 @@ module Jade
         { left: 'Dict(k, v)', right: 'Dict(k, v)' },
         'Dict(k, v)',
         constraints: [['Basics.Eq', 'k']],
-      ) { |left, right| Jade::Dict::Dict[right.hash.merge(left.hash)] }
+      )
 
       function(
         :merge,
@@ -167,11 +128,7 @@ module Jade
 
       default_importing('Dict')
 
-      function(
-        'dict_eq',
-        { a: 'Dict(k, v)', b: 'Dict(k, v)' },
-        'Bool',
-      ) { |a, b| a.hash == b.hash }
+      function('dict_eq', { a: 'Dict(k, v)', b: 'Dict(k, v)' }, 'Bool')
     end
   end
 end

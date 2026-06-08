@@ -10,85 +10,22 @@ module Jade
 
       union :List, 'a'
 
-      function(
-        :singleton,
-        { element: 'a' },
-        'List(a)'
-      ) { |element| [element] }
-
-      function(
-        :repeat,
-        { element: 'a', times: 'Int' },
-        'List(a)'
-      ) { |element, times| [element] * times }
-
-      function(
-        :range,
-        { begin_: 'Int', end_: 'Int' },
-        'List(a)',
-      ) { |begin_, end_| (begin_..end_).to_a }
-
-      function(
-        :"empty?",
-        { list: 'List(a)' },
-        'Bool',
-      ) { |list| list.empty? }
-
-      function(
-        :head,
-        { list: 'List(a)' },
-        'Maybe(a)',
-      ) { |list| list.empty? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[list.first] }
-
-      function(
-        :tail,
-        { list: 'List(a)' },
-        'List(a)',
-      ) { |list| list.drop(1) }
-
-      function(
-        :length,
-        { list: 'List(a)' },
-        'Int',
-      ) { |list| list.length }
-
-      function(
-        :reverse,
-        { list: 'List(a)' },
-        'List(a)',
-      ) { |list| list.reverse }
+      function(:singleton, { element: 'a' }, 'List(a)')
+      function(:repeat, { element: 'a', times: 'Int' }, 'List(a)')
+      function(:range, { begin_: 'Int', end_: 'Int' }, 'List(a)')
+      function(:"empty?", { list: 'List(a)' }, 'Bool')
+      function(:head, { list: 'List(a)' }, 'Maybe(a)')
+      function(:tail, { list: 'List(a)' }, 'List(a)')
+      function(:length, { list: 'List(a)' }, 'Int')
+      function(:reverse, { list: 'List(a)' }, 'List(a)')
 
       # Transform
 
-      function(
-        :map,
-        { list: 'List(a)', fn: 'a -> b' },
-        'List(b)',
-      ) { |list, fn| list.map(&fn) }
-
-      function(
-        :and_then,
-        { list: 'List(a)', fn: 'a -> List(b)' },
-        'List(b)',
-      ) { |list, fn| list.flat_map(&fn) }
-
-      function(
-        :indexed_map,
-        { list: 'List(a)', fn: 'Int, a -> b' },
-        'List(b)',
-      ) { |list, fn| list.each_with_index.map { |x, i| fn.(i, x) } }
-
-      function(
-        :fold,
-        { list: 'List(a)', initial: 'b', fn: 'b, a -> b' },
-        'b',
-      ) { |list, initial, fn| list.reduce(initial, &fn) }
-
-      function(
-        :filter,
-        { list: 'List(a)', fn: 'a -> Bool' },
-        'List(a)',
-      ) { |list, fn| list.filter(&fn) }
+      function(:map, { list: 'List(a)', fn: 'a -> b' }, 'List(b)')
+      function(:and_then, { list: 'List(a)', fn: 'a -> List(b)' }, 'List(b)')
+      function(:indexed_map, { list: 'List(a)', fn: 'Int, a -> b' }, 'List(b)')
+      function(:fold, { list: 'List(a)', initial: 'b', fn: 'b, a -> b' }, 'b')
+      function(:filter, { list: 'List(a)', fn: 'a -> Bool' }, 'List(a)')
 
       function(
         :sort,
@@ -151,26 +88,9 @@ module Jade
           .map(&:first)
       end
 
-      function(
-        :"any?",
-        { list: 'List(a)', fn: 'a -> Bool' },
-        'Bool',
-      ) { |list, fn| list.any?(&fn) }
-
-      function(
-        :"all?",
-        { list: 'List(a)', fn: 'a -> Bool' },
-        'Bool',
-      ) { |list, fn| list.all?(&fn) }
-
-      function(
-        :find,
-        { list: 'List(a)', fn: 'a -> Bool' },
-        'Maybe(a)',
-      ) do |list, fn|
-        match = list.find(&fn)
-        match.nil? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[match]
-      end
+      function(:"any?", { list: 'List(a)', fn: 'a -> Bool' }, 'Bool')
+      function(:"all?", { list: 'List(a)', fn: 'a -> Bool' }, 'Bool')
+      function(:find, { list: 'List(a)', fn: 'a -> Bool' }, 'Maybe(a)')
 
       function(
         :filter_map,
@@ -185,32 +105,10 @@ module Jade
         end
       end
 
-      function(
-        :take,
-        { list: 'List(a)', n: 'Int' },
-        'List(a)',
-      ) { |list, n| list.first([n, 0].max) }
-
-      function(
-        :drop,
-        { list: 'List(a)', n: 'Int' },
-        'List(a)',
-      ) { |list, n| list.drop([n, 0].max) }
-
-      function(
-        :partition,
-        { list: 'List(a)', fn: 'a -> Bool' },
-        'Tuple2(List(a), List(a))',
-      ) do |list, fn|
-        pass, rest = list.partition(&fn)
-        Jade::Tuple::Tuple2[pass, rest]
-      end
-
-      function(
-        :concat,
-        { lists: 'List(List(a))' },
-        'List(a)',
-      ) { it.flatten(1) }
+      function(:take, { list: 'List(a)', n: 'Int' }, 'List(a)')
+      function(:drop, { list: 'List(a)', n: 'Int' }, 'List(a)')
+      function(:partition, { list: 'List(a)', fn: 'a -> Bool' }, 'Tuple2(List(a), List(a))')
+      function(:concat, { lists: 'List(List(a))' }, 'List(a)')
 
       function(
         :zip,
@@ -221,11 +119,7 @@ module Jade
         left.first(len).zip(right.first(len)).map { |(x, y)| Jade::Tuple::Tuple2[x, y] }
       end
 
-      function(
-        :unzip,
-        { list: 'List(Tuple2(a, b))' },
-        'Tuple2(List(a), List(b))',
-      ) { |list| Jade::Tuple::Tuple2[list.map(&:_1), list.map(&:_2)] }
+      function(:unzip, { list: 'List(Tuple2(a, b))' }, 'Tuple2(List(a), List(b))')
 
       function(
         :"member?",
@@ -312,11 +206,7 @@ module Jade
       implementation('Mappable', 'List', 'map' => 'map')
       implementation('Chainable', 'List', 'and_then' => 'and_then')
 
-      function(
-        'list_append',
-        { a: 'List(a)', b: 'List(a)' },
-        'List(a)',
-      ) { |a, b| a + b }
+      function('list_append', { a: 'List(a)', b: 'List(a)' }, 'List(a)')
 
       default_importing('List')
     end

@@ -224,7 +224,6 @@ module Jade
         Bytes.from_list
         Bytes.from_hex
         Bytes.from_base64_url
-        Dict.get
         Dict.update
         Dict.map
         Dict.filter

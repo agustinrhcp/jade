@@ -76,40 +76,26 @@ module Jade
         ),
       )
 
-      function('int_add',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a + b }
-      function('int_sub',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a - b }
-      function('int_mul',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a * b }
-      function('int_div',   { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a / b }
-      function('mod',       { a: 'Int',   b: 'Int'   }, 'Int'  ) { |a, b| a % b }
+      function('int_add', { a: 'Int', b: 'Int' }, 'Int')
+      function('int_sub', { a: 'Int', b: 'Int' }, 'Int')
+      function('int_mul', { a: 'Int', b: 'Int' }, 'Int')
+      function('int_div', { a: 'Int', b: 'Int' }, 'Int')
+      function('mod', { a: 'Int', b: 'Int' }, 'Int')
 
-      function('float_add', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a + b }
-      function('float_sub', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a - b }
-      function('float_mul', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a * b }
-      function('float_div', { a: 'Float', b: 'Float' }, 'Float') { |a, b| a / b }
+      function('float_add', { a: 'Float', b: 'Float' }, 'Float')
+      function('float_sub', { a: 'Float', b: 'Float' }, 'Float')
+      function('float_mul', { a: 'Float', b: 'Float' }, 'Float')
+      function('float_div', { a: 'Float', b: 'Float' }, 'Float')
 
-      function(:to_float,  { n: 'Int'   }, 'Float') { |n| n.to_f }
-      function(:floor,     { n: 'Float' }, 'Int'  ) { |n| n.floor }
-      function(:ceiling,   { n: 'Float' }, 'Int'  ) { |n| n.ceil }
-      function(:round,     { n: 'Float' }, 'Int'  ) { |n| n.round }
-      function(:truncate,  { n: 'Float' }, 'Int'  ) { |n| n.truncate }
+      function(:to_float, { n: 'Int' }, 'Float')
+      function(:floor, { n: 'Float' }, 'Int')
+      function(:ceiling, { n: 'Float' }, 'Int')
+      function(:round, { n: 'Float' }, 'Int')
+      function(:truncate, { n: 'Float' }, 'Int')
 
-      function(
-        'identity',
-        { a: 'a' },
-        'a',
-      ) { it }
-
-      function(
-        'always',
-        { x: 'a' },
-        'b -> a',
-      ) { |x| ->(_) { x } }
-
-      function(
-        'not',
-        { a: 'Bool' },
-        'Bool',
-      ) { not it }
+      function('identity', { a: 'a' }, 'a')
+      function('always', { x: 'a' }, 'b -> a')
+      function('not', { a: 'Bool' }, 'Bool')
 
       function(
         '(<)',
@@ -213,50 +199,16 @@ module Jade
         ),
       )
 
-      function(
-        '(&&)',
-        { a: 'Bool', b: 'Bool' },
-        'Bool',
-      ) { |a, b| a && b }
-
-      function(
-        '(||)',
-        { a: 'Bool', b: 'Bool' },
-        'Bool',
-      ) { |a, b| a || b }
+      function('(&&)', { a: 'Bool', b: 'Bool' }, 'Bool')
+      function('(||)', { a: 'Bool', b: 'Bool' }, 'Bool')
 
       default_importing :*
 
-      function(
-        'int_eq',
-        { one: 'Int', other: 'Int' },
-        'Bool',
-      ) { |one, other| one == other }
-
-      function(
-        'float_eq',
-        { one: 'Float', other: 'Float' },
-        'Bool',
-      ) { |one, other| one == other }
-
-      function(
-        'bool_eq',
-        { one: 'Bool', other: 'Bool' },
-        'Bool',
-      ) { |one, other| one == other }
-
-      function(
-        'int_compare',
-        { a: 'Int', b: 'Int' },
-        'Ordering',
-      ) { |a, b| a < b ? Jade::Basics::LT[] : a > b ? Jade::Basics::GT[] : Jade::Basics::EQ[] }
-
-      function(
-        'float_compare',
-        { a: 'Float', b: 'Float' },
-        'Ordering',
-      ) { |a, b| a < b ? Jade::Basics::LT[] : a > b ? Jade::Basics::GT[] : Jade::Basics::EQ[] }
-
+      function('int_eq', { one: 'Int', other: 'Int' }, 'Bool')
+      function('float_eq', { one: 'Float', other: 'Float' }, 'Bool')
+      function('bool_eq', { one: 'Bool', other: 'Bool' }, 'Bool')
+      function('int_compare', { a: 'Int', b: 'Int' }, 'Ordering')
+      function('float_compare', { a: 'Float', b: 'Float' }, 'Ordering')
     end
   end
 end
