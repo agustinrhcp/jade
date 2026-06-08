@@ -3,10 +3,11 @@ module Jade
     module Boundary
       # Emits inline boundary code for known-shape types — `Int`, `Float`,
       # `Bool`, `String`, `List(scalar)`, and structs whose fields are all
-      # scalar/list-of-scalar. Bypasses `Decode::Runner` and the descriptor
-      # cache entirely. For structs, emits a pair of `decode_<name>` /
-      # `encode_<name>` helper methods at module level; wrapper bodies call
-      # those instead of nested `decode_or_raise` / encoder closures.
+      # specializable (scalars, lists of scalar, or nested specializable
+      # structs). Bypasses `Decode::Runner` and the descriptor cache. For
+      # structs, emits a pair of `decode_<name>` / `encode_<name>` helper
+      # methods at module level; wrapper bodies call those instead of
+      # nested `decode_or_raise` / encoder closures.
       module Specialized
         extend self
         extend Helpers
@@ -60,13 +61,16 @@ module Jade
         end
 
         # Walks the module body for record types referenced by exposed
-        # function boundaries; returns the distinct `Symbol::Struct`s
-        # whose fields are all scalar / list-of-scalar.
+        # function boundaries; returns the distinct `Symbol::Struct`s that
+        # are specializable, plus all specializable structs they reach
+        # through nested fields (so the helper for an outer record can
+        # call the helper for an inner one).
         def collect_helpers(body, registry)
           body.expressions
             .filter { it.is_a?(AST::FunctionDeclaration) }
             .flat_map { fn_record_types(it, registry) }
             .uniq
+            .then { transitive_closure(it, registry) }
         end
 
         # Emits the `decode_<name>` / `encode_<name>` methods for each
@@ -93,21 +97,61 @@ module Jade
           scalar_qname(args[0])
         end
 
-        # Returns the Symbol::Struct when `type` is a struct whose fields
-        # are all scalar or list-of-scalar — i.e. a flat record we can
-        # decode/encode inline. Returns nil otherwise (interfaces, unions,
-        # structs with nested records, polymorphic structs).
+        # Returns the Symbol::Struct when `type` is a specializable struct
+        # — every field is scalar, list-of-scalar, or another
+        # specializable struct. Cycles fall back to the cache path.
         def record_struct(type, registry)
+          specializable_struct(type, registry, ::Set.new)
+        end
+
+        # `seen` carries the qnames of structs we're currently inside,
+        # so a recursive descent into a self- or mutually-referential
+        # struct bails instead of looping. Non-mutating: each recursion
+        # gets a fresh `seen + [name]` set.
+        def specializable_struct(type, registry, seen)
+          struct = lookup_struct(type, registry) or return nil
+          return nil if seen.include?(struct.qualified_name)
+
+          struct.record_type.fields.values
+            .all? { specializable_field?(it, registry, seen + [struct.qualified_name]) }
+            .then { it ? struct : nil }
+        end
+
+        def specializable_field?(type, registry, seen)
+          scalar_qname(type) ||
+            list_scalar_qname(type) ||
+            specializable_struct(type, registry, seen)
+        end
+
+        def lookup_struct(type, registry)
           return nil unless args_of(type) == []
           qname = qname_of(type) or return nil
 
           parts = qname.split('.')
           ref   = Symbol.type_ref(parts[0..-2].join('.'), parts[-1])
           sym   = registry.lookup(ref) or return nil
-          return nil unless sym.is_a?(Symbol::Struct)
-          return nil unless flat_record?(sym.record_type)
+          sym.is_a?(Symbol::Struct) ? sym : nil
+        end
 
-          sym
+        # Reachability walk from `seeds` through nested struct fields.
+        # On each step we process only the structs we haven't seen yet
+        # (`frontier`), accumulate them into `collected`, and recurse on
+        # the structs they reach. Stops when the frontier is empty.
+        def transitive_closure(seeds, registry, collected = ::Set.new)
+          frontier = seeds.reject { collected.include?(it) }
+          return collected.to_a if frontier.empty?
+
+          transitive_closure(
+            frontier.flat_map { nested_structs(it, registry) },
+            registry,
+            collected + frontier,
+          )
+        end
+
+        def nested_structs(struct, registry)
+          struct.record_type.fields.values.filter_map do
+            specializable_struct(it, registry, ::Set.new)
+          end
         end
 
         # Both `Type::Application` (from inferred boundary types) and
@@ -131,12 +175,6 @@ module Jade
           in Type::Application(args:)         then args
           in Symbol::TypeApplication(args:)   then args
           else                                     nil
-          end
-        end
-
-        def flat_record?(record_type)
-          record_type.fields.values.all? do
-            scalar_qname(it) || list_scalar_qname(it)
           end
         end
 
@@ -173,7 +211,7 @@ module Jade
         end
 
         def decode_helper(struct, registry)
-          ctor = "::#{to_qualified(struct.module_name)}::#{struct.name}"
+          ctor      = "::#{to_qualified(struct.module_name)}::#{struct.name}"
           hash_call = "Jade::Interop::Boundary.hash(#{struct.name.inspect}, value)"
 
           struct.record_type.fields
@@ -185,15 +223,24 @@ module Jade
 
         def encode_helper(struct, registry)
           struct.record_type.fields
-            .map { |k, _| "#{k.inspect} => p.#{k}" }
+            .map { |k, t| "#{k.inspect} => #{field_encode_value(t, "p.#{k}", registry)}" }
             .then { "{ #{it.join(', ')} }" }
             .then { Pretty.block("def self.#{encode_helper_name(struct)}(p)", it) }
         end
 
         def field_decode(key, type, registry)
-          access = "h[#{key.to_s.inspect}]"
-          decode_expr(type, access, registry) ||
+          decode_expr(type, "h[#{key.to_s.inspect}]", registry) ||
             fail("non-specializable field type for #{key}: #{type}")
+        end
+
+        def field_encode_value(type, accessor, registry)
+          if scalar_qname(type) || list_scalar_qname(type)
+            accessor
+          elsif (struct = record_struct(type, registry))
+            "#{encode_helper_name(struct)}(#{accessor})"
+          else
+            fail("non-specializable field encode for #{type}")
+          end
         end
 
         def snake(name)
