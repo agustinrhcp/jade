@@ -59,8 +59,9 @@ module Jade
             expect(Runtime.intr("String.indexes").call("aaa", "")).to eql []
           end
 
-          it 'reports overlapping matches' do
-            expect(Runtime.intr("String.indexes").call("aaaa", "aa")).to eql [0, 1, 2]
+          it 'reports non-overlapping matches, like Elm' do
+            expect(Runtime.intr("String.indexes").call("aaaa", "aa")).to eql [0, 2]
+            expect(Runtime.intr("String.indexes").call("banana", "ana")).to eql [1]
           end
         end
 

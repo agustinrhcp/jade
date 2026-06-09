@@ -54,7 +54,7 @@ module Jade
         'String.uncons'     => ->(s)           { "#{s}.then { |s| s.empty? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[Jade::Tuple::Tuple2[s[0], s[1..]]] }" },
         'String.repeat'     => ->(s, n)        { "(#{s} * #{n})" },
         'String.split'      => ->(s, by)       { "#{s}.split(#{by})" },
-        'String.indexes'    => ->(s, sub)      { "->(s, sub) { sub.empty? ? [] : (0..s.length - sub.length).select { |i| s[i, sub.length] == sub } }.(#{s}, #{sub})" },
+        'String.indexes'    => ->(s, sub)      { "->(s, sub) { next [] if sub.empty?; found = []; offset = 0; while (hit = s.index(sub, offset)); found << hit; offset = hit + sub.length; end; found }.(#{s}, #{sub})" },
         'String.concat'     => ->(xs)          { "#{xs}.join" },
         'String.join'       => ->(xs, with)    { "#{xs}.join(#{with})" },
         'String.map'        => ->(s, fn)       { "#{s}.chars.map(&#{fn}).join" },
