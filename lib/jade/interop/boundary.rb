@@ -42,6 +42,13 @@ module Jade
         v.is_a?(::Array) && v.all? { klass === _1 } ? v : type_error!(label, v)
       end
 
+      # Validates that v is an Array but doesn't check element types — used
+      # when the per-element decoder isn't a simple `is_a?` (e.g. nested
+      # structs). The caller maps a decoder over the result.
+      def array(label, v)
+        v.is_a?(::Array) ? v : type_error!(label, v)
+      end
+
       def hash(label, v)
         case v
         when ::Hash then v

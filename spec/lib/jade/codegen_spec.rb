@@ -246,26 +246,73 @@ module Jade
       end
     end
 
-    context 'boundary for a struct with a non-specializable field type' do
+    context 'boundary specialization for List(struct)' do
       let(:text) do
         <<~JADE
-          module Test exposing (Profile, identity)
+          module Test exposing (Todo, list_todos)
 
-          struct Profile = {
-            name: String,
-            age: Maybe(Int),
+          struct Todo = {
+            id: Int,
+            title: String,
           }
 
-          def identity(profile: Profile) -> Profile
-            profile
+          def list_todos(todos: List(Todo)) -> List(Todo)
+            todos
           end
         JADE
       end
 
-      it 'falls back to the descriptor cache' do
-        is_expected.not_to include("def self.decode_profile")
-        is_expected.to include("BOUNDARY_DEC_")
-        is_expected.to include("Jade::Interop::Boundary.decode_or_raise")
+      it 'emits decode_todo and encode_todo helpers' do
+        is_expected.to include("def self.decode_todo(value)")
+        is_expected.to include("def self.encode_todo(p)")
+      end
+
+      it 'maps decode_todo over the input array' do
+        is_expected.to include(
+          'Jade::Interop::Boundary.array("List(Todo)", todos).map { decode_todo(_1) }'
+        )
+      end
+
+      it 'maps encode_todo over the return array' do
+        is_expected.to include(".map { encode_todo(_1) }")
+      end
+
+      it 'skips the descriptor cache' do
+        is_expected.not_to include("BOUNDARY_DEC_")
+        is_expected.not_to include("BOUNDARY_ENC_")
+      end
+    end
+
+    context 'boundary specialization for Maybe(struct)' do
+      let(:text) do
+        <<~JADE
+          module Test exposing (Todo, find_first)
+
+          struct Todo = {
+            id: Int,
+            title: String,
+          }
+
+          def find_first(todos: List(Todo)) -> Maybe(Todo)
+            List.head(todos)
+          end
+        JADE
+      end
+
+      it 'binds the receiver via .then for the Maybe encode' do
+        is_expected.to include(
+          ".then { it.is_a?(::Jade::Maybe::Just) ? encode_todo(it._1) : nil }"
+        )
+      end
+
+      it 'still emits encode_todo / decode_todo helpers' do
+        is_expected.to include("def self.encode_todo(p)")
+        is_expected.to include("def self.decode_todo(value)")
+      end
+
+      it 'skips the descriptor cache' do
+        is_expected.not_to include("BOUNDARY_DEC_")
+        is_expected.not_to include("BOUNDARY_ENC_")
       end
     end
 
