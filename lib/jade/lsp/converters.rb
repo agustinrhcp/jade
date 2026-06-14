@@ -52,7 +52,7 @@ module Jade
 
       def definition_for_path(path, registry, entry, source_root)
         innermost_resolved(path, registry, entry)
-          .then { definition_location(it, registry, source_root) }
+          .then { definition_location(it, registry, entry, source_root) }
       end
 
       def hover_for_path(path, registry, entry)
@@ -123,7 +123,7 @@ module Jade
         refs = usage_locations(symbol, registry, source_root)
         return refs unless include_declaration
 
-        refs + declaration_locations(symbol, registry, source_root)
+        refs + declaration_locations(symbol, registry, entry, source_root)
       end
 
       def prepare_rename_for_path(path, registry, entry, offset)
@@ -199,14 +199,19 @@ module Jade
 
       private
 
-      def definition_location(symbol, registry, source_root)
+      def definition_location(symbol, registry, entry, source_root)
         return nil unless symbol&.respond_to?(:decl_span) && symbol.decl_span
 
-        registry
-          .modules
-          .fetch(symbol.module_name)
-          .source
-          .then { build_location(it, symbol.decl_span, source_root) }
+        # Locals (Symbol::Variable) carry no module — they're declared in
+        # the file the cursor is in, so resolve against the current entry.
+        source =
+          if symbol.respond_to?(:module_name)
+            registry.modules.fetch(symbol.module_name).source
+          else
+            entry.source
+          end
+
+        source && build_location(source, symbol.decl_span, source_root)
       end
 
       def usage_locations(symbol, registry, source_root)
@@ -223,8 +228,8 @@ module Jade
           end
       end
 
-      def declaration_locations(symbol, registry, source_root)
-        definition_location(symbol, registry, source_root)
+      def declaration_locations(symbol, registry, entry, source_root)
+        definition_location(symbol, registry, entry, source_root)
           .then { it ? [it] : [] }
       end
 

@@ -496,6 +496,14 @@ module Jade
           expect(loc[:range][:start][:line]).to eq 2
         end
 
+        it 'returns the declaration for a local variable' do
+          _, outbound = open_and_define(text: def_text, at: 'x + 1')
+          loc = outbound.first[:result]
+          expect(loc[:uri]).to eq uri
+          # x is the parameter of helper, declared on line 2 (0-indexed)
+          expect(loc[:range][:start][:line]).to eq 2
+        end
+
         it 'returns nil for stdlib calls (no decl_span yet)' do
           text = "module Leaf exposing (n)\n\ndef n() -> Int\n  String.length(\"hi\")\nend\n"
           _, outbound = open_and_define(text:, at: 'String.length')
@@ -563,6 +571,12 @@ module Jade
         it 'returns nil when cursor is not on a resolvable symbol' do
           _, outbound = open_and_find_refs(at: 'module M', include_declaration: true)
           expect(outbound.first[:result]).to be_nil
+        end
+
+        it 'finds a local variable across its declaration and use' do
+          _, outbound = open_and_find_refs(at: 'x + 1', include_declaration: true)
+          # the parameter declaration plus its one use
+          expect(outbound.first[:result].size).to eq 2
         end
       end
 
