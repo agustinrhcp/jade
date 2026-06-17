@@ -21,6 +21,7 @@ readable Ruby. This is a map of what's where.
 | `Bytes` | Opaque byte buffer: `empty`, `width`, `from_list` / `to_list`, `from_string` / `to_string`. Implements `Eq` and `Appendable`. |
 | `Calendar` | Dates and date arithmetic: `Date`, `today`. Days, months, years; no time of day — use `Clock`. |
 | `Clock` | Timestamps and monotonic timing: `Instant`, `now`. Sub-second precision; the bridge to wall-clock time. |
+| `Decimal` | Exact base-10 decimals (`coefficient * 10 ^ exponent`) — money and rates without `Float` rounding. Opaque; build with `of` / `scaled` / `parse`. Arithmetic via `Numeric` (`+` `-` `*` `/`), plus `div` (scaled, half-up), `round`, `to_i`, `to_float`. JSON-encodes to a `<mantissa>e<exponent>` string. |
 
 Stdlib operations compile inline rather than through a runtime dispatch layer,
 so the generated Ruby calls the underlying operation directly.

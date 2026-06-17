@@ -357,7 +357,7 @@ pre-commit hook.
 ## Standard library
 
 `Basics`, `String`, `Char`, `List`, `Dict`, `Set`, `Tuple`, `Maybe`, `Result`,
-`Task`, `Decode`, `Encode`, `Bytes`, `Calendar`, `Clock`. Stdlib operations
+`Task`, `Decode`, `Encode`, `Bytes`, `Calendar`, `Clock`, `Decimal`. Stdlib operations
 compile inline rather than through a runtime dispatch layer.
 
 ## Docs
