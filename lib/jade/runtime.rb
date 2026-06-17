@@ -95,6 +95,25 @@ module Jade
       INTRINSICS[name] || fail("Intrinsic #{name} does not exist")
     end
 
+    # Hand-rolled currying for generated constructors. Ruby's Method#curry
+    # corrupts the heap under GC compaction (the GC marks a T_NONE object
+    # while a curried call is in flight) when a curried proc is built once
+    # and called repeatedly — which is exactly the decoder applicative path
+    # (Decode.succeed(Ctor.curry(n)) threaded through Decode.and_map). Plain
+    # procs accumulating into an Array are GC-safe.
+    def curry(fn, arity)
+      return fn if arity <= 1
+
+      build = ->(acc) {
+        ->(*xs) {
+          (acc + xs).then do |args|
+            args.length >= arity ? fn.call(*args) : build.call(args)
+          end
+        }
+      }
+      build.call([])
+    end
+
     def register(name, &block)
       INTRINSICS[name] = block
     end
