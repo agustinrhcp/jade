@@ -15,6 +15,7 @@ require 'jade/stdlib/encode'
 require 'jade/stdlib/bytes'
 require 'jade/stdlib/calendar'
 require 'jade/stdlib/clock'
+require 'jade/stdlib/decimal'
 
 module Jade
   module Stdlib
@@ -26,7 +27,7 @@ module Jade
       Bytes
       Dict Set
     ].freeze
-    COMPILED = %w[Maybe Result Decode.Params Calendar Clock].freeze
+    COMPILED = %w[Maybe Result Decode.Params Calendar Clock Decimal].freeze
     TOPLEVELS = (INTRINSICS + COMPILED).map { it.split('.', 2).first }.to_set.freeze
     STDLIBS = [
       Stdlib::Basics, Stdlib::Maybe, Stdlib::Tuple, Stdlib::List, Stdlib::Char,
@@ -34,13 +35,13 @@ module Jade
       Stdlib::Dict, Stdlib::Set,
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
       Stdlib::Bytes,
-      Stdlib::Calendar, Stdlib::Clock,
+      Stdlib::Calendar, Stdlib::Clock, Stdlib::Decimal,
     ]
     # Loaded into the registry but not auto-imported into user modules.
     EXTENSIONS = [
       Stdlib::Dict, Stdlib::Set,
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
-      Stdlib::Calendar, Stdlib::Clock,
+      Stdlib::Calendar, Stdlib::Clock, Stdlib::Decimal,
     ]
 
     def load(registry)

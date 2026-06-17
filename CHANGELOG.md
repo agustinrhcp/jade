@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0]
+
+### Added
+
+- `Decimal` stdlib module: exact base-10 decimals (`coefficient * 10 ^
+  exponent`) for money and rates without `Float` rounding. Opaque type built
+  with `of(coeff, exp)`, `scaled(unscaled, scale)`, or `parse("0.0825")`;
+  arithmetic via `Numeric` (`+` `-` `*` `/`) plus `div` (scaled, half-up),
+  `round`, `to_i`, `to_float`, `coefficient`, `exponent`. Decodes/encodes to a
+  `<mantissa>e<exponent>` JSON string. (Supersedes jade-sql's `Sql.Decimal`.)
+
 ## [0.1.1]
 
 ### Fixed
@@ -31,6 +42,7 @@ Initial release.
 - `jade` CLI dispatcher: `fmt`, `lsp`, `q`.
 - Language server and headless query interface for editor/agent tooling.
 
-[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/agustinrhcp/jade/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/agustinrhcp/jade/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/agustinrhcp/jade/releases/tag/v0.1.0
