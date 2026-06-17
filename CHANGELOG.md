@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1]
+
+### Fixed
+
+- Generated constructors no longer use Ruby's `Method#curry`, which corrupts
+  the heap under GC compaction (an intermittent near-null SIGSEGV,
+  "try to mark T_NONE object") when an auto-derived record decoder builds a
+  constructor once and calls it on every decode. Construction now goes through
+  a GC-safe `Jade::Runtime.curry` (plain procs + an array). Surfaced as a
+  segfault decoding records with non-specializable fields (e.g. `Calendar.Date`)
+  at volume.
+
 ## [0.1.0]
 
 Initial release.
@@ -19,5 +31,6 @@ Initial release.
 - `jade` CLI dispatcher: `fmt`, `lsp`, `q`.
 - Language server and headless query interface for editor/agent tooling.
 
-[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/agustinrhcp/jade/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/agustinrhcp/jade/releases/tag/v0.1.0
