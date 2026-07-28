@@ -11,7 +11,7 @@ module Jade
 
       if needs_rebuild?(target)
         ModuleLoader
-          .load(config.source_root.first, path + '.jd', cache_dir: cache_root)
+          .load(config.source_root, path + '.jd', cache_dir: cache_root)
           .tap { render_diagnostics(it) }
           .then { ModuleLoader.emit(it, path: build_root) }
       end
@@ -47,7 +47,7 @@ module Jade
 
       target_mtime = File.mtime(target)
       Dir
-        .glob(File.join(config.source_root.first, '**/*.jd'))
+        .glob(File.join(config.source_root, '**/*.jd'))
         .any? { |src| File.mtime(src) > target_mtime }
     end
 
@@ -56,13 +56,19 @@ module Jade
 
       def initialize
         @project_root = Dir.pwd
-        @source_root = []
+        @source_root = nil
         @build_dir   = ".jade/build"
         @cache_dir   = ".jade/cache"
       end
 
+      # One root. A list was accepted but only ever read at `.first`, so
+      # anything past the first was silently dropped — say so instead.
       def source_root=(root)
-        @source_root = Array(root)
+        Array(root).then do
+          fail ArgumentError, "source_root takes one root, got #{it.size}" if it.size > 1
+
+          @source_root = it.first
+        end
       end
     end
   end
