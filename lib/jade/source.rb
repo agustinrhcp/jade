@@ -1,8 +1,12 @@
 module Jade
-  Source = Data.define(:uri, :text, :line_starts) do
+  # `root` is the directory `uri` is relative to — the app's source root
+  # for its own modules, an extension gem's for the modules it ships. It
+  # is what makes "app or gem?" structural instead of a name list. `nil`
+  # for sources that never came off disk: buffers, stdin, the stdlib.
+  Source = Data.define(:uri, :text, :line_starts, :root) do
     def self.load(source_root, uri, overlays: {})
       text = overlays[uri] || File.read(File.join(source_root, uri))
-      new(uri, text)
+      new(uri:, text:, root: source_root)
     end
 
     def self.load_from_module_name(source_root, name, overlays: {})
@@ -26,7 +30,7 @@ module Jade
       end
     end
 
-    def initialize(uri:, text:, line_starts: calculate_line_starts(text))
+    def initialize(uri:, text:, line_starts: calculate_line_starts(text), root: nil)
       super
     end
 
