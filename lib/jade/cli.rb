@@ -26,6 +26,9 @@ module Jade
         usage($stderr)
         exit 1
       end
+    rescue Project::NotFound => e
+      warn "jade: #{e.message}"
+      exit 1
     end
 
     def usage(io = $stdout)
