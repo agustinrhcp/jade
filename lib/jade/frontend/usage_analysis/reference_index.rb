@@ -1,7 +1,11 @@
 module Jade
   module Frontend
     module UsageAnalysis
-      Reference = Data.define(:symbol_key, :kind, :range)
+      # `owner` is the key of the enclosing declaration or implementation,
+      # `nil` only at module level. Declaration owners share the
+      # `symbol_key` namespace, so a reference's owner can be looked up in
+      # the index that produced it.
+      Reference = Data.define(:symbol_key, :kind, :range, :owner)
 
       ReferenceIndex = Data.define(:references) do
         def initialize(references: {})
@@ -41,6 +45,8 @@ module Jade
           case symbol
           in Symbol::Variable
             [:local, symbol.decl_span]
+          in Symbol::Implementation
+            [:impl, symbol.interface.qname, symbol.type.qname]
           in Symbol::ValueRef | Symbol::TypeRef
             [symbol.module_name, symbol.name]
           else

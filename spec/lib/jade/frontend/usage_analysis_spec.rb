@@ -153,5 +153,139 @@ module Jade
         expect(index.references[local_keys.first].size).to eq 2
       end
     end
+
+    describe 'owner' do
+      let(:owners_of) do
+        ->(key) do
+          index
+            .references
+            .values
+            .flatten
+            .select { it.symbol_key == key }
+            .map(&:owner)
+        end
+      end
+
+      describe 'a call inside a declaration' do
+        let(:text) do
+          <<~JADE
+            module M exposing (go)
+
+            def go(n: Int) -> Int
+              helper(n)
+            end
+
+
+            def helper(x: Int) -> Int
+              x + 1
+            end
+          JADE
+        end
+
+        it 'is the enclosing declaration' do
+          expect(owners_of.(['M', 'helper'])).to eq [['M', 'go']]
+        end
+
+        it 'is in the same namespace as the key it owns' do
+          expect(index.references).to have_key(owners_of.(['M', 'helper']).first)
+        end
+      end
+
+      describe 'a call inside a lambda' do
+        let(:text) do
+          <<~JADE
+            module M exposing (go)
+
+            def go -> List(Int)
+              List.map([1, 2, 3], (n) -> { double(n) })
+            end
+
+
+            def double(x: Int) -> Int
+              x + x
+            end
+          JADE
+        end
+
+        it 'is the declaration enclosing the lambda' do
+          expect(owners_of.(['M', 'double'])).to eq [['M', 'go']]
+        end
+      end
+
+      # The reason `owner` exists: `<-` desugars into `Basics.and_then`
+      # with no range, so range-bucketing against declaration spans
+      # cannot attribute it.
+      describe 'a desugared bind' do
+        let(:text) do
+          <<~JADE
+            module M exposing (go)
+
+            def go -> Task(Int, Never)
+              n <- Task.succeed(1)
+
+              Task.succeed(n + 1)
+            end
+          JADE
+        end
+
+        subject(:binds) do
+          index
+            .references
+            .values
+            .flatten
+            .select { it.symbol_key == ['Basics', 'and_then'] }
+        end
+
+        it 'carries no range' do
+          expect(binds.map(&:range)).to eq [nil]
+        end
+
+        it 'is owned anyway' do
+          expect(binds.map(&:owner)).to eq [['M', 'go']]
+        end
+      end
+
+      describe 'an implementation function' do
+        let(:text) do
+          <<~JADE
+            module M exposing (Pepe)
+
+            type Pepe = Pepe(Int)
+
+
+            implements Eq(Pepe) with
+              (==): (one, other) -> { same?(one, other) }
+            end
+
+
+            def same?(one: Pepe, other: Pepe) -> Bool
+              True
+            end
+          JADE
+        end
+
+        it 'is the implementation, which has no enclosing declaration' do
+          expect(owners_of.(['M', 'same?']))
+            .to eq [[:impl, *entry.implementations.keys.first]]
+        end
+      end
+
+      describe 'the exposing list' do
+        let(:text) do
+          <<~JADE
+            module M exposing (go)
+
+            def go -> Int
+              1
+            end
+          JADE
+        end
+
+        it 'has no owner, being module level' do
+          expect(index.for(entry.lookup_value('go').to_ref).map { [it.kind, it.owner] })
+            .to include([:exposed, nil])
+        end
+      end
+    end
   end
 end
