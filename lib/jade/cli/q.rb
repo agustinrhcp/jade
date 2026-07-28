@@ -88,18 +88,22 @@ module Jade
       class Context
         attr_reader :file, :source_root, :registry, :entry
 
+        # jade.json is what says where sources live and which extension gems
+        # ship the modules they import. Without it `Sql.Uuid` resolves
+        # against cwd and the load dies.
         def initialize(file)
-          @file = file
-          @source_root = Dir.pwd
+          project = Jade::Project.find!
+          @file = project.source_relative(file)
+          @source_root = project.source_root
           @registry = Jade::ModuleLoader.load(
-            @source_root, file,
-            cache_dir: File.join(@source_root, '.jade/cache'),
+            @source_root, @file,
+            cache_dir: project.cache_path,
             tolerant: true,
           )
           @entry = @registry
             .modules
             .each_value
-            .find { it.source&.uri == file } || fail("no module at #{file}")
+            .find { it.source&.uri == @file } || fail("no module at #{@file}")
         end
 
         def path_at(line, col)

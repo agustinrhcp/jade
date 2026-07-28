@@ -54,11 +54,14 @@ module Jade
     class Config
       attr_accessor :project_root, :source_root, :build_dir, :cache_dir
 
-      def initialize
-        @project_root = Dir.pwd
-        @source_root = nil
-        @build_dir   = ".jade/build"
-        @cache_dir   = ".jade/cache"
+      # Seeded from jade.json when there is one, so `Jade.setup` needs only
+      # what the manifest doesn't say. A setup block still wins — it runs
+      # after this.
+      def initialize(project = Project.find)
+        @project_root = project&.root || Dir.pwd
+        @source_root = project&.source_root
+        @build_dir = project&.build_dir || ".jade/build"
+        @cache_dir = project&.cache_dir || ".jade/cache"
       end
 
       # One root. A list was accepted but only ever read at `.first`, so
