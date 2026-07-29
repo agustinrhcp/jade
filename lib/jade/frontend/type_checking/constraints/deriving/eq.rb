@@ -34,7 +34,8 @@ module Jade
                   deps = dependencies_of(impl, args)
                   resolved_deps = deps.filter_map { |dep|
                     next if dep.type in Type::Var
-                    lookup.call(dep) => Ok[resolved]; resolved
+                    lookup.call(dep).on_err { return Err[it] } => Ok[resolved]
+                    resolved
                   }
 
                   Symbol::Implementation.new(
