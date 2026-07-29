@@ -13,7 +13,7 @@ module Jade
     #     walks delegated to their own modules.
     module Helper
       def format_node(node, indent: 0, source: nil)
-        leading  = format_leading_comments(node, indent)
+        leading  = format_leading_comments(node, indent, source)
         trailing = format_trailing_comment(node)
 
         dispatch_for(node)
@@ -75,13 +75,19 @@ module Jade
         (INDENT * indent).length + line.length > LINE_LIMIT
       end
 
-      def format_leading_comments(node, indent)
+      # The blank line between blocks is load-bearing: collapsing it turns
+      # a section banner into the next declaration's doc comment.
+      def format_leading_comments(node, indent, source = nil)
         return "" if node.leading_comments.empty?
 
-        node.leading_comments
-          .map { |tok| tok.value.then(&and_indent(indent)) }
-          .join("\n")
+        leading_comment_blocks(node, source)
+          .map { |block| block.map { it.value.then(&and_indent(indent)) }.join("\n") }
+          .join("\n\n")
           .then { it + "\n" }
+      end
+
+      def leading_comment_blocks(node, source)
+        source ? node.leading_comment_groups(source) : [node.leading_comments]
       end
 
       def format_trailing_comment(node)

@@ -10,7 +10,9 @@ module Jade
 
         collect_nodes(ast)
           .reject { |n| n.range.nil? }
-          .sort_by { |n| n.range.begin }
+          # Outermost first, so `x = f(y)` anchors on the Assign rather
+          # than the pattern nested inside it.
+          .sort_by { |n| [n.range.begin, -n.range.size] }
           .then { build_map(comments, it, source) }
           .then { reattach(ast, it) }
       end
@@ -70,7 +72,15 @@ module Jade
       end
 
       def first_node_starting_after(pos, sorted_nodes)
-        sorted_nodes.bsearch { |n| n.range.begin >= pos }
+        sorted_nodes
+          .drop_while { |n| n.range.begin < pos }
+          .find { |n| renders_own_comments?(n) }
+      end
+
+      # ModuleNode walks `body.expressions` directly, so a Body's own
+      # leading comments reach no formatter and would be lost.
+      def renders_own_comments?(node)
+        !node.is_a?(AST::Body)
       end
 
       def smallest_enclosing(pos, sorted_nodes)

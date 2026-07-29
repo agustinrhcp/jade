@@ -927,6 +927,64 @@ module Jade
         it { is_expected.to eql "x = 1 # init\nx" }
       end
 
+      context 'a banner separated from the declaration it precedes' do
+        let(:text) do
+          <<~JADE.strip
+            # RECORD -------
+
+            # Inserts one row.
+            def insert(n: Int) -> Int
+              n
+            end
+          JADE
+        end
+
+        it 'keeps the blank line between the blocks' do
+          is_expected.to eql <<~JADE.strip
+            # RECORD -------
+
+            # Inserts one row.
+            def insert(n: Int) -> Int
+              n
+            end
+          JADE
+        end
+      end
+
+      context 'a comment on a binding inside a body' do
+        let(:text) do
+          <<~JADE.strip
+            def f(raw: String) -> Int
+              # "MM/DD/YYYY" — try this.
+              parts = String.split(raw, "/")
+
+              List.length(parts)
+            end
+          JADE
+        end
+
+        it 'anchors on the assign, not the pattern nested inside it' do
+          is_expected.to include('# "MM/DD/YYYY" — try this.')
+        end
+      end
+
+      context 'a comment on the first declaration of a module' do
+        let(:text) do
+          <<~JADE.strip
+            module M exposing (insert)
+
+            # Inserts one row.
+            def insert(n: Int) -> Int
+              n
+            end
+          JADE
+        end
+
+        it 'is not swallowed by the enclosing Body' do
+          is_expected.to include('# Inserts one row.')
+        end
+      end
+
       context 'multiple leading comments' do
         let(:text) { "# first\n# second\n42" }
         it { is_expected.to eql "# first\n# second\n42" }
