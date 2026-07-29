@@ -1538,6 +1538,47 @@ module Jade
       it { is_expected.to be_a(AST::Implementation) }
     end
 
+    describe 'deriving Decodable for a struct with a non-derivable field' do
+      let(:text) do
+        <<~JADE
+          import Decode exposing (DecodeError)
+          type Color = Red | Blue
+          struct Item = { name: String, color: Color }
+          def parse(json: String) -> Result(Item, DecodeError)
+            Decode.from_json(json)
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::DerivationFailed) }
+
+      it 'names the field type that could not be derived, not the struct' do
+        expect(subject[0].constraint.type.constructor.name).to eql '__Test__.Color'
+      end
+    end
+
+    describe 'deriving Encodable for a struct with a non-derivable field' do
+      let(:text) do
+        <<~JADE
+          import Decode exposing (Value)
+          import Encode
+          type Color = Red | Blue
+          struct Item = { name: String, color: Color }
+          def dump(i: Item) -> Value
+            Encode.encode(i)
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::DerivationFailed) }
+    end
+
     describe 'orphan implementation' do
       let(:text) do
         <<~JADE

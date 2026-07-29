@@ -90,12 +90,6 @@ module Jade
               field_deps = fields
                 .map { |_, field_type| Type.constraint(INTERFACE, field_type, nil) }
 
-              resolved_deps = field_deps
-                .map do |dep|
-                  lookup.call(dep) => Ok[impl]
-                  impl
-                end
-
               pair_irs = fields
                 .each_with_index
                 .map do |(field_name, _), idx|
@@ -118,7 +112,10 @@ module Jade
                 ],
               ]
 
-              Ok[implementation(constraint, params: ['rec'], body:, deps: resolved_deps)]
+              field_deps
+                .map { lookup.call(it) }
+                .then { Results.sequence(it) }
+                .map { implementation(constraint, params: ['rec'], body:, deps: it) }
             end
 
             def implementation(constraint, params:, body:, deps:)

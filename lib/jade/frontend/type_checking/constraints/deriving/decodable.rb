@@ -87,14 +87,16 @@ module Jade
                 Type.constraint(INTERFACE, field_type, nil)
               end
 
-              resolved_deps = field_deps.map do |dep|
-                resolve_dep(dep, lookup, entry_name) => Ok[impl]
-                impl
-              end
+              field_deps
+                .map { resolve_dep(it, lookup, entry_name) }
+                .then { Results.sequence(it) }
+                .map { implementation(constraint, record_body(fields, constructor_ref), it) }
+            end
 
+            def record_body(fields, constructor_ref)
               seed = [:call, [:stdlib_fn, 'Decode.succeed'], [constructor_ref]]
 
-              body = fields.each_with_index.reduce(seed) do |acc, ((field_name, _), idx)|
+              fields.each_with_index.reduce(seed) do |acc, ((field_name, _), idx)|
                 field_decoder = [:call,
                   [:stdlib_fn, 'Decode.field'],
                   [
@@ -105,8 +107,6 @@ module Jade
 
                 [:call, [:stdlib_fn, 'Decode.and_map'], [acc, field_decoder]]
               end
-
-              Ok[implementation(constraint, body, resolved_deps)]
             end
 
             # Free-var inner constraints fall back to the constraint marker
