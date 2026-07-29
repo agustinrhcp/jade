@@ -48,7 +48,7 @@ module Jade
           "Jade::Runtime.intr(#{name.inspect})"
 
         in [:struct_constructor, qualified_name, arity]
-          "Jade::Runtime.curry(#{to_qualified(qualified_name)}.method(:[]), #{arity})"
+          "Jade::Runtime.curry(::#{to_qualified(qualified_name)}.method(:[]), #{arity})"
 
         in [:anon_record_constructor, keys]
           "Jade::Runtime.curry(#{data_define(keys)}.method(:[]), #{keys.size})"
@@ -68,7 +68,7 @@ module Jade
           args
             .map { "#{it}" }
             .join(',')
-            .then { "#{to_qualified(name)}(#{it})" }
+            .then { "::#{to_qualified(name)}(#{it})" }
 
         in [:_]
           '_'

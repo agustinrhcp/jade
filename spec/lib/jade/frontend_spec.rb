@@ -1542,8 +1542,8 @@ module Jade
       let(:text) do
         <<~JADE
           import Decode exposing (DecodeError)
-          type Color = Red | Blue
-          struct Item = { name: String, color: Color }
+          type Shape = Circle(Int) | Square(Int)
+          struct Item = { name: String, shape: Shape }
           def parse(json: String) -> Result(Item, DecodeError)
             Decode.from_json(json)
           end
@@ -1556,7 +1556,28 @@ module Jade
       its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::DerivationFailed) }
 
       it 'names the field type that could not be derived, not the struct' do
-        expect(subject[0].constraint.type.constructor.name).to eql '__Test__.Color'
+        expect(subject[0].constraint.type.constructor.name).to eql '__Test__.Shape'
+      end
+    end
+
+    describe 'deriving Decodable for a union mixing nullary and argument variants' do
+      let(:text) do
+        <<~JADE
+          import Decode exposing (DecodeError)
+          type Kind = Income | Expense | Adjustment(Int)
+          def parse(json: String) -> Result(Kind, DecodeError)
+            Decode.from_json(json)
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::DerivationFailed) }
+
+      it 'refuses rather than giving one type two wire shapes' do
+        expect(subject[0].constraint.type.constructor.name).to eql '__Test__.Kind'
       end
     end
 
@@ -1565,8 +1586,8 @@ module Jade
         <<~JADE
           import Decode exposing (Value)
           import Encode
-          type Color = Red | Blue
-          struct Item = { name: String, color: Color }
+          type Shape = Circle(Int) | Square(Int)
+          struct Item = { name: String, shape: Shape }
           def dump(i: Item) -> Value
             Encode.encode(i)
           end

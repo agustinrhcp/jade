@@ -182,6 +182,24 @@ module Jade
         Jade::Decode::Decoder[Jade::Decode::Desc::Fail[msg]]
       }
 
+      # Backs derived Decodable for unions whose variants take no
+      # arguments. `names` and `values` are positionally paired.
+      function(
+        'string_enum',
+        { names: 'List(String)', values: 'List(a)' },
+        'Decoder(a)',
+      ) { |names, values|
+        table = names.zip(values).to_h
+
+        ->(s) {
+          table.key?(s) \
+            ? Jade::Decode::Decoder[Jade::Decode::Desc::Succeed[table[s]]]
+            : Jade::Decode::Decoder[Jade::Decode::Desc::Fail["expected one of #{names.join(', ')}, got #{s.inspect}"]]
+        }
+          .then { Jade::Decode::Desc::AndThen[it, Jade::Decode::Desc::Str[]] }
+          .then { Jade::Decode::Decoder[it] }
+      }
+
       function(
         'from_result',
         { r: 'Result(a, String)' },

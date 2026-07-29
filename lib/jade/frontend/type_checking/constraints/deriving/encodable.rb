@@ -30,6 +30,9 @@ module Jade
                 in Symbol::Struct
                   derive_struct(constraint, resolved_sym, args, registry, lookup, entry_name)
 
+                in Symbol::Union if nullary?(resolved_sym, registry)
+                  derive_nullary_union(constraint, resolved_sym, registry)
+
                 else
                   failed(constraint, entry_name)
                 end
@@ -82,6 +85,19 @@ module Jade
 
                 Ok[implementation(constraint, params: ['maybe'], body:, deps: [dep_impl])]
               end
+            end
+
+            def derive_nullary_union(constraint, union_sym, registry)
+              body = variants(union_sym, registry)
+                .map { |v|
+                  [
+                    [:constructor, v.qualified_name, []],
+                    [[:call, [:stdlib_fn, 'Encode.string'], [wire_name(v)]]],
+                  ]
+                }
+                .then { [:case, [:var, 'v'], it] }
+
+              Ok[implementation(constraint, params: ['v'], body:, deps: [])]
             end
 
             def derive_struct(constraint, struct_sym, type_args, registry, lookup, entry_name)

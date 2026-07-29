@@ -70,8 +70,8 @@ module Jade
       it do
         is_expected.to eql(
           "case [one, other]\n" \
-          "in [Just(l0), Just(r0)] then impl_arg[0]['(==)'].call(l0, r0)\n" \
-          "in [Nothing(), Nothing()] then true\n" \
+          "in [::Just(l0), ::Just(r0)] then impl_arg[0]['(==)'].call(l0, r0)\n" \
+          "in [::Nothing(), ::Nothing()] then true\n" \
           "in _ then false\n" \
           "end"
         )
