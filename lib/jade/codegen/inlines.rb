@@ -192,6 +192,7 @@ module Jade
         Decode.required
         Decode.sequence
         Decode.string
+        Decode.string_enum
         Decode.succeed
         Decode.tuple
         Decode.tuple3

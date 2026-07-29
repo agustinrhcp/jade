@@ -6,6 +6,23 @@ module Jade
           module Helpers
             extend self
 
+            # `union :Int` and friends are variant-less unions standing in
+            # for native types, so an empty variant list is not an enum.
+            def nullary?(union_sym, registry)
+              variants(union_sym, registry)
+                .then { it.any? && it.all? { it.args.empty? } }
+            end
+
+            def variants(union_sym, registry)
+              union_sym.variants.map { registry.lookup(it) }
+            end
+
+            # The wire name a variant carries when nothing says otherwise.
+            # Matches what hand-written mappings already use.
+            def wire_name(variant)
+              Source.snake_case(variant.name)
+            end
+
             def struct_fields(struct_sym, type_args, registry)
               record = struct_sym.record_type
               type_param_names = struct_sym.type_params.map(&:name)
