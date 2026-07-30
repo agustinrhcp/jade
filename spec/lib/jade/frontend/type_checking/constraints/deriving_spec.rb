@@ -8,6 +8,58 @@ module Jade
   module Frontend
     module TypeChecking
       module Constraints
+        describe Deriving, '.register' do
+          let(:deriver) do
+            Module.new do
+              def self.supports?(interface) = interface == 'Fake.Showable'
+
+              def self.derive(_constraint, _registry, _entry_name) = Ok[:derived]
+            end
+          end
+
+          after { Deriving.registered.clear }
+
+          it 'is not derivable before registering' do
+            expect(Deriving.derivable?('Fake.Showable')).to be false
+          end
+
+          it 'becomes derivable after registering' do
+            Deriving.register(deriver)
+
+            expect(Deriving.derivable?('Fake.Showable')).to be true
+          end
+
+          it 'dispatches to the registered deriver' do
+            Deriving.register(deriver)
+
+            expect(Deriving.derive(Type.constraint('Fake.Showable', Type.int, nil), nil, 'M') { nil })
+              .to eql Ok[:derived]
+          end
+
+          it 'registers a deriver once' do
+            2.times { Deriving.register(deriver) }
+
+            expect(Deriving.registered).to have(1).item
+          end
+
+          it 'refuses something that is not a deriver' do
+            expect { Deriving.register(Object.new) }
+              .to raise_error(ArgumentError, /supports\?, derive/)
+          end
+
+          it 'keeps built-ins ahead of registrations' do
+            Module.new do
+              def self.supports?(_interface) = true
+
+              def self.derive(*) = Ok[:hijacked]
+            end
+              .then { Deriving.register(it) }
+
+            expect(Deriving.derive(Type.eq(Type.int), Stdlib.load(Registry.new), 'M') { nil })
+              .to_not eql Ok[:hijacked]
+          end
+        end
+
         describe Deriving::Eq do
           describe '.supports?' do
             subject { described_class.supports?(interface) }
