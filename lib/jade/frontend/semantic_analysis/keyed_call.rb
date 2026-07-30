@@ -16,6 +16,12 @@ module Jade
           constructor = constructor_symbol(callee_resolved, registry)
           parent = constructor && registry.lookup(constructor.parent)
 
+          if fields.any? { it.value.is_a?(AST::Placeholder) }
+            return partially_applied(
+              node, callee, fields, parent, constructor, registry, scope, entry, callee_r
+            )
+          end
+
           fields_r = analyze_in_parallel(fields, registry, scope, entry)
           fields_resolved = fields_r.node
 
@@ -33,6 +39,55 @@ module Jade
         end
 
         private
+
+        # Lowered before the fields are analyzed, so the placeholders are
+        # still bare AST and `Placeholder.lift` can turn the call into a
+        # lambda — the same route a positional partial application takes.
+        def partially_applied(node, callee, fields, parent, constructor, registry, scope, entry, callee_r)
+          errors = Validation.errors(node, fields, parent, constructor, registry, entry) +
+            placeholder_errors(fields, parent, entry)
+
+          return Result[node, callee_r.errors + errors, scope] if errors.any?
+
+          named, params = name_placeholders(fields)
+
+          lower(node, callee, named, parent, constructor, registry)
+            .then { wrap_in_lambdas(it, params, node.range) }
+            .then { analyze_node(it, registry, scope, entry) }
+            .then { Result[it.node, callee_r.errors + it.errors, scope] }
+        end
+
+        # Named in the order the fields were written, not the order the
+        # struct declares them, so `Point(y: _, x: _)` takes y first.
+        def name_placeholders(fields)
+          fields.reduce([[], []]) do |(named, params), field|
+            case field.value
+            in AST::Placeholder
+              Codegen::Helpers.param_synthetic_name(params.size).then do |name|
+                [named + [field.with(value: AST::VariableReference[name, nil])], params + [name]]
+              end
+
+            else
+              [named + [field], params]
+            end
+          end
+        end
+
+        def wrap_in_lambdas(call, params, range)
+          params
+            .reverse
+            .reduce(call) do |body, name|
+              AST::Lambda[[AST::Pattern::Binding[name, nil]], AST::Body[[body], nil], range]
+            end
+        end
+
+        def placeholder_errors(fields, parent, entry)
+          return [] if parent.is_a?(Symbol::Struct)
+
+          fields
+            .select { it.value.is_a?(AST::Placeholder) }
+            .map { Error::PlaceholderNotAllowed.new(entry.name, it.range, field: it.key) }
+        end
 
         def lower(node, callee, fields, parent, constructor, registry)
           case parent

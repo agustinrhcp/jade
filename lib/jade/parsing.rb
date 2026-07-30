@@ -362,9 +362,15 @@ module Jade
     parser(:keyed_call_postfix) {
       (
         type(:lparen) >>
-          comma_sequence(record_field) >>
+          comma_sequence(keyed_call_field) >>
           type(:rparen)
       ).map { |(lparen, fields, rparen)| KeyedCallPostfix[lparen, fields, rparen] }
+    }
+
+    # Like a record field, but a value may be `_`, so a keyed call can be
+    # partially applied the way a positional one can.
+    parser(:keyed_call_field) {
+      (identifier >> type(:colon).skip >> function_call_arg).map(&AST.record_field)
     }
 
     parser(:function_call_arg) { placeholder | lazy { expression } }
