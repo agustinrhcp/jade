@@ -14,7 +14,6 @@ module Jade
                 unbound_cs = constraints
                   .map { e.substitution.apply(it) }
                   .uniq
-                  .select { it.unbound_vars.any? }
 
                 Generalization.
                   generalize(

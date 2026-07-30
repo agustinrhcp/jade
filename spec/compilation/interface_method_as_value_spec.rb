@@ -71,13 +71,7 @@ module Jade
         JADE
       end
 
-      # Only `Inference::FunctionCall` attaches dictionaries, so a
-      # reference outside an argument position reaches codegen with none
-      # and emits a bare name. A separate bug from the one this file
-      # covers, and a silent one: it compiles and fails at runtime.
       it 'is not specific to the stdlib' do
-        pending 'dictionaries are attached at call sites only'
-
         expect(Defaults::Internal.pick).to eql Defaults::Off[]
       end
     end
