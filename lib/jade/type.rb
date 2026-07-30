@@ -168,12 +168,15 @@ module Jade
           end
 
         interface = registry.lookup(symbol.interface)
+
+        # Keep the map the type param lands in: the return type has to see
+        # the same variable, or the constraint ends up on a variable that
+        # appears in no type and nothing can ever bind it.
+        param_type, _, local_map =
+          from_symbol_r(interface.type_param, registry, var_gen, local_map)
+
         constraint = Type
-          .constraint(
-            symbol.interface.qualified_name,
-            from_symbol_r(interface.type_param, registry, var_gen, local_map).first,
-            nil,
-          )
+          .constraint(symbol.interface.qualified_name, param_type, nil)
 
         from_symbol_r(symbol.return_type, registry, var_gen, local_map)
           .then { |(t, c, _)| [args.empty? ? t : Type.function(args, t), c + arg_cs + [constraint]] }
