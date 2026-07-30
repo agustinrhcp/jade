@@ -6,6 +6,63 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0]
+
+### Changed
+
+- `jade fmt` keeps blank lines between leading comment blocks. A section
+  banner separated from the declaration below it stays separated, where it
+  used to be pulled into that declaration's doc comment. **Formatted output
+  differs from 0.2.0**, so a format check in CI reports diffs on the first
+  run after upgrading.
+- `jade q` requires a `jade.json` and reports what to write when there isn't
+  one. It previously assumed the source root was the working directory, which
+  could not work for a project whose imports come from extension gems — it
+  failed later, inside the loader, instead.
+- `Compiler::Config#source_root=` takes one root and refuses a list of more
+  than one. A list was accepted before but only its first entry was ever
+  read.
+
+### Added
+
+- `jade.json` manifest, read by `Jade::Project`, giving tools that run
+  outside the application — the CLI, an editor's language server, a codegen
+  task — the source roots and extension gems that previously existed only as
+  Ruby run at boot. `Compiler::Config` seeds from it, and a `Jade.setup`
+  block still wins.
+- `Encodable` and `Decodable` derive for unions whose variants take no
+  arguments, using the variant name in snake_case as the wire form. A union
+  mixing nullary and argument-carrying variants does not derive: adding an
+  argument to one variant would otherwise change the encoding of all of them.
+- `SqlMapper` derives for unions whose variants each carry exactly one value,
+  naming the column after the variant. Inert unless jade-sql is loaded.
+- Placeholders in keyed calls: `Point(x: _, y: n)` partially applies the way
+  `Point(_, n)` already did. Blanks bind in the order the fields are written.
+- `Source` records the root it was loaded from, so an application module and
+  one shipped by an extension gem can be told apart without a name list.
+- `UsageAnalysis::Reference` records the declaration each reference was made
+  from, including references with no source range and those inside an
+  `implements` block.
+
+### Fixed
+
+- An interface method can be referenced as a value where the expected type
+  determines the instance. `Decode.field("k", Decode.decoder)` type-checked
+  and then failed in codegen, because the method's constraint named a
+  variable that appeared in nothing and so could never be bound.
+- A constraint that resolves to a concrete type is discharged rather than
+  dropped when a binding is generalized. An interface method referenced
+  outside an argument position previously compiled to a bare name and failed
+  at runtime.
+- Deriving reports which type it could not derive instead of raising through
+  the compiler. A struct with one un-derivable field took the whole run down
+  with a Ruby backtrace, which `tolerant: true` did not contain.
+- `jade fmt` no longer drops comments. A comment above the first declaration
+  in a module attached to a node nothing renders, so a module's first
+  declaration could never carry a doc comment.
+- A type sharing its name with its module no longer generates code that
+  resolves the wrong constant.
+
 ## [0.2.0]
 
 ### Added
@@ -42,7 +99,8 @@ Initial release.
 - `jade` CLI dispatcher: `fmt`, `lsp`, `q`.
 - Language server and headless query interface for editor/agent tooling.
 
-[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/agustinrhcp/jade/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/agustinrhcp/jade/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/agustinrhcp/jade/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/agustinrhcp/jade/releases/tag/v0.1.0
