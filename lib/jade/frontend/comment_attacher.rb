@@ -73,8 +73,9 @@ module Jade
 
       def first_node_starting_after(pos, sorted_nodes)
         sorted_nodes
-          .drop_while { |n| n.range.begin < pos }
-          .find { |n| renders_own_comments?(n) }
+          .bsearch_index { |n| n.range.begin >= pos }
+          &.then { |from| (from...sorted_nodes.size).find { renders_own_comments?(sorted_nodes[it]) } }
+          &.then { sorted_nodes[it] }
       end
 
       # ModuleNode walks `body.expressions` directly, so a Body's own
