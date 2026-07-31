@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.1]
+
+### Fixed
+
+- A module whose dependency failed to compile is no longer type checked. It
+  reached for bindings the broken module never produced and raised through the
+  compiler, naming the importer rather than the module at fault, and the
+  original error was never reported. Dependents now say which dependency
+  failed, and modules broken independently of each other are all still
+  reported.
+- The load-path line at the top of every compiled entry module appends the
+  application's `lib` instead of prepending it. At position 0 it shadowed, for
+  the whole process, any gem sharing a name with a directory under `lib` —
+  `sidekiq/`, `sentry/`, `warden/`. The line exists so `uses App::Thing` can
+  resolve `lib/app/thing.rb`; it never needed to outrank gems.
+
 ## [0.3.0]
 
 ### Changed
@@ -99,7 +115,8 @@ Initial release.
 - `jade` CLI dispatcher: `fmt`, `lsp`, `q`.
 - Language server and headless query interface for editor/agent tooling.
 
-[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/agustinrhcp/jade/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/agustinrhcp/jade/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/agustinrhcp/jade/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/agustinrhcp/jade/compare/v0.1.0...v0.1.1
