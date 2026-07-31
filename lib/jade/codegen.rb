@@ -393,8 +393,12 @@ module Jade
       node.is_a?(AST::ImportDeclaration) || node.is_a?(AST::InteropImportDeclaration)
     end
 
+    # Appended, not prepended: this exists so `uses App::Thing` can find
+    # `lib/app/thing.rb`, and an application's lib directory routinely holds
+    # directories named after the gems it depends on. At position 0 those
+    # shadow the real gems for the whole process.
     def load_path
-      '$LOAD_PATH.unshift(File.expand_path("lib"))'
+      '$LOAD_PATH.push(File.expand_path("lib")).uniq!'
     end
   end
 end
