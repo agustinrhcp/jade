@@ -51,11 +51,35 @@ module Jade
         .modules_in_topo_order
         .reject { Stdlib.is_stdlib?(it) }
         .reduce([registry, {}]) do |(acc, digests), entry|
-          compiled, digest = compile_with_cache(entry, acc, digests, cache_dir, tolerant)
+          case broken_dependency(entry, acc)
+          in String => dependency
+            [acc.update_module(blocked(entry, dependency)), digests]
 
-          [acc.update_module(compiled), digests.merge(entry.name => digest)]
+          else
+            compile_with_cache(entry, acc, digests, cache_dir, tolerant)
+              .then { |(compiled, digest)| [acc.update_module(compiled), digests.merge(entry.name => digest)] }
+          end
         end
         .first
+    end
+
+    def broken_dependency(entry, registry)
+      direct_deps(entry.name, registry)
+        .filter_map { registry.modules[it] }
+        .find { it.diagnostics.any_errors? }
+        &.name
+    end
+
+    def blocked(entry, dependency)
+      Diagnostics::List
+        .empty
+        .add(
+          Diagnostics::Diagnostic.error(
+            "Not checked: #{dependency} failed to compile",
+            primary: nil,
+          ),
+        )
+        .then { entry.with(diagnostics: it) }
     end
 
     def compile_with_cache(entry, registry, digests, cache_dir, tolerant)
