@@ -53,6 +53,9 @@ module Jade
             in Placeholder => placeholder
               Scheme[placeholder.free_vars, placeholder.type, placeholder.constraints]
                 .then { Instantiation.instantiate(it, var_gen) }
+
+            in nil
+              fail "no type binding for `#{key}`"
             end
 
           Result.init(type, constraints)
