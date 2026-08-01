@@ -6,8 +6,10 @@ module Jade
       :params,
       :return_type,
       :interop_module_name,
-      :constraints, # [[iface_qname, var_name]] — implicit Decodable on var arms
+      :constraints, # [[iface_qname, var_name]] — implicit Decodable on the
+                    # return arms' vars, Encodable on the params'
       :decoders, # { ok: impl_or_pass_or_dict, err: ... } | nil
+      :encoders, # [impl_or_pass_or_dict], one per param | nil
     ) do
       include Base
 

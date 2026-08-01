@@ -180,7 +180,7 @@ module Jade
         in Symbol::InteropFunction
           registry
             .lookup(callee.symbol.to_ref)
-            .then { PortDecoder.task_call(it, registry, dictionaries) }
+            .then { PortCodec.task_call(it, registry, dictionaries) }
 
         in Symbol::StdlibFunction => symbol if symbol.constraints.any?
           dictionaries

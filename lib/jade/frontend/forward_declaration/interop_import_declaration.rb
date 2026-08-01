@@ -47,8 +47,8 @@ module Jade
         end
 
         def fn_type_to_interop(interop_mod_name, function_node, symbol, entry, registry)
-          lifted_errors = Interop::Lowering
-            .validate(symbol.return_type, registry, entry)
+          lifted_errors = [symbol.return_type, *symbol.params]
+            .flat_map { Interop::Lowering.validate(it, registry, entry) }
             .map { Error::TypeNotLowerable.new(entry, function_node.range, message: it.message) }
 
           Symbol
@@ -57,7 +57,8 @@ module Jade
               symbol.params,
               symbol.return_type,
               interop_mod_name.name,
-              constraints: implicit_decodable_constraints(symbol.return_type),
+              constraints: implicit_decodable_constraints(symbol.return_type) +
+                implicit_encodable_constraints(symbol.params),
             )
             .then { [it, lifted_errors] }
         end
@@ -76,6 +77,15 @@ module Jade
           else
             []
           end
+        end
+
+        # Arguments travel the other way, so a free variable in a parameter
+        # needs the caller's Encodable instance rather than its Decodable one.
+        def implicit_encodable_constraints(params)
+          params
+            .flat_map { collect_var_names(it) }
+            .uniq
+            .map { ['Encode.Encodable', it] }
         end
 
         def collect_var_names(type_sym)
