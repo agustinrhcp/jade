@@ -1469,6 +1469,106 @@ module Jade
       it { is_expected.to have(1).item }
     end
 
+    context 'tuple pattern exhaustiveness' do
+      context 'with every combination of two Maybes (exhaustive)' do
+        let(:text) do
+          <<~JADE
+            def go(a: Maybe(Int), b: Maybe(Int)) -> Int
+              case (a, b)
+              in (Nothing, Nothing) then 0
+              in (Nothing, Just(_)) then 1
+              in (Just(_), Nothing) then 2
+              in (Just(_), Just(_)) then 3
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to be_a(AST::Body) }
+      end
+
+      context 'with one combination missing' do
+        let(:text) do
+          <<~JADE
+            def go(a: Maybe(Int), b: Maybe(Int)) -> Int
+              case (a, b)
+              in (Nothing, Nothing) then 0
+              in (Nothing, Just(_)) then 1
+              in (Just(_), Nothing) then 2
+              end
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
+
+        describe 'its message' do
+          subject { super().first.message }
+
+          it do
+            is_expected
+              .to eql "Pattern match is not exhaustive. Missing cases:\n  (Just(_), Just(_))"
+          end
+        end
+      end
+
+      context 'with a union and a Bool' do
+        let(:text) do
+          <<~JADE
+            type Visibility = Public | Private | Draft
+            def go(v: Visibility, b: Bool) -> Int
+              case (v, b)
+              in (Public, _) then 1
+              in (Private, True) then 2
+              in (Draft, _) then 3
+              end
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+
+        describe 'its message' do
+          subject { super().first.message }
+
+          it do
+            is_expected
+              .to eql "Pattern match is not exhaustive. Missing cases:\n  (Private, False)"
+          end
+        end
+      end
+
+      context 'with a recursive union, which must not diverge' do
+        let(:text) do
+          <<~JADE
+            type Shape = Leaf | Node(Shape, Shape)
+            def go(s: Shape, b: Bool) -> Int
+              case (s, b)
+              in (Leaf, _) then 1
+              in (Node(_, _), True) then 2
+              end
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        describe 'its message' do
+          subject { super().first.message }
+
+          it do
+            is_expected
+              .to eql "Pattern match is not exhaustive. Missing cases:\n  (Node(_, _), False)"
+          end
+        end
+      end
+    end
+
     context 'list pattern exhaustiveness' do
       context 'with [] and [x | xs] (exhaustive)' do
         let(:text) do

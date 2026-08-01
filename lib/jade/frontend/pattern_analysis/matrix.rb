@@ -39,7 +39,7 @@ module Jade
           with(rows: rows + other.rows)
         end
 
-        def missing_patterns(env, seen_recursive_types = ::Set.new)
+        def missing_patterns(env)
           if types.empty?
             return rows.empty? ? Matrix[[[]], types] : Matrix.empty
           end
@@ -49,36 +49,71 @@ module Jade
           return Matrix.empty if never?(type)
           return Matrix.wildcard(types) if rows.empty?
 
-          if infinite?(type) || type_var?(type) || seen_recursive_types.include?(type)
-            matrix = default
-              .missing_patterns(env, seen_recursive_types)
+          heads = head_constructors
 
-            matrix
-              .map { [Wildcard[]] + it }
+          if infinite?(type) || type_var?(type)
+            unmatched_column(env)
 
           elsif expandable?(type, env)
-            expand(env).missing_patterns(env, seen_recursive_types)
+            expand(env).missing_patterns(env)
+
+          elsif heads.empty?
+            unmatched_column(env)
 
           else
-            new_seen = seen_recursive_types | ::Set[type]
             constructors_of(type, env)
               .reduce(Matrix.empty.with(types:)) do |acc, constructor|
-                missing = specialize(constructor)
-                  .missing_patterns(env, new_seen)
-
-                missing
-                  .map do |row|
-                    new_args = row.take(constructor.args.size)
-                    tail = row.drop(constructor.args.size)
-
-                  [Constructor[constructor.name, new_args]] + tail
-                end
-                .then { acc.concat(it) }
+                witnesses(constructor, env, heads.include?(constructor.name))
+                  .then { acc.concat(it) }
               end
           end
         end
 
         protected
+
+        # Nothing in this column narrows anything — a type with no constructors
+        # to enumerate, or one every row left open. Whatever is missing lives in
+        # the columns after it.
+        def unmatched_column(env)
+          default
+            .missing_patterns(env)
+            .map { [Wildcard[]] + it }
+        end
+
+        # A constructor the first column matches is explored by specializing on
+        # it. One it never matches can only be missing as a whole, so its
+        # witnesses come from the rows that would have covered it — the ones
+        # headed by a wildcard. Recursing there instead of into the constructor
+        # is what keeps a recursive type from expanding forever.
+        def witnesses(constructor, env, matched)
+          return Matrix.empty if constructor.args.any? { never?(it) }
+
+          arity = constructor.args.size
+
+          if matched
+            specialize(constructor)
+              .missing_patterns(env)
+              .map { [Constructor[constructor.name, it.take(arity)]] + it.drop(arity) }
+
+          else
+            default
+              .missing_patterns(env)
+              .map { [Constructor[constructor.name, Array.new(arity) { Wildcard[] }]] + it }
+          end
+        end
+
+        def head_constructors
+          rows.filter_map { head_constructor(it.first) }
+        end
+
+        def head_constructor(pattern)
+          case pattern
+          in Constructor(constructor: name) then name
+          in Literal(value: true) then 'Basics.True'
+          in Literal(value: false) then 'Basics.False'
+          in Literal | Record | Wildcard then nil
+          end
+        end
 
         def expandable?(type, env)
           case type
@@ -125,9 +160,8 @@ module Jade
               TypeChecking::ConstructorDef['Basics.True', 'Basics.Bool', []],
               TypeChecking::ConstructorDef['Basics.False', 'Basics.Bool', []],
             ]
-          in Type::Application(constructor: Type::Constructor(name: /^Tuple\.Tuple([2-4])$/ => name))
-            n = name[-1].to_i
-            [TypeChecking::Definition.constructor(name, name, Array.new(n) { env.fresh })]
+          in Type::Application(constructor: Type::Constructor(name: /^Tuple\.Tuple[2-4]$/ => name), args:)
+            [TypeChecking::Definition.constructor(name, name, args)]
 
           in Type::Application(constructor: Type::Constructor(name: 'List.List'), args: [elem_type])
             [
@@ -181,7 +215,7 @@ module Jade
               end
             end
             .then { with(rows: it) }
-            .then { it.with(types: constructor.args) }
+            .then { it.with(types: constructor.args + types.drop(1)) }
         end
 
         def default
