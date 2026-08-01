@@ -1,3 +1,4 @@
+require 'jade/debug'
 require 'base64'
 
 require 'jade/interop/runtime'

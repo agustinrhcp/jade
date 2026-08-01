@@ -16,6 +16,7 @@ module Jade
       }.freeze
 
       INLINES = {
+        'Debug.to_string'   => ->(v)    { "Jade::Debug.render(#{v})" },
         'Basics.identity'   => ->(a)    { a },
         'Basics.always'     => ->(x)    { "->(_) { #{x} }" },
         'Basics.int_add'    => ->(a, b) { "(#{a} + #{b})" },
