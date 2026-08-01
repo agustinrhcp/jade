@@ -108,7 +108,7 @@ module Jade
 
               case symbol
               in Symbol::Union
-                Ok[derive_union_eq(constraint, symbol, registry, lookup)]
+                derive_union_eq(constraint, symbol, registry, lookup, entry_name)
 
               in Symbol::Struct
                 derive_struct_eq(constraint, symbol, args, registry, lookup, entry_name)
@@ -121,48 +121,69 @@ module Jade
               end
             end
 
-            def derive_union_eq(constraint, symbol, registry, lookup)
+            def derive_union_eq(constraint, symbol, registry, lookup, entry_name)
               type_vars = symbol.type_params.map(&:name)
               index_map = type_vars.each_with_index.map.to_h
+              variants  = symbol.variants.map { registry.lookup(it) }
 
-              cases = symbol.variants
-                .map { registry.lookup(it) }
-                .map { build_variant_case(it, index_map, lookup, constraint.origin) }
+              concrete = variants
+                .flat_map(&:args)
+                .reject { it in Symbol::Variable }
+                .map { instantiate(it, {}, registry) }
+                .uniq
 
-              eq_fn = Symbol::DerivedFunction.new(
-                params: ["one", "other"],
-                body: [:case,
-                  [:list, [[:var, "one"], [:var, "other"]]],
-                  cases + [[[:_], [false]]],
-                ],
-              )
-
-              if type_vars.empty?
-                Symbol::Implementation.new(
-                  module_name: nil,
-                  interface: Symbol.type_ref_from_qualified_name(constraint.interface),
-                  type: constraint.type,
-                  type_params: [],
-                  constraints: [],
-                  functions: { '(==)' => eq_fn },
-                  deps: [],
-                  extends: [],
-                  decl_span: nil,
-                )
-              else
-                Symbol::ImplementationTemplate.new(
-                  interface: Symbol.type_ref_from_qualified_name(constraint.interface),
-                  type: constraint.type,
-                  type_params: type_vars.map { Type.var(it) },
-                  constraints: type_vars.map {
-                    Type.constraint(INTERFACE, Type.var(it), constraint.origin)
-                  },
-                  functions: { '(==)' => eq_fn },
-                )
+              if concrete.any? && type_vars.any?
+                return Err[
+                  Error::DerivationFailed
+                    .new(entry_name, constraint.origin.range, constraint:, trace: [])
+                ]
               end
+
+              concrete
+                .map { lookup.call(Type.constraint(INTERFACE, it, constraint.origin)) }
+                .then { Results.sequence(it) }
+                .and_then do |deps|
+                  cases = variants.map {
+                    build_variant_case(it, index_map, concrete, registry, constraint.origin)
+                  }
+
+                  eq_fn = Symbol::DerivedFunction.new(
+                    params: ["one", "other"],
+                    body: [:case,
+                      [:list, [[:var, "one"], [:var, "other"]]],
+                      cases + [[[:_], [false]]],
+                    ],
+                  )
+
+                  Ok[build_union_impl(constraint, type_vars, eq_fn, deps)]
+                end
             end
 
-            def build_variant_case(variant, index_map, lookup, origin)
+            def build_union_impl(constraint, type_vars, eq_fn, deps)
+              return Symbol::Implementation.new(
+                module_name: nil,
+                interface: Symbol.type_ref_from_qualified_name(constraint.interface),
+                type: constraint.type,
+                type_params: [],
+                constraints: [],
+                functions: { '(==)' => eq_fn },
+                deps:,
+                extends: [],
+                decl_span: nil,
+              ) if type_vars.empty?
+
+              Symbol::ImplementationTemplate.new(
+                interface: Symbol.type_ref_from_qualified_name(constraint.interface),
+                type: constraint.type,
+                type_params: type_vars.map { Type.var(it) },
+                constraints: type_vars.map {
+                  Type.constraint(INTERFACE, Type.var(it), constraint.origin)
+                },
+                functions: { '(==)' => eq_fn },
+              )
+            end
+
+            def build_variant_case(variant, index_map, concrete, registry, origin)
               field_count = variant.args.length
 
               left_vars  = (0...field_count).map { |i| "l#{i}" }
@@ -173,24 +194,16 @@ module Jade
 
               comparisons =
                 variant.args.each_with_index.map do |arg_type, i|
-                  case arg_type
+                  idx =
+                    case arg_type
+                    in Symbol::Variable(name:) then index_map[name]
+                    else concrete.index(instantiate(arg_type, {}, registry))
+                    end
 
-                  in Symbol::Variable(name:)
-                    idx = index_map[name]
-
-                    [:call,
-                      [:impl_arg, idx, "(==)"],
-                      [[:var, left_vars[i]], [:var, right_vars[i]]]
-                    ]
-
-                  else
-                    lookup.call(Type.constraint(INTERFACE, arg_type, origin)) => Ok[impl]
-
-                    [:call,
-                      [:impl_value, impl, "(==)"],
-                      [[:var, left_vars[i]], [:var, right_vars[i]]]
-                    ]
-                  end
+                  [:call,
+                    [:impl_arg, idx, "(==)"],
+                    [[:var, left_vars[i]], [:var, right_vars[i]]]
+                  ]
                 end
 
               body =
