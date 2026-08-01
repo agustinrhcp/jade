@@ -1457,6 +1457,43 @@ module Jade
       end
     end
 
+    context 'uses block with a newline instead of a comma' do
+      let(:text) do
+        <<~JADE
+          uses KeyValue with
+            members : String -> Task(List(String), String)
+            entries : (String, Int) -> Task(List(String), String)
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it 'hints that the entries are comma-separated' do
+        result => Err(err)
+        expect(err.message).to include('Unexpected token "entries", expected end')
+        expect(err.message).to include('separated by `,`')
+      end
+    end
+
+    context 'interface block with a newline instead of a comma' do
+      let(:text) do
+        <<~JADE
+          interface Show(a) with
+            show : a -> String
+            show_all : List(a) -> String
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it 'hints that the entries are comma-separated' do
+        result => Err(err)
+        expect(err.message).to include('separated by `,`')
+      end
+    end
+
     context 'record update written with `=` (Elm style)' do
       let(:text) do
         <<~JADE
