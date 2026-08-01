@@ -8,7 +8,7 @@ readable Ruby. This is a map of what's where.
 | `Basics` | The built-in interfaces — `Eq`, `Comparable`, `Appendable`, `Mappable`, `Chainable` — plus the `Ordering` type (`LT` / `EQ` / `GT`) and `Never`. `++` works on `String`, `List`, and `Bytes` via `Appendable`. |
 | `Maybe` | Optional values without `nil`: `Just(a)` / `Nothing`, with `map`, `and_then`, `with_default`. |
 | `Result` | Errors as values, no exceptions: `Ok(a)` / `Err(e)`, with `map`, `and_then`, `map_error`, `on_error`, `sequence`. |
-| `List` | Immutable lists: `map`, `filter`, `fold`, `zip`, `sort`, `length`, `range`, `head`, `tail`, `take`, `drop`, … |
+| `List` | Immutable lists: `map`, `filter`, `fold`, `zip`, `sort`, `length`, `range`, `head`, `tail`, `take`, `drop`, … Ordering: `sort` uses the element's `Comparable`, `sort_by` a key's; `sort_with` / `sort_by_with` take the comparison as an argument (`a, a -> Ordering`), which is how you write a descending or multi-level order without inventing a key type. |
 | `String` | Text: `length`, `reverse`, `split`, `trim`, `to_int`, `contains`, `uncons`, `cons`, `from_char`, `map`. |
 | `Char` | Character predicates and codes: `to_code`, `from_code`, `is_digit`, `is_alpha`, `is_alpha_num`, `is_upper`, `is_lower`. |
 | `Tuple` | Pair accessors: `first`, `second`, `map_first`, `map_second`. |
@@ -25,3 +25,26 @@ readable Ruby. This is a map of what's where.
 
 Stdlib operations compile inline rather than through a runtime dispatch layer,
 so the generated Ruby calls the underlying operation directly.
+
+## Ordering beyond `Comparable`
+
+`List.sort` orders by the element's `Comparable` instance and `List.sort_by` by
+a key's. When the order isn't one key — descending, or length first and then
+alphabetical — pass the comparison itself to `sort_with`:
+
+```jade
+def by_length_then_alpha(words: List(String)) -> List(String)
+  List.sort_with(words, length_then_alpha)
+end
+
+
+def length_then_alpha(a: String, b: String) -> Ordering
+  case compare(String.length(a), String.length(b))
+  in EQ then compare(a, b)
+  in ordering then ordering
+  end
+end
+```
+
+`List.sort_by_with(list, key, cmp)` is the same with a key function in front of
+the comparison. Neither needs a wrapper type carrying its own `Comparable`.

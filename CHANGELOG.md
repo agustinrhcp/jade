@@ -11,6 +11,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A parse error inside a `uses`, `interface`, or `implements` block where the
   entries are separated by newlines instead of commas says so, instead of only
   reporting the next entry as an unexpected token.
+- `List.sort_with(list, cmp)` and `List.sort_by_with(list, key, cmp)` are
+  exported. Both existed as private helpers behind `sort` / `sort_by`, which
+  meant a descending or two-level ordering had to be expressed as a key type
+  with its own `Comparable` instance.
 
 ## [0.3.1]
 

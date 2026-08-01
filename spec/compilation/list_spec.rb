@@ -388,20 +388,66 @@ module Jade
       end
     end
 
+    context 'sort_with and sort_by_with' do
+      let(:source) do
+        <<~JADE
+          module CustomSort exposing (by_length_then_alpha, longest_first, newest_first)
+
+          def newest_first(list: List(Int)) -> List(Int)
+            List.sort_with(list, (a, b) -> { compare(b, a) })
+          end
+
+
+          def by_length_then_alpha(list: List(String)) -> List(String)
+            List.sort_with(list, length_then_alpha)
+          end
+
+
+          def length_then_alpha(a: String, b: String) -> Ordering
+            case compare(String.length(a), String.length(b))
+            in EQ then compare(a, b)
+            in ordering then ordering
+            end
+          end
+
+
+          def longest_first(list: List(String)) -> List(String)
+            List.sort_by_with(list, String.length, longer_first)
+          end
+
+
+          def longer_first(a: Int, b: Int) -> Ordering
+            compare(b, a)
+          end
+        JADE
+      end
+
+      before { test_compiler.require('custom_sort', source) }
+
+      it 'sorts with a comparator, and with a key and a comparator' do
+        expect(CustomSort::Internal.newest_first([1, 3, 2])).to eql [3, 2, 1]
+
+        expect(CustomSort::Internal.by_length_then_alpha(['bb', 'a', 'ab', 'b']))
+          .to eql ['a', 'b', 'ab', 'bb']
+
+        expect(CustomSort::Internal.longest_first(['aa', 'a', 'aaa'])).to eql ['aaa', 'aa', 'a']
+      end
+    end
+
     context 'private helpers are hidden from user code' do
       let(:source) do
         <<~JADE
           module Sneaky exposing (boom)
 
-          def boom(list: List(Int)) -> List(Int)
-            List.sort_with(list, int_compare)
+          def boom(list: List(Int)) -> Bool
+            List.member_with(list, 1, int_eq)
           end
         JADE
       end
 
-      it 'rejects List.sort_with at compile time' do
+      it 'rejects List.member_with at compile time' do
         expect { test_compiler.require('sneaky', source) }
-          .to raise_error(CompilationError, /sort_with/)
+          .to raise_error(CompilationError, /member_with/)
       end
     end
   end

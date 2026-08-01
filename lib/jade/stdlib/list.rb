@@ -56,10 +56,9 @@ module Jade
       )
 
       function(
-        'sort_with',
+        :sort_with,
         { list: 'List(a)', cmp: 'a, a -> Ordering' },
         'List(a)',
-        private: true,
       ) do |list, cmp|
         list.sort do |x, y|
           case cmp.call(x, y)
@@ -71,10 +70,9 @@ module Jade
       end
 
       function(
-        'sort_by_with',
+        :sort_by_with,
         { list: 'List(a)', key: 'a -> b', cmp: 'b, b -> Ordering' },
         'List(a)',
-        private: true,
       ) do |list, key, cmp|
         list
           .map { |x| [x, key.call(x)] }
