@@ -1,18 +1,20 @@
 module Jade
   module Codegen
-    module PortDecoder
+    module PortCodec
       extend self
 
-      PASS = "Jade::Decode::Decoder[Jade::Decode::Desc::Pass[]]"
+      PASS_DECODER = "Jade::Decode::Decoder[Jade::Decode::Desc::Pass[]]"
+      PASS_ENCODER = "->(v) { v }"
 
       # `dictionaries` is the call site's constraint-attachment list; only
-      # used when an arm is a Dict marker.
+      # used when an arm or a parameter is a Dict marker.
       def task_call(interop_fn, registry, dictionaries = [])
         [
           interop_fn.interop_module_name,
           ":#{interop_fn.name}",
-          decoder(interop_fn, :ok, registry, dictionaries),
-          decoder(interop_fn, :err, registry, dictionaries),
+          codec(interop_fn.decoders.fetch(:ok), 'decoder', interop_fn, registry, dictionaries),
+          codec(interop_fn.decoders.fetch(:err), 'decoder', interop_fn, registry, dictionaries),
+          encoders(interop_fn, registry, dictionaries),
         ]
           .join(', ')
           .then { "Jade::Runtime.task_call(#{it})" }
@@ -20,32 +22,42 @@ module Jade
 
       private
 
-      # Per-arm decoder. PortResolution stamps one of:
-      # - :pass — Decode.Value or Never arm, no decoder needed
+      def encoders(interop_fn, registry, dictionaries)
+        interop_fn
+          .encoders
+          .map { codec(it, 'encoder', interop_fn, registry, dictionaries) }
+          .join(', ')
+          .then { "[#{it}]" }
+      end
+
+      # Per-arm, per-argument codec. PortResolution stamps one of:
+      # - :pass — Decode.Value or Never, nothing to convert
       # - Symbol::Implementation — concrete OR partial impl (with marker
       #   deps for free vars). We push a synthetic dict_env mapping the
       #   port's vars to the call-site dictionaries so generate_impl_dispatch
       #   can resolve markers uniformly.
-      # - Symbol::InteropFunction::Dict — bare-var arm, decoder comes
+      # - Symbol::InteropFunction::Dict — bare-var position; the codec comes
       #   from the caller's threaded dictionary at the given constraint index
-      def decoder(interop_fn, arm, registry, dictionaries)
-        case interop_fn.decoders.fetch(arm)
+      def codec(resolution, kind, interop_fn, registry, dictionaries)
+        case resolution
         in Symbol::InteropFunction::PASS
-          PASS
+          kind == 'decoder' ? PASS_DECODER : PASS_ENCODER
 
         in Symbol::Implementation => impl
-          emit_impl_decoder(impl, interop_fn, dictionaries, registry)
+          emit_impl_codec(impl, kind, interop_fn, dictionaries, registry)
 
         in Symbol::InteropFunction::Dict(constraint_index:)
-          "#{FunctionCall.dispatch_value(dictionaries.fetch(constraint_index), registry)}[\"decoder\"]"
+          FunctionCall
+            .dispatch_value(dictionaries.fetch(constraint_index), registry)
+            .then { "#{it}[#{kind.inspect}]" }
         end
       end
 
-      def emit_impl_decoder(impl, interop_fn, dictionaries, registry)
+      def emit_impl_codec(impl, kind, interop_fn, dictionaries, registry)
         synthetic_env = build_synthetic_dict_env(impl, interop_fn, dictionaries, registry)
 
         Codegen.with_dict_env(synthetic_env) {
-          FunctionCall.generate_impl_dispatch(impl, registry).fetch('decoder')
+          FunctionCall.generate_impl_dispatch(impl, registry).fetch(kind)
         }
       end
 

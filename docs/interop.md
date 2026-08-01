@@ -6,38 +6,87 @@ through `uses` blocks, and every port returns a `Task`.
 ## Declaring a port
 
 The `uses` block declares the boundary types; the names come into scope
-unqualified:
+unqualified. **Declarations are separated by commas** — a newline alone ends
+the block, so a second entry without a comma before it reads as a parse error
+(`Unexpected token "entries", expected end`).
+
+A port takes as many arguments as its type says: `A, B -> Task(…)` is a
+two-argument port, called `entries(key, limit)`. Parenthesising the arguments
+means something else — `(A, B) -> Task(…)` is a *one*-argument port taking a
+tuple, called `entries((key, limit))`.
 
 ```jade
-module Times exposing (current_time)
+module Store exposing (page)
 
-uses Chrono with
-  now : Task(Int, Never)
+uses KeyValue with
+  members : String -> Task(List(String), String),
+  entries : String, Int -> Task(List(String), String)
 end
 
 
-def current_time -> Task(Int, Never)
-  now()
+def page(key: String) -> Task(List(String), String)
+  entries(key, 20)
 end
 ```
 
 On the Ruby side, register the port with `Jade::Port`. The block receives a
-helper `t` for `t.ok(value)` / `t.err(error)`:
+helper `t` for `t.ok(value)` / `t.err(error)`, then one parameter per declared
+argument:
 
 ```ruby
-module Chrono
+module KeyValue
   extend Jade::Port
 
-  task :now do |t|
-    t.ok(Time.now.to_i)
+  task :members do |t, key|
+    t.ok(REDIS.smembers(key))
+  end
+
+  task :entries do |t, key, limit|
+    t.ok(REDIS.lrange(key, 0, limit - 1))
   end
 end
 ```
 
 The block must return `t.ok(value)` or `t.err(error)` — never another `Task`.
 Composition (`map`, `and_then`, `sequence`) lives in Jade. (Pick a port module
-name that doesn't shadow a Ruby constant you rely on — `task :now` defines
-`Chrono.now`.)
+name that doesn't shadow a Ruby constant you rely on — `task :members` defines
+`KeyValue.members`.)
+
+## What crosses the boundary
+
+A port is the same boundary as a Jade function called from Ruby, pointed the
+other way, and it converts in both directions: **arguments are encoded on the
+way out, and the return value is decoded on the way back**. Ruby sees wire
+values — strings, numbers, hashes, arrays — never Jade's internal
+representation.
+
+```jade
+uses Scheduling with
+  shift_months : Instant, Int -> Task(Instant, Never)
+end
+```
+
+```ruby
+module Scheduling
+  extend Jade::Port
+
+  task :shift_months do |t, iso, months|
+    # iso is "2026-08-01T12:00:00Z", not a Jade::Clock::Instant
+    t.ok(Time.iso8601(iso).then { |at| (at << -months).iso8601 })
+  end
+end
+```
+
+Every argument type therefore needs an `Encodable` instance, the same way every
+`Task` arm needs a `Decodable` one. A type with neither is a compile error
+naming the argument:
+
+```
+Port `shift_months` cannot encode argument 1 (`Shape`): no Encodable instance
+```
+
+Declare the argument as `Decode.Value` to opt out and hand Ruby the value
+untouched — the arg-side counterpart of a `Decode.Value` return arm.
 
 ## Calling Jade from Ruby
 
@@ -45,12 +94,12 @@ An exposed function gets two callable forms:
 
 ```ruby
 # Boundary form — args decoded, return encoded, Task runs eagerly
-Times.current_time      # => ["ok", 1748102400]
-Times.current_time!     # => 1748102400   (bang form unwraps, raises on err)
+Store.page("recent")     # => ["ok", ["a", "b"]]
+Store.page!("recent")    # => ["a", "b"]   (bang form unwraps, raises on err)
 
 # Internal form — keeps the Task as a value you can compose
-task = Times::Internal.current_time
-task.run                # => Jade::Result::Ok[1748102400]
+task = Store::Internal.page("recent")
+task.run                 # => Jade::Result::Ok[["a", "b"]]
 ```
 
 At the boundary, Ruby values are **decoded into Jade values** on the way in and

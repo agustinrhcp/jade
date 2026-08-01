@@ -19,7 +19,7 @@ require 'jade/codegen/transforms/fold_shape'
 require 'jade/codegen/function_declaration'
 require 'jade/codegen/function_call'
 require 'jade/codegen/implementation'
-require 'jade/codegen/port_decoder'
+require 'jade/codegen/port_codec'
 
 module Jade
   module Codegen
@@ -159,7 +159,7 @@ module Jade
           in Symbol::InteropFunction => sym
             registry
               .lookup(sym.to_ref)
-              .then { PortDecoder.task_call(it, registry) }
+              .then { PortCodec.task_call(it, registry) }
 
           in Symbol::StdlibFunction(codegen:)
             codegen

@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Port arguments are encoded on the way out**, the mirror of the return value
+  being decoded on the way back. A port declared `Instant, Int -> Task(Instant,
+  Never)` used to hand Ruby a live `Jade::Clock::Instant` while demanding an ISO
+  string back; both sides are now the wire form. **Every argument type needs an
+  `Encodable` instance** — a port taking one without it is a compile error
+  (``Port `shift` cannot encode argument 1 (`Shape`): no Encodable instance``)
+  rather than a value leaking Jade's internals into Ruby. Declare the argument
+  as `Decode.Value` to opt out and pass it untouched. A port whose arguments are
+  primitives is unaffected; one taking a struct, a `Clock`/`Calendar`/`Decimal`
+  type, or a type variable now receives encoded data, so its Ruby side needs
+  updating.
+
 ### Added
 
 - A parse error inside a `uses`, `interface`, or `implements` block where the

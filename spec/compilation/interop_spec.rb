@@ -905,5 +905,120 @@ module Jade
         expect(StdlibDate::Internal.year(result._1)).to eql 2026
       end
     end
+
+    context 'port arguments are encoded on the way out' do
+      module TestArgEncoding
+        extend Jade::Port
+
+        task(:shift_months) { |t, iso, months| t.ok(iso.sub('2026', (2026 + months).to_s)) }
+        task(:rename_user)  { |t, user| t.ok(user.merge('name' => 'Grace')) }
+        task(:echo)         { |t, x| t.ok(x) }
+        task(:raw)          { |t, x| t.ok(x.fetch(:kept)) }
+      end
+
+      let(:with_interop_source) do
+        <<~JADE
+          module ArgEncoding exposing (echo_list, next_year, raw_field, rename)
+
+          import Clock exposing (Instant)
+          import Decode exposing (Value)
+
+
+          struct User = {
+            name: String,
+            age: Int
+          }
+
+
+          uses Jade::TestArgEncoding with
+            shift_months : Instant, Int -> Task(Instant, Never),
+            rename_user : User -> Task(User, Never),
+            echo : a -> Task(a, Never),
+            raw : Value -> Task(String, Never)
+          end
+
+
+          def next_year(i: Instant) -> Task(Instant, Never)
+            shift_months(i, 1)
+          end
+
+
+          def rename(u: User) -> Task(User, Never)
+            rename_user(u)
+          end
+
+
+          def echo_list(xs: List(Int)) -> Task(List(Int), Never)
+            echo(xs)
+          end
+
+
+          def raw_field(v: Value) -> Task(String, Never)
+            raw(v)
+          end
+        JADE
+      end
+
+      before { test_compiler.require('arg_encoding', with_interop_source) }
+
+      it 'hands Ruby the wire form of a rich type, and takes it back' do
+        ArgEncoding::Internal
+          .next_year(Jade::Clock::Instant[1785585600000])
+          .run
+          .then do |result|
+            expect(result).to be_ok
+            expect(result._1).to be_a(Jade::Clock::Instant)
+            expect(Jade::Clock::Internal.to_iso(result._1)).to start_with('2027-')
+          end
+      end
+
+      it 'encodes a struct argument to a hash' do
+        ArgEncoding::User[name: 'Ada', age: 36]
+          .then { ArgEncoding::Internal.rename(it).run }
+          .then do |result|
+            expect(result).to be_ok
+            expect(result._1).to be_a(ArgEncoding::User)
+            expect(result._1.name).to eql 'Grace'
+          end
+      end
+
+      it 'encodes a polymorphic argument with the call site instance' do
+        expect(ArgEncoding::Internal.echo_list([1, 2, 3]).run).to be_ok([1, 2, 3])
+      end
+
+      it 'leaves a Decode.Value argument untouched' do
+        expect(ArgEncoding::Internal.raw_field({ kept: 'as is' }).run).to be_ok('as is')
+      end
+    end
+
+    context 'a port argument with no Encodable instance' do
+      let(:with_interop_source) do
+        <<~JADE
+          module NoEncoder exposing (send)
+
+          type Shape
+            = Circle(Int)
+            | Square(Int)
+
+
+          uses Jade::TestArgEncoding with
+            echo : Shape -> Task(Int, Never)
+          end
+
+
+          def send(s: Shape) -> Task(Int, Never)
+            echo(s)
+          end
+        JADE
+      end
+
+      it 'is a compile error naming the argument' do
+        expect { test_compiler.require('no_encoder', with_interop_source) }
+          .to raise_error(
+            CompilationError,
+            /Port `echo` cannot encode argument 1 \(`Shape`\): no Encodable instance/,
+          )
+      end
+    end
   end
 end
