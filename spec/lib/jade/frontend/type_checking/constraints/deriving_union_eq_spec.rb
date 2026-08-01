@@ -45,15 +45,16 @@ module Jade
         .to eql [true, true, true]
     end
 
-    it 'reports a payload it cannot derive instead of raising through the compiler' do
-      decls = <<~JADE.chomp
-        type Mixed(a)
-          = M(a, Int)
-          | None
-      JADE
+    let(:mixed) { "type Mixed(a)\n  = M(a, Int)\n  | Tagged(String, a)\n  | None" }
 
-      expect { compiled('Cannot', decls, '[M(1, 2) == M(1, 2)]') }
-        .to raise_error(Jade::CompilationError)
+    it 'compares a variant mixing a type parameter with a concrete type' do
+      expect(compiled('Mixes', mixed, '[M(1, 2) == M(1, 2), M(1, 2) == M(1, 3)]'))
+        .to eql [true, false]
+    end
+
+    it 'keeps each payload on its own dictionary' do
+      expect(compiled('Tags', mixed, '[Tagged("t", 9) == Tagged("t", 9), None == None]'))
+        .to eql [true, true]
     end
   end
 end

@@ -33,6 +33,13 @@ module Jade
                 .map { |name, sym| [name, instantiate(sym, subst, registry)] }
             end
 
+            def union_constraints(constraint, type_vars, concrete)
+              type_vars
+                .map { Type.var(it) }
+                .concat(concrete)
+                .map { Type.constraint(self::INTERFACE, it, constraint.origin) }
+            end
+
             def dependencies_of(impl, args)
               subst = impl
                 .type_params
