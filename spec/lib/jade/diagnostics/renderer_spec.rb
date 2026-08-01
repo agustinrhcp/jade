@@ -129,6 +129,79 @@ module Jade
       end
     end
 
+    # Spans are byte offsets, the excerpt is drawn in characters, so a glyph
+    # wider than a byte has to survive both.
+    describe 'source with a multi-byte character' do
+      let(:source) { Source.new(uri: 'wide.jd', text:) }
+
+      subject(:output) do
+        renderer.render(
+          Diagnostics::Diagnostic.error(
+            'type mismatch',
+            primary: Diagnostics::Label[source, span, 'here'],
+          ),
+        )
+      end
+
+      def self.span_of(needle)
+        let(:span) { text.b.index(needle.b).then { it...(it + needle.bytesize) } }
+      end
+
+      context 'on an earlier line' do
+        let(:text) do
+          <<~JADE
+            # sends a note — to the channel
+            def notify(a: Int) -> Int
+              a + "hello"
+            end
+          JADE
+        end
+
+        span_of '"hello"'
+
+        it 'shows the line the span is on, whole' do
+          expect(output).to include('3 |   a + "hello"')
+        end
+
+        it 'underlines the span' do
+          expect(output).to include('  |       ^^^^^^^ here')
+        end
+      end
+
+      context 'on the same line, before the span' do
+        let(:text) do
+          <<~JADE
+            def label -> String
+              "años" ++ age
+            end
+          JADE
+        end
+
+        span_of 'age'
+
+        it 'counts the column in characters' do
+          expect(output).to include('--> wide.jd:2:13')
+          expect(output).to include('  |             ^^^ here')
+        end
+      end
+
+      context 'inside the span' do
+        let(:text) do
+          <<~JADE
+            def label -> String
+              "años" ++ age
+            end
+          JADE
+        end
+
+        span_of '"años"'
+
+        it 'underlines one caret per character' do
+          expect(output).to include('  |   ^^^^^^ here')
+        end
+      end
+    end
+
     describe 'multi-line span' do
       let(:source) do
         Source.new(uri: 'block.jd', text: <<~JADE)
