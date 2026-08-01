@@ -49,13 +49,13 @@ module Jade::Diagnostics
     def span_block(label, severity:)
       loc = location_of(label.source, label.span.begin)
       end_offset = [label.span.end - 1, 0].max
-      end_loc = location_of(label.source, [end_offset, label.source.text.length - 1].min)
+      end_loc = location_of(label.source, [end_offset, label.source.text.bytesize - 1].min)
       multiline = end_loc.line > loc.line
       gutter_w = (multiline ? end_loc.line : loc.line).to_s.length
       blank = " " * gutter_w
       col_offset = loc.col - 1
       first_line = extract_line(label.source, loc.line).chomp
-      span_len = [multiline ? first_line.length - col_offset : label.span.size, 1].max
+      span_len = [multiline ? first_line.length - col_offset : span_width(label), 1].max
       caret = severity == :secondary ? "-" : "^"
       underline = " " * col_offset + caret * span_len
       ann_text = label.message ? " #{label.message}" : ""
@@ -91,15 +91,26 @@ module Jade::Diagnostics
 
     Location = Data.define(:line, :col)
 
+    # Spans and line starts are byte offsets — the lexer's — while everything
+    # drawn here is counted in characters: slice the text by byte offset, then
+    # measure the result.
     def location_of(source, offset)
       (source.line_starts.rindex { _1 <= offset } || 0)
-        .then { Location[it + 1, offset - source.line_starts[it] + 1] }
+        .then { Location[it + 1, column_of(source, source.line_starts[it], offset)] }
+    end
+
+    def column_of(source, line_start, offset)
+      source.text.byteslice(line_start, offset - line_start).length + 1
+    end
+
+    def span_width(label)
+      label.source.text.byteslice(label.span.begin, label.span.size).length
     end
 
     def extract_line(source, line_number)
       s = source.line_starts[line_number - 1]
-      e = source.line_starts[line_number] || source.text.length
-      source.text[s...e]
+      e = source.line_starts[line_number] || source.text.bytesize
+      source.text.byteslice(s, e - s)
     end
 
     def color(severity)

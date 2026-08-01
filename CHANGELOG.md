@@ -12,6 +12,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   entries are separated by newlines instead of commas says so, instead of only
   reporting the next entry as an unexpected token.
 
+### Fixed
+
+- Diagnostic source excerpts are sliced by byte offset. Spans and line starts
+  are the lexer's byte offsets, but the excerpt was cut and measured in
+  characters, so one multi-byte glyph anywhere earlier in the file shifted every
+  later excerpt and its caret — `def notify_channel(…)` printed as
+  `f notify_channel(…)`.
+
 ## [0.3.1]
 
 ### Fixed
