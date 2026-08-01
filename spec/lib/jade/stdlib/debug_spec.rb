@@ -11,7 +11,7 @@ module Jade
       # generated Ruby constant would otherwise answer for the previous source.
       def render(expr, decls: nil)
         @seq = (@seq || 0) + 1
-        name = %w[Alpha Bravo Charlie Delta Echo Foxtrot Golf Hotel].fetch(@seq - 1)
+        name = "DebugProbe#{('A'.ord + @seq - 1).chr}"
         parts = ["module #{name} exposing (probe)", '', 'import Debug']
         parts += ['', '', decls] if decls
         parts += ['', '', "def probe -> String", "  Debug.to_string(#{expr})", 'end']
@@ -48,6 +48,30 @@ module Jade
 
       it 'renders nesting' do
         expect(render('Just([Ok(1), Err("no")])')).to eql 'Just([Ok(1), Err("no")])'
+      end
+
+      describe 'log' do
+        def logged(expr)
+          @seq = (@seq || 0) + 1
+          name = "DebugLog#{('A'.ord + @seq - 1).chr}"
+          compiler.require(name, <<~JADE)
+            module #{name} exposing (probe)
+
+            import Debug
+
+
+            def probe -> Int
+              #{expr}
+            end
+          JADE
+
+          Object.const_get(name).probe
+        end
+
+        it 'returns its value untouched so it can sit mid-pipeline' do
+          expect { expect(logged('Debug.log("n", 41) + 1')).to eql 42 }
+            .to output(%r{n: 41}).to_stderr
+        end
       end
     end
   end

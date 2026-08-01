@@ -4,6 +4,13 @@ module Jade
 
     MAX_DEPTH = 12
 
+    # Elm's Debug.log: print, return the value untouched, so it can be dropped
+    # into the middle of a pipeline without changing its shape.
+    def log(label, value)
+      warn("#{label}: #{render(value)}")
+      value
+    end
+
     def render(value, depth = 0)
       return '…' if depth > MAX_DEPTH
 

@@ -22,8 +22,17 @@ module Jade
       end
     end
 
+    # The compiler derives a module's name back from its path (Source.camelize,
+    # which is capitalize-based), so only a snake_case path round-trips:
+    # `debug_probe.jd` -> DebugProbe, but `DebugProbe.jd` -> Debugprobe. Name
+    # the file for the module rather than after it, or generated code
+    # self-references a constant that was never defined.
+    def path_for(module_name)
+      module_name.split('.').map { Source.snake_case(it) }.join('/')
+    end
+
     def write(module_name, source)
-      path = File.join(@source_root, "#{module_name}.jd")
+      path = File.join(@source_root, "#{path_for(module_name)}.jd")
       FileUtils.mkdir_p(File.dirname(path))
       File.write(path, source)
       @written[module_name] = source
@@ -34,13 +43,13 @@ module Jade
       write(module_name, source)
 
       key    = [module_name, @written.sort].freeze
-      rb_file = File.join(@build_root, "#{module_name}.rb")
+      rb_file = File.join(@build_root, "#{path_for(module_name)}.rb")
 
       if @@compiled.include?(key) && File.exist?(rb_file)
         return
       end
 
-      silence_warnings { compiler.require(module_name) }
+      silence_warnings { compiler.require(path_for(module_name)) }
 
       raise "Expected #{rb_file} to exist" unless File.exist?(rb_file)
 
@@ -52,7 +61,7 @@ module Jade
     end
 
     def generated_source(module_name)
-      File.read(File.join(@build_root, "#{module_name}.rb"))
+      File.read(File.join(@build_root, "#{path_for(module_name)}.rb"))
     end
 
     private
