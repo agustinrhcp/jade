@@ -415,6 +415,62 @@ module Jade
         expect { test_compiler.require('consumer', consumer_source) }
           .to raise_error(/`Foo` is exposed by `Producer` but its constructor is private/)
       end
+
+      context 'when the producer does expose the constructor' do
+        let(:producer_source) do
+          <<~JADE
+            module Producer exposing (Foo(..))
+
+            struct Foo = {
+              x: Int,
+              y: Int
+            }
+          JADE
+        end
+
+        it "points at the consumer's own import instead" do
+          test_compiler.require('producer', producer_source)
+
+          expect { test_compiler.require('consumer', consumer_source) }
+            .to raise_error(
+              /`Producer` exposes it — add `Foo\(\.\.\)` to this module's `import Producer/,
+            )
+        end
+      end
+
+      context 'when the constructor is a variant with a different name' do
+        let(:producer_source) do
+          <<~JADE
+            module Producer exposing (Route(..))
+
+            type Route
+              = Home
+              | Away(Int)
+          JADE
+        end
+
+        let(:consumer_source) do
+          <<~JADE
+            module Consumer exposing (make)
+
+            import Producer exposing (Route)
+
+
+            def make -> Route
+              Home
+            end
+          JADE
+        end
+
+        it 'names the type whose `(..)` is missing' do
+          test_compiler.require('producer', producer_source)
+
+          expect { test_compiler.require('consumer', consumer_source) }
+            .to raise_error(
+              /cannot find a `Home` constructor\. `Producer` exposes it — add `Route\(\.\.\)`/,
+            )
+        end
+      end
     end
 
     context 'comment alongside an import with no exposing clause' do
