@@ -3,6 +3,7 @@ require_relative './deriving/eq.rb'
 require_relative './deriving/decodable.rb'
 require_relative './deriving/encodable.rb'
 require_relative './deriving/sql_mapper.rb'
+require_relative './deriving/show.rb'
 
 module Jade
   module Frontend
@@ -11,7 +12,7 @@ module Jade
         module Deriving
           extend self
 
-          DERIVERS = [Eq, Decodable, Encodable, SqlMapper]
+          DERIVERS = [Eq, Show, Decodable, Encodable, SqlMapper]
 
           def derivable?(interface)
             DERIVERS.any? { it.supports?(interface) }
