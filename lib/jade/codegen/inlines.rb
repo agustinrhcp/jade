@@ -16,8 +16,12 @@ module Jade
       }.freeze
 
       INLINES = {
-        'Debug.to_string'   => ->(v)    { "Jade::Debug.render(#{v})" },
         'Debug.log'         => ->(l, v) { "Jade::Debug.log(#{l}, #{v})" },
+        'Show.int_show'   => ->(n)    { "#{n}.to_s" },
+        'Show.float_show' => ->(f)    { "#{f}.to_s" },
+        'Show.bool_show'  => ->(b)    { "#{b}.to_s" },
+        'Show.str_show'   => ->(s)    { "#{s}.inspect" },
+        'Show.char_show'  => ->(c)    { "#{c}.inspect" },
         'Basics.identity'   => ->(a)    { a },
         'Basics.always'     => ->(x)    { "->(_) { #{x} }" },
         'Basics.int_add'    => ->(a, b) { "(#{a} + #{b})" },

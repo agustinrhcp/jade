@@ -4,8 +4,6 @@ module Jade
 
     MAX_DEPTH = 12
 
-    # Elm's Debug.log: print, return the value untouched, so it can be dropped
-    # into the middle of a pipeline without changing its shape.
     def log(label, value)
       warn("#{label}: #{render(value)}")
       value
@@ -39,10 +37,6 @@ module Jade
       '{ ' + fields.map { |k, v| "#{k}: #{render(v, depth + 1)}" }.join(', ') + ' }'
     end
 
-    # A variant is a Data whose class is named for the constructor. Records
-    # declared with `struct` are Data too, but their members carry meaning, so
-    # they print as `Name { field: … }` while a positional variant prints as
-    # `Just(1)` — the way each is written in Jade.
     def render_variant(value, depth)
       name = constructor_name(value)
       args = value.deconstruct
