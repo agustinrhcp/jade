@@ -33,6 +33,40 @@ module Jade
                 .map { |name, sym| [name, instantiate(sym, subst, registry)] }
             end
 
+            def dependencies_of(impl, args)
+              subst = impl
+                .type_params
+                .map(&:id)
+                .zip(args)
+                .to_h
+
+              impl
+                .constraints
+                .map { it.with(type: substitute_type(it.type, subst)) }
+            end
+
+            def substitute_type(type, subst)
+              case type
+
+              in Type::Var(id:)
+                subst.fetch(id, type)
+
+              in Type::Application(constructor:, args:)
+                Type::Application.new(
+                  constructor: constructor,
+                  args: args.map { substitute_type(it, subst) }
+                )
+
+              in Type::AnonymousRecord(fields:)
+                Type::AnonymousRecord.new(
+                  fields: fields.transform_values { substitute_type(it, subst) }
+                )
+
+              else
+                type
+              end
+            end
+
             def instantiate(sym, subst, registry)
               case sym
               in Symbol::Variable(name:)
