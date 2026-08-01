@@ -17,6 +17,7 @@ module Jade
 
       INLINES = {
         'Debug.to_string'   => ->(v)    { "Jade::Debug.render(#{v})" },
+        'Debug.log'         => ->(l, v) { "Jade::Debug.log(#{l}, #{v})" },
         'Basics.identity'   => ->(a)    { a },
         'Basics.always'     => ->(x)    { "->(_) { #{x} }" },
         'Basics.int_add'    => ->(a, b) { "(#{a} + #{b})" },
