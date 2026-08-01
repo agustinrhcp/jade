@@ -22,11 +22,6 @@ module Jade
       end
     end
 
-    # The compiler derives a module's name back from its path (Source.camelize,
-    # which is capitalize-based), so only a snake_case path round-trips:
-    # `debug_probe.jd` -> DebugProbe, but `DebugProbe.jd` -> Debugprobe. Name
-    # the file for the module rather than after it, or generated code
-    # self-references a constant that was never defined.
     def path_for(module_name)
       module_name.split('.').map { Source.snake_case(it) }.join('/')
     end

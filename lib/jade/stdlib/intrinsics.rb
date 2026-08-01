@@ -256,6 +256,9 @@ module Jade
 
         in 'Encodable'
           'Encode'
+
+        in 'Show'
+          'Show'
         end
           .then { Symbol.type_ref(it, interface.to_s) }
       end
