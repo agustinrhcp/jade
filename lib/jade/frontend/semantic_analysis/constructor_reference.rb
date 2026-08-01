@@ -17,7 +17,7 @@ module Jade
                 entry.name,
                 node.range,
                 name:,
-                exposed_type_module: exposed_type_origin(name, entry, registry),
+                hint: constructor_hint(name, entry, registry),
                 candidates: scope.bindings.keys.select { it.match?(/\A[A-Z]/) },
               ))
               .then do
@@ -49,14 +49,40 @@ module Jade
             &.then { klass.new(entry.name, span, arity: it) }
         end
 
-        def exposed_type_origin(name, entry, registry)
-          type_ref = entry.imported_types[name]
-          return nil unless type_ref
+        # An imported module owning a constructor by this name is the whole
+        # story: either it keeps its constructors private, or it exposes them
+        # and the import here asked for the type alone.
+        def constructor_hint(name, entry, registry)
+          entry
+            .imports
+            .filter_map { hint_for(it.module_name, name, registry) }
+            .first
+        end
 
-          target_entry = registry.get(type_ref.module_name)
-          return nil if target_entry.nil? || Stdlib.is_stdlib?(target_entry)
+        def hint_for(module_name, name, registry)
+          target = registry.get(module_name)
+          return nil if target.nil? || Stdlib.is_stdlib?(target)
 
-          type_ref.module_name
+          type_name = owning_type(target, name)
+          return nil unless type_name && target.exposed_type(type_name)
+
+          exposes_constructor?(target, type_name, name)
+            .then { it ? :import : :expose }
+            .then { Error::ConstructorNotFound::Hint[module_name, type_name, it] }
+        end
+
+        def owning_type(target, name)
+          target
+            .defined_types
+            .find { |_, sym| sym.constructor_refs.any? { it.name == name } }
+            &.first
+        end
+
+        def exposes_constructor?(target, type_name, name)
+          target
+            .exposed_type_variants(type_name)
+            .to_a
+            .any? { it.name == name }
         end
       end
     end

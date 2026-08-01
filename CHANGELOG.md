@@ -28,6 +28,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the rows that would have covered it, which is also what keeps a recursive type
   from expanding forever — the recursion guard that used to do that job is gone,
   and with it the false "exhaustive" verdicts it caused on any second column.
+- The missing-constructor diagnostic tells you which `exposing` list is missing
+  the `(..)`. When the defining module already exposes `Route(..)` and it's the
+  importer's `import Routes exposing (Route)` that brought in the type alone, it
+  no longer sends you to the wrong file. It also fires for a variant whose name
+  differs from its type's (`Home` of `Route`), which previously got no hint.
 
 ## [0.3.1]
 
