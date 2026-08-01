@@ -19,6 +19,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   characters, so one multi-byte glyph anywhere earlier in the file shifted every
   later excerpt and its caret — `def notify_channel(…)` printed as
   `f notify_channel(…)`.
+- Exhaustiveness checking no longer collapses when the scrutinee is a tuple.
+  `case (a, b)` over two `Maybe`s reported `Missing cases: (_, _)` with all four
+  arms present, and the `else` that silenced it hid genuinely missing cases from
+  then on. Two bugs: a tuple's element types were replaced with fresh type
+  variables, and specializing on a constructor dropped the types of every column
+  after it. A constructor the first column never mentions is now answered from
+  the rows that would have covered it, which is also what keeps a recursive type
+  from expanding forever — the recursion guard that used to do that job is gone,
+  and with it the false "exhaustive" verdicts it caused on any second column.
 
 ## [0.3.1]
 
