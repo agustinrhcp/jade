@@ -126,7 +126,6 @@ module Jade
                 .uniq
 
               return failed(constraint, entry_name) if variants.empty?
-              return failed(constraint, entry_name) if concrete.any? && type_vars.any?
 
               concrete
                 .map { lookup.call(Type.constraint(INTERFACE, it, constraint.origin)) }
@@ -141,11 +140,11 @@ module Jade
                     body: [:case, [:var, 'value'], cases],
                   )
 
-                  Ok[union_impl(constraint, type_vars, show_fn, deps)]
+                  Ok[union_impl(constraint, type_vars, concrete, show_fn, deps)]
                 end
             end
 
-            def union_impl(constraint, type_vars, show_fn, deps)
+            def union_impl(constraint, type_vars, concrete, show_fn, deps)
               return Symbol::Implementation.new(
                 module_name: nil,
                 interface: Symbol.type_ref_from_qualified_name(constraint.interface),
@@ -162,9 +161,7 @@ module Jade
                 interface: Symbol.type_ref_from_qualified_name(constraint.interface),
                 type: constraint.type,
                 type_params: type_vars.map { Type.var(it) },
-                constraints: type_vars.map {
-                  Type.constraint(INTERFACE, Type.var(it), constraint.origin)
-                },
+                constraints: union_constraints(constraint, type_vars, concrete),
                 functions: { 'show' => show_fn },
               )
             end
@@ -180,7 +177,7 @@ module Jade
                 idx =
                   case arg_type
                   in Symbol::Variable(name: var_name) then index_map[var_name]
-                  else concrete.index(instantiate(arg_type, {}, registry))
+                  else index_map.size + concrete.index(instantiate(arg_type, {}, registry))
                   end
 
                 shown(idx, [:var, vars[i]])
