@@ -98,12 +98,6 @@ module Jade
                 .map { instantiate(it, {}, registry) }
                 .uniq
 
-              if concrete.any? && type_vars.any?
-                return Err[
-                  Error::DerivationFailed
-                    .new(entry_name, constraint.origin.range, constraint:, trace: [])
-                ]
-              end
 
               concrete
                 .map { lookup.call(Type.constraint(INTERFACE, it, constraint.origin)) }
@@ -121,11 +115,11 @@ module Jade
                     ],
                   )
 
-                  Ok[build_union_impl(constraint, type_vars, eq_fn, deps)]
+                  Ok[build_union_impl(constraint, type_vars, concrete, eq_fn, deps)]
                 end
             end
 
-            def build_union_impl(constraint, type_vars, eq_fn, deps)
+            def build_union_impl(constraint, type_vars, concrete, eq_fn, deps)
               return Symbol::Implementation.new(
                 module_name: nil,
                 interface: Symbol.type_ref_from_qualified_name(constraint.interface),
@@ -142,9 +136,7 @@ module Jade
                 interface: Symbol.type_ref_from_qualified_name(constraint.interface),
                 type: constraint.type,
                 type_params: type_vars.map { Type.var(it) },
-                constraints: type_vars.map {
-                  Type.constraint(INTERFACE, Type.var(it), constraint.origin)
-                },
+                constraints: union_constraints(constraint, type_vars, concrete),
                 functions: { '(==)' => eq_fn },
               )
             end
@@ -163,7 +155,7 @@ module Jade
                   idx =
                     case arg_type
                     in Symbol::Variable(name:) then index_map[name]
-                    else concrete.index(instantiate(arg_type, {}, registry))
+                    else index_map.size + concrete.index(instantiate(arg_type, {}, registry))
                     end
 
                   [:call,

@@ -76,6 +76,13 @@ module Jade
       it 'renders nesting' do
         expect(derived('ShowNested', box, 'Just(B(2))')).to eql 'Just(B(2))'
       end
+
+      it 'renders a variant mixing a type parameter with a concrete type' do
+        mixed = "type Mixed(a)\n  = M(a, Int)\n  | Tagged(String, a)"
+
+        expect(derived('ShowMixed', mixed, 'M("x", 2)')).to eql 'M("x", 2)'
+        expect(derived('ShowTagged', mixed, 'Tagged("t", 9)')).to eql 'Tagged("t", 9)'
+      end
     end
   end
 end
