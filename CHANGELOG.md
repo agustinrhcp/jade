@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A parse error inside a `uses`, `interface`, or `implements` block where the
+  entries are separated by newlines instead of commas says so, instead of only
+  reporting the next entry as an unexpected token.
+
 ## [0.3.1]
 
 ### Fixed

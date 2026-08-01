@@ -58,11 +58,20 @@ module Jade
         super
       end
 
+      # Blocks whose entries are comma-separated, so a newline between two of
+      # them reads as the end of the block.
+      COMMA_SEPARATED_BLOCKS = [
+        'interop import declaration',
+        'interface declaration',
+        'implementation',
+      ].freeze
+
       def hint
         return leading_pipe_hint if leading_pipe_in_type_decl?
         return reserved_keyword_hint if reserved_keyword_as_name?
         return colon_not_eq_hint if eq_where_colon_expected?
         return record_eq_hint if eq_where_record_pipe_expected?
+        return missing_comma_hint if entry_after_unterminated_entry?
         nil
       end
 
@@ -114,6 +123,16 @@ module Jade
 
       def record_eq_hint
         "(record fields use `:`, not `=` — write `{ name: value }`)"
+      end
+
+      def entry_after_unterminated_entry?
+        expected == :end &&
+          [:identifier, :lparen].include?(actual.type) &&
+          (@context & COMMA_SEPARATED_BLOCKS).any?
+      end
+
+      def missing_comma_hint
+        "(entries here are separated by `,` — add one to the line above)"
       end
     end
 
