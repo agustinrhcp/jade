@@ -61,7 +61,7 @@ module Jade
             end
 
             def resolve_constraint(constraint, registry, entry_name, lookup)
-              special = special_case(constraint)
+              special = special_case(constraint, lookup)
               return special if special
 
               case constraint.type
@@ -84,7 +84,7 @@ module Jade
               end
             end
 
-            def special_case(_constraint)
+            def special_case(_constraint, _lookup)
               nil
             end
 
