@@ -12,82 +12,12 @@ module Jade
             def supports?(interface) = interface == INTERFACE
 
             def derive(constraint, registry, entry_name, &lookup)
-              resolve(constraint, registry, entry_name, lookup)
+              resolve_constraint(constraint, registry, entry_name, lookup)
             end
 
             private
 
-            def resolve(constraint, registry, entry_name, lookup)
-              case [constraint.interface, constraint.type]
-              in [INTERFACE, Type::Application(constructor:, args:)]
-                registry
-                  .implementations[[constraint.interface, constructor.name]]
-                  .then do
-                    it \
-                      ? Ok[it]
-                      : derive_for_type(constraint, constructor, args, registry, lookup, entry_name)
-                  end
-                  .on_err { return Err[it] } => Ok(impl)
-
-                case impl
-                in Symbol::ImplementationTemplate
-                  deps = dependencies_of(impl, args)
-                  resolved_deps = deps.filter_map { |dep|
-                    next if dep.type in Type::Var
-                    lookup.call(dep).on_err { return Err[it] } => Ok[resolved]
-                    resolved
-                  }
-
-                  Symbol::Implementation.new(
-                    module_name: nil,
-                    interface: Symbol.type_ref_from_qualified_name(constraint.interface),
-                    type: constraint.type,
-                    type_params: args,
-                    constraints: deps,
-                    functions: impl.functions,
-                    deps: resolved_deps,
-                    extends: [],
-                    decl_span: nil,
-                  )
-
-                else
-                  impl
-                end
-                  .then { Ok[it] }
-
-              in [INTERFACE, Type::AnonymousRecord(fields:)]
-                derive_record_eq(constraint, fields, lookup)
-
-              else
-                Err[
-                  Error::DerivationFailed
-                    .new(entry_name, constraint.origin.range, constraint:, trace: [])
-                ]
-              end
-            end
-
-            def derive_for_type(constraint, constructor, args, registry, lookup, entry_name)
-              symbol =
-                Symbol
-                  .type_ref_from_qualified_name(constructor.name)
-                  .then { registry.lookup(it) }
-
-              case symbol
-              in Symbol::Union
-                derive_union_eq(constraint, symbol, registry, lookup, entry_name)
-
-              in Symbol::Struct
-                derive_struct_eq(constraint, symbol, args, registry, lookup, entry_name)
-
-              else
-                Err[
-                  Error::DerivationFailed
-                    .new(entry_name, constraint.origin.range, constraint:, trace: [])
-                ]
-              end
-            end
-
-            def derive_union_eq(constraint, symbol, registry, lookup, entry_name)
+            def derive_union(constraint, symbol, registry, lookup, entry_name)
               type_vars = symbol.type_params.map(&:name)
               index_map = type_vars.each_with_index.map.to_h
               variants  = symbol.variants.map { registry.lookup(it) }
@@ -120,17 +50,7 @@ module Jade
             end
 
             def build_union_impl(constraint, type_vars, concrete, eq_fn, deps)
-              return Symbol::Implementation.new(
-                module_name: nil,
-                interface: Symbol.type_ref_from_qualified_name(constraint.interface),
-                type: constraint.type,
-                type_params: [],
-                constraints: [],
-                functions: { '(==)' => eq_fn },
-                deps:,
-                extends: [],
-                decl_span: nil,
-              ) if type_vars.empty?
+              return implementation(constraint, { '(==)' => eq_fn }, deps:) if type_vars.empty?
 
               Symbol::ImplementationTemplate.new(
                 interface: Symbol.type_ref_from_qualified_name(constraint.interface),
@@ -155,7 +75,8 @@ module Jade
                   idx =
                     case arg_type
                     in Symbol::Variable(name:) then index_map[name]
-                    else index_map.size + concrete.index(instantiate(arg_type, {}, registry))
+                    else
+                    index_map.size + concrete.index(instantiate(arg_type, {}, registry))
                     end
 
                   [:call,
@@ -175,7 +96,7 @@ module Jade
               [[:list, [left_pattern, right_pattern]], body]
             end
 
-            def derive_record_eq(constraint, fields, lookup)
+            def derive_record(constraint, fields, lookup)
               field_types = fields.values
               field_keys  = fields.keys
 
@@ -192,7 +113,7 @@ module Jade
               end
             end
 
-            def derive_struct_eq(constraint, struct_sym, type_args, registry, lookup, entry_name)
+            def derive_struct(constraint, struct_sym, type_args, registry, lookup, entry_name)
               fields      = struct_fields(struct_sym, type_args, registry)
               field_types = fields.map { |_, t| t }
               field_names = fields.map { |k, _| k.to_s }
@@ -207,27 +128,11 @@ module Jade
               end
             end
 
-            def resolve_field_deps(field_types, lookup, origin)
-              field_types
-                .map { lookup.call(Type.constraint(INTERFACE, it, origin)) }
-                .then { Results.sequence(it) }
-            end
-
             def build_record_impl(constraint, comparisons, deps)
-              body = comparisons.empty? ? true : comparisons.reduce { |a, b| [:and, a, b] }
-              eq_fn = Symbol::DerivedFunction.new(params: ['one', 'other'], body:)
-
-              Symbol::Implementation.new(
-                module_name: nil,
-                interface: Symbol.type_ref_from_qualified_name(constraint.interface),
-                type: constraint.type,
-                type_params: [],
-                constraints: [],
-                functions: { '(==)' => eq_fn },
-                deps:,
-                extends: [],
-                decl_span: nil,
-              )
+              comparisons
+                .then { it.empty? ? true : it.reduce { |a, b| [:and, a, b] } }
+                .then { Symbol::DerivedFunction.new(params: ['one', 'other'], body: it) }
+                .then { implementation(constraint, { '(==)' => it }, deps:) }
             end
           end
         end
