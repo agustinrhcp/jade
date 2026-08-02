@@ -17,10 +17,44 @@ module Jade
 
             private
 
-            def special_case(constraint)
-              return nil unless constraint.type in Type::Function
+            # List has no variants to walk, so it is matched by name here rather
+            # than declared as an instance in the Show module. That is a stopgap:
+            # a parameterised stdlib instance needs a registration path the DSL
+            # does not have. Encodable hardcodes List and Maybe for the same
+            # reason. Contained because derivation is private — see
+            # vault jade/plans/jade-test-runner.md for the four layers involved.
+            LIST = 'List.List'
 
-              Ok[implementation(constraint, { 'show' => constant('<function>') })]
+            def special_case(constraint, lookup)
+              case constraint.type
+              in Type::Function
+                Ok[implementation(constraint, { 'show' => constant('<function>') })]
+
+              in Type::Application(constructor: Type::Constructor(name: LIST), args: [inner])
+                list_show(constraint, inner, lookup)
+
+              else
+                nil
+              end
+            end
+
+            def list_show(constraint, inner, lookup)
+              lookup
+                .call(Type.constraint(INTERFACE, inner, constraint.origin))
+                .and_then do |dep|
+                  body = concat([
+                    '[',
+                    [:call, [:stdlib_fn, 'String.join'], [
+                      [:call, [:stdlib_fn, 'List.map'], [[:var, 'list'], [:impl_arg, 0, 'show']]],
+                      ', ',
+                    ]],
+                    ']',
+                  ])
+
+                  Symbol::DerivedFunction
+                    .new(params: ['list'], body:)
+                    .then { Ok[implementation(constraint, { 'show' => it }, deps: [dep])] }
+                end
             end
 
             def constant(text)

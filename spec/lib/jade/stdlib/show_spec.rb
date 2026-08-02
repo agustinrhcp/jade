@@ -77,6 +77,19 @@ module Jade
         expect(derived('ShowNested', box, 'Just(B(2))')).to eql 'Just(B(2))'
       end
 
+      it 'renders a list through its element instance' do
+        expect(derived('ShowList', box, '[1, 2]')).to eql '[1, 2]'
+        expect(derived('ShowListStr', box, '["a", "b"]')).to eql '["a", "b"]'
+      end
+
+      it 'renders nested lists' do
+        expect(derived('ShowNestedList', box, '[[1], [2]]')).to eql '[[1], [2]]'
+      end
+
+      it 'renders a list of a derived type' do
+        expect(derived('ShowListOfBox', box, '[B(1), Empty]')).to eql '[B(1), Empty]'
+      end
+
       it 'renders a variant mixing a type parameter with a concrete type' do
         mixed = "type Mixed(a)\n  = M(a, Int)\n  | Tagged(String, a)"
 
