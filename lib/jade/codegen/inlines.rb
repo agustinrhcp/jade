@@ -204,6 +204,7 @@ module Jade
         Decode.tuple3
         Decode.tuple4
         Decode.type_
+        Decode.value
         Decode.variant
         Encode.bool
         Encode.dict
@@ -219,6 +220,7 @@ module Jade
         Encode.tuple
         Encode.tuple3
         Encode.tuple4
+        Encode.value
         Encode.variant
         Task.and_then
         Task.fail

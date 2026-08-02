@@ -46,6 +46,13 @@ module Jade
         Jade::Decode::Decoder[Jade::Decode::Desc::Bool[]]
       }
 
+      # Keeps whatever came in. `Value` is the un-decoded value, so this is
+      # what makes it usable nested — `List(Value)`, a field of a struct —
+      # and not only as a whole arm.
+      function('value', {}, 'Decoder(Value)') {
+        Jade::Decode::Decoder[Jade::Decode::Desc::Pass[]]
+      }
+
       # Structural
 
       function(
@@ -328,6 +335,7 @@ module Jade
       implementation('Decodable', 'Basics.Float',  'decoder' => 'float')
       implementation('Decodable', 'Basics.Bool',   'decoder' => 'bool')
       implementation('Decodable', 'String.String', 'decoder' => 'string')
+      implementation('Decodable', 'Decode.Value',  'decoder' => 'value')
     end
   end
 end

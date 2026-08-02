@@ -25,6 +25,11 @@ module Jade
       function('bool', { b: 'Bool' }, 'Value') { it }
       function('null', {}, 'Value') { nil }
 
+      # A `Value` is already encoded, so its encoder is identity. Ports and
+      # boundaries take it as the opt-out; the instance is what carries that
+      # through `List(Value)` and friends.
+      function('value', { v: 'Value' }, 'Value') { it }
+
       # Structural
 
       function(
@@ -138,6 +143,7 @@ module Jade
       implementation('Encodable', 'Basics.Float',  'encoder' => 'float')
       implementation('Encodable', 'Basics.Bool',   'encoder' => 'bool')
       implementation('Encodable', 'String.String', 'encoder' => 'string')
+      implementation('Encodable', 'Decode.Value',  'encoder' => 'value')
     end
   end
 end
