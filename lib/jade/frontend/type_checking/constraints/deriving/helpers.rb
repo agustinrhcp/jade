@@ -33,6 +33,98 @@ module Jade
                 .map { |name, sym| [name, instantiate(sym, subst, registry)] }
             end
 
+            def failed(constraint, entry_name)
+              Err[
+                Error::DerivationFailed
+                  .new(entry_name, constraint.origin.range, constraint:, trace: [])
+              ]
+            end
+
+            def implementation(constraint, functions, deps: [], type_params: [], constraints: [])
+              Symbol::Implementation.new(
+                module_name: nil,
+                interface: Symbol.type_ref_from_qualified_name(constraint.interface),
+                type: constraint.type,
+                type_params:,
+                constraints:,
+                functions:,
+                deps:,
+                extends: [],
+                decl_span: nil,
+              )
+            end
+
+            def resolve_field_deps(field_types, lookup, origin)
+              field_types
+                .map { lookup.call(Type.constraint(self::INTERFACE, it, origin)) }
+                .then { Results.sequence(it) }
+            end
+
+            def resolve_constraint(constraint, registry, entry_name, lookup)
+              special = special_case(constraint)
+              return special if special
+
+              case constraint.type
+              in Type::Application(constructor:, args:)
+                dispatch_type(constraint, constructor, args, registry, lookup, entry_name)
+                  .on_err { return Err[it] } => Ok(impl)
+
+                case impl
+                in Symbol::ImplementationTemplate
+                  instantiate_template(constraint, impl, args, lookup)
+                else
+                  Ok[impl]
+                end
+
+              in Type::AnonymousRecord(fields:)
+                derive_record(constraint, fields, lookup)
+
+              else
+                failed(constraint, entry_name)
+              end
+            end
+
+            def special_case(_constraint)
+              nil
+            end
+
+            def dispatch_type(constraint, constructor, args, registry, lookup, entry_name)
+              existing = registry.implementations[[constraint.interface, constructor.name]]
+              return Ok[existing] if existing
+
+              Symbol
+                .type_ref_from_qualified_name(constructor.name)
+                .then { registry.lookup(it) }
+                .then do |symbol|
+                  case symbol
+                  in Symbol::Union
+                    derive_union(constraint, symbol, registry, lookup, entry_name)
+
+                  in Symbol::Struct
+                    derive_struct(constraint, symbol, args, registry, lookup, entry_name)
+
+                  else
+                    failed(constraint, entry_name)
+                  end
+                end
+            end
+
+            def instantiate_template(constraint, impl, args, lookup)
+              deps = dependencies_of(impl, args)
+              resolved = deps.filter_map { |dep|
+                next if dep.type in Type::Var
+                lookup.call(dep).on_err { return Err[it] } => Ok[found]
+                found
+              }
+
+              Ok[
+                implementation(
+                  constraint, impl.functions,
+                  deps: resolved, type_params: args, constraints: deps,
+                )
+              ]
+            end
+
             def union_constraints(constraint, type_vars, concrete)
               type_vars
                 .map { Type.var(it) }
