@@ -22,6 +22,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `Encodable` and `Decodable` instances for `Decode.Value`, both the identity,
+  plus the `Decode.value` and `Encode.value` functions behind them. `Value` is
+  the un-decoded value, and it opted out of conversion only as a whole arm or
+  argument: `List(Value)`, `Maybe(Value)`, and a struct with a `Value` field
+  had no instance to derive from and were rejected at the boundary.
 - A parse error inside a `uses`, `interface`, or `implements` block where the
   entries are separated by newlines instead of commas says so, instead of only
   reporting the next entry as an unexpected token.

@@ -460,6 +460,43 @@ module Jade
         expect(result).to be_ok
         expect(result._1).to eql({ totally: 'arbitrary', nested: { stuff: [1, 2, 3] } })
       end
+
+      # `Value` has instances on both sides, so the opt-out survives being
+      # nested — a list of them, a field holding one.
+      context 'nested in a list, on both sides of the port' do
+        module TestPassThroughList
+          extend Jade::Port
+
+          task(:query_raw) { |t, sql, params| t.ok([sql, *params]) }
+        end
+
+        let(:with_interop_source) do
+          <<~JADE
+            module WithInterop exposing (query)
+
+            import Decode exposing (Value)
+
+
+            uses Jade::TestPassThroughList with
+              query_raw : String, List(Value) -> Task(List(Value), Never)
+            end
+
+
+            def query(sql: String, params: List(Value)) -> Task(List(Value), Never)
+              query_raw(sql, params)
+            end
+          JADE
+        end
+
+        it 'hands Ruby the values untouched and takes them back the same way' do
+          test_compiler.require('with_interop', with_interop_source)
+
+          result = WithInterop::Internal.query('select 1', [1, 'two', nil]).run
+
+          expect(result).to be_ok
+          expect(result._1).to eql(['select 1', 1, 'two', nil])
+        end
+      end
     end
 
     context 'a named struct produces an instance of the struct class' do

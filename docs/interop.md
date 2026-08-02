@@ -86,7 +86,10 @@ Port `shift_months` cannot encode argument 1 (`Shape`): no Encodable instance
 ```
 
 Declare the argument as `Decode.Value` to opt out and hand Ruby the value
-untouched — the arg-side counterpart of a `Decode.Value` return arm.
+untouched — the arg-side counterpart of a `Decode.Value` return arm. `Value` has
+instances on both sides, so the opt-out holds when it's nested too: a
+`List(Value)` argument, or a struct with a `Value` field, crosses element by
+element with each one left alone.
 
 ## Calling Jade from Ruby
 
