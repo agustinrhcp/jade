@@ -10,6 +10,7 @@ module Jade
       import List
       import Tuple
       import Dict
+      import Set
 
       interface(
         'Encodable',
@@ -60,6 +61,16 @@ module Jade
         'Value',
       ) { |k_enc, v_enc, dict|
         dict.hash.map { |k, v| [k_enc.call(k), v_enc.call(v)] }
+      }
+
+      # A set is its elements, in insertion order, with no duplicates —
+      # the same shape a list encodes to.
+      function(
+        'set',
+        { encoder: 'a -> Value', set: 'Set(a)' },
+        'Value',
+      ) { |encoder, set|
+        set.hash.keys.map { encoder.call(it) }
       }
 
       function(

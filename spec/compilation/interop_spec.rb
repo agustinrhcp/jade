@@ -1028,6 +1028,70 @@ module Jade
       end
     end
 
+    context 'a port carrying a tuple, a dict and a set' do
+      module TestStructuralPort
+        extend Jade::Port
+
+        task(:echo_pair) { |t, pair| t.ok(pair) }
+        task(:echo_dict) { |t, dict| t.ok(dict) }
+        task(:echo_set)  { |t, set| t.ok(set) }
+      end
+
+      let(:with_interop_source) do
+        <<~JADE
+          module Structural exposing (dict, pair, set)
+
+          import Dict exposing (Dict)
+          import Set exposing (Set)
+
+
+          uses Jade::TestStructuralPort with
+            echo_pair : (String, Int) -> Task((String, Int), Never),
+            echo_dict : Dict(String, Int) -> Task(Dict(String, Int), Never),
+            echo_set : Set(Int) -> Task(Set(Int), Never)
+          end
+
+
+          def pair(p: (String, Int)) -> Task((String, Int), Never)
+            echo_pair(p)
+          end
+
+
+          def dict(d: Dict(String, Int)) -> Task(Dict(String, Int), Never)
+            echo_dict(d)
+          end
+
+
+          def set(s: Set(Int)) -> Task(Set(Int), Never)
+            echo_set(s)
+          end
+        JADE
+      end
+
+      before { test_compiler.require('structural', with_interop_source) }
+
+      it 'hands Ruby a positional array for a tuple' do
+        Structural::Internal
+          .pair(Jade::Tuple::Tuple2['a', 1])
+          .run
+          .then { expect(it).to be_ok(look_like(:Tuple2, 'a', 1)) }
+      end
+
+      it 'hands Ruby a list of pairs for a dict' do
+        Structural::Internal
+          .dict(Jade::Dict::Dict[{ 'k' => 2 }])
+          .run
+          .then { expect(it).to be_ok(have_attributes(hash: { 'k' => 2 })) }
+      end
+
+      it 'hands Ruby an array for a set' do
+        Structural::Internal
+          .set(Jade::Set::Set[{ 1 => true }])
+          .run
+          .then { expect(it).to be_ok(have_attributes(hash: { 1 => true })) }
+      end
+    end
+
     context 'a port argument with no Encodable instance' do
       let(:with_interop_source) do
         <<~JADE

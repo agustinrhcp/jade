@@ -225,6 +225,63 @@ module Jade
       end
     end
 
+    # Tuples, dicts and sets derive from their elements the way List and Maybe
+    # do — the combinators existed, the instances didn't.
+    context 'derived Encodable — tuple, dict, set' do
+      let(:source) do
+        <<~JADE
+          module Structural exposing (dict, pair, set, triple)
+
+          import Encode
+          import Decode exposing (DecodeError)
+          import Dict exposing (Dict)
+          import Set exposing (Set)
+
+
+          def pair(p: (String, Int)) -> Result((String, Int), DecodeError)
+            Decode.from_json(Encode.encode_to_string(Encode.encode(p)))
+          end
+
+
+          def triple(t: (Int, String, Bool)) -> Result((Int, String, Bool), DecodeError)
+            Decode.from_json(Encode.encode_to_string(Encode.encode(t)))
+          end
+
+
+          def dict(d: Dict(String, Int)) -> Result(Dict(String, Int), DecodeError)
+            Decode.from_json(Encode.encode_to_string(Encode.encode(d)))
+          end
+
+
+          def set(s: Set(Int)) -> Result(Set(Int), DecodeError)
+            Decode.from_json(Encode.encode_to_string(Encode.encode(s)))
+          end
+        JADE
+      end
+
+      before { test_compiler.require('structural', source) }
+
+      it 'round-trips a pair through its element instances' do
+        expect(Structural::Internal.pair(Jade::Tuple::Tuple2['a', 1]))
+          .to be_ok(look_like(:Tuple2, 'a', 1))
+      end
+
+      it 'round-trips a triple' do
+        expect(Structural::Internal.triple(Jade::Tuple::Tuple3[1, 'b', true]))
+          .to be_ok(look_like(:Tuple3, 1, 'b', true))
+      end
+
+      it 'round-trips a dict through its key and value instances' do
+        expect(Structural::Internal.dict(Jade::Dict::Dict[{ 'k' => 2 }]))
+          .to be_ok(have_attributes(hash: { 'k' => 2 }))
+      end
+
+      it 'round-trips a set, which drops the duplicates on the way back' do
+        expect(Structural::Internal.set(Jade::Set::Set[{ 1 => true, 2 => true }]))
+          .to be_ok(have_attributes(hash: { 1 => true, 2 => true }))
+      end
+    end
+
     context 'Encode.encode returns plain Ruby data' do
       let(:source) do
         <<~JADE

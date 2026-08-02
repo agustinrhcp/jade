@@ -95,9 +95,9 @@ module Jade
           .to be_nil
       end
 
-      it 'returns nil for Tuple2(Int, String) (no Decodable impl yet)' do
+      it 'derives Decode.tuple from both element decoders for Tuple2(Int, String)' do
         expect(described_class.decoder_for(tuple_t(int_t, string_t), registry))
-          .to be_nil
+          .to include('Decode.tuple')
       end
 
       it 'curries Decode.dict with both arm decoders for Dict(String, Int)' do
@@ -152,9 +152,9 @@ module Jade
           .to be_nil
       end
 
-      it 'returns nil for Tuple2(Int, String) (no Encodable impl yet)' do
+      it 'derives Encode.tuple from both element encoders for Tuple2(Int, String)' do
         expect(described_class.encoder_for(tuple_t(int_t, string_t), registry))
-          .to be_nil
+          .to include('Encode.tuple')
       end
 
       it 'curries Encode.dict with both arm encoders for Dict(String, Int)' do

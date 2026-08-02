@@ -145,3 +145,19 @@ end
 
 Reach for the explicit combinators above when the JSON shape doesn't match the
 struct one-to-one — renamed keys, nested lookups, optional fields.
+
+Derivation reaches through the structural types to their elements, so anything
+built out of encodable parts is itself encodable:
+
+| Type | Wire form |
+|------|-----------|
+| `List(a)`, `Set(a)` | array — a set drops duplicates on the way back |
+| `Maybe(a)` | the value, or `null` |
+| `(a, b)` … `(a, b, c, d)` | array, positional |
+| `Dict(k, v)` | array of `[key, value]` pairs — a JSON object only admits string keys |
+| a `struct` | object, keyed by field name |
+| a union whose variants take no arguments | string, the variant name in snake_case |
+
+A type outside that list needs its own `implements Encodable(T)` /
+`Decodable(T)` — a union carrying arguments, say, where nothing but you knows
+which shape it should take.

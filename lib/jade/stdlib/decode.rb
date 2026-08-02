@@ -10,6 +10,7 @@ module Jade
       import Result
       import List
       import Dict
+      import Set
 
       union :DecodeError
       variant :MissingField, of: :DecodeError, args: ['String']
@@ -93,6 +94,19 @@ module Jade
         'Decoder(List(a))',
       ) { |decoder|
         Jade::Decode::Decoder[Jade::Decode::Desc::Lst[decoder.desc]]
+      }
+
+      # Reads the same shape a list does, dropping duplicates. Like
+      # `Decode.dict`, it builds the keyed structure directly, so it asks
+      # nothing of the element beyond being decodable.
+      function(
+        'set',
+        { decoder: 'Decoder(a)' },
+        'Decoder(Set(a))',
+      ) { |decoder|
+        Jade::Decode::Desc::Lst[decoder.desc]
+          .then { Jade::Decode::Desc::Map[->(vs) { Jade::Set::Set[vs.to_h { [it, true] }] }, it] }
+          .then { Jade::Decode::Decoder[it] }
       }
 
       # Decodes either a Hash (natural Ruby/JSON object form) or a list
