@@ -13,13 +13,23 @@ module Jade
               interface == INTERFACE
             end
 
+            # One encoder combinator per structural type, taking an encoder per
+            # element plus the value itself. The name is what the emitted
+            # encoder binds its argument to.
+            STRUCTURAL = {
+              'List.List' => ['Encode.list', 'items'],
+              'Maybe.Maybe' => ['Encode.nullable', 'maybe'],
+              'Set.Set' => ['Encode.set', 'set'],
+              'Dict.Dict' => ['Encode.dict', 'dict'],
+              'Tuple.Tuple2' => ['Encode.tuple', 'pair'],
+              'Tuple.Tuple3' => ['Encode.tuple3', 'triple'],
+              'Tuple.Tuple4' => ['Encode.tuple4', 'quad'],
+            }.freeze
+
             def derive(constraint, registry, entry_name, &lookup)
               case constraint.type
-              in Type::Application(constructor: Type::Constructor(name: 'List.List'), args: [inner])
-                derive_list(constraint, inner, lookup, entry_name)
-
-              in Type::Application(constructor: Type::Constructor(name: 'Maybe.Maybe'), args: [inner])
-                derive_nullable(constraint, inner, lookup, entry_name)
+              in Type::Application(constructor: Type::Constructor(name:), args:) if STRUCTURAL.key?(name)
+                derive_structural(constraint, args, *STRUCTURAL.fetch(name), lookup, entry_name)
 
               in Type::Application(constructor: Type::Constructor(name:), args:)
                 resolved_sym = Symbol
@@ -55,36 +65,17 @@ module Jade
               ]
             end
 
-            def derive_list(constraint, inner_type, lookup, entry_name)
-              dep = Type.constraint(INTERFACE, inner_type, nil)
+            def derive_structural(constraint, inner_types, stdlib_fn, param, lookup, entry_name)
+              body = [:call,
+                [:stdlib_fn, stdlib_fn],
+                inner_types.each_index.map { [:impl_arg, it, 'encoder'] } + [[:var, param]],
+              ]
 
-              lookup.call(dep).and_then do |dep_impl|
-                body = [:call,
-                  [:stdlib_fn, 'Encode.list'],
-                  [
-                    [:impl_arg, 0, 'encoder'],
-                    [:var, 'items'],
-                  ],
-                ]
-
-                Ok[implementation(constraint, params: ['items'], body:, deps: [dep_impl])]
-              end
-            end
-
-            def derive_nullable(constraint, inner_type, lookup, entry_name)
-              dep = Type.constraint(INTERFACE, inner_type, nil)
-
-              lookup.call(dep).and_then do |dep_impl|
-                body = [:call,
-                  [:stdlib_fn, 'Encode.nullable'],
-                  [
-                    [:impl_arg, 0, 'encoder'],
-                    [:var, 'maybe'],
-                  ],
-                ]
-
-                Ok[implementation(constraint, params: ['maybe'], body:, deps: [dep_impl])]
-              end
+              inner_types
+                .map { Type.constraint(INTERFACE, it, nil) }
+                .map { lookup.call(it) }
+                .then { Results.sequence(it) }
+                .map { implementation(constraint, params: [param], body:, deps: it) }
             end
 
             def derive_nullary_union(constraint, union_sym, registry)

@@ -22,6 +22,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `Encodable` and `Decodable` derive for tuples, `Dict` and `Set`, from their
+  elements' instances — the same way `List` and `Maybe` already did. The
+  combinators (`Encode.tuple`, `Decode.dict`, …) existed all along; nothing
+  resolved them, so a `(String, Int)` port argument or a `Task(Dict(k, v), e)`
+  arm was rejected for want of an instance. A tuple crosses as a positional
+  array, a dict as `[key, value]` pairs, a set as an array that drops
+  duplicates on the way back. Adds the two functions the set instances needed,
+  `Encode.set` and `Decode.set`.
 - `Encodable` and `Decodable` instances for `Decode.Value`, both the identity,
   plus the `Decode.value` and `Encode.value` functions behind them. `Value` is
   the un-decoded value, and it opted out of conversion only as a whole arm or

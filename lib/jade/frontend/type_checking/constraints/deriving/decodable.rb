@@ -11,13 +11,23 @@ module Jade
 
             def supports?(interface) = interface == INTERFACE
 
+            # One decoder combinator per structural type, taking a decoder per
+            # element. `Tuple2(a, b)` is `Decode.tuple(dec_a, dec_b)` the same
+            # way `List(a)` is `Decode.list(dec_a)`.
+            STRUCTURAL = {
+              'List.List' => 'Decode.list',
+              'Maybe.Maybe' => 'Decode.nullable',
+              'Set.Set' => 'Decode.set',
+              'Dict.Dict' => 'Decode.dict',
+              'Tuple.Tuple2' => 'Decode.tuple',
+              'Tuple.Tuple3' => 'Decode.tuple3',
+              'Tuple.Tuple4' => 'Decode.tuple4',
+            }.freeze
+
             def derive(constraint, registry, entry_name, &lookup)
               case constraint.type
-              in Type::Application(constructor: Type::Constructor(name: 'List.List'), args: [inner])
-                derive_unary(constraint, inner, 'Decode.list', lookup, entry_name)
-
-              in Type::Application(constructor: Type::Constructor(name: 'Maybe.Maybe'), args: [inner])
-                derive_unary(constraint, inner, 'Decode.nullable', lookup, entry_name)
+              in Type::Application(constructor: Type::Constructor(name:), args:) if STRUCTURAL.key?(name)
+                derive_structural(constraint, args, STRUCTURAL.fetch(name), lookup, entry_name)
 
               in Type::Application(constructor: Type::Constructor(name:), args:)
                 resolved_sym = Symbol
@@ -56,19 +66,17 @@ module Jade
               ]
             end
 
-            def derive_unary(constraint, inner_type, stdlib_fn, lookup, entry_name)
-              dep = Type.constraint(INTERFACE, inner_type, nil)
+            def derive_structural(constraint, inner_types, stdlib_fn, lookup, entry_name)
+              body = [:call,
+                [:stdlib_fn, stdlib_fn],
+                inner_types.each_index.map { [:impl_arg, it, 'decoder'] },
+              ]
 
-              resolve_dep(dep, lookup, entry_name).and_then do |dep_impl|
-                body = [:call,
-                  [:stdlib_fn, stdlib_fn],
-                  [
-                    [:impl_arg, 0, 'decoder'],
-                  ],
-                ]
-
-                Ok[implementation(constraint, body, [dep_impl])]
-              end
+              inner_types
+                .map { Type.constraint(INTERFACE, it, nil) }
+                .map { resolve_dep(it, lookup, entry_name) }
+                .then { Results.sequence(it) }
+                .map { implementation(constraint, body, it) }
             end
 
             def derive_struct(constraint, struct_sym, type_args, registry, lookup, entry_name)

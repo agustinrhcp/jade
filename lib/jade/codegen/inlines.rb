@@ -197,6 +197,7 @@ module Jade
         Decode.optional_field
         Decode.required
         Decode.sequence
+        Decode.set
         Decode.string
         Decode.string_enum
         Decode.succeed
@@ -216,6 +217,7 @@ module Jade
         Encode.null
         Encode.nullable
         Encode.object
+        Encode.set
         Encode.string
         Encode.tuple
         Encode.tuple3
