@@ -29,7 +29,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   through its elements. Instances ship for the primitives and derive for
   unions, structs and records — including a variant that mixes a type
   parameter with a concrete type. A function shows as `<function>` rather than
-  refusing.
+  refusing. `Never` has an instance too, so an annotated `Result(a, Never)` —
+  what a port-free task returns — is showable; it raises rather than printing
+  a plausible string, since it has no values to render.
 - `Debug.log(label, value)` prints `label: value` to stderr and returns the
   value untouched, so it drops into a pipeline without changing it.
 - `Encodable` and `Decodable` derive for tuples, `Dict` and `Set`, from their
