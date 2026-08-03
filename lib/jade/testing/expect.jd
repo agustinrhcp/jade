@@ -1,0 +1,148 @@
+module Expect exposing (
+  Expectation(..),
+  Reason,
+  all,
+  and,
+  equal,
+  err,
+  false,
+  field,
+  just,
+  not_equal,
+  nothing,
+  ok,
+  true,
+)
+
+import Show exposing (show)
+
+
+struct Reason = {
+  description: String,
+  actual: String,
+  expected: String
+}
+
+
+type Expectation
+  = Pass
+  | Fail(List(Reason))
+
+
+def equal(actual: a, expected: a) -> Expectation
+  if actual == expected then
+    Pass
+  else
+    failure("values to be equal", show(actual), show(expected))
+  end
+end
+
+
+def not_equal(actual: a, expected: a) -> Expectation
+  if actual == expected then
+    failure("values to differ", show(actual), "not " ++ show(expected))
+  else
+    Pass
+  end
+end
+
+
+# The name is passed because an accessor cannot supply it: `.name`
+# compiles to a bare block.
+def field(name: String, actual: a, expected: a) -> Expectation
+  if actual == expected then
+    Pass
+  else
+    failure(wrapped_field(name), show(actual), show(expected))
+  end
+end
+
+
+def wrapped_field(name: String) -> String
+  "field `" ++ name ++ "` to be equal"
+end
+
+
+def ok(result: Result(a, e)) -> Expectation
+  case result
+  in Ok(_) then Pass
+  in Err(error) then failure("an Ok", wrapped("Err", show(error)), "Ok(_)")
+  end
+end
+
+
+def err(result: Result(a, e)) -> Expectation
+  case result
+  in Err(_) then Pass
+  in Ok(value) then failure("an Err", wrapped("Ok", show(value)), "Err(_)")
+  end
+end
+
+
+def just(maybe: Maybe(a)) -> Expectation
+  case maybe
+  in Just(_) then Pass
+  in Nothing then failure("a Just", "Nothing", "Just(_)")
+  end
+end
+
+
+def nothing(maybe: Maybe(a)) -> Expectation
+  case maybe
+  in Nothing then Pass
+  in Just(value)
+    failure("Nothing", wrapped("Just", show(value)), "Nothing")
+  end
+end
+
+
+def true(actual: Bool) -> Expectation
+  actual ? Pass : failure("value to be True", "False", "True")
+end
+
+
+def false(actual: Bool) -> Expectation
+  actual ? failure("value to be False", "True", "False") : Pass
+end
+
+
+def all(expectations: List(Expectation)) -> Expectation
+  expectations
+    |> List.and_then(reasons)
+    |> from_reasons
+end
+
+
+def and(first: Expectation, second: Expectation) -> Expectation
+  all([first, second])
+end
+
+
+def failure(
+  description: String,
+  actual: String,
+  expected: String,
+) -> Expectation
+  Fail([Reason(description, actual, expected)])
+end
+
+
+def from_reasons(rs: List(Reason)) -> Expectation
+  List.empty?(rs) ? Pass : Fail(rs)
+end
+
+
+def reasons(expectation: Expectation) -> List(Reason)
+  case expectation
+  in Pass then []
+  in Fail(rs) then rs
+  end
+end
+
+
+# `show(result)` would derive an instance over this function's own type
+# variables, which emits an unbound `impl_arg`. Showing the payload keeps
+# the constraint a plain dictionary argument.
+def wrapped(constructor: String, inner: String) -> String
+  constructor ++ "(" ++ inner ++ ")"
+end
