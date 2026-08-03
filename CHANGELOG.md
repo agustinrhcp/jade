@@ -206,6 +206,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`jade test`** — a runner for the pure half of a suite. Test modules are
+  `*_test.jd` files under the source root exposing `tests`, built from
+  `describe` / `context` / `it` and the `Expect` assertions (`equal`,
+  `not_equal`, `field`, `ok`, `err`, `just`, `nothing`, `true`, `false`,
+  `all`, `and`). Both modules ship as Jade source. Failures render each side through
+  `Show`, so a mismatch reads as Jade rather than as `#<data …>`, and
+  `Expect.all` reports every reason rather than only the first. Order is
+  stable, each test is a thunk so one crash is one failure, and ports are
+  refused outright — an effectful test stays in RSpec, where the stubs are.
+  Progress prints one mark per test; `-f doc` names them instead. The summary
+  reports compile and run time apart, since a pure suite runs in milliseconds
+  and the wall clock is the build.
+
 - **A call with a hole and one argument too many says so.** `xs |> f(_, y)`
   reads as though the `_` marks where the piped value goes, but `|>` has
   already put it in front. The message now names the shape and the fix
