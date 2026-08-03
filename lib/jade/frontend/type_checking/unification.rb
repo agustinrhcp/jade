@@ -15,8 +15,18 @@ module Jade
           end
         end
 
+        CALL_CONSTRUCTOR = 'Call.Call'
+        TASK_CONSTRUCTOR = 'Task.Task'
+
         def unify(type1, type2, env, ctx = Context.empty)
           return Ok[Substitution::EMPTY] if never?(type1) || never?(type2)
+
+          # A Call is an uncomposed Task, so it satisfies a declared Task.
+          # One direction only: composing embeds a closure, and a Task can
+          # never narrow back to something serializable.
+          if applied_to?(type1, CALL_CONSTRUCTOR) && applied_to?(type2, TASK_CONSTRUCTOR)
+            return unify_many(type1.args, type2.args, env, ctx)
+          end
 
           case [type1, type2]
           in [Type::Application, Type::Application]
@@ -236,6 +246,16 @@ module Jade
                 subs_r.map_both { it.compose(k_sub) }
               end
             end
+        end
+
+        def applied_to?(type, constructor_name)
+          case type
+          in Type::Application(constructor: Type::Constructor(name:))
+            name == constructor_name
+
+          else
+            false
+          end
         end
 
         def unify_many(types1, types2, env, ctx)
