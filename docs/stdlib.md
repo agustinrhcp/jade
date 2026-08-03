@@ -21,6 +21,8 @@ readable Ruby. This is a map of what's where.
 | `Bytes` | Opaque byte buffer: `empty`, `width`, `from_list` / `to_list`, `from_string` / `to_string`. Implements `Eq` and `Appendable`. |
 | `Calendar` | Dates and date arithmetic: `Date`, `today`. Days, months, years; no time of day — use `Clock`. |
 | `Clock` | Timestamps and monotonic timing: `Instant`, `now`. Sub-second precision; the bridge to wall-clock time. |
+| `Show` | Renders a value the way Jade writes it: `show(Just(7))` is `"Just(7)"`, `show(Point(3, 4))` is `"Point { x: 3, y: 4 }"`. Instances for the primitives; derives for unions, structs, records and lists. A function shows as `<function>`, and `Never` raises — it has no values. |
+| `Debug` | `log(label, value)` prints `label: value` to stderr and returns the value untouched, so it drops into a pipeline. Unconstrained, unlike `Show`. |
 | `Decimal` | Exact base-10 decimals (`coefficient * 10 ^ exponent`) — money and rates without `Float` rounding. Opaque; build with `of` / `scaled` / `parse`. Arithmetic via `Numeric` (`+` `-` `*` `/`), plus `div` (scaled, half-up), `round`, `to_i`, `to_float`. JSON-encodes to a `<mantissa>e<exponent>` string. |
 
 Stdlib operations compile inline rather than through a runtime dispatch layer,
