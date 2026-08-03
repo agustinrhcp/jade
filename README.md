@@ -148,7 +148,7 @@ at compile time, no annotation needed. You can define your own, with
 implementations dispatched by type:
 
 ```jade
-module Shows exposing (describe)
+module Labels exposing (person_label)
 
 struct Person = {
   name: String,
@@ -156,18 +156,18 @@ struct Person = {
 }
 
 
-interface Show(a) with
-  show : a -> String
+interface Labelled(a) with
+  label : a -> String
 end
 
 
-implements Show(Person) with
-  show: (p) -> { p.name ++ " (" ++ String.from_int(p.age) ++ ")" }
+implements Labelled(Person) with
+  label: (p) -> { p.name ++ " (" ++ String.from_int(p.age) ++ ")" }
 end
 
 
-def describe(p: Person) -> String
-  show(p)
+def person_label(p: Person) -> String
+  label(p)
 end
 ```
 
@@ -357,8 +357,9 @@ pre-commit hook.
 ## Standard library
 
 `Basics`, `String`, `Char`, `List`, `Dict`, `Set`, `Tuple`, `Maybe`, `Result`,
-`Task`, `Decode`, `Encode`, `Bytes`, `Calendar`, `Clock`, `Decimal`. Stdlib operations
-compile inline rather than through a runtime dispatch layer.
+`Task`, `Decode`, `Encode`, `Bytes`, `Calendar`, `Clock`, `Decimal`, `Show`,
+`Debug`. Stdlib operations compile inline rather than through a runtime
+dispatch layer.
 
 ## Docs
 
@@ -374,8 +375,8 @@ compile inline rather than through a runtime dispatch layer.
 
 Early and experimental — being tried out on small projects.
 
-**In progress:** `Comparable` / `Show` derivation for user types, partial
-record types in signatures, a stable REPL.
+**In progress:** `Comparable` derivation for user types, partial record types
+in signatures, a stable REPL.
 
 **Not great for:** throwaway scripts, libraries you ship to other Ruby
 projects (they'd inherit the dependency), and performance-critical hot paths
