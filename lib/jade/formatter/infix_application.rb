@@ -58,11 +58,21 @@ module Jade
       # Emit a chain ladder: head on its own line, each subsequent
       # operand prefixed by `op` indented one level deeper.
       def format_ladder(chain, op, indent, source:)
-        cont = INDENT * (indent + 1)
-        head = format_node(chain.first, indent:, source:)
-        tail = chain[1..].map { "#{cont}#{op} #{format_node(it, source:)}" }
+        chain[1..]
+          .map { format_node(it, source:) }
+          .map { continued(it, indent + 1) }
+          .map { "#{INDENT * (indent + 1)}#{op} #{it}" }
+          .then { [format_node(chain.first, indent:, source:), *it] }
+          .join("\n")
+      end
 
-        ([head] + tail).join("\n")
+      # What follows an operand's first line belongs under the operator that
+      # introduced it, not at column zero.
+      def continued(operand, indent)
+        operand
+          .split("\n")
+          .then { |(first, *rest)| [first, *rest.map { "#{INDENT * indent}#{it}" }] }
+          .join("\n")
       end
     end
   end
