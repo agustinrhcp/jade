@@ -198,12 +198,14 @@ module Jade
 
 
           implements Decodable(IS) with
-            decoder: -> { Decode.tuple(Decode.int, Decode.string)
-              |> Decode.map((t) -> {
-              case t
-              in (i, s) then IS(i, s)
-              end
-            }) }
+            decoder: -> {
+              Decode.tuple(Decode.int, Decode.string)
+                |> Decode.map((t) -> {
+                  case t
+                  in (i, s) then IS(i, s)
+                  end
+                })
+            }
           end
 
 
@@ -278,20 +280,20 @@ module Jade
           def zip_pairs(a: List(Int), b: List(String)) -> List(IS)
             List.zip(a, b)
               |> List.map((t) -> {
-            case t
-            in (i, s) then IS(i, s)
-            end
-          })
+                case t
+                in (i, s) then IS(i, s)
+                end
+              })
           end
 
 
           def unzip_pairs(pairs: List(IS)) -> Unzipped
             case pairs
               |> List.map((p) -> {
-              case p
-              in IS(i, s) then (i, s)
-              end
-            })
+                case p
+                in IS(i, s) then (i, s)
+                end
+              })
               |> List.unzip
             in (a, b) then Unzipped(a, b)
             end

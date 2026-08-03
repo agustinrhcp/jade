@@ -15,21 +15,33 @@ module Jade
         AST::RecordUpdateSugar, AST::RecordAccessSugar,
       ].freeze
 
-      def format(node, indent:, source:)
+      def format(node, indent:, source:, open: false)
         node => AST::Lambda(params:, body:)
 
-        head = format_head(params)
-
-        if inline_body?(body)
-          "#{head} { #{format_node(body.expressions.first, source:)} }"
-            .then(&and_indent(indent))
-        else
-          [
-            "#{head} {".then(&and_indent(indent)),
-            format_node(body, indent: indent + 1, source:),
-            "}".then(&and_indent(indent)),
-          ].join("\n")
+        format_head(params).then do |head|
+          (inline(head, body, indent, source) unless open) || block(head, body, indent, source)
         end
+      end
+
+      # An inline body that broke anyway leaves `-> { Expect.equal(` hanging.
+      def inline(head, body, indent, source)
+        return nil unless inline_body?(body)
+
+        body.expressions.first
+          .then { "#{head} { #{format_node(it, source:)} }" }
+          .then { fits?(it, indent) ? it.then(&and_indent(indent)) : nil }
+      end
+
+      def fits?(line, indent)
+        !line.include?("\n") && !too_long?(line, indent)
+      end
+
+      def block(head, body, indent, source)
+        [
+          "#{head} {".then(&and_indent(indent)),
+          format_node(body, indent: indent + 1, source:),
+          "}".then(&and_indent(indent)),
+        ].join("\n")
       end
 
       def format_head(params)
