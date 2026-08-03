@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0]
+
 ### Changed
 
 - **Port arguments are encoded on the way out**, the mirror of the return value
@@ -22,6 +24,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `Show`, an interface rendering a value the way Jade writes it: `show(B(2))`
+  is `"B(2)"`, `show(Point(3, 4))` is `"Point { x: 3, y: 4 }"`, a list shows
+  through its elements. Instances ship for the primitives and derive for
+  unions, structs and records — including a variant that mixes a type
+  parameter with a concrete type. A function shows as `<function>` rather than
+  refusing.
+- `Debug.log(label, value)` prints `label: value` to stderr and returns the
+  value untouched, so it drops into a pipeline without changing it.
 - `Encodable` and `Decodable` derive for tuples, `Dict` and `Set`, from their
   elements' instances — the same way `List` and `Maybe` already did. The
   combinators (`Encode.tuple`, `Decode.dict`, …) existed all along; nothing
@@ -41,6 +51,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- `Eq` derives for a union whose variants carry concrete types. `B(1) == B(1)`
+  over `type Box = B(Int) | Empty` took the compiler down with a
+  `NoMatchingPatternError`; `Just(1) == Just(1)` only worked because `Maybe`'s
+  payload is a type parameter. Variants mixing a parameter with a concrete
+  type derive too.
 - Diagnostic source excerpts are sliced by byte offset. Spans and line starts
   are the lexer's byte offsets, but the excerpt was cut and measured in
   characters, so one multi-byte glyph anywhere earlier in the file shifted every
@@ -170,7 +185,8 @@ Initial release.
 - `jade` CLI dispatcher: `fmt`, `lsp`, `q`.
 - Language server and headless query interface for editor/agent tooling.
 
-[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/agustinrhcp/jade/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/agustinrhcp/jade/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/agustinrhcp/jade/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/agustinrhcp/jade/compare/v0.1.1...v0.2.0
