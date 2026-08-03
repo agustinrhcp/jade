@@ -77,6 +77,15 @@ module Jade
         expect(derived('ShowNested', box, 'Just(B(2))')).to eql 'Just(B(2))'
       end
 
+      # Never is uninhabited, so the Err arm is unreachable — but the
+      # constraint on it is not, and `Result(a, Never)` is what every
+      # port-free task returns.
+      it 'renders a Result whose error arm is Never' do
+        only_ok = "def only_ok -> Result(Int, Never)\n  Ok(1)\nend"
+
+        expect(derived('ShowNever', only_ok, 'only_ok')).to eql 'Ok(1)'
+      end
+
       it 'renders a list through its element instance' do
         expect(derived('ShowList', box, '[1, 2]')).to eql '[1, 2]'
         expect(derived('ShowListStr', box, '["a", "b"]')).to eql '["a", "b"]'

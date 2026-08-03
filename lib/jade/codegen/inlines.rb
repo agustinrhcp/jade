@@ -22,6 +22,9 @@ module Jade
         'Show.bool_show'  => ->(b)    { "#{b}.to_s" },
         'Show.str_show'   => ->(s)    { "#{s}.inspect" },
         'Show.char_show'  => ->(c)    { "#{c}.inspect" },
+        # Never is uninhabited, so reaching this is a compiler bug, not a
+        # rendering problem — say so rather than print a plausible string.
+        'Show.never_show' => ->(_)    { 'fail("Show.never_show: Never has no values")' },
         'Basics.identity'   => ->(a)    { a },
         'Basics.always'     => ->(x)    { "->(_) { #{x} }" },
         'Basics.int_add'    => ->(a, b) { "(#{a} + #{b})" },
