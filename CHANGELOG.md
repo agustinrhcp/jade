@@ -6,6 +6,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **`jade fmt` hugs a trailing block argument.** A call whose last argument is
+  a lambda, list or record literal keeps its head on one line and lets that
+  argument grow a body, the way a Ruby block reads:
+
+  ```jade
+  describe("Math", [
+    it("adds", -> { Expect.equal(1 + 1, 2) }),
+  ])
+  ```
+
+  It previously broke every argument onto its own line, burying the call the
+  body belonged to. The head still breaks when it cannot fit, or when an
+  earlier argument is the one that grew.
+
+  Two shapes that left output hanging go with it: a lambda whose inline body
+  broke anyway (`-> { Decode.map(` … `}) }`) now uses the block form, and a
+  `|>` or `++` operand that breaks across lines keeps its continuation under
+  the operator that introduced it rather than at column zero. **Formatted
+  output differs from 0.4.0** — a format check in CI reports diffs on the
+  first run after upgrading. Over 65 real modules, 25 reformat; formatting is
+  idempotent on all of them.
+
 ## [0.6.0]
 
 ### Fixed

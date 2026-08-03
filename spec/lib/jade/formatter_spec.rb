@@ -866,6 +866,118 @@ module Jade
       end
     end
 
+    context 'a call whose last argument is a block' do
+      context 'hugs a trailing lambda rather than breaking every argument out' do
+        let(:text) do
+          <<~JADE.strip
+            it("adds", -> { Expect.equal(add(one_hundred, two_hundred), three_hundred_total) })
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            it("adds", -> {
+              Expect.equal(add(one_hundred, two_hundred), three_hundred_total)
+            })
+          JADE
+        end
+      end
+
+      context 'hugs a trailing list' do
+        let(:text) do
+          <<~JADE.strip
+            describe("Math", [
+              it("adds", -> { Expect.equal(1 + 1, 2) }),
+            ])
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            describe("Math", [
+              it("adds", -> { Expect.equal(1 + 1, 2) }),
+            ])
+          JADE
+        end
+      end
+
+      context 'breaks every argument out when the head would not fit anyway' do
+        let(:text) do
+          <<~JADE.strip
+            it("a name so long that the opening line has no room left for a lambda head", -> { f(x) })
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            it(
+              "a name so long that the opening line has no room left for a lambda head",
+              -> { f(x) },
+            )
+          JADE
+        end
+      end
+
+      context 'breaks every argument out when an earlier argument is the one that broke' do
+        let(:text) do
+          <<~JADE.strip
+            wrap([alpha_value, beta_value, gamma_value, delta_value, epsilon_value, zeta], -> { f })
+          JADE
+        end
+
+        it do
+          is_expected.to eql <<~JADE.strip
+            wrap(
+              [alpha_value, beta_value, gamma_value, delta_value, epsilon_value, zeta],
+              -> { f },
+            )
+          JADE
+        end
+      end
+    end
+
+    context 'a lambda body that will not fit on the head line' do
+      let(:text) do
+        <<~JADE.strip
+          (t) -> { Decode.map(Decode.tuple(Decode.int, Decode.string), pair_to_record_of) }
+        JADE
+      end
+
+      it 'uses the block form instead of leaving `{ Foo(` hanging' do
+        is_expected.to eql <<~JADE.strip
+          (t) -> {
+            Decode.map(Decode.tuple(Decode.int, Decode.string), pair_to_record_of)
+          }
+        JADE
+      end
+    end
+
+    context 'a pipe ladder whose operand breaks across lines' do
+      let(:text) do
+        <<~JADE.strip
+          def f(s: String) -> List(String)
+            s
+              |> String.split(" ")
+              |> List.filter((part) -> { part |> String.empty? |> Basics.not })
+          end
+        JADE
+      end
+
+      it 'keeps the operand under the operator that introduced it' do
+        is_expected.to eql <<~JADE.strip
+          def f(s: String) -> List(String)
+            s
+              |> String.split(" ")
+              |> List.filter((part) -> {
+                part
+                  |> String.empty?
+                  |> Basics.not
+              })
+          end
+        JADE
+      end
+    end
+
     context 'idempotency — formatting twice yields the same result' do
       let(:text) do
         <<~JADE.strip

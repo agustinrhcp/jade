@@ -28,7 +28,9 @@ module Jade
           Task.succeed(
             List.map(
               primaries,
-              (p) -> { WithAssoc(p, List.filter(assocs, (a) -> { assoc_key(a) == primary_key(p) })) },
+              (p) -> {
+                WithAssoc(p, List.filter(assocs, (a) -> { assoc_key(a) == primary_key(p) }))
+              },
             ),
           )
         end
