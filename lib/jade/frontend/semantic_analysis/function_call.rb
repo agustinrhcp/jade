@@ -18,9 +18,38 @@ module Jade
                 [constant_not_callable(callee_r.node, entry)] :
                 [],
             )
+            .add_errors(background_errors(callee_r.node, args_r.node, registry, entry))
         end
 
         private
+
+        # A worker rebuilds a task from a port name and its encoded arguments.
+        # Anything composed with map/and_then holds a closure instead, so only
+        # a direct port call can cross a process boundary.
+        def background_errors(callee, args, registry, entry)
+          return [] unless background?(callee, registry)
+          return [] unless args.size == 1
+          return [] if port_call?(args.first, registry)
+
+          [Error::NonPortBackground.new(entry: entry.name, span: args.first.range)]
+        end
+
+        def background?(callee, registry)
+          case callee_symbol(callee, registry)
+          in Symbol::StdlibFunction(module_name: 'Task', name: 'background') then true
+          else false
+          end
+        end
+
+        def port_call?(arg, registry)
+          case arg
+          in AST::FunctionCall(callee: inner)
+            callee_symbol(inner, registry).is_a?(Symbol::InteropFunction)
+
+          else
+            false
+          end
+        end
 
         def calling_a_constant?(callee, args, registry)
           return false unless args.empty?

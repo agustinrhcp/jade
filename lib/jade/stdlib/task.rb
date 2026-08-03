@@ -44,6 +44,16 @@ module Jade
         task.run
       end
 
+      # Hands the task to a worker and returns its job id. The task's own
+      # result and error never come back — the caller is gone by then, so
+      # those belong to the queue's retries. Only the enqueue is reported.
+      #
+      # Semantic analysis rejects anything but a direct port call, so the
+      # argument is always a Dispatch: a port name plus encoded arguments.
+      function('background', { task: 'Task(a, e)' }, 'Task(String, String)') do |task|
+        Jade::Task::Background.new(task)
+      end
+
       implementation('Mappable',  'Task', 'map'      => 'map')
       implementation('Chainable', 'Task', 'and_then' => 'and_then')
 
