@@ -7,6 +7,7 @@ require 'jade/stdlib/char'
 require 'jade/stdlib/string'
 require 'jade/stdlib/result'
 require 'jade/stdlib/task'
+require 'jade/stdlib/call'
 require 'jade/stdlib/dict'
 require 'jade/stdlib/set'
 require 'jade/stdlib/decode'
@@ -24,7 +25,7 @@ module Jade
     extend self
 
     INTRINSICS = %w[
-      Basics String List Tuple Char Task
+      Basics String List Tuple Char Task Call
       Decode Encode
       Bytes
       Dict Set
@@ -34,7 +35,7 @@ module Jade
     TOPLEVELS = (INTRINSICS + COMPILED).map { it.split('.', 2).first }.to_set.freeze
     STDLIBS = [
       Stdlib::Basics, Stdlib::Maybe, Stdlib::Tuple, Stdlib::List, Stdlib::Char,
-      Stdlib::String, Stdlib::Result, Stdlib::Task,
+      Stdlib::String, Stdlib::Result, Stdlib::Task, Stdlib::Call,
       Stdlib::Dict, Stdlib::Set,
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
       Stdlib::Bytes,
