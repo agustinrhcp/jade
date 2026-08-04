@@ -217,6 +217,46 @@ module Jade
         end
       end
 
+      # `Record` by position: N indices of an array into an N-argument
+      # constructor. What the tuple decoders are built from.
+      Indexed = Data.define(:inners, :ctor) do
+        include Node
+
+        def decode(value)
+          return type_err('Array', value) unless ::Array === value
+
+          size = inners.length
+          given = value.length
+          args = ::Array.new(size)
+          errors = nil
+          i = 0
+
+          while i < size
+            if i >= given
+              (errors ||= []) << MissingField["[#{i}]"]
+            else
+              decoded = inners[i].decode(value[i])
+              Failure === decoded ? (errors ||= []) << AtIndex[i, decoded.error] : args[i] = decoded
+            end
+            i += 1
+          end
+
+          errors ? Failure.new(wrap_errors(errors)) : ctor.new(*args)
+        end
+      end
+
+      # `parse` returns the value, or nil when the text is malformed.
+      FromString = Data.define(:label, :parse) do
+        include Node
+
+        def decode(value)
+          return type_err(label, value) unless ::String === value
+
+          parsed = parse.call(value)
+          parsed.nil? ? Failure.new(Custom["invalid #{label}: #{value}"]) : parsed
+        end
+      end
+
       Dct = Data.define(:k_inner, :v_inner) do
         include Node
 

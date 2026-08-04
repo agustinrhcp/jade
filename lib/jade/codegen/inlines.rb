@@ -183,6 +183,7 @@ module Jade
         Decode.and_map
         Decode.and_then
         Decode.bool
+        Decode.decimal
         Decode.decode
         Decode.decode_string
         Decode.dict

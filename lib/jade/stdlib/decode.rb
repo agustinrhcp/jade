@@ -327,9 +327,7 @@ module Jade
         { a: 'Decoder(a)', b: 'Decoder(b)' },
         'Decoder(Tuple2(a, b))',
       ) { |da, db|
-        Jade::Decode::Desc::Succeed[Jade::Runtime.curry(Jade::Tuple::Tuple2.method(:[]), 2)]
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[0, da.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[1, db.desc]] }
+        Jade::Decode::Desc::Indexed[[da.desc, db.desc], Jade::Tuple::Tuple2]
           .then { Jade::Decode::Decoder[it] }
       }
 
@@ -338,10 +336,7 @@ module Jade
         { a: 'Decoder(a)', b: 'Decoder(b)', c: 'Decoder(c)' },
         'Decoder(Tuple3(a, b, c))',
       ) { |da, db, dc|
-        Jade::Decode::Desc::Succeed[Jade::Runtime.curry(Jade::Tuple::Tuple3.method(:[]), 3)]
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[0, da.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[1, db.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[2, dc.desc]] }
+        Jade::Decode::Desc::Indexed[[da.desc, db.desc, dc.desc], Jade::Tuple::Tuple3]
           .then { Jade::Decode::Decoder[it] }
       }
 
@@ -350,11 +345,7 @@ module Jade
         { a: 'Decoder(a)', b: 'Decoder(b)', c: 'Decoder(c)', d: 'Decoder(d)' },
         'Decoder(Tuple4(a, b, c, d))',
       ) { |da, db, dc, dd|
-        Jade::Decode::Desc::Succeed[Jade::Runtime.curry(Jade::Tuple::Tuple4.method(:[]), 4)]
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[0, da.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[1, db.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[2, dc.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[3, dd.desc]] }
+        Jade::Decode::Desc::Indexed[[da.desc, db.desc, dc.desc, dd.desc], Jade::Tuple::Tuple4]
           .then { Jade::Decode::Decoder[it] }
       }
 
@@ -365,6 +356,31 @@ module Jade
       implementation('Decodable', 'Basics.Bool',   'decoder' => 'bool')
       implementation('Decodable', 'String.String', 'decoder' => 'string')
       implementation('Decodable', 'Decode.Value',  'decoder' => 'value')
+
+      # Decimal's wire form is "<coefficient>e<exponent>". It is read here
+      # rather than in Decimal's own Jade source because that version cost
+      # two Maybes, a tuple and a fresh Decoder for every value, which is
+      # most of what a numeric column charges. Decimal imports Decode, so
+      # the instance cannot live the other way round.
+      DECIMAL_WIRE = ->(s) {
+        coefficient, exponent = s.split('e', 2)
+        next nil unless exponent
+
+        m = Integer(coefficient, 10, exception: false)
+        e = Integer(exponent, 10, exception: false)
+
+        m && e ? Jade::Decimal::Decimal[m, e] : nil
+      }
+
+      # Private for the same reason `record` is: its type cannot be spelled
+      # here. Decimal imports Decode, so Decode cannot name Decimal.Decimal
+      # back without a cycle, and `Decoder(a)` would be a hole if anything
+      # could reach it.
+      function('decimal', {}, 'Decoder(a)', private: true) {
+        Jade::Decode::Decoder[Jade::Decode::Desc::FromString['Decimal', DECIMAL_WIRE]]
+      }
+
+      implementation('Decodable', 'Decimal.Decimal', 'decoder' => 'decimal')
     end
   end
 end
