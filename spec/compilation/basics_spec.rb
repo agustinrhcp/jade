@@ -33,6 +33,74 @@ module Jade
         expect(Math.example2).to eql 9
       end
 
+      describe 'operands of an infix chain' do
+        let(:math_source) do
+          <<~JADE
+            module Math exposing (
+              grouped_left,
+              grouped_right,
+              grouped_twice,
+              in_call,
+              in_record,
+              in_ternary,
+              subtraction,
+            )
+
+            def id(n: Int) -> Int
+              n
+            end
+
+
+            def grouped_left -> Int
+              (1 + 2 * 3) + 0
+            end
+
+
+            def grouped_right -> Int
+              0 + (1 + 2 * 3)
+            end
+
+
+            def grouped_twice -> Int
+              ((1 + 2 * 3)) * 1
+            end
+
+
+            def subtraction -> Int
+              (10 - 4 / 2) + 0
+            end
+
+
+            def in_call -> Int
+              id(1 + 2 * 3) + 0
+            end
+
+
+            def in_ternary -> Int
+              (True ? 1 + 2 * 3 : 0) + 0
+            end
+
+
+            def in_record -> Int
+              { v: 1 + 2 * 3 }.v + 0
+            end
+          JADE
+        end
+
+        it 'keeps precedence inside a grouping used as an operand' do
+          expect(Math.grouped_left).to eql 7
+          expect(Math.grouped_right).to eql 7
+          expect(Math.grouped_twice).to eql 7
+          expect(Math.subtraction).to eql 8
+        end
+
+        it 'keeps precedence inside a call argument, ternary and record value' do
+          expect(Math.in_call).to eql 7
+          expect(Math.in_ternary).to eql 7
+          expect(Math.in_record).to eql 7
+        end
+      end
+
       context 'float' do
         let(:math_source) do
           <<~JADE

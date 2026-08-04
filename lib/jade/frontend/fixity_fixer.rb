@@ -146,7 +146,8 @@ module Jade
 
         in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
           AST::ImportDeclaration | AST::Literal | AST::CharLiteral | AST::RecordAccessSugar | AST::InteropImportDeclaration |
-          AST::StructDeclaration | AST::QualifiedAccess | AST::Placeholder | AST::InterfaceDeclaration
+          AST::StructDeclaration | AST::QualifiedAccess | AST::Placeholder | AST::InterfaceDeclaration |
+          AST::RecordUpdateSugar
 
           node
 
@@ -164,7 +165,7 @@ module Jade
           flatten(left) + [operator] + flatten(right)
 
         else
-          [ast]
+          [fix(ast)]
         end
       end
 
