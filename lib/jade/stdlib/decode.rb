@@ -148,6 +148,21 @@ module Jade
         Jade::Decode::Decoder[Jade::Decode::Desc::AndMap[wrapped.desc, decoder.desc]]
       }
 
+      # `keys` and `decoders` are positionally paired; `ctor` takes one
+      # argument per key. Private because its type cannot be spelled — the
+      # arity of `ctor` is only known to the deriver.
+      function(
+        'record',
+        { keys: 'List(String)', decoders: 'List(Decoder(a))', ctor: 'b' },
+        'Decoder(b)',
+        private: true,
+      ) { |keys, decoders, ctor|
+        keys
+          .zip(decoders)
+          .map { |key, decoder| Jade::Decode::Desc::RecordField[key, key.to_sym, decoder.desc] }
+          .then { Jade::Decode::Decoder[Jade::Decode::Desc::Record[it, ctor]] }
+      }
+
       function(
         'required',
         { wrapped: 'Decoder(a -> b)', key: 'String', field_decoder: 'Decoder(a)' },

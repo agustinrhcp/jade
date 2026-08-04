@@ -12,9 +12,8 @@ module Jade
     # weight at the boundary because failure always raises anyway. Skipping
     # it removes one allocation per arg per Ruby→Jade call.
       def decode_or_raise(decoder, value)
-        case Jade::Decode::Runner.run(decoder, value)
-        in Jade::Result::Ok[v]  then v
-        in Jade::Result::Err[e] then raise Jade::Interop::DecodeError.new(e, value)
+        Jade::Decode::Runner.run!(decoder, value) do |error|
+          raise Jade::Interop::DecodeError.new(error, value)
         end
       end
 

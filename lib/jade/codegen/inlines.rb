@@ -198,6 +198,7 @@ module Jade
         Decode.one_of
         Decode.optional
         Decode.optional_field
+        Decode.record
         Decode.required
         Decode.sequence
         Decode.set
