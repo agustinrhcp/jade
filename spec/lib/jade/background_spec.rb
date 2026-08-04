@@ -19,7 +19,7 @@ module Jade
         ran = nil
         Jade::Tasks.register(task_def) { |_t, arg| ran = arg }
 
-        described_class.enqueue(task_def, ['u-1'])
+        described_class.enqueue(task_def, ['u-1'], {})
 
         expect(ran).to eq('u-1')
       end
@@ -27,7 +27,7 @@ module Jade
       it 'returns an ok result carrying a job id' do
         Jade::Tasks.register(task_def) { |_t, _arg| nil }
 
-        expect(described_class.enqueue(task_def, ['u-1']))
+        expect(described_class.enqueue(task_def, ['u-1'], {}))
           .to eq('inline:Mailer.send_welcome')
       end
     end
@@ -39,8 +39,8 @@ module Jade
 
           def initialize = @enqueued = []
 
-          def enqueue(task_def, args)
-            @enqueued << [task_def.to_s, args]
+          def enqueue(task_def, args, options)
+            @enqueued << [task_def.to_s, args, options]
             'job-42'
           end
         end.new
@@ -48,14 +48,15 @@ module Jade
 
       before { described_class.adapter = recorder }
 
-      it 'hands it the port name and the encoded args, and runs nothing' do
-        described_class.enqueue(task_def, ['u-1'])
+      it 'hands it the port name, the encoded args and the options' do
+        described_class.enqueue(task_def, ['u-1'], { 'queue' => 'mailers' })
 
-        expect(recorder.enqueued).to eq([['Mailer.send_welcome', ['u-1']]])
+        expect(recorder.enqueued)
+          .to eq([['Mailer.send_welcome', ['u-1'], { 'queue' => 'mailers' }]])
       end
 
       it 'returns the adapter job id' do
-        expect(described_class.enqueue(task_def, ['u-1']))
+        expect(described_class.enqueue(task_def, ['u-1'], {}))
           .to eq('job-42')
       end
     end

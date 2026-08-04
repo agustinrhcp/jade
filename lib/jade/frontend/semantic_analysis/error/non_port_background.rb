@@ -4,8 +4,8 @@ module Jade
       module Error
         class NonPortBackground < Jade::Error
           def message
-            'Task.background needs a port call. A composed task carries a ' \
-              'function, which cannot be sent to a worker.'
+            'Backgrounding a task needs a port call. A composed task carries ' \
+              'a function, which cannot be sent to a worker.'
           end
 
           def label

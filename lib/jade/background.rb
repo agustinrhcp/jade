@@ -1,7 +1,13 @@
 module Jade
-  # Where backgrounded tasks go. An adapter receives a port name and its
-  # already-encoded arguments, and is responsible for getting them to a
-  # worker that can call Jade::Tasks.dispatch with them again.
+  # Where backgrounded tasks go. An adapter receives a port name, its
+  # already-encoded arguments, and its already-encoded options, and is
+  # responsible for getting them to a worker that can call
+  # Jade::Tasks.dispatch with them again.
+  #
+  # The language has no opinion on what options mean: they are whatever the
+  # caller's own Encodable produced. Each adapter names the keys it honours
+  # and is expected to reject the ones it doesn't, since a queue that
+  # silently ignores `queue:` is worse than one that refuses it.
   module Background
     extend self
 
@@ -9,7 +15,7 @@ module Jade
       def initialize
         super(
           'No background adapter configured. Set Jade::Background.adapter to ' \
-            'something responding to #enqueue(module_name, name, args).'
+            'something responding to #enqueue(task_def, args, options).'
         )
       end
     end
@@ -20,7 +26,7 @@ module Jade
     module Inline
       extend self
 
-      def enqueue(task_def, args)
+      def enqueue(task_def, args, _options)
         Jade::Tasks.dispatch(task_def, *args)
         "inline:#{task_def}"
       end
@@ -32,10 +38,10 @@ module Jade
       @adapter ||= Inline
     end
 
-    def enqueue(task_def, args)
+    def enqueue(task_def, args, options)
       fail NoAdapter unless adapter
 
-      adapter.enqueue(task_def, args)
+      adapter.enqueue(task_def, args, options)
     end
   end
 end

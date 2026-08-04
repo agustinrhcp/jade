@@ -19,7 +19,10 @@ module Jade
       end
     end
 
-    Background = Data.define(:task) do
+    # `options` arrives already encoded — Task.background_with runs it
+    # through the caller's Encodable before building this node, so what
+    # reaches the adapter is the same wire form port arguments take.
+    Background = Data.define(:task, :options) do
       include Task
 
       def run
@@ -32,7 +35,7 @@ module Jade
 
         dispatch => Dispatch(task_def:, args:)
 
-        Jade::Result::Ok[Jade::Background.enqueue(task_def, args)]
+        Jade::Result::Ok[Jade::Background.enqueue(task_def, args, options)]
       end
     end
 

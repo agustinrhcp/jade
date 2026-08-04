@@ -51,8 +51,41 @@ module Jade
       # Semantic analysis rejects anything but a direct port call, so the
       # argument is always a Dispatch: a port name plus encoded arguments.
       function('background', { task: 'Task(a, e)' }, 'Task(String, String)') do |task|
-        Jade::Task::Background.new(task)
+        Jade::Task::Background.new(task, {})
       end
+
+      # Takes options already encoded: a constrained function's Ruby block
+      # never receives the Encodable dictionary, so background_with resolves
+      # the encoder in its body and calls through to here.
+      function(
+        'background_raw',
+        { task: 'Task(a, e)', options: 'Value' },
+        'Task(String, String)',
+        private: true,
+      ) do |task, options|
+        Jade::Task::Background.new(task, options)
+      end
+
+      # Options are whatever the caller declared, carried across as the wire
+      # form their own Encodable produces. Jade names none of the keys: an
+      # adapter's vocabulary is its own, and a set fixed here would be wrong
+      # for the second adapter.
+      function(
+        'background_with',
+        { task: 'Task(a, e)', options: 'o' },
+        'Task(String, String)',
+        constraints: [['Encode.Encodable', 'o']],
+        body: Symbol::DerivedFunction.new(
+          params: %w[task options],
+          body: [:call,
+            [:stdlib_fn, 'Task.background_raw'],
+            [
+              [:var, 'task'],
+              [:call, [:impl_arg, 0, 'encoder'], [[:var, 'options']]],
+            ],
+          ],
+        ),
+      )
 
       implementation('Mappable',  'Task', 'map'      => 'map')
       implementation('Chainable', 'Task', 'and_then' => 'and_then')

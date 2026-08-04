@@ -27,17 +27,20 @@ module Jade
         # Anything composed with map/and_then holds a closure instead, so only
         # a direct port call can cross a process boundary.
         def background_errors(callee, args, registry, entry)
-          return [] unless background?(callee, registry)
-          return [] unless args.size == 1
+          arity = background_arity(callee, registry)
+
+          return [] unless arity
+          return [] unless args.size == arity
           return [] if port_call?(args.first, registry)
 
           [Error::NonPortBackground.new(entry: entry.name, span: args.first.range)]
         end
 
-        def background?(callee, registry)
+        def background_arity(callee, registry)
           case callee_symbol(callee, registry)
-          in Symbol::StdlibFunction(module_name: 'Task', name: 'background') then true
-          else false
+          in Symbol::StdlibFunction(module_name: 'Task', name: 'background') then 1
+          in Symbol::StdlibFunction(module_name: 'Task', name: 'background_with') then 2
+          else nil
           end
         end
 

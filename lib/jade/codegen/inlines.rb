@@ -229,6 +229,7 @@ module Jade
         Encode.variant
         Task.and_then
         Task.background
+        Task.background_raw
         Task.fail
         Task.from_result
         Task.map
