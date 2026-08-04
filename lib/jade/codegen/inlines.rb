@@ -184,6 +184,8 @@ module Jade
         Decode.and_then
         Decode.bool
         Decode.decimal
+        Decode.instant
+        Decode.iso_date
         Decode.decode
         Decode.decode_string
         Decode.dict

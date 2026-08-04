@@ -1,5 +1,6 @@
 require 'jade/stdlib/intrinsics'
 require 'jade/decode'
+require 'jade/stdlib/decode/wire'
 
 module Jade
   module Stdlib
@@ -357,30 +358,27 @@ module Jade
       implementation('Decodable', 'String.String', 'decoder' => 'string')
       implementation('Decodable', 'Decode.Value',  'decoder' => 'value')
 
-      # Decimal's wire form is "<coefficient>e<exponent>". It is read here
-      # rather than in Decimal's own Jade source because that version cost
-      # two Maybes, a tuple and a fresh Decoder for every value, which is
-      # most of what a numeric column charges. Decimal imports Decode, so
-      # the instance cannot live the other way round.
-      DECIMAL_WIRE = ->(s) {
-        coefficient, exponent = s.split('e', 2)
-        next nil unless exponent
+      # Decimal, Instant and Date all have a text wire form that the Jade
+      # instance parsed by walking combinators — a fresh Decoder, two
+      # Maybes and a tuple or more for every value. `Wire` reads them in
+      # Ruby instead; see that file for why they are registered here and
+      # not by the modules that own the types.
+      #
+      # Private for the same reason `record` is: the type cannot be
+      # spelled here. Those modules import Decode, so Decode cannot name
+      # them back without a cycle, and `Decoder(a)` would be a hole if
+      # anything could reach it.
+      {
+        'decimal' => [Wire.method(:decimal), 'Decimal', 'Decimal.Decimal'],
+        'instant' => [Wire.method(:instant), 'Instant', 'Clock.Instant'],
+        'iso_date' => [Wire.method(:date), 'Date', 'Calendar.Date'],
+      }.each do |fn_name, (parse, label, type_name)|
+        function(fn_name, {}, 'Decoder(a)', private: true) {
+          Jade::Decode::Decoder[Jade::Decode::Desc::FromString[label, parse]]
+        }
 
-        m = Integer(coefficient, 10, exception: false)
-        e = Integer(exponent, 10, exception: false)
-
-        m && e ? Jade::Decimal::Decimal[m, e] : nil
-      }
-
-      # Private for the same reason `record` is: its type cannot be spelled
-      # here. Decimal imports Decode, so Decode cannot name Decimal.Decimal
-      # back without a cycle, and `Decoder(a)` would be a hole if anything
-      # could reach it.
-      function('decimal', {}, 'Decoder(a)', private: true) {
-        Jade::Decode::Decoder[Jade::Decode::Desc::FromString['Decimal', DECIMAL_WIRE]]
-      }
-
-      implementation('Decodable', 'Decimal.Decimal', 'decoder' => 'decimal')
+        implementation('Decodable', type_name, 'decoder' => fn_name)
+      end
     end
   end
 end

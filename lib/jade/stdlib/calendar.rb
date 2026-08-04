@@ -390,9 +390,9 @@ module Jade
           end
 
 
-          implements Decodable(Date) with
-            decoder: -> { Decode.string |> Decode.and_then(parse_date) }
-          end
+          # Decodable(Date) is registered by Decode, which reads this same
+          # wire form in Ruby. `from_iso_string` stays exposed and is what
+          # the native parser is checked against.
 
 
           implements Encodable(Date) with
