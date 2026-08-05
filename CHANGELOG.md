@@ -33,11 +33,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   editor already offers as completions, so the two can't drift; needs no
   project and reads no files.
 
+- **`AGENTS.md`** — idiom and gotchas for writing Jade: reach for `Maybe.map` /
+  `with_default` over a `case` that only unwraps and rewraps, which stdlib
+  modules are auto-imported and which need an `import`, that zero-argument
+  entries are values and `Dict.empty()` is a compile error, what derives (`Eq`,
+  `Show`, `Encodable`, `Decodable`) and what doesn't (`Comparable`), and how
+  interfaces and encode/decode fit together. Deliberately not a function list —
+  that's `jade q api`, and a copy would rot. Every claim in it was checked
+  against the compiler.
+- The gem now ships `docs/` and `AGENTS.md`, so a project that installs
+  jade-lang gets them instead of README links pointing at nothing.
+
 ### Changed
 
 - The `case` completion snippet offers one `in` branch per variant instead of
   an `else` fallback. `else` is for matching literals, where exhaustiveness
   isn't available — not the default shape of a `case`.
+
+### Fixed
+
+- **`docs/stdlib.md` named nine functions that don't exist.** `Char.is_digit`,
+  `is_alpha`, `is_alpha_num`, `is_upper`, `is_lower` were renamed to `digit?`,
+  `alpha?`, `alpha_numeric?`, `upper?`, `lower?` when predicates took the `?`
+  suffix and the doc never followed; `String.contains` is `contains?`,
+  `Dict.member` is `member?`, `Tuple.map_first` / `map_second` were never
+  implemented, and `Decode.at` doesn't exist (`Decode.index` does). Every
+  qualified name in `docs/stdlib.md` and `AGENTS.md` now checks out against the
+  registry.
 
 ## [0.4.0]
 
