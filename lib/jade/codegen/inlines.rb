@@ -216,6 +216,7 @@ module Jade
         Decode.variant
         Encode.bool
         Encode.dict
+        Encode.instant
         Encode.encode_to_string
         Encode.field
         Encode.float

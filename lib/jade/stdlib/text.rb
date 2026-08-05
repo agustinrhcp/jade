@@ -11,6 +11,7 @@ module Jade
       extend self
 
       EPOCH_RATA_DIE = 719163
+      DAY_MS = 86_400_000
 
       def to_decimal(s)
         coefficient, exponent = s.split('e', 2)
@@ -35,7 +36,7 @@ module Jade
         days = Jade::Calendar::Internal.to_rata_die(d) - EPOCH_RATA_DIE
 
         Jade::Clock::Instant[
-          days * 86_400_000 +
+          days * DAY_MS +
             hour * 3_600_000 + minute * 60_000 + second * 1_000 + sub_ms
         ]
       end
@@ -57,9 +58,29 @@ module Jade
         ]
       end
 
+      # Seconds precision, always UTC. `rjust` matches `pad_to`, which
+      # left-pads without truncating: a negative year renders "00-5".
+      def from_instant(instant)
+        ms = instant._1
+        day_ms = ms % DAY_MS
+        d = Jade::Calendar::Internal.from_rata_die(ms / DAY_MS + EPOCH_RATA_DIE)
+
+        [
+          pad(d.year, 4),
+          '-', pad(Jade::Calendar::Internal.month_to_int(d.month), 2),
+          '-', pad(d.day, 2),
+          'T', pad(day_ms / 3_600_000, 2),
+          ':', pad(day_ms % 3_600_000 / 60_000, 2),
+          ':', pad(day_ms % 60_000 / 1_000, 2),
+          'Z',
+        ].join
+      end
+
       private
 
       def int(s) = Integer(s, 10, exception: false)
+
+      def pad(n, width) = n.to_s.rjust(width, '0')
 
       def split_dt(s)
         parts = s.split('T')
