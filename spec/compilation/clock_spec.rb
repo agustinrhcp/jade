@@ -275,6 +275,20 @@ module Jade
         expect(Use::Internal.since_epoch_ms(result._1)).to eql 0
       end
 
+      describe 'instants before the epoch' do
+        it 'renders the millisecond before the epoch as the last of 1969' do
+          expect(Use::Internal.iso(Use::Internal.at_ms(-1))).to eql '1969-12-31T23:59:59Z'
+        end
+
+        it 'renders exact midnight the day before' do
+          expect(Use::Internal.iso(Use::Internal.at_ms(-86_400_000))).to eql '1969-12-31T00:00:00Z'
+        end
+
+        it 'renders a whole day earlier still' do
+          expect(Use::Internal.iso(Use::Internal.at_ms(-86_400_001))).to eql '1969-12-30T23:59:59Z'
+        end
+      end
+
       it 'parses with a space separator (PostgreSQL style)' do
         result = Use::Internal.parse_iso('2023-11-14 22:13:20Z')
         expect(result).to be_ok
