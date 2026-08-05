@@ -62,6 +62,12 @@ module Jade
             .join(', ')
             .then { "[#{it}]" }
 
+        in [:hash, pairs]
+          pairs
+            .map { |key, value| "#{key.inspect} => #{emit(value)}" }
+            .join(', ')
+            .then { it.empty? ? '{}' : "{ #{it} }" }
+
         in [:access, expr, key]
           "#{emit(expr)}.#{key}"
 
