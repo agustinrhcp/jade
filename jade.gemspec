@@ -32,9 +32,11 @@ Gem::Specification.new do |spec|
   spec.files = Dir[
     'lib/**/*',
     'exe/*',
+    'docs/**/*',
     'LICENSE',
     'README.md',
     'CHANGELOG.md',
+    'AGENTS.md',
   ]
   spec.bindir      = 'exe'
   spec.executables = ['jade']
