@@ -97,27 +97,18 @@ module Jade
               field_deps = fields
                 .map { |_, field_type| Type.constraint(INTERFACE, field_type, nil) }
 
-              pair_irs = fields
+              body = fields
                 .each_with_index
                 .map do |(field_name, _), idx|
-                  [:call,
-                    [:stdlib_fn, 'Tuple.pair'],
-                    [
-                      field_name.to_s,
-                      [:call,
-                        [:impl_arg, idx, 'encoder'],
-                        [[:access, [:var, 'rec'], field_name.to_s]],
-                      ],
+                  [
+                    field_name.to_s,
+                    [:call,
+                      [:impl_arg, idx, 'encoder'],
+                      [[:access, [:var, 'rec'], field_name.to_s]],
                     ],
                   ]
                 end
-
-              body = [:call,
-                [:stdlib_fn, 'Encode.object'],
-                [
-                  [:list, pair_irs],
-                ],
-              ]
+                .then { [:hash, it] }
 
               field_deps
                 .map { lookup.call(it) }
