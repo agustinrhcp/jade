@@ -49,6 +49,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The `case` completion snippet offers one `in` branch per variant instead of
   an `else` fallback. `else` is for matching literals, where exhaustiveness
   isn't available — not the default shape of a `case`.
+- **A missing qualified name now suggests the one you meant.** `List.fold_left`
+  answers ``help: did you mean `List.fold`?`` instead of a bare "not found" —
+  the candidates are the module's exposed values, so the suggestion is drawn
+  from what actually exists. Suggestions go through the alias the module was
+  imported under (`L.post`, not `Ledger.post`), since that's what the call site
+  can say. Local variables, types and constructors already did this;
+  module-qualified access was the gap.
 
 ### Fixed
 
