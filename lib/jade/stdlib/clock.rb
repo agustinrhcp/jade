@@ -154,7 +154,7 @@ module Jade
 
           def on_date(i: Instant) -> Calendar.Date
             Instant(ms) = i
-            Calendar.from_rata_die(floor_div(ms, 86400000) + 719163)
+            Calendar.from_rata_die(ms / 86400000 + 719163)
           end
 
 
@@ -172,12 +172,6 @@ module Jade
               second: mod(day_ms, 60000) / 1000,
               millisecond: mod(day_ms, 1000),
             }
-          end
-
-
-          def floor_div(a: Int, b: Int) -> Int
-            q = a / b
-            a < 0 && mod(a, b) != 0 ? q - 1 : q
           end
 
 
