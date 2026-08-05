@@ -55,13 +55,14 @@ module Jade
           import = entry
             .imports
             .find { it.alias == module_name }
+          imported = import&.then { registry.get(it.module_name) }
 
           if import.nil?
             Error::ModuleNotFound
               .new(entry.name, node.target.range, name: import)
 
           else
-            case registry.get(import.module_name).exposed_value(name.name)
+            case imported.exposed_value(name.name)
             in nil
               Error::ValueNotExposed
                 .new(entry.name, name.range, module_name:, name: name.name)
@@ -77,9 +78,18 @@ module Jade
                   node.range,
                   name: [module_name, name.name].join('.'),
                   causes: [it],
+                  candidates: exposed_value_names(imported, module_name),
                 )
             end
             .then { Err[it] }
+        end
+
+        def exposed_value_names(imported, module_name)
+          return [] unless imported
+
+          imported
+            .exposes
+            .filter_map { "#{module_name}.#{it.name}" if it.is_a?(Symbol::ValueRef) }
         end
       end
     end
