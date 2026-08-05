@@ -393,7 +393,7 @@ module Jade
         expect(Json::Internal.instant_from_json('"nope"')).to be_err
       end
 
-      # Decodable(Instant) reads the wire form in Ruby (Stdlib::Decode::Wire)
+      # Decodable(Instant) reads the wire form in Ruby (Stdlib::Wire)
       # while `Clock.from_iso` is still the Jade parser. They have to accept
       # exactly the same strings and produce exactly the same Instants, so
       # compare them rather than restate whatever the grammar happens to be.
@@ -425,7 +425,7 @@ module Jade
 
         it 'accepts and rejects exactly the same strings' do
           disagreements = corpus.reject do |str|
-            Jade::Stdlib::Decode::Wire.instant(str) == jade_parse(str)
+            Jade::Stdlib::Wire.instant(str) == jade_parse(str)
           end
 
           expect(disagreements).to be_empty

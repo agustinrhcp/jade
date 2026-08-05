@@ -1,6 +1,6 @@
 require 'jade/stdlib/intrinsics'
 require 'jade/decode'
-require 'jade/stdlib/decode/wire'
+require 'jade/stdlib/wire'
 
 module Jade
   module Stdlib
@@ -358,20 +358,14 @@ module Jade
       implementation('Decodable', 'String.String', 'decoder' => 'string')
       implementation('Decodable', 'Decode.Value',  'decoder' => 'value')
 
-      # Decimal, Instant and Date all have a text wire form that the Jade
-      # instance parsed by walking combinators — a fresh Decoder, two
-      # Maybes and a tuple or more for every value. `Wire` reads them in
-      # Ruby instead; see that file for why they are registered here and
-      # not by the modules that own the types.
-      #
-      # Private for the same reason `record` is: the type cannot be
-      # spelled here. Those modules import Decode, so Decode cannot name
-      # them back without a cycle, and `Decoder(a)` would be a hole if
-      # anything could reach it.
+      # Registered here, not by the modules owning the types: they import
+      # Decode, so the instance cannot live the other way round. Private
+      # for the same reason `record` is — Decode cannot name those types
+      # back, and `Decoder(a)` would be a hole if anything could reach it.
       {
-        'decimal' => [Wire.method(:decimal), 'Decimal', 'Decimal.Decimal'],
-        'instant' => [Wire.method(:instant), 'Instant', 'Clock.Instant'],
-        'iso_date' => [Wire.method(:date), 'Date', 'Calendar.Date'],
+        'decimal' => [Stdlib::Wire.method(:decimal), 'Decimal', 'Decimal.Decimal'],
+        'instant' => [Stdlib::Wire.method(:instant), 'Instant', 'Clock.Instant'],
+        'iso_date' => [Stdlib::Wire.method(:date), 'Date', 'Calendar.Date'],
       }.each do |fn_name, (parse, label, type_name)|
         function(fn_name, {}, 'Decoder(a)', private: true) {
           Jade::Decode::Decoder[Jade::Decode::Desc::FromString[label, parse]]

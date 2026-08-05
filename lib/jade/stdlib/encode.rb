@@ -1,5 +1,6 @@
 require 'json'
 require 'jade/stdlib/intrinsics'
+require 'jade/stdlib/wire'
 
 module Jade
   module Stdlib
@@ -155,6 +156,14 @@ module Jade
       implementation('Encodable', 'Basics.Bool',   'encoder' => 'bool')
       implementation('Encodable', 'String.String', 'encoder' => 'string')
       implementation('Encodable', 'Decode.Value',  'encoder' => 'value')
+
+      # Registered here because Clock imports Encode, so the instance
+      # cannot live the other way round. `Stdlib::Wire` writes the string.
+      function('instant', { i: 'a' }, 'Value', private: true) { |i|
+        Stdlib::Wire.instant_to_string(i)
+      }
+
+      implementation('Encodable', 'Clock.Instant', 'encoder' => 'instant')
     end
   end
 end
