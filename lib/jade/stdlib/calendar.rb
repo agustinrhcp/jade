@@ -317,24 +317,25 @@ module Jade
           end
 
 
+          # Days counted in 400-year eras from March, so the leap day lands
+          # at the end of an era and month lengths repeat; `mp` is the month
+          # in that March-based year, shifted back at the end. Int division
+          # floors, which is what makes it hold before year 1.
           def from_rata_die(rd: Int) -> Date
-            y = bump_year(rd, (rd - 1) / 366 + 1)
-            doy = rd - days_before_year(y)
-            case search_month(y, doy, 12)
-            in (m, d) then from_calendar_date(y, m, d)
-            end
-          end
+            z = rd + 305
+            era = z / 146097
+            doe = z - era * 146097
+            yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365
+            doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+            mp = (5 * doy + 2) / 153
+            d = doy - (153 * mp + 2) / 5 + 1
+            mi = mp < 10 ? mp + 3 : mp - 9
 
-
-          def bump_year(rd: Int, y: Int) -> Int
-            days_before_year(y + 1) < rd ? bump_year(rd, y + 1) : y
-          end
-
-
-          def search_month(y: Int, doy: Int, mi: Int) -> (Month, Int)
-            m = month_from_int(mi)
-            offset = days_before_month(y, m)
-            doy > offset ? (m, doy - offset) : search_month(y, doy, mi - 1)
+            from_calendar_date(
+              yoe + era * 400 + (mi <= 2 ? 1 : 0),
+              month_from_int(mi),
+              d,
+            )
           end
 
 
