@@ -51,7 +51,7 @@ module Jade
           "Jade::Runtime.curry(::#{to_qualified(qualified_name)}.method(:[]), #{arity})"
 
         in [:anon_record_constructor, keys]
-          "Jade::Runtime.curry(#{data_define(keys)}.method(:[]), #{keys.size})"
+          "Jade::Runtime.curry(#{record_class(keys)}.method(:[]), #{keys.size})"
 
         in [:list, exprs]
           exprs

@@ -1121,5 +1121,44 @@ module Jade
           )
       end
     end
+
+    context 'a port returning an anonymous record' do
+      module TestAnonRecord
+        extend Jade::Port
+
+        task :fetch_pair do |t|
+          t.ok({ 'x' => 1, 'y' => 'a' })
+        end
+      end
+
+      let(:with_interop_source) do
+        <<~JADE
+          module AnonRecord exposing (pair)
+
+          uses Jade::TestAnonRecord with
+            fetch_pair : Task({ x: Int, y: String }, Never)
+          end
+
+
+          def pair -> Task({ x: Int, y: String }, Never)
+            fetch_pair()
+          end
+        JADE
+      end
+
+      before { test_compiler.require('anon_record', with_interop_source) }
+
+      def decode_pair
+        AnonRecord::Internal.pair.run.then { |r| r.deconstruct.first }
+      end
+
+      it 'decodes two records of the same shape to equal values' do
+        expect(decode_pair).to eq decode_pair
+      end
+
+      it 'decodes the fields' do
+        expect(decode_pair).to have_attributes(x: 1, y: 'a')
+      end
+    end
   end
 end
