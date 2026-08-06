@@ -1,4 +1,5 @@
 require 'jade'
+require 'jade/api'
 require 'jade/lsp'
 require 'json'
 
@@ -15,11 +16,20 @@ module Jade
           symbols FILE             Document symbols (outline) for FILE.
           defn    FILE:LINE:COL    Goto-definition location.
           refs    FILE:LINE:COL    Find all references (incl. declaration).
+          api     [MODULE|NAME]    Stdlib signatures. No argument lists the
+                                   modules; `Maybe` describes one; `List.map`
+                                   picks a single symbol.
+          find    TERM             Symbols whose name matches TERM.
+          syntax  [FORM]           How a form is written (`lambda`, `case`,
+                                   `interface`, …). No argument lists them all.
 
         FILE is relative to the project root (cwd).
         LINE and COL are 0-indexed (LSP convention).
 
-        Compile cache lives at .jade/cache, so repeat queries are fast.
+        `api` and `find` cover the stdlib plus, inside a project, its own and
+        its extensions' modules. `syntax` needs nothing at all. Everything
+        else compiles the project, caching at .jade/cache so repeat queries
+        are fast.
       TXT
 
       module_function
@@ -30,10 +40,46 @@ module Jade
         when 'symbols' then dump(symbols(argv[1]))
         when 'defn'    then dump(defn(argv[1]))
         when 'refs'    then dump(refs(argv[1]))
+        when 'api'     then dump(api(argv[1]))
+        when 'find'    then dump(find(argv[1]))
+        when 'syntax'  then dump(syntax(argv[1]))
         else
           warn USAGE
           exit 1
         end
+      end
+
+      def api(name)
+        Api.load.then do |api|
+          next listing(api) unless name
+
+          (api.describe(name) || api.lookup(name))
+            .then { it || fail("no module or symbol named #{name}") }
+        end
+      end
+
+      def find(term)
+        fail 'TERM required' unless term
+
+        Api
+          .load
+          .then { { matches: it.search(term), **skipped(it) } }
+      end
+
+      def syntax(form)
+        return { forms: LSP::Snippets.catalog } unless form
+
+        LSP::Snippets
+          .find(form)
+          .then { it || fail("no syntax form named #{form}") }
+      end
+
+      def listing(api)
+        { modules: api.modules, **skipped(api) }
+      end
+
+      def skipped(api)
+        api.skipped.empty? ? {} : { skipped: api.skipped }
       end
 
       def hover(arg)

@@ -3,6 +3,7 @@ require 'jade'
 module Jade
   module CLI
     SUBCOMMANDS = {
+      'check' => 'Check',
       'fmt' => 'Fmt',
       'lsp' => 'Lsp',
       'q' => 'Q',
@@ -26,7 +27,7 @@ module Jade
         usage($stderr)
         exit 1
       end
-    rescue Project::NotFound => e
+    rescue Project::NotFound, RuntimeError => e
       warn "jade: #{e.message}"
       exit 1
     end
@@ -35,9 +36,10 @@ module Jade
       io.puts <<~TXT
         Usage: jade COMMAND [ARGS]
 
+          check  Type-check the project (or the given files).
           fmt    Format .jd source (stdin or file).
           lsp    Run the language server (stdio JSON-RPC).
-          q      Headless query interface (hover/symbols/defn/refs).
+          q      Headless query interface (hover/symbols/defn/refs/api).
 
         Run `jade COMMAND --help` for command-specific options.
       TXT
