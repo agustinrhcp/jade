@@ -54,11 +54,45 @@ jade q hover    file.jd:LINE:COL   # type info at a position
 jade q defn     file.jd:LINE:COL   # goto-definition target
 jade q refs     file.jd:LINE:COL   # all references (incl. declaration)
 jade q symbols  file.jd            # document outline
+jade q api      [MODULE|NAME]      # signatures, by module or symbol
+jade q find     TERM               # every symbol matching TERM
+jade q syntax   [FORM]             # how a form is written
 ```
 
 `LINE` and `COL` are 0-indexed (LSP convention). Paths are relative to the
 project root; compile results are cached at `.jade/cache`, so repeat queries are
 fast.
+
+`api` and `find` cover the stdlib, the project's own modules, and any extension
+gem's — each tagged with its `origin`. Without a `jade.json` they fall back to
+the stdlib alone, so they still answer from any directory. See
+[stdlib.md](stdlib.md#finding-a-function).
+
+`syntax` answers the other half. A signature says a function exists and what it
+takes; it never says how a lambda or an `implements` block is written:
+
+```
+$ jade q syntax lambda
+{ "form": "lambda", "detail": "anonymous function", "source": "(args) -> { body }" }
+```
+
+The forms are `def`, `type`, `struct`, `case`, `if`, `module`, `import`,
+`interface`, `implements`, `uses`, `lambda` — the same corpus the editor
+offers as completions, so the two can't drift. They're templates, not
+compilable programs. It reads no files and needs no project.
+
+## Checking without an editor
+
+`jade check` type-checks and prints diagnostics, generating nothing:
+
+```
+jade check                 # every .jd under the source root
+jade check lib/orders.jd   # that file and everything it imports
+```
+
+Exit 1 if there were errors, 0 otherwise. This is the loop to close after
+editing a file — it's the same front end the LSP runs, so an invented function
+or a wrong argument order surfaces immediately instead of at the next build.
 
 ## What it doesn't do yet
 

@@ -333,7 +333,9 @@ Worst case: you wrote Ruby with a nicer authoring layer for a while.
 
 There's a language server — type errors, inferred types, and jump-to-definition
 in any editor that speaks LSP. For tools that don't, `jade q` answers the same
-questions as one-shot JSON (hover, definition, references, symbols).
+questions as one-shot JSON (hover, definition, references, symbols), `jade q
+api` reports the stdlib's signatures, and `jade check` type-checks a file and
+prints what's wrong.
 
 In our experience coding agents like Claude Code and Cursor handle Jade well:
 the syntax is close enough to the ML family (Elm, OCaml, Haskell) that models
@@ -346,9 +348,11 @@ for us so far.
 A single `jade` binary fronts the toolchain:
 
 ```
+jade check [file...]      # type-check; exits 1 on errors, generates nothing
 jade fmt [-i|-c] [file]   # format .jd source (stdin or file)
 jade lsp                  # language server over stdio (hover, defn, refs, diagnostics)
 jade q hover FILE:L:C     # headless JSON queries — hover/symbols/defn/refs
+jade q api List.fold      # stdlib signatures, read from the registry
 ```
 
 `jade fmt` is deterministic and idempotent; wire it into your editor or a

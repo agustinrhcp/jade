@@ -6,6 +6,39 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`jade check [FILE...]`** type-checks and prints diagnostics without
+  generating anything — the same front end the language server runs, exiting 1
+  if there were errors. With no arguments it checks every `.jd` under the
+  source root. Closes the loop for editors, CI, and anything that just edited a
+  file and wants to know whether it invented a function.
+- **`jade q api [MODULE|NAME]`** and **`jade q find TERM`** report the public
+  surface of everything a module can call — signatures, interface constraints,
+  a struct's fields, a type's variants and what it implements, an interface and
+  what implements it — read out of the registry rather than the source. Source
+  is the wrong thing to read: stdlib modules are written two ways (Jade in a
+  heredoc, a Ruby DSL), so grepping `lib/jade/stdlib/` finds neither `List.map`
+  nor half the modules' functions at all, and an extension gem's modules aren't
+  in your tree to grep. Inside a project the listing spans the stdlib, the
+  project's own modules and any extension gem's, each tagged with its `origin`;
+  without a `jade.json` it falls back to the stdlib, so the query still answers
+  from any directory. A module that won't compile is reported under `skipped`
+  rather than silently missing.
+- **`jade q syntax [FORM]`** reports how a form is written — `lambda` is
+  `(args) -> { body }`, plus `def`, `type`, `struct`, `case`, `if`, `module`,
+  `import`, `interface`, `implements`, `uses`. Signatures answer "does this
+  function exist and what does it take", never "how is a lambda spelled", and
+  that second question has its own wrong answers. It serves the corpus the
+  editor already offers as completions, so the two can't drift; needs no
+  project and reads no files.
+
+### Changed
+
+- The `case` completion snippet offers one `in` branch per variant instead of
+  an `else` fallback. `else` is for matching literals, where exhaustiveness
+  isn't available — not the default shape of a `case`.
+
 ## [0.4.0]
 
 ### Changed

@@ -1,7 +1,14 @@
 module Jade
   module LSP
     module Snippets
-      Snippet = Data.define(:label, :detail, :body)
+      TAB_STOP = /\$\{\d+:?([^}]*)\}/
+
+      Snippet = Data.define(:label, :detail, :body) do
+        # Keeps the hint text, drops the tab stops an editor needs.
+        def source
+          body.gsub(TAB_STOP, '\1')
+        end
+      end
 
       ALL = [
         Snippet.new(
@@ -33,11 +40,11 @@ module Jade
         ),
         Snippet.new(
           label: 'case',
-          detail: 'case expression with else fallback',
+          detail: 'case expression, one branch per variant',
           body: <<~SNIP.chomp,
             case ${1:expr}
             in ${2:pattern} then ${3:result}
-            else ${0:fallback}
+            in ${4:pattern} then ${0:result}
             end
           SNIP
         ),
@@ -95,6 +102,17 @@ module Jade
           body: '(${1:args}) -> { ${0:body} }',
         ),
       ].freeze
+
+      module_function
+
+      # Every form, as plain Jade — what `jade q syntax` serves.
+      def catalog
+        ALL.map { { form: it.label, detail: it.detail, source: it.source } }
+      end
+
+      def find(form)
+        catalog.find { it[:form] == form }
+      end
     end
   end
 end

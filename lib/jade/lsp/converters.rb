@@ -1,4 +1,5 @@
 require 'uri'
+require 'jade/signature'
 
 module Jade
   module LSP
@@ -432,21 +433,7 @@ module Jade
       end
 
       def render_signature(name, type, constraints)
-        "#{name} : #{constraint_prefix(constraints)}#{type}"
-      end
-
-      def constraint_prefix(constraints)
-        return '' if constraints.empty?
-
-        constraints
-          .map { short_constraint(it) }
-          .uniq
-          .join(', ')
-          .then { "#{it} => " }
-      end
-
-      def short_constraint(constraint)
-        "#{constraint.interface.split('.').last} #{constraint.type}"
+        Signature.render(name, type, constraints)
       end
 
       # First node in the path (innermost-to-outermost) that resolves to a
