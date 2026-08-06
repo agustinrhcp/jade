@@ -22,6 +22,12 @@ module Jade
         "Data.define(#{fields.map { ":#{it}" }.join(', ')})"
       end
 
+      # Record literals resolve through the same registry, so two records
+      # with the same keys compare equal however they were built.
+      def record_class(keys)
+        "Jade::Runtime.record(#{keys.map { ":#{it}" }.join(', ')})"
+      end
+
       def generate_node(node, registry)
         Codegen.generate(node, registry)
       end
