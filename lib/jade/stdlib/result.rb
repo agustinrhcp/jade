@@ -111,7 +111,7 @@ module Jade
           def on_error(result: Result(a, e), fn: e -> Result(a, f)) -> Result(a, f)
             case result
             in Err(error) then error |> fn
-            in Ok(_) then result
+            in Ok(value) then Ok(value)
             end
           end
 

@@ -59,6 +59,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`Result.on_error` can change the error type**, as its signature has always
+  claimed. The `Ok` arm handed back the input rather than rebuilding it, which
+  unified the outgoing error type with the incoming one, so
+  `Result(Int, String) -> Result(Int, Int)` did not compile. Recovering into a
+  different error type is the reason the function takes `e -> Result(a, f)`.
+- **A signature no longer renders two distinct type variables as one.** Hover
+  reported `Maybe.map : (Maybe(a), (a) -> a) -> Maybe(a)` — a function unable
+  to change the element type, which is a different function from the one that
+  exists. Variables are identified by an id but print as a name, and nothing
+  upstream keeps names distinct; rendering now re-letters a clash instead of
+  emitting the same name twice. Declared names are kept where they don't
+  collide, so annotated signatures read as written.
+
 - **`docs/stdlib.md` named nine functions that don't exist.** `Char.is_digit`,
   `is_alpha`, `is_alpha_num`, `is_upper`, `is_lower` were renamed to `digit?`,
   `alpha?`, `alpha_numeric?`, `upper?`, `lower?` when predicates took the `?`
