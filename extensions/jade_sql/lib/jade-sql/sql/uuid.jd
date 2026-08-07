@@ -1,0 +1,126 @@
+module Sql.Uuid exposing (
+  Uuid,
+  from_b64,
+  parse,
+  to_b64,
+  to_string,
+  v4,
+  v7,
+)
+
+import Decode exposing (Decodable, Decoder, Value)
+import Encode exposing (Encodable)
+import Bytes exposing (Bytes)
+
+
+type Uuid = Uuid(String)
+
+
+uses JadeSql::Uuid::Runtime with
+  generate_v4 : Task({ value: String }, Never),
+  generate_v7 : Task({ value: String }, Never)
+end
+
+
+def v4 -> Task(Uuid, Never)
+  raw <- generate_v4()
+
+  Task.succeed(Uuid(raw.value))
+end
+
+
+def v7 -> Task(Uuid, Never)
+  raw <- generate_v7()
+
+  Task.succeed(Uuid(raw.value))
+end
+
+
+def to_string(u: Uuid) -> String
+  Uuid(s) = u
+
+  s
+end
+
+
+def parse(s: String) -> Maybe(Uuid)
+  valid_form(s) ? Just(Uuid(String.to_lower(s))) : Nothing
+end
+
+
+def valid_form(s: String) -> Bool
+  case String.split(s, "-")
+  in [a, b, c, d, e] then valid_widths(a, b, c, d, e)
+  else False
+  end
+end
+
+
+def valid_widths(a: String, b: String, c: String, d: String, e: String) -> Bool
+  String.length(a) == 8 && String.length(b) == 4 && String.length(c) == 4 && String.length(d) == 4 && String.length(e) == 12
+end
+
+
+def uuid_eq(a: Uuid, b: Uuid) -> Bool
+  Uuid(sa) = a
+  Uuid(sb) = b
+
+  sa == sb
+end
+
+
+implements Eq(Uuid) with
+  (==): uuid_eq
+end
+
+
+def parse_decoder(s: String) -> Decoder(Uuid)
+  case parse(s)
+  in Just(u) then Decode.succeed(u)
+  in Nothing then Decode.fail("invalid uuid: " ++ s)
+  end
+end
+
+
+implements Decodable(Uuid) with
+  decoder: -> { Decode.string |> Decode.and_then(parse_decoder) }
+end
+
+
+implements Encodable(Uuid) with
+  encoder: (u) -> { Encode.string(to_string(u)) }
+end
+
+
+def to_b64(u: Uuid) -> String
+  Uuid(s) = u
+
+  s
+    |> String.replace("-", "")
+    |> Bytes.from_hex
+    |> Maybe.map(Bytes.to_base64_url)
+    |> Maybe.with_default("")
+end
+
+
+def from_b64(s: String) -> Maybe(Uuid)
+  Bytes.from_base64_url(s) |> Maybe.and_then(uuid_from_bytes)
+end
+
+
+def uuid_from_bytes(b: Bytes) -> Maybe(Uuid)
+  Bytes.width(b) == 16 ? parse(canonical_form(Bytes.to_hex(b))) : Nothing
+end
+
+
+def canonical_form(hex32: String) -> String
+  String.slice(hex32, 0, 8)
+    ++ "-"
+    ++ String.slice(hex32, 8, 12)
+    ++ "-"
+    ++ String.slice(hex32, 12, 16)
+    ++ "-"
+    ++ String.slice(hex32, 16, 20)
+    ++ "-"
+    ++ String.slice(hex32, 20, 32)
+end

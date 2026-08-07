@@ -1,0 +1,313 @@
+module Sql.Query exposing (
+  Q,
+  field,
+  from,
+  group,
+  join,
+  left_join,
+  limit,
+  offset,
+  order,
+  order_desc,
+  select,
+  to_sql,
+  where,
+)
+
+import Sql exposing (Expr, Renderable, Selector(..), Table, TableRef(..))
+import Decode exposing (Value)
+
+
+type JoinKind
+  = InnerJ
+  | LeftJ
+
+
+struct Join = {
+  kind: JoinKind,
+  name: String,
+  alias_: String,
+  on: Expr(Bool)
+}
+
+
+type OrderDir
+  = Asc
+  | Desc
+
+
+struct OrderTerm = {
+  dir: OrderDir,
+  sql: String,
+  params: List(Value)
+}
+
+
+struct GroupTerm = {
+  sql: String,
+  params: List(Value)
+}
+
+
+struct Q(a) = {
+  tables: List(TableRef),
+  joins: List(Join),
+  wheres: List(Expr(Bool)),
+  groups: List(GroupTerm),
+  orders: List(OrderTerm),
+  limit_: Maybe(Int),
+  offset_: Maybe(Int),
+  result: a
+}
+
+
+implements Chainable(Q(a)) with
+  and_then: q_and_then
+end
+
+
+def q_and_then(q: Q(a), fn: a -> Q(b)) -> Q(b)
+  next_ = q.result |> fn
+
+  Q(
+    q.tables ++ next_.tables,
+    q.joins ++ next_.joins,
+    q.wheres ++ next_.wheres,
+    q.groups ++ next_.groups,
+    q.orders ++ next_.orders,
+    merge_paging(q.limit_, next_.limit_),
+    merge_paging(q.offset_, next_.offset_),
+    next_.result,
+  )
+end
+
+
+def merge_paging(prev: Maybe(Int), next_: Maybe(Int)) -> Maybe(Int)
+  case next_
+  in Just(_) then next_
+  in Nothing then prev
+  end
+end
+
+
+def from(t: Table(c, m)) -> Q(c)
+  cols_ = t.alias_ |> t.cols
+
+  Q([TableRef(t.name, t.alias_)], [], [], [], [], Nothing, Nothing, cols_)
+end
+
+
+def join(t: Table(c, m), on_: c -> Expr(Bool)) -> Q(c)
+  cols_ = t.alias_ |> t.cols
+  pred = cols_ |> on_
+
+  Q(
+    [],
+    [Join(InnerJ, t.name, t.alias_, pred)],
+    [],
+    [],
+    [],
+    Nothing,
+    Nothing,
+    cols_,
+  )
+end
+
+
+def left_join(t: Table(c, m), on_: c -> Expr(Bool)) -> Q(m)
+  cols_strict = t.alias_ |> t.cols
+  cols_maybe = t.alias_ |> t.maybe_cols
+  pred = cols_strict |> on_
+
+  Q(
+    [],
+    [Join(LeftJ, t.name, t.alias_, pred)],
+    [],
+    [],
+    [],
+    Nothing,
+    Nothing,
+    cols_maybe,
+  )
+end
+
+
+def where(q: Q(a), predicate: Expr(Bool)) -> Q(a)
+  Q(
+    q.tables,
+    q.joins,
+    q.wheres ++ [predicate],
+    q.groups,
+    q.orders,
+    q.limit_,
+    q.offset_,
+    q.result,
+  )
+end
+
+
+def group(q: Q(a), e: Expr(b)) -> Q(a)
+  Q(
+    q.tables,
+    q.joins,
+    q.wheres,
+    q.groups ++ [GroupTerm(e.sql, e.params)],
+    q.orders,
+    q.limit_,
+    q.offset_,
+    q.result,
+  )
+end
+
+
+def order(q: Q(a), e: Expr(b)) -> Q(a)
+  Q(
+    q.tables,
+    q.joins,
+    q.wheres,
+    q.groups,
+    q.orders ++ [OrderTerm(Asc, e.sql, e.params)],
+    q.limit_,
+    q.offset_,
+    q.result,
+  )
+end
+
+
+def order_desc(q: Q(a), e: Expr(b)) -> Q(a)
+  Q(
+    q.tables,
+    q.joins,
+    q.wheres,
+    q.groups,
+    q.orders ++ [OrderTerm(Desc, e.sql, e.params)],
+    q.limit_,
+    q.offset_,
+    q.result,
+  )
+end
+
+
+def limit(q: Q(a), n: Int) -> Q(a)
+  Q(
+    q.tables,
+    q.joins,
+    q.wheres,
+    q.groups,
+    q.orders,
+    Just(n),
+    q.offset_,
+    q.result,
+  )
+end
+
+
+def offset(q: Q(a), n: Int) -> Q(a)
+  Q(
+    q.tables,
+    q.joins,
+    q.wheres,
+    q.groups,
+    q.orders,
+    q.limit_,
+    Just(n),
+    q.result,
+  )
+end
+
+
+def select(make: a -> b) -> Q(Selector(a -> b))
+  Q([], [], [], [], [], Nothing, Nothing, Selector([], []))
+end
+
+
+def field(qs: Q(Selector(a -> b)), e: Expr(a)) -> Q(Selector(b))
+  Q(
+    qs.tables,
+    qs.joins,
+    qs.wheres,
+    qs.groups,
+    qs.orders,
+    qs.limit_,
+    qs.offset_,
+    Selector(qs.result.columns_sql ++ [e.sql], qs.result.params ++ e.params),
+  )
+end
+
+
+def join_keyword(k: JoinKind) -> String
+  case k
+  in InnerJ then "INNER JOIN"
+  in LeftJ then "LEFT JOIN"
+  end
+end
+
+
+def render_join(j: Join) -> String
+  join_keyword(j.kind) ++ " " ++ j.name ++ " " ++ j.alias_ ++ " ON " ++ j.on.sql
+end
+
+
+def render_order_term(t: OrderTerm) -> String
+  case t.dir
+  in Asc then t.sql
+  in Desc then t.sql ++ " DESC"
+  end
+end
+
+
+def render_from(tables: List(TableRef)) -> String
+  case tables
+  in [] then ""
+  in [first | _] then " FROM " ++ first.name ++ " " ++ first.alias_
+  end
+end
+
+
+def render_int_clause(keyword: String, m: Maybe(Int)) -> String
+  case m
+  in Just(n) then keyword ++ String.from_int(n)
+  in Nothing then ""
+  end
+end
+
+
+implements Renderable(Q(Selector(a))) with
+  render: to_sql
+end
+
+
+def to_sql(q: Q(Selector(a))) -> (String, List(Value))
+  select_clause = "SELECT " ++ String.join(q.result.columns_sql, ", ")
+  from_clause = render_from(q.tables)
+  joins_clause = q.joins
+    |> List.map((j) -> { " " ++ render_join(j) })
+    |> String.concat
+  where_clause = List.empty?(q.wheres)
+    ? ""
+    : " WHERE " ++ String.join(List.map(q.wheres, (w) -> { w.sql }), " AND ")
+  group_clause = List.empty?(q.groups)
+    ? ""
+    : " GROUP BY " ++ String.join(List.map(q.groups, (g) -> { g.sql }), ", ")
+  order_clause = List.empty?(q.orders)
+    ? ""
+    : " ORDER BY " ++ String.join(List.map(q.orders, render_order_term), ", ")
+  limit_clause = render_int_clause(" LIMIT ", q.limit_)
+  offset_clause = render_int_clause(" OFFSET ", q.offset_)
+  join_ps = List.fold(q.joins, [], (acc, j) -> { acc ++ j.on.params })
+  where_ps = List.fold(q.wheres, [], (acc, w) -> { acc ++ w.params })
+  group_ps = List.fold(q.groups, [], (acc, g) -> { acc ++ g.params })
+  order_ps = List.fold(q.orders, [], (acc, o) -> { acc ++ o.params })
+
+  Tuple.Tuple2(
+    select_clause
+      ++ from_clause
+      ++ joins_clause
+      ++ where_clause
+      ++ group_clause
+      ++ order_clause
+      ++ limit_clause
+      ++ offset_clause,
+    q.result.params ++ join_ps ++ where_ps ++ group_ps ++ order_ps,
+  )
+end
