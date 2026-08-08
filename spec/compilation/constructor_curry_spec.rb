@@ -7,12 +7,13 @@ module Jade
   describe 'constructor codegen — curry safety' do
     include_context 'with test compiler'
 
-    # Regression: an auto-derived record decoder that runs through the Desc
-    # interpreter builds the constructor once and calls it on every decode
-    # (Decode.succeed(Ctor.curry(n)) threaded through and_map). Ruby's
-    # Method#curry corrupts the heap under GC compaction in that pattern
-    # (a near-null "try to mark T_NONE object" SIGSEGV). It must be built via
-    # the GC-safe Jade::Runtime.curry. A Calendar.Date field forces the
+    # Regression: a curried constructor built once and called on every
+    # decode used to corrupt the heap under GC compaction when the curry
+    # came from Ruby's Method#curry (a near-null "try to mark T_NONE
+    # object" SIGSEGV). Derived record decoders no longer curry at all —
+    # `Decode.record` applies every field in one call — so the hazard is
+    # gone by construction here; the assertion stands for the constructors
+    # that are still curried elsewhere. A Calendar.Date field forces the
     # interpreter boundary path (it can't be specialized inline).
     let(:source) do
       <<~JADE
@@ -35,10 +36,14 @@ module Jade
 
     before { test_compiler.require('m', source) }
 
-    it 'builds the constructor via Jade::Runtime.curry, never Method#curry' do
+    it 'never builds a constructor with Method#curry' do
+      expect(test_compiler.generated_source('m')).not_to include('.method(:[]).curry')
+    end
+
+    it 'applies the derived record constructor in one uncurried call' do
       generated = test_compiler.generated_source('m')
-      expect(generated).to include('Jade::Runtime.curry')
-      expect(generated).not_to include('.method(:[]).curry')
+      expect(generated).to include('Jade::Runtime.intr("Decode.record")')
+      expect(generated).to include('::M::P')
     end
 
     it 'still decodes the record across the boundary' do

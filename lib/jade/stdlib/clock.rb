@@ -311,14 +311,14 @@ module Jade
           end
 
 
-          implements Decodable(Instant) with
-            decoder: -> { Decode.string |> Decode.and_then(parse_instant) }
-          end
+          # Decodable(Instant) is registered by Decode, which reads this
+          # same wire form in Ruby. `from_iso` is still the parser of
+          # record and stays exposed; the two are differential-tested.
 
 
-          implements Encodable(Instant) with
-            encoder: (i) -> { Encode.string(to_iso(i)) }
-          end
+          # Encodable(Instant) is registered by Encode, which writes this
+          # same string in Ruby. `to_iso` stays exposed and is what the
+          # native writer is differential-tested against.
 
 
           implements Decodable(Duration) with

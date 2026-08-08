@@ -50,14 +50,23 @@ module Jade
         in [:struct_constructor, qualified_name, arity]
           "Jade::Runtime.curry(::#{to_qualified(qualified_name)}.method(:[]), #{arity})"
 
-        in [:anon_record_constructor, keys]
-          "Jade::Runtime.curry(#{record_class(keys)}.method(:[]), #{keys.size})"
+        in [:struct_class, qualified_name]
+          "::#{to_qualified(qualified_name)}"
+
+        in [:anon_record_class, keys]
+          record_class(keys)
 
         in [:list, exprs]
           exprs
             .map { emit(it) }
             .join(', ')
             .then { "[#{it}]" }
+
+        in [:hash, pairs]
+          pairs
+            .map { |key, value| "#{key.inspect} => #{emit(value)}" }
+            .join(', ')
+            .then { it.empty? ? '{}' : "{ #{it} }" }
 
         in [:access, expr, key]
           "#{emit(expr)}.#{key}"

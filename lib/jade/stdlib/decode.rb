@@ -1,5 +1,6 @@
 require 'jade/stdlib/intrinsics'
 require 'jade/decode'
+require 'jade/stdlib/wire'
 
 module Jade
   module Stdlib
@@ -146,6 +147,21 @@ module Jade
         'Decoder(b)',
       ) { |wrapped, decoder|
         Jade::Decode::Decoder[Jade::Decode::Desc::AndMap[wrapped.desc, decoder.desc]]
+      }
+
+      # `keys` and `decoders` are positionally paired; `ctor` takes one
+      # argument per key. Private because its type cannot be spelled — the
+      # arity of `ctor` is only known to the deriver.
+      function(
+        'record',
+        { keys: 'List(String)', decoders: 'List(Decoder(a))', ctor: 'b' },
+        'Decoder(b)',
+        private: true,
+      ) { |keys, decoders, ctor|
+        keys
+          .zip(decoders)
+          .map { |key, decoder| Jade::Decode::Desc::RecordField[key, key.to_sym, decoder.desc] }
+          .then { Jade::Decode::Decoder[Jade::Decode::Desc::Record[it, ctor]] }
       }
 
       function(
@@ -312,9 +328,7 @@ module Jade
         { a: 'Decoder(a)', b: 'Decoder(b)' },
         'Decoder(Tuple2(a, b))',
       ) { |da, db|
-        Jade::Decode::Desc::Succeed[Jade::Runtime.curry(Jade::Tuple::Tuple2.method(:[]), 2)]
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[0, da.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[1, db.desc]] }
+        Jade::Decode::Desc::Indexed[[da.desc, db.desc], Jade::Tuple::Tuple2]
           .then { Jade::Decode::Decoder[it] }
       }
 
@@ -323,10 +337,7 @@ module Jade
         { a: 'Decoder(a)', b: 'Decoder(b)', c: 'Decoder(c)' },
         'Decoder(Tuple3(a, b, c))',
       ) { |da, db, dc|
-        Jade::Decode::Desc::Succeed[Jade::Runtime.curry(Jade::Tuple::Tuple3.method(:[]), 3)]
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[0, da.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[1, db.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[2, dc.desc]] }
+        Jade::Decode::Desc::Indexed[[da.desc, db.desc, dc.desc], Jade::Tuple::Tuple3]
           .then { Jade::Decode::Decoder[it] }
       }
 
@@ -335,11 +346,7 @@ module Jade
         { a: 'Decoder(a)', b: 'Decoder(b)', c: 'Decoder(c)', d: 'Decoder(d)' },
         'Decoder(Tuple4(a, b, c, d))',
       ) { |da, db, dc, dd|
-        Jade::Decode::Desc::Succeed[Jade::Runtime.curry(Jade::Tuple::Tuple4.method(:[]), 4)]
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[0, da.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[1, db.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[2, dc.desc]] }
-          .then { Jade::Decode::Desc::AndMap[it, Jade::Decode::Desc::Idx[3, dd.desc]] }
+        Jade::Decode::Desc::Indexed[[da.desc, db.desc, dc.desc, dd.desc], Jade::Tuple::Tuple4]
           .then { Jade::Decode::Decoder[it] }
       }
 
@@ -350,6 +357,22 @@ module Jade
       implementation('Decodable', 'Basics.Bool',   'decoder' => 'bool')
       implementation('Decodable', 'String.String', 'decoder' => 'string')
       implementation('Decodable', 'Decode.Value',  'decoder' => 'value')
+
+      # Registered here, not by the modules owning the types: they import
+      # Decode, so the instance cannot live the other way round. Private
+      # for the same reason `record` is — Decode cannot name those types
+      # back, and `Decoder(a)` would be a hole if anything could reach it.
+      {
+        'decimal' => [Stdlib::Wire.method(:decimal), 'Decimal', 'Decimal.Decimal'],
+        'instant' => [Stdlib::Wire.method(:instant), 'Instant', 'Clock.Instant'],
+        'iso_date' => [Stdlib::Wire.method(:date), 'Date', 'Calendar.Date'],
+      }.each do |fn_name, (parse, label, type_name)|
+        function(fn_name, {}, 'Decoder(a)', private: true) {
+          Jade::Decode::Decoder[Jade::Decode::Desc::FromString[label, parse]]
+        }
+
+        implementation('Decodable', type_name, 'decoder' => fn_name)
+      end
     end
   end
 end
