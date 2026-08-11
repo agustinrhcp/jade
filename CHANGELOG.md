@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0]
+
 ### Added
 
 - **`jade check [FILE...]`** type-checks and prints diagnostics without
@@ -46,6 +48,37 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Decoding a row returned from a port is roughly eight times cheaper.**
+  A derived decoder was a composition of combinators rebuilt and walked
+  for every row; a profile put 88% of the time inside the interpreter and
+  70 allocations on a four-field row. Deriving now emits one node
+  carrying every key, its decoder and the constructor, applied once
+  rather than curried through a closure per field; the interpreter
+  returns values unwrapped, with failures on a sentinel, so nothing
+  allocates a `Result` per node; and each descriptor decodes itself
+  instead of being matched out of a twenty-branch `case`. A four-field
+  row went 9.58 to 1.19 µs and 70 allocations to 5.
+- **`Decimal`, `Clock.Instant` and `Calendar.Date` read their text form
+  in Ruby** rather than parsing it through Jade-level combinators, which
+  cost a fresh decoder, two `Maybe`s and a tuple for every value. The
+  text forms are unchanged, so JSON output and existing ports are
+  unaffected. One input changes meaning: a trailing exponent marker
+  (`"825e-4e"`) used to read as `825e-4`, because splitting on every
+  `"e"` dropped the empty trailing piece, and is rejected now.
+- **Encoding a value back out to Ruby is cheaper by the same route.** A
+  derived record encoder built a pair per field and folded the list back
+  into a hash, with an intrinsic lookup for both per field per value; it
+  builds the hash directly. `Encodable(Instant)` writes its string in
+  Ruby next to the reader that parses it. Handing a four-field struct
+  back to a Ruby caller cost 2.26 µs/row over the internal form and now
+  costs 0.17 — what a caller waits for and what `Internal` measures have
+  converged.
+- **`Calendar.from_rata_die` is closed form.** It walked a year at a time
+  to find the year, then December backwards to find the month, allocating
+  a `Month` and a tuple per step through two twelve-branch `case`
+  statements. It is reached from `Clock.to_iso`, `Clock.on_date` and
+  `Calendar.add`, so this is not only an interop win — any Jade code
+  doing date arithmetic pays it.
 - The `case` completion snippet offers one `in` branch per variant instead of
   an `else` fallback. `else` is for matching literals, where exhaustiveness
   isn't available — not the default shape of a `case`.
@@ -59,6 +92,39 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Operator precedence was lost inside an infix chain's operands.**
+  `(1 + 2 * 3) + 0` was 9, `(10 - 4 / 2) + 0` was 3, and
+  `id(1 + 2 * 3) + 0` was 9. Shunting-yard ran on a chain's own operators
+  but treated every operand as an atom and returned it unfixed, so a
+  grouping, a call argument, a lambda body, a ternary branch or a record
+  value sitting in a chain kept the shape the parser built — left to
+  right, no precedence. Standing alone the same expression was fine,
+  which is why `1 + 2 * 3` and `(1 + 2 * 3)` both gave 7 and nothing
+  caught it. **This changes generated output for code that hit it**: a
+  project that commits generated artifacts and CI-checks them for drift
+  will see a diff, and the new bytes are the correct arithmetic.
+- **`Clock.on_date` reported the previous day for pre-1970 instants.**
+  `Clock.floor_div` subtracted one from the quotient for a negative
+  dividend with a remainder — the right correction when `/` truncates
+  toward zero, which Jade's doesn't; it already floors, so it floored
+  twice. `at_time` was unaffected, so `to_iso(-1)` read
+  `"1969-12-30T23:59:59Z"`: the time right, the date a day out. Exact
+  midnight was always correct, because the double correction only applies
+  when there is a remainder.
+- **Anonymous records decoded from the same shape now compare equal.**
+  The derived decoder built its constructor from a bare `Data.define`,
+  which mints a fresh class each time the decoder is built, so
+  `{ x: 1, y: "a" }` decoded twice compared false. It resolves through
+  the same interned registry record literals already used. Note this does
+  not unify decoded records with *literals* in the general case —
+  literals hoist to a per-module constant, so two modules with the same
+  shape still get different classes.
+- **The tuple decoders no longer build their constructor with
+  `Method#curry`.** A curried `Method` built once and called on every
+  decode corrupts the heap under GC compaction — a near-null "try to mark
+  T_NONE object" crash after enough rows. It is the pattern the
+  constructor-curry regression spec exists to prevent; that spec reads
+  generated code, so the stdlib's own copy was invisible to it.
 - **`Result.on_error` can change the error type**, as its signature has always
   claimed. The `Ok` arm handed back the input rather than rebuilding it, which
   unified the outgoing error type with the incoming one, so
