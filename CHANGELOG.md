@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Boundary decode errors name the right side.** `DecodeError` reported
+  "Port returned a value that failed to decode" for every failure, including
+  values Ruby passed *into* an exposed function, where no port is involved —
+  sending you to look for a `uses` block that may not exist. Argument failures
+  now read "Ruby passed a value that failed to decode"; port returns are
+  unchanged.
+- **A symbol-keyed Hash says so.** Structs cross the boundary as a Hash with
+  string keys, so `Person.birthday(name: "Ada", age: 40)` used to fail with
+  `expected String, got null` — each field independently reading `nil`, naming
+  neither the cause nor the fix. It is now caught where the whole hash is in
+  scope, listing the offending keys and the correction. Hashes mixing string
+  and symbol keys are left alone; that is a real shape mismatch, and the
+  per-field errors describe it better than a guess would.
+
 ## [0.5.0]
 
 ### Added

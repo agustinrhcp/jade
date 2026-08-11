@@ -93,7 +93,7 @@ module Jade
 
       def decode(decoder, value)
         Jade::Decode::Runner.run!(decoder, value) do |error|
-          fail Jade::Interop::DecodeError.new(error, value)
+          fail Jade::Interop::DecodeError.new(error, value, source: :port_return)
         end
       end
     end
