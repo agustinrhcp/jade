@@ -393,6 +393,49 @@ module Jade
         expect(Json::Internal.instant_from_json('"nope"')).to be_err
       end
 
+      # Decodable(Instant) reads the wire form in Ruby (Stdlib::Text)
+      # while `Clock.from_iso` is still the Jade parser. They have to accept
+      # exactly the same strings and produce exactly the same Instants, so
+      # compare them rather than restate whatever the grammar happens to be.
+      # Timezone offsets are in the corpus because neither one accepts them.
+      describe 'the native wire parser against Clock.from_iso' do
+        let(:corpus) do
+          [
+            '2023-11-14T22:13:20Z', '2023-11-14 22:13:20', '2023-11-14T22:13:20',
+            '2023-11-14T22:13:20.5Z', '2023-11-14T22:13:20.25Z',
+            '2023-11-14T22:13:20.250Z', '2023-11-14T22:13:20.123456Z',
+            '1970-01-01T00:00:00Z', '0001-01-01T00:00:00Z', '9999-12-31T23:59:59Z',
+            '2024-02-29T12:00:00Z', '1900-02-28T12:00:00Z',
+            '2023-1-4T2:3:4Z', '2023-11-14T24:99:99Z',
+            '2023-13-99T12:00:00Z', '2023-00-00T12:00:00Z',
+            '2023-11-14T12:00:00+02:00', '2023-11-14T12:00:00-05:00',
+            '2023-11-14T12:00', '2023-11-14T', '2023-11-14',
+            '2023-11-14TT12:00:00Z', '2023-11-14T12:00:00ZZ',
+            '2023-11-14T12:00:00.', 'T12:00:00Z', '', 'nope',
+            '-2023-11-14T00:00:00Z',
+          ]
+        end
+
+        def jade_parse(str)
+          case Use::Internal.parse_iso(str)
+          in Jade::Result::Ok[instant] then instant
+          in Jade::Result::Err then nil
+          end
+        end
+
+        it 'accepts and rejects exactly the same strings' do
+          disagreements = corpus.reject do |str|
+            Jade::Stdlib::Text.to_instant(str) == jade_parse(str)
+          end
+
+          expect(disagreements).to be_empty
+        end
+
+        it 'covers both outcomes, so the comparison is not vacuous' do
+          expect(corpus.map { jade_parse(it).nil? }.uniq).to contain_exactly(true, false)
+        end
+      end
+
       it 'encodes a Duration as Int milliseconds' do
         d = Json::Internal.make_duration(5000)
         expect(Json::Internal.duration_to_json(d)).to eql '5000'

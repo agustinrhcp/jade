@@ -208,22 +208,9 @@ module Jade
           end
 
 
-          def from_wire(s: String) -> Decoder(Decimal)
-            case String.split(s, "e")
-            in [m, e]
-              case (String.to_int(m), String.to_int(e))
-              in (Just(mi), Just(ei)) then Decode.succeed(of(mi, ei))
-              else Decode.fail("invalid decimal: " ++ s)
-              end
-
-            else Decode.fail("invalid decimal: " ++ s)
-            end
-          end
-
-
-          implements Decodable(Decimal) with
-            decoder: -> { Decode.string |> Decode.and_then(from_wire) }
-          end
+          # Decodable(Decimal) is registered by Decode itself, which reads
+          # this same wire form in Ruby — a numeric column decodes about
+          # three times faster than the Jade version of the parse did.
 
 
           implements Encodable(Decimal) with

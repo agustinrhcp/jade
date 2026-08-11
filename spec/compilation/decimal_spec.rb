@@ -132,6 +132,31 @@ module Jade
         expect(M::Internal.roundtrip('"825e-4"'))
           .to be_ok(have_attributes(_1: 825, _2: -4))
       end
+
+      it 'decodes a negative coefficient and a zero exponent' do
+        expect(M::Internal.roundtrip('"-825e0"'))
+          .to be_ok(have_attributes(_1: -825, _2: 0))
+      end
+
+      # The decoder parses this wire form in Ruby rather than in Jade, so
+      # these pin the shapes it must keep rejecting.
+      [
+        ['not a decimal at all', '"nonsense"'],
+        ['no exponent', '"825"'],
+        ['an empty exponent', '"825e"'],
+        ['an empty coefficient', '"e-4"'],
+        ['a non-numeric exponent', '"825ex"'],
+        ['a second exponent', '"825e-4e2"'],
+        # The Jade version read this as 825e-4 — splitting on every "e"
+        # dropped the trailing empty piece. Rejecting it is the one
+        # behaviour change in moving the parse to Ruby.
+        ['a trailing exponent marker', '"825e-4e"'],
+        ['a number, not a string', '42'],
+      ].each do |label, json|
+        it "rejects #{label}" do
+          expect(M::Internal.roundtrip(json)).to be_err
+        end
+      end
     end
   end
 end
