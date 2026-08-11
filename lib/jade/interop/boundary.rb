@@ -50,10 +50,19 @@ module Jade
 
       def hash(label, v)
         case v
-        when ::Hash then v
+        when ::Hash then string_keyed!(label, v)
         when ::Data then v.to_h.transform_keys(&:to_s)
         else type_error!(label, v)
         end
+      end
+
+      # Mixed keys are a real shape mismatch; the per-field errors say more
+      # than a guess about intent would.
+      def string_keyed!(label, v)
+        return v if v.empty? || v.keys.any?(::String)
+
+        v.keys.grep(::Symbol)
+          .then { it.empty? ? v : raise(Jade::Interop::SymbolKeys.new(label, it)) }
       end
 
       def type_error!(label, v)

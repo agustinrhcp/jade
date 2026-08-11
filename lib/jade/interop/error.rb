@@ -40,12 +40,31 @@ module Jade
       end
     end
 
-    class DecodeError < Error
-      attr_reader :decode_error, :value
+    # Caught where the whole hash is in scope; downstream each field just
+    # reads nil and blames its own type.
+    class SymbolKeys < Error
+      def initialize(label, keys)
+        super(
+          "#{label} expects a Hash with string keys, got symbol keys " \
+            "(#{keys.take(4).map(&:inspect).join(', ')}). " \
+            "Values cross the boundary as wire data — " \
+            "try #{keys.first.to_s.inspect} rather than #{keys.first.inspect}."
+        )
+      end
+    end
 
-      def initialize(decode_error, value)
+    class DecodeError < Error
+      attr_reader :decode_error, :value, :source
+
+      SUBJECTS = {
+        argument: 'Ruby passed a value that failed to decode',
+        port_return: 'Port returned a value that failed to decode',
+      }.freeze
+
+      def initialize(decode_error, value, source: :argument)
         @decode_error = decode_error
         @value = value
+        @source = source
         super(format(decode_error, value))
       end
 
@@ -54,16 +73,17 @@ module Jade
       def format(error, value)
         path, leaf = unwind(error)
         location = path.empty? ? "value" : path.join
+        subject = SUBJECTS.fetch(@source)
 
         case leaf
         in Jade::Decode::WrongType[expected, got]
-          "Port returned a value that failed to decode at #{location}: expected #{expected}, got #{got} (#{value.inspect})"
+          "#{subject} at #{location}: expected #{expected}, got #{got} (#{value.inspect})"
 
         in Jade::Decode::MissingField[key]
-          "Port returned a value that failed to decode at #{location}: missing field `#{key}` (#{value.inspect})"
+          "#{subject} at #{location}: missing field `#{key}` (#{value.inspect})"
 
         in Jade::Decode::Custom[msg]
-          "Port returned a value that failed to decode at #{location}: #{msg} (#{value.inspect})"
+          "#{subject} at #{location}: #{msg} (#{value.inspect})"
 
         in Jade::Decode::Multiple[errors]
           errors
