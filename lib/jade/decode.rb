@@ -11,27 +11,389 @@ module Jade
 
     Decoder = Data.define(:desc)
 
+    # Decoding returns the value itself, or one of these. Never escapes
+    # this file: `Runner` turns it into the Result callers see.
+    Failure = Struct.new(:error)
+
+    # Distinguishes a key that is absent from one whose value is nil.
+    ABSENT = Object.new
+
     module Desc
-      Str      = Data.define()
-      Int      = Data.define()
-      Flt      = Data.define()
-      Bool     = Data.define()
-      Pass     = Data.define()
-      Nullable = Data.define(:inner)
-      Field    = Data.define(:key, :inner)
-      OptField = Data.define(:key, :inner)
-      Optional = Data.define(:key, :inner, :default)
-      Idx      = Data.define(:index, :inner)
-      Lst      = Data.define(:inner)
-      Dct      = Data.define(:k_inner, :v_inner)
-      Map      = Data.define(:fn, :d)
-      Succeed  = Data.define(:value)
-      AndMap   = Data.define(:wrapped, :value_d)
-      Sequence = Data.define(:decoders)
-      OneOf    = Data.define(:decoders)
-      AndThen  = Data.define(:fn, :d)
-      Fail     = Data.define(:msg)
-      Variant  = Data.define(:cases)
+      module Node
+        def decoded?(v) = !(Failure === v)
+
+        private
+
+        def type_err(expected, got)
+          Failure.new(WrongType[expected, Decode.type_name(got)])
+        end
+
+        def coerce_hash(value)
+          case value
+          when ::Hash then value
+          when ::Data then value.to_h
+          end
+        end
+
+        # Ports hand back Symbol-keyed hashes and String-keyed ones, so
+        # both are read before deciding a key is absent.
+        def at_key(h, sym, key)
+          value = h[sym]
+          return value unless value.nil?
+
+          value = h[key]
+          return value unless value.nil?
+
+          h.key?(sym) || h.key?(key) ? nil : ABSENT
+        end
+
+        def at_field(key, result)
+          decoded?(result) ? result : Failure.new(AtField[key, result.error])
+        end
+
+        def wrap_errors(errors)
+          errors.length == 1 ? errors.first : Multiple[errors]
+        end
+      end
+
+      Str = Data.define() do
+        include Node
+
+        def decode(value)
+          ::String === value ? value.dup : type_err('String', value)
+        end
+      end
+
+      Int = Data.define() do
+        include Node
+
+        def decode(value)
+          ::Integer === value ? value : type_err('Int', value)
+        end
+      end
+
+      Flt = Data.define() do
+        include Node
+
+        def decode(value)
+          ::Numeric === value ? value.to_f : type_err('Float', value)
+        end
+      end
+
+      Bool = Data.define() do
+        include Node
+
+        def decode(value)
+          value == true || value == false ? value : type_err('Bool', value)
+        end
+      end
+
+      Pass = Data.define() do
+        include Node
+
+        def decode(value) = value
+      end
+
+      Nullable = Data.define(:inner) do
+        include Node
+
+        def decode(value)
+          return Jade::Maybe::Nothing[] if value.nil?
+
+          decoded = inner.decode(value)
+          decoded?(decoded) ? Jade::Maybe::Just[decoded] : decoded
+        end
+      end
+
+      Field = Data.define(:key, :inner) do
+        include Node
+
+        def decode(value)
+          h = coerce_hash(value)
+          return type_err('Object', value) unless h
+
+          raw = at_key(h, key.to_sym, key)
+          return Failure.new(MissingField[key.to_s]) if ABSENT.equal?(raw)
+
+          at_field(key.to_s, inner.decode(raw))
+        end
+      end
+
+      OptField = Data.define(:key, :inner) do
+        include Node
+
+        def decode(value)
+          h = coerce_hash(value)
+          return type_err('Object', value) unless h
+
+          raw = at_key(h, key.to_sym, key)
+          return Jade::Maybe::Nothing[] if ABSENT.equal?(raw)
+
+          decoded = inner.decode(raw)
+          decoded?(decoded) ? Jade::Maybe::Just[decoded] : Failure.new(AtField[key.to_s, decoded.error])
+        end
+      end
+
+      Optional = Data.define(:key, :inner, :default) do
+        include Node
+
+        def decode(value)
+          h = coerce_hash(value)
+          return type_err('Object', value) unless h
+
+          raw = at_key(h, key.to_sym, key)
+          return default if ABSENT.equal?(raw) || raw.nil?
+
+          at_field(key.to_s, inner.decode(raw))
+        end
+      end
+
+      Idx = Data.define(:index, :inner) do
+        include Node
+
+        def decode(value)
+          return type_err('Array', value) unless ::Array === value
+          return Failure.new(MissingField["[#{index}]"]) if index >= value.length
+
+          decoded = inner.decode(value[index])
+          decoded?(decoded) ? decoded : Failure.new(AtIndex[index, decoded.error])
+        end
+      end
+
+      Lst = Data.define(:inner) do
+        include Node
+
+        def decode(value)
+          return type_err('Array', value) unless ::Array === value
+
+          size = value.length
+          values = ::Array.new(size)
+          errors = nil
+          i = 0
+
+          while i < size
+            decoded = inner.decode(value[i])
+            decoded?(decoded) ? values[i] = decoded : (errors ||= []) << AtIndex[i, decoded.error]
+            i += 1
+          end
+
+          errors ? Failure.new(wrap_errors(errors)) : values
+        end
+      end
+
+      RecordField = Data.define(:key, :sym, :inner)
+
+      Record = Data.define(:fields, :ctor) do
+        include Node
+
+        # Spells out `at_key` and `decoded?` rather than calling them:
+        # this runs once per field of every decoded row.
+        def decode(value)
+          h = coerce_hash(value)
+          return type_err('Object', value) unless h
+
+          size = fields.length
+          args = ::Array.new(size)
+          errors = nil
+          i = 0
+
+          while i < size
+            field = fields[i]
+            key = field.key
+            sym = field.sym
+            raw = h[sym]
+            raw = h[key] if raw.nil?
+
+            if raw.nil? && !h.key?(sym) && !h.key?(key)
+              (errors ||= []) << MissingField[key]
+            else
+              decoded = field.inner.decode(raw)
+              Failure === decoded ? (errors ||= []) << AtField[key, decoded.error] : args[i] = decoded
+            end
+            i += 1
+          end
+
+          errors ? Failure.new(wrap_errors(errors)) : ctor.new(*args)
+        end
+      end
+
+      # `Record` by position: N indices of an array into an N-argument
+      # constructor. What the tuple decoders are built from.
+      Indexed = Data.define(:inners, :ctor) do
+        include Node
+
+        def decode(value)
+          return type_err('Array', value) unless ::Array === value
+
+          size = inners.length
+          given = value.length
+          args = ::Array.new(size)
+          errors = nil
+          i = 0
+
+          while i < size
+            if i >= given
+              (errors ||= []) << MissingField["[#{i}]"]
+            else
+              decoded = inners[i].decode(value[i])
+              Failure === decoded ? (errors ||= []) << AtIndex[i, decoded.error] : args[i] = decoded
+            end
+            i += 1
+          end
+
+          errors ? Failure.new(wrap_errors(errors)) : ctor.new(*args)
+        end
+      end
+
+      # `parse` returns the value, or nil when the text is malformed.
+      FromString = Data.define(:label, :parse) do
+        include Node
+
+        def decode(value)
+          return type_err(label, value) unless ::String === value
+
+          parsed = parse.call(value)
+          parsed.nil? ? Failure.new(Custom["invalid #{label}: #{value}"]) : parsed
+        end
+      end
+
+      Dct = Data.define(:k_inner, :v_inner) do
+        include Node
+
+        # Two accepted wire shapes for Dict: a Hash (the natural Ruby form
+        # and what String-keyed JSON parses to) and an Array of [k, v]
+        # pairs (the form Encode.dict emits — survives non-String keys).
+        def decode(value)
+          if (h = coerce_hash(value))
+            entries(h.each_pair.map { |k, v| [[k, v], k.to_s] }, :at_field)
+          elsif ::Array === value
+            entries(value.each_with_index.map { |pair, i| [pair, i] }, :at_index)
+          else
+            type_err('Object or Array', value)
+          end
+        end
+
+        private
+
+        def entries(pairs, position)
+          h = {}
+          errors = []
+
+          pairs.each do |pair, pos|
+            case pair
+            in [k_raw, v_raw]
+              k = k_inner.decode(k_raw)
+              v = v_inner.decode(v_raw)
+
+              if decoded?(k) && decoded?(v)
+                h[k] = v
+              else
+                [k, v].each { errors << wrap_pos(position, pos, it.error) unless decoded?(it) }
+              end
+
+            else
+              errors << wrap_pos(position, pos, WrongType['Array[2]', Decode.type_name(pair)])
+            end
+          end
+
+          errors.empty? ? Jade::Dict::Dict[h] : Failure.new(wrap_errors(errors))
+        end
+
+        def wrap_pos(position, pos, inner)
+          position == :at_index ? AtIndex[pos, inner] : AtField[pos, inner]
+        end
+      end
+
+      Map = Data.define(:fn, :d) do
+        include Node
+
+        def decode(value)
+          decoded = d.decode(value)
+          decoded?(decoded) ? fn.call(decoded) : decoded
+        end
+      end
+
+      Succeed = Data.define(:value) do
+        include Node
+
+        def decode(_value) = value
+      end
+
+      AndMap = Data.define(:wrapped, :value_d) do
+        include Node
+
+        def decode(value)
+          fn = wrapped.decode(value)
+          arg = value_d.decode(value)
+
+          return fn.call(arg) if decoded?(fn) && decoded?(arg)
+
+          [fn, arg]
+            .reject { decoded?(it) }
+            .map(&:error)
+            .then { Failure.new(wrap_errors(it)) }
+        end
+      end
+
+      Sequence = Data.define(:decoders) do
+        include Node
+
+        def decode(value)
+          results = decoders.map { it.decode(value) }
+          errors = results.reject { decoded?(it) }
+
+          errors.empty? ? results : Failure.new(wrap_errors(errors.map(&:error)))
+        end
+      end
+
+      OneOf = Data.define(:decoders) do
+        include Node
+
+        def decode(value)
+          errors = []
+
+          decoders.each do
+            decoded = it.decode(value)
+            return decoded if decoded?(decoded)
+
+            errors << decoded.error
+          end
+
+          Failure.new(wrap_errors(errors))
+        end
+      end
+
+      AndThen = Data.define(:fn, :d) do
+        include Node
+
+        def decode(value)
+          decoded = d.decode(value)
+          decoded?(decoded) ? fn.call(decoded).desc.decode(value) : decoded
+        end
+      end
+
+      Fail = Data.define(:msg) do
+        include Node
+
+        def decode(_value) = Failure.new(Custom[msg])
+      end
+
+      Variant = Data.define(:cases) do
+        include Node
+
+        def decode(value)
+          return type_err('Array', value) unless ::Array === value
+          return Failure.new(Custom['empty variant array']) if value.empty?
+
+          tag = value.first
+          return type_err('String tag at index 0', tag) unless ::String === tag
+
+          inner = cases[tag]
+          return Failure.new(Custom["unknown variant: #{tag.inspect}"]) unless inner
+
+          inner.decode(value)
+        end
+      end
     end
 
     module Runner
@@ -41,264 +403,22 @@ module Jade
         begin
           parsed = JSON.parse(json_string)
         rescue JSON::ParserError => e
-          return err(Jade::Decode::WrongType["valid JSON", e.message])
+          return Jade::Result::Err[Jade::Decode::WrongType['valid JSON', e.message]]
         end
         run(decoder, parsed)
       end
 
       def run(decoder, value)
-        interp(decoder.desc, value)
+        decoded = decoder.desc.decode(value)
+
+        Failure === decoded ? Jade::Result::Err[decoded.error] : Jade::Result::Ok[decoded]
       end
 
-      private
+      # The decoded value or a raise — no Result for the caller to unwrap.
+      def run!(decoder, value)
+        decoded = decoder.desc.decode(value)
 
-      def interp(desc, value)
-        case desc
-        in Desc::Str[]
-          value.is_a?(::String) ? ok(value.dup) : type_err("String", value)
-
-        in Desc::Int[]
-          value.is_a?(::Integer) && !value.is_a?(::Float) ? ok(value) : type_err("Int", value)
-
-        in Desc::Flt[]
-          value.is_a?(::Numeric) ? ok(value.to_f) : type_err("Float", value)
-
-        in Desc::Bool[]
-          value == true || value == false ? ok(value) : type_err("Bool", value)
-
-        in Desc::Pass[]
-          ok(value)
-
-        in Desc::Nullable[inner]
-          if value.nil?
-            ok(nothing)
-          else
-            case interp(inner, value)
-            in Jade::Result::Ok[v] then ok(just(v))
-            in Jade::Result::Err => e then e
-            end
-          end
-
-        in Desc::Field[key, inner]
-          h = coerce_hash(value)
-          return type_err("Object", value) unless h
-
-          sym = key.to_sym
-          if h.key?(sym)
-            wrap_at_field(key, interp(inner, h[sym]))
-          elsif h.key?(key)
-            wrap_at_field(key, interp(inner, h[key]))
-          else
-            err(Jade::Decode::MissingField[key.to_s])
-          end
-
-        in Desc::OptField[key, inner]
-          h = coerce_hash(value)
-          return type_err("Object", value) unless h
-
-          sym = key.to_sym
-          if h.key?(sym)
-            wrap_opt_at_field(key, interp(inner, h[sym]))
-          elsif h.key?(key)
-            wrap_opt_at_field(key, interp(inner, h[key]))
-          else
-            ok(nothing)
-          end
-
-        in Desc::Optional[key, inner, default]
-          h = coerce_hash(value)
-          return type_err("Object", value) unless h
-
-          sym = key.to_sym
-          raw = h.fetch(sym) { h.fetch(key) { :__absent__ } }
-
-          if raw == :__absent__ || raw.nil?
-            ok(default)
-          else
-            case interp(inner, raw)
-            in Jade::Result::Ok => r  then r
-            in Jade::Result::Err[e]   then err(Jade::Decode::AtField[key.to_s, e])
-            end
-          end
-
-        in Desc::Idx[index, inner]
-          arr = coerce_array(value)
-          return type_err("Array", value) unless arr
-          return err(Jade::Decode::MissingField["[#{index}]"]) if index >= arr.length
-
-          case interp(inner, arr[index])
-          in Jade::Result::Ok => r  then r
-          in Jade::Result::Err[e]   then err(Jade::Decode::AtIndex[index, e])
-          end
-
-        in Desc::Lst[inner]
-          arr = coerce_array(value)
-          return type_err("Array", value) unless arr
-
-          values = []
-          errors = []
-          arr.each_with_index do |v, i|
-            case interp(inner, v)
-            in Jade::Result::Ok[decoded] then values << decoded
-            in Jade::Result::Err[e]      then errors << Jade::Decode::AtIndex[i, e]
-            end
-          end
-          errors.empty? ? ok(values) : err(wrap_errors(errors))
-
-        in Desc::Dct[k_inner, v_inner]
-          interp_dict(k_inner, v_inner, value)
-
-        in Desc::Map[fn, d]
-          case interp(d, value)
-          in Jade::Result::Ok[v] then ok(fn.call(v))
-          in Jade::Result::Err => e then e
-          end
-
-        in Desc::Succeed[v]
-          ok(v)
-
-        in Desc::AndMap[wrapped, value_d]
-          combine([interp(wrapped, value), interp(value_d, value)]) { |fn_and_a|
-            fn, a = fn_and_a
-            fn.call(a)
-          }
-
-        in Desc::Sequence[ds]
-          combine(ds.map { interp(it, value) }) { it }
-
-        in Desc::OneOf[ds]
-          errors = []
-          ds.each do |d|
-            case interp(d, value)
-            in Jade::Result::Ok => r  then return r
-            in Jade::Result::Err[e]   then errors << e
-            end
-          end
-          err(wrap_errors(errors))
-
-        in Desc::AndThen[fn, d]
-          case interp(d, value)
-          in Jade::Result::Ok[v]    then interp(fn.call(v).desc, value)
-          in Jade::Result::Err => e then e
-          end
-
-        in Desc::Fail[msg]
-          err(Jade::Decode::Custom[msg])
-
-        in Desc::Variant[cases]
-          interp_variant(cases, value)
-        end
-      end
-
-      def interp_variant(cases, value)
-        return type_err('Array', value) unless value.is_a?(::Array)
-        return err(Custom["empty variant array"]) if value.empty?
-
-        tag = value.first
-        return type_err('String tag at index 0', tag) unless tag.is_a?(::String)
-
-        inner = cases[tag]
-        return err(Custom["unknown variant: #{tag.inspect}"]) unless inner
-
-        interp(inner, value)
-      end
-
-      def ok(v)  = Jade::Result::Ok[v]
-      def err(e) = Jade::Result::Err[e]
-      def nothing = Jade::Maybe::Nothing[]
-      def just(v) = Jade::Maybe::Just[v]
-
-      def type_err(expected, got)
-        err(Jade::Decode::WrongType[expected, ruby_type_name(got)])
-      end
-
-      def wrap_at_field(key, result)
-        case result
-        in Jade::Result::Ok => r  then r
-        in Jade::Result::Err[e]   then err(Jade::Decode::AtField[key.to_s, e])
-        end
-      end
-
-      def wrap_opt_at_field(key, result)
-        case result
-        in Jade::Result::Ok[v]  then ok(just(v))
-        in Jade::Result::Err[e] then err(Jade::Decode::AtField[key.to_s, e])
-        end
-      end
-
-      def combine(results, &block)
-        values = []
-        errors = []
-        results.each do |r|
-          case r
-          in Jade::Result::Ok[v]  then values << v
-          in Jade::Result::Err[e] then errors << e
-          end
-        end
-        errors.empty? ? ok(block.call(values)) : err(wrap_errors(errors))
-      end
-
-      def wrap_errors(errors)
-        errors.length == 1 ? errors.first : Jade::Decode::Multiple[errors]
-      end
-
-      # Two accepted wire shapes for Dict: a Hash (the natural Ruby form
-      # and what String-keyed JSON parses to) and an Array of [k, v] pairs
-      # (the form Encode.dict emits — survives non-String keys).
-      def interp_dict(k_inner, v_inner, value)
-        if (h = coerce_hash(value))
-          h.each_pair.map { |k, v| [[k, v], k.to_s] }
-            .then { decode_dict_entries(k_inner, v_inner, it, :at_field) }
-        elsif (arr = coerce_array(value))
-          arr.each_with_index.map { |pair, i| [pair, i] }
-            .then { decode_dict_entries(k_inner, v_inner, it, :at_index) }
-        else
-          type_err("Object or Array", value)
-        end
-      end
-
-      def decode_dict_entries(k_inner, v_inner, entries, position)
-        h = {}
-        errors = []
-        entries.each do |pair, pos|
-          case pair
-          in [k_raw, v_raw]
-            k_res = interp(k_inner, k_raw)
-            v_res = interp(v_inner, v_raw)
-            if k_res.is_a?(Jade::Result::Ok) && v_res.is_a?(Jade::Result::Ok)
-              h[k_res._1] = v_res._1
-            else
-              [k_res, v_res].each do |r|
-                errors << wrap_pos(position, pos, r._1) if r.is_a?(Jade::Result::Err)
-              end
-            end
-          else
-            errors << wrap_pos(position, pos, Jade::Decode::WrongType["Array[2]", ruby_type_name(pair)])
-          end
-        end
-        errors.empty? ? ok(Jade::Dict::Dict[h]) : err(wrap_errors(errors))
-      end
-
-      def wrap_pos(position, pos, inner)
-        position == :at_index \
-          ? Jade::Decode::AtIndex[pos, inner]
-          : Jade::Decode::AtField[pos, inner]
-      end
-
-      def coerce_hash(value)
-        case value
-        when ::Hash then value
-        when ::Data then value.to_h
-        else nil
-        end
-      end
-
-      def coerce_array(value)
-        value.is_a?(::Array) ? value : nil
-      end
-
-      def ruby_type_name(v)
-        Jade::Decode.type_name(v)
+        Failure === decoded ? yield(decoded.error) : decoded
       end
     end
 

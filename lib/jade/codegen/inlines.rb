@@ -183,6 +183,9 @@ module Jade
         Decode.and_map
         Decode.and_then
         Decode.bool
+        Decode.decimal
+        Decode.instant
+        Decode.iso_date
         Decode.decode
         Decode.decode_string
         Decode.dict
@@ -198,6 +201,7 @@ module Jade
         Decode.one_of
         Decode.optional
         Decode.optional_field
+        Decode.record
         Decode.required
         Decode.sequence
         Decode.set

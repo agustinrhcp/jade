@@ -76,8 +76,15 @@ module Jade
             constraints:,
           )
           .with(module_name:)
-          .tap { store(it) unless private }
+          .tap { store(it) }
+          .tap { private_names << name.to_s if private }
           .tap { Runtime.register(qualified_fn_name, &impl) }
+      end
+
+      # Private means defined but not exposed: codegen and `implementation`
+      # resolve it, user modules cannot name it.
+      def private_names
+        @private_names ||= []
       end
 
       # Approach A: the inline template is the single source of truth for a
@@ -219,6 +226,7 @@ module Jade
       def exposes
         @symbols
           .reject { it.is_a?(Symbol::Implementation) }
+          .reject { it.is_a?(Symbol::StdlibFunction) && private_names.include?(it.name) }
           .map { it.to_ref }
       end
 

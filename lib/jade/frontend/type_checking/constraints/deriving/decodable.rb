@@ -82,14 +82,14 @@ module Jade
             def derive_struct(constraint, struct_sym, type_args, registry, lookup, entry_name)
               fields = struct_fields(struct_sym, type_args, registry)
 
-              [:struct_constructor, struct_sym.qualified_name, fields.size]
+              [:struct_class, struct_sym.qualified_name]
                 .then { derive_record(constraint, fields, it, lookup, entry_name) }
             end
 
             def derive_anonymous_record(constraint, fields, lookup, entry_name)
               keys = fields.keys.map(&:to_s)
 
-              [:anon_record_constructor, keys]
+              [:anon_record_class, keys]
                 .then { derive_record(constraint, fields.to_a, it, lookup, entry_name) }
             end
 
@@ -121,19 +121,14 @@ module Jade
             end
 
             def record_body(fields, constructor_ref)
-              seed = [:call, [:stdlib_fn, 'Decode.succeed'], [constructor_ref]]
-
-              fields.each_with_index.reduce(seed) do |acc, ((field_name, _), idx)|
-                field_decoder = [:call,
-                  [:stdlib_fn, 'Decode.field'],
-                  [
-                    field_name.to_s,
-                    [:impl_arg, idx, 'decoder'],
-                  ],
-                ]
-
-                [:call, [:stdlib_fn, 'Decode.and_map'], [acc, field_decoder]]
-              end
+              [:call,
+                [:stdlib_fn, 'Decode.record'],
+                [
+                  [:list, fields.map { |name, _| name.to_s }],
+                  [:list, fields.each_index.map { [:impl_arg, it, 'decoder'] }],
+                  constructor_ref,
+                ],
+              ]
             end
 
             # Free-var inner constraints fall back to the constraint marker

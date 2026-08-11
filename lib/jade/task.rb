@@ -92,9 +92,8 @@ module Jade
       private
 
       def decode(decoder, value)
-        case Jade::Decode::Runner.run(decoder, value)
-        in Jade::Result::Ok[v]  then v
-        in Jade::Result::Err[e] then fail Jade::Interop::DecodeError.new(e, value)
+        Jade::Decode::Runner.run!(decoder, value) do |error|
+          fail Jade::Interop::DecodeError.new(error, value)
         end
       end
     end
