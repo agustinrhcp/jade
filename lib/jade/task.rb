@@ -1,4 +1,5 @@
 require 'jade/tasks'
+require 'jade/background'
 
 module Jade
   module Task
@@ -15,6 +16,26 @@ module Jade
 
       def run
         Jade::Tasks.dispatch(task_def, *args)
+      end
+    end
+
+    # `options` arrives already encoded — Task.background_with runs it
+    # through the caller's Encodable before building this node, so what
+    # reaches the adapter is the same wire form port arguments take.
+    Background = Data.define(:task, :options) do
+      include Task
+
+      def run
+        # A port lowers to a Dispatch wrapped in Decoded; semantic analysis
+        # has already rejected anything else.
+        dispatch = case task
+                   in Decoded(task: Dispatch => d) then d
+                   in Dispatch => d then d
+                   end
+
+        dispatch => Dispatch(task_def:, args:)
+
+        Jade::Result::Ok[Jade::Background.enqueue(task_def, args, options)]
       end
     end
 
