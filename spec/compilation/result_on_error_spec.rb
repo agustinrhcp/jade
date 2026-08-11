@@ -28,7 +28,7 @@ module Jade
     end
 
     before do
-      test_compiler.require('recovery', source)
+      test_compiler.require(source)
     end
 
     it 'carries an Ok through into the new error type' do

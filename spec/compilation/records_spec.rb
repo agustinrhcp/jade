@@ -22,7 +22,7 @@ module Jade
       end
 
       it 'generates a person with the right attributes' do
-        expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+        expect { test_compiler.require(pepe_source) }.to_not raise_error
 
         expect(Pepe::Internal.person()).to have_attributes(name: 'Paul', age: 55)
       end
@@ -42,7 +42,7 @@ module Jade
         end
 
         it 'fails with type mismatch' do
-          expect { test_compiler.require('pepe', pepe_source) }
+          expect { test_compiler.require(pepe_source) }
             .to raise_error(CompilationError, /it returns { name : String, age : Int } but its signature says it should be { name : String, age : Float }/)
         end
       end
@@ -67,7 +67,7 @@ module Jade
         end
 
         it 'returns the age' do
-          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+          expect { test_compiler.require(pepe_source) }.to_not raise_error
 
           expect(Pepe.pauls_age()).to eql 55
         end
@@ -92,7 +92,7 @@ module Jade
           end
 
           it 'returns the age' do
-            expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+            expect { test_compiler.require(pepe_source) }.to_not raise_error
 
             expect(Pepe.pauls_age()).to eql 55
           end
@@ -118,7 +118,7 @@ module Jade
           end
 
           it 'fails with type mismatch' do
-            expect { test_compiler.require('pepe', pepe_source) }
+            expect { test_compiler.require(pepe_source) }
               .to raise_error(CompilationError, /it expects { a | ate : Int } but found { name : String, age : Int }>/)
           end
         end
@@ -145,7 +145,7 @@ module Jade
         end
 
         it 'updates the record' do
-          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+          expect { test_compiler.require(pepe_source) }.to_not raise_error
 
           expect(Pepe::Internal.pauls_birthday()).to have_attributes(name: 'Paul', age: 56)
         end
@@ -172,7 +172,7 @@ module Jade
         end
 
         it 'updates the record' do
-          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+          expect { test_compiler.require(pepe_source) }.to_not raise_error
 
           expect(Pepe::Internal.pauls_birthday()).to have_attributes(name: 'Paul', age: 56)
         end
@@ -206,7 +206,7 @@ module Jade
         end
 
         it 'updates the record' do
-          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+          expect { test_compiler.require(pepe_source) }.to_not raise_error
 
           expect(Pepe.pauls_id()).to eql(10)
           expect(Pepe.franks_id()).to eql("f10")
@@ -244,7 +244,7 @@ module Jade
         end
 
         it 'updates the record' do
-          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+          expect { test_compiler.require(pepe_source) }.to_not raise_error
 
           expect(Pepe.paul_is_paul()).to be true
           expect(Pepe.frank_is_paul()).to be false
@@ -265,7 +265,7 @@ module Jade
           end
 
           it 'fails with type mismatch' do
-            expect { test_compiler.require('pepe', pepe_source) }
+            expect { test_compiler.require(pepe_source) }
               .to raise_error(CompilationError, /Pattern is trying to match { name : String, id : Int } with { t11 | name : Int }/)
           end
         end
@@ -285,7 +285,7 @@ module Jade
           end
 
           it 'fails with type mismatch' do
-            expect { test_compiler.require('pepe', pepe_source) }
+            expect { test_compiler.require(pepe_source) }
               .to raise_error(CompilationError, /Pattern is trying to match { name : String, id : Int } with { t\d+ | name : Maybe(String) }/)
           end
         end
@@ -310,7 +310,7 @@ module Jade
       end
 
       it 'generates a person with the right attributes' do
-        expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+        expect { test_compiler.require(pepe_source) }.to_not raise_error
 
         expect(Pepe::Internal.person()).to have_attributes(name: 'Paul', age: 55)
       end
@@ -338,7 +338,7 @@ module Jade
         end
 
         it 'generates a person with the right attributes' do
-          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+          expect { test_compiler.require(pepe_source) }.to_not raise_error
 
           expect(Pepe.pauls_name()).to eql('Paul')
         end
@@ -372,7 +372,7 @@ module Jade
         end
 
         it 'generates a person with the right attributes' do
-          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+          expect { test_compiler.require(pepe_source) }.to_not raise_error
 
           expect(Pepe::Internal.paul().id).to eql(1)
           expect(Pepe::Internal.frank().id).to eql('f10')
@@ -410,7 +410,7 @@ module Jade
         end
 
         it 'updates the record' do
-          expect { test_compiler.require('pepe', pepe_source) }.to_not raise_error
+          expect { test_compiler.require(pepe_source) }.to_not raise_error
 
           expect(Pepe.paul_is_paul()).to be true
           expect(Pepe.frank_is_paul()).to be false
@@ -435,7 +435,7 @@ module Jade
         end
 
         it 'preserves the nominal struct type through the pipe' do
-          expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
+          expect { test_compiler.require(pepe_source) }.not_to raise_error
 
           paul = Pepe::Person['Paul', 55]
           expect(Pepe::Internal.birthday(paul)).to eql Pepe::Person['Paul', 56]
@@ -465,7 +465,7 @@ module Jade
         end
 
         it 'reads `paul` as a value (bare reference)' do
-          expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
+          expect { test_compiler.require(pepe_source) }.not_to raise_error
           expect(Pepe.name_of_paul()).to eql 'Paul'
         end
       end
@@ -495,7 +495,7 @@ module Jade
         end
 
         it 'instantiates the type parameter from the call result' do
-          expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
+          expect { test_compiler.require(pepe_source) }.not_to raise_error
           expect(Pepe.query()).to eql 42
         end
       end
@@ -521,7 +521,7 @@ module Jade
         end
 
         it 'fails to compile' do
-          expect { test_compiler.require('pepe', pepe_source) }
+          expect { test_compiler.require(pepe_source) }
             .to raise_error(CompilationError, /Function call mismatch/)
         end
       end
@@ -549,7 +549,7 @@ module Jade
         end
 
         it 'fails to compile' do
-          expect { test_compiler.require('pepe', pepe_source) }
+          expect { test_compiler.require(pepe_source) }
             .to raise_error(CompilationError, /Function call mismatch/)
         end
       end
@@ -569,7 +569,7 @@ module Jade
         end
 
         it 'positional construction with the record as the type-param value' do
-          expect { test_compiler.require('pepe', pepe_source) }.not_to raise_error
+          expect { test_compiler.require(pepe_source) }.not_to raise_error
           expect(Pepe::Internal.wrap().wrapped.val).to eql(42)
         end
       end
@@ -617,7 +617,7 @@ module Jade
         end
 
         it 'positional, kwargs, update, and nested all work' do
-          test_compiler.require('forms', working_source)
+          test_compiler.require(working_source)
 
           expected_person = Forms::Person['Paul', 55]
           expect(Forms::Internal.positional).to eql expected_person
@@ -648,7 +648,7 @@ module Jade
             end
           JADE
 
-          expect { test_compiler.require('forms_bad', source) }
+          expect { test_compiler.require(source) }
             .to raise_error(CompilationError, /Address/)
         end
       end
@@ -669,7 +669,7 @@ module Jade
             end
           JADE
 
-          test_compiler.require('m', source)
+          test_compiler.require(source)
         end
 
         it 'rejects unknown fields with a pointed error' do
@@ -700,7 +700,7 @@ module Jade
               add(a: 1, b: 2)
             end
           JADE
-          expect { test_compiler.require('m_bad', source) }
+          expect { test_compiler.require(source) }
             .to raise_error(CompilationError, /Keyword-argument syntax is only valid/)
         end
       end

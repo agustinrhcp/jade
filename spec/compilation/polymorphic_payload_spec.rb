@@ -27,7 +27,7 @@ module Jade
       end
 
       it 'compiles' do
-        expect { test_compiler.require('filters', source) }.not_to raise_error
+        expect { test_compiler.require(source) }.not_to raise_error
       end
     end
 
@@ -46,7 +46,7 @@ module Jade
       end
 
       it 'compiles' do
-        expect { test_compiler.require('m', source) }.not_to raise_error
+        expect { test_compiler.require(source) }.not_to raise_error
       end
     end
   end

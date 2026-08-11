@@ -37,7 +37,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('task_test', source) }
+    before { test_compiler.require(source) }
 
     it 'succeed produces an Ok on run' do
       expect(TaskTest.always_ok()).to be_task_ok(42)
@@ -117,7 +117,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('task_test', source) }
+      before { test_compiler.require(source) }
 
       it 'collects all values when all tasks succeed' do
         expect(TaskTest.all_ok()).to be_task_ok([1, 2, 3])
@@ -157,7 +157,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('task_test', source) }
+      before { test_compiler.require(source) }
 
       it 'passes Ok through unchanged' do
         expect(TaskTest.pass_through()).to be_task_ok(42)
@@ -192,7 +192,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('task_test', source) }
+      before { test_compiler.require(source) }
 
       it 'chains successful tasks' do
         expect(TaskTest.sum()).to be_task_ok(3)
@@ -241,7 +241,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('task_test', source) }
+      before { test_compiler.require(source) }
 
       it 'decodes args, runs the Task, encodes the ok value' do
         expect(TaskTest.echo(7, ['a', 'b'])).to eql ['ok', '7:ab']

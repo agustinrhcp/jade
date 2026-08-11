@@ -8,7 +8,7 @@ module Jade
     include_context 'with test compiler'
 
     context 'when the interface type param is not in the parameter list' do
-      before { test_compiler.require('cadence', source) }
+      before { test_compiler.require(source) }
 
       let(:source) do
         <<~JADE.strip
@@ -44,7 +44,7 @@ module Jade
     end
 
     context 'a user-defined interface whose member takes no arguments' do
-      before { test_compiler.require('defaults', source) }
+      before { test_compiler.require(source) }
 
       let(:source) do
         <<~JADE.strip

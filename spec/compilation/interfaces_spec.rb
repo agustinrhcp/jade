@@ -28,7 +28,7 @@ module Jade
     end
 
     it 'returns the value negated' do
-      test_compiler.require('interface_test', source)
+      test_compiler.require(source)
       expect(InterfaceTest.int_equality(1, 2)).to be false
       expect(InterfaceTest.int_equality(1, 1)).to be true
       expect(InterfaceTest.int_inequality(1, 2)).to be true
@@ -50,7 +50,7 @@ module Jade
       end
 
       it 'fails, because functions cant be compared' do
-        expect { test_compiler.require('interface_test', source) }
+        expect { test_compiler.require(source) }
           .to raise_error(CompilationError, /Basics.Eq cannot be derived for .+ -> /)
       end
     end
@@ -72,7 +72,7 @@ module Jade
       end
 
       it 'propagates constraints through functions' do
-        test_compiler.require('interface_test', source)
+        test_compiler.require(source)
 
         expect(InterfaceTest.compare(1, 1)).to be true
       end
@@ -100,14 +100,14 @@ module Jade
       end
 
       it 'works for ints and bools' do
-        test_compiler.require('interface_test', source)
+        test_compiler.require(source)
 
         expect(InterfaceTest.int_eq(1, 1)).to be true
         expect(InterfaceTest.bool_eq(true, true)).to be true
       end
 
       it 'dispatches Jade-internal polymorphic calls without consulting IMPLEMENTATIONS' do
-        test_compiler.require('interface_test', source)
+        test_compiler.require(source)
 
         impl_for_calls = 0
         Jade::Runtime.singleton_class.prepend(Module.new {
@@ -137,7 +137,7 @@ module Jade
       end
 
       it 'reports an orphan implementation error' do
-        expect { test_compiler.require('interface_test', source) }
+        expect { test_compiler.require(source) }
           .to raise_error(CompilationError, /only the owner of the interface or the type/)
       end
     end
@@ -167,7 +167,7 @@ module Jade
       end
 
       it 'reports a type mismatch error' do
-        expect { test_compiler.require('interface_test', source) }
+        expect { test_compiler.require(source) }
           .to raise_error(CompilationError, /Implementation of Basics\.Eq\.\(==\)/)
       end
     end
@@ -189,7 +189,7 @@ module Jade
       end
 
       it 'works' do
-        test_compiler.require('interface_test', source)
+        test_compiler.require(source)
 
         expect(InterfaceTest.nothing_eq()).to be true
         expect(InterfaceTest.just_eq(1, 2)).to be false
@@ -214,7 +214,7 @@ module Jade
       end
 
       it 'works' do
-        test_compiler.require('interface_test', source)
+        test_compiler.require(source)
 
         expect(InterfaceTest.neq()).to be false
         expect(InterfaceTest.eq()).to be true
@@ -250,7 +250,7 @@ module Jade
       end
 
       it 'compares all fields' do
-        test_compiler.require('interface_test', source)
+        test_compiler.require(source)
 
         expect(InterfaceTest.eq()).to be true
         expect(InterfaceTest.neq()).to be false
@@ -275,7 +275,7 @@ module Jade
       end
 
       it 'works' do
-        test_compiler.require('interface_test', source)
+        test_compiler.require(source)
 
         expect(InterfaceTest.eq()).to be true
       end
@@ -295,7 +295,7 @@ module Jade
         end
 
         it 'reports a derivation failure rather than crashing' do
-          expect { test_compiler.require('interface_test', source) }
+          expect { test_compiler.require(source) }
             .to raise_error(CompilationError, /Basics.Eq cannot be derived for/)
         end
       end
@@ -330,7 +330,7 @@ module Jade
       end
 
       it 'works' do
-        test_compiler.require('interface_test', source)
+        test_compiler.require(source)
 
         person_1 = InterfaceTest.new_person(1, "Pepe")
         person_2 = InterfaceTest.new_person(2, "Pepe")
@@ -375,7 +375,7 @@ module Jade
       end
 
       it 'works' do
-        test_compiler.require('interface_test', source)
+        test_compiler.require(source)
 
         person_1 = InterfaceTest.new_person(1, "Pepe")
         person_2 = InterfaceTest.new_person(2, "Pepe")
@@ -442,7 +442,7 @@ module Jade
       end
 
       it 'works' do
-        test_compiler.require('interface_test', source)
+        test_compiler.require(source)
 
         low  = InterfaceTest.new_score(1)
         high = InterfaceTest.new_score(5)

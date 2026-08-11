@@ -50,8 +50,8 @@ module Jade
     end
 
     before do
-      test_compiler.require('sql', sql_source)
-      test_compiler.require('fields', fields_source)
+      test_compiler.require(sql_source)
+      test_compiler.require(fields_source)
     end
 
     it 'names the column after the variant, in snake_case' do
@@ -94,7 +94,7 @@ module Jade
       end
 
       it 'refuses, since two values name one column' do
-        expect { test_compiler.require('two', two_source) }.to raise_error(/SqlMapper/)
+        expect { test_compiler.require(two_source) }.to raise_error(/SqlMapper/)
       end
     end
 
@@ -133,9 +133,9 @@ module Jade
 
       it 'refuses rather than building its Assignment with the wrong arity' do
         other = TestCompiler.new
-        other.require('sql', imposter_source)
+        other.require(imposter_source)
 
-        expect { other.require('other', user_source) }.to raise_error(/SqlMapper/)
+        expect { other.require(user_source) }.to raise_error(/SqlMapper/)
       end
     end
 
@@ -159,7 +159,7 @@ module Jade
       end
 
       it 'refuses, since a nullary variant names no value to assign' do
-        expect { test_compiler.require('mixed', mixed_source) }.to raise_error(/SqlMapper/)
+        expect { test_compiler.require(mixed_source) }.to raise_error(/SqlMapper/)
       end
     end
   end

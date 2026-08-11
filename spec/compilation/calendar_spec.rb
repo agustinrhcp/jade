@@ -127,7 +127,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('use', source) }
+    before { test_compiler.require(source) }
 
     it 'today() returns a Task that resolves to a Date struct' do
       expect(Use::Internal.today.run).to be_ok(
@@ -303,7 +303,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('json', source) }
+      before { test_compiler.require(source) }
 
       it 'encodes a Date as an ISO 8601 string' do
         d = Use::Internal.build(2026, Calendar::May[], 4)

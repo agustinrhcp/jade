@@ -9,7 +9,7 @@ module Jade
 
     describe 'SQL' do
       before do
-        test_compiler.require('sql', sql_source)
+        test_compiler.require(sql_source)
       end
 
       let(:sql_source) do

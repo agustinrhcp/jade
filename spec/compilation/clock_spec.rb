@@ -168,7 +168,7 @@ module Jade
 
     def duration(n) = Clock::Duration[n]
 
-    before { test_compiler.require('use', source) }
+    before { test_compiler.require(source) }
 
     it 'now() returns a Task that resolves to an Instant after the epoch' do
       result = Use::Internal.now.run
@@ -376,7 +376,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('json', source) }
+      before { test_compiler.require(source) }
 
       it 'encodes an Instant as ISO 8601' do
         i = Use::Internal.at_ms(1_700_000_000_000)

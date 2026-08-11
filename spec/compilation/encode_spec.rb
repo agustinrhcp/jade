@@ -41,7 +41,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('primitives', source) }
+      before { test_compiler.require(source) }
 
       it { expect(Primitives.s).to eql '"hello"' }
       it { expect(Primitives.i).to eql '42' }
@@ -83,7 +83,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('struct', source) }
+      before { test_compiler.require(source) }
 
       it 'nullable Just emits the inner encoding' do
         expect(Structural.maybe_present).to eql '"x"'
@@ -160,7 +160,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('derived', source) }
+      before { test_compiler.require(source) }
 
       it 'encodes Int' do
         expect(Derived.int_string(42)).to eql '42'
@@ -216,7 +216,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('round_trip', source) }
+      before { test_compiler.require(source) }
 
       it 'encodes and decodes back to the same struct' do
         person = Data.define(:name, :age).new(name: 'Pepe', age: 30)
@@ -259,7 +259,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('structural', source) }
+      before { test_compiler.require(source) }
 
       it 'round-trips a pair through its element instances' do
         expect(Structural::Internal.pair(Jade::Tuple::Tuple2['a', 1]))
@@ -308,7 +308,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('boundary', source) }
+      before { test_compiler.require(source) }
 
       it 'returns a plain Hash to Ruby callers' do
         result = Boundary.get_user
@@ -362,7 +362,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('poly_arg', source) }
+      before { test_compiler.require(source) }
 
       it 'wraps Encode.encode with the String dict' do
         expect(PolyArg.string_field("abc")).to eql('{"k":"abc"}')
@@ -397,7 +397,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('poly_user_arg', source) }
+      before { test_compiler.require(source) }
 
       it 'resolves the dict at the user-fn call site' do
         expect(PolyUserArg.apply_int(42)).to eql('42')
@@ -429,7 +429,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('poly_generic', source) }
+      before { test_compiler.require(source) }
 
       it 'threads the dict through the generic call for String' do
         expect(PolyGeneric.wrap_string("abc")).to eql('{"v":"abc"}')
@@ -475,7 +475,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('user_poly', source) }
+      before { test_compiler.require(source) }
 
       it 'specializes the user fn for Int at the value-position use' do
         expect(UserPoly.go_int(42)).to eql('42')
@@ -516,7 +516,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('iface_poly', source) }
+      before { test_compiler.require(source) }
 
       it 'resolves the interface method via the Int impl' do
         expect(IfacePoly.go_int(42)).to eql('42')
@@ -577,7 +577,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('generic_ref', source) }
+      before { test_compiler.require(source) }
 
       it 'user fn as value, dict from enclosing generic, Int caller' do
         expect(GenericRef.via_user_int(42)).to eql('42')

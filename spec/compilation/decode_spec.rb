@@ -91,7 +91,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('decoding', source) }
+    before { test_compiler.require(source) }
 
     it 'decodes a string' do
       expect(Decoding::Internal.run_string('"hello"')).to be_ok("hello")
@@ -175,7 +175,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('seq_test', source) }
+      before { test_compiler.require(source) }
 
       it 'runs each decoder against the same value and collects results' do
         expect(SeqTest::Internal.run_all_ok('{"a":1,"b":2}')).to be_ok([1, 2])
@@ -214,7 +214,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('one_of_test', source) }
+      before { test_compiler.require(source) }
 
       it 'picks the first matching decoder' do
         expect(OneOfTest::Internal.id_from_json('"abc"')).to be_ok(OneOfTest::StringId['abc'])
@@ -264,7 +264,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('pipeline', source) }
+      before { test_compiler.require(source) }
 
       it 'decodes a struct via the pipeline' do
         expect(Pipeline::Internal.person_from_json('{"name":"Pepe","age":30,"nickname":"Pep"}'))
@@ -343,7 +343,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('derived', source) }
+      before { test_compiler.require(source) }
 
       it 'decodes Int' do
         expect(Derived::Internal.int_from_json('42')).to be_ok(42)
@@ -439,7 +439,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('patch', source) }
+      before { test_compiler.require(source) }
 
       it 'returns an empty list when no fields are present' do
         result = Patch::Internal.parse_updates({})
@@ -481,7 +481,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('derived_maybe', source) }
+      before { test_compiler.require(source) }
 
       it 'decodes Just when nickname is present' do
         expect(DerivedMaybe::Internal.person_from_json('{"name":"Pepe","nickname":"Pep"}'))
@@ -532,7 +532,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('value_decoding', value_source) }
+      before { test_compiler.require(value_source) }
 
       it 'decodes a Ruby hash coming through a port' do
         expect(ValueDecoding::Internal.handle().run)
@@ -575,7 +575,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('variants', source) }
+      before { test_compiler.require(source) }
 
       it 'decodes the matching variant' do
         decoder = Variants::Internal.parse_shape
@@ -621,7 +621,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('enc_variants', source) }
+      before { test_compiler.require(source) }
 
       it 'produces [name, ...args] for each variant' do
         expect(EncVariants::Internal.encode_shape(EncVariants::Circle[1.5]))

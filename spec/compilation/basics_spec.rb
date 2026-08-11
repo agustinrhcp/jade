@@ -9,7 +9,7 @@ module Jade
 
     describe 'Math' do
       before do
-        test_compiler.require('math', math_source)
+        test_compiler.require(math_source)
       end
 
       let(:math_source) do
@@ -159,7 +159,7 @@ module Jade
 
     describe 'min and max' do
       before do
-        test_compiler.require('cmp', source)
+        test_compiler.require(source)
       end
 
       let(:source) do
@@ -211,7 +211,7 @@ module Jade
     end
 
     describe 'numeric conversions' do
-      before { test_compiler.require('conv', source) }
+      before { test_compiler.require(source) }
 
       let(:source) do
         <<~JADE

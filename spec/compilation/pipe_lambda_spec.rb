@@ -32,7 +32,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('m', source) }
+    before { test_compiler.require(source) }
 
     it 'pipes a value into a bare lambda' do
       expect(M.double(7)).to eql 14

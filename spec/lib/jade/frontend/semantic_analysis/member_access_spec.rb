@@ -8,8 +8,8 @@ module Jade
     include_context 'with test compiler'
 
     def help_for(source, ledger: nil)
-      test_compiler.require('ledger', ledger) if ledger
-      test_compiler.require('probe', source)
+      test_compiler.require(ledger) if ledger
+      test_compiler.require(source)
       []
     rescue CompilationError => e
       e.diagnostics

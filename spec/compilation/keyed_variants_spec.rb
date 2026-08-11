@@ -24,7 +24,7 @@ module Jade
       end
 
       it 'builds a variant carrying the keyed fields directly' do
-        expect { test_compiler.require('m', source) }.to_not raise_error
+        expect { test_compiler.require(source) }.to_not raise_error
 
         result = M::Internal.make
         expect(result).to be_a(M::V2).and have_attributes(
@@ -55,7 +55,7 @@ module Jade
       end
 
       it 'binds the variant instance and supports field access' do
-        expect { test_compiler.require('m', source) }.to_not raise_error
+        expect { test_compiler.require(source) }.to_not raise_error
 
         v1 = M::V1[7]
         v2 = M::V2[100, 20]
@@ -82,7 +82,7 @@ module Jade
       end
 
       it 'destructures fields by name' do
-        expect { test_compiler.require('m', source) }.to_not raise_error
+        expect { test_compiler.require(source) }.to_not raise_error
 
         v = M::V[100, 20]
         expect(M::Internal.paid(v)).to eql 100
@@ -106,7 +106,7 @@ module Jade
       end
 
       it 'updates a payload field via record update' do
-        expect { test_compiler.require('m', source) }.to_not raise_error
+        expect { test_compiler.require(source) }.to_not raise_error
 
         v = M::V[100, 20]
         bumped = M::Internal.bump_paid(v)
@@ -138,7 +138,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('m', source) }
+      before { test_compiler.require(source) }
 
       it 'constructs and pattern-matches without an inner record wrapper' do
         v = M::Internal.make_credit(42)
@@ -172,7 +172,7 @@ module Jade
       end
 
       it 'compares structurally across separate constructions' do
-        test_compiler.require('m', source)
+        test_compiler.require(source)
 
         a = M::Internal.make(100, 20)
         b = M::Internal.make(100, 20)
@@ -199,7 +199,7 @@ module Jade
         end
 
         it 'fails with a type mismatch on the record argument' do
-          expect { test_compiler.require('m', source) }
+          expect { test_compiler.require(source) }
             .to raise_error(CompilationError, /tax_amount/)
         end
       end
@@ -219,7 +219,7 @@ module Jade
         end
 
         it 'fails with a type mismatch' do
-          expect { test_compiler.require('m', source) }
+          expect { test_compiler.require(source) }
             .to raise_error(CompilationError, /String|Int/)
         end
       end

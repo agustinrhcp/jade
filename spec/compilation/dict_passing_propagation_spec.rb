@@ -34,9 +34,8 @@ module Jade
     end
 
     def compiled_for(module_name, body)
-      test_compiler.require(module_name.downcase, shape_source(module_name, body))
-      build_root = test_compiler.instance_variable_get(:@build_root)
-      File.read(File.join(build_root, "#{module_name.downcase}.rb"))
+      test_compiler.require(shape_source(module_name, body))
+      test_compiler.generated_source(module_name)
     end
 
     it 'propagates through a list literal' do
@@ -111,9 +110,8 @@ module Jade
         end
       JADE
 
-      test_compiler.require('propstruct', src)
-      build_root = test_compiler.instance_variable_get(:@build_root)
-      out = File.read(File.join(build_root, 'propstruct.rb'))
+      test_compiler.require(src)
+      out = test_compiler.generated_source('PropStruct')
       expect(out).to include('__wrapped__impl__')
     end
 
@@ -147,9 +145,8 @@ module Jade
         end
       JADE
 
-      test_compiler.require('proplistbox', src)
-      build_root = test_compiler.instance_variable_get(:@build_root)
-      out = File.read(File.join(build_root, 'proplistbox.rb'))
+      test_compiler.require(src)
+      out = test_compiler.generated_source('PropListBox')
       expect(out).to include('__wrapped__impl__')
       expect(out).to include('__dict0__')
     end

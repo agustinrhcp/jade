@@ -28,7 +28,7 @@ module Jade
     end
 
     before do
-      test_compiler.require('seq', source)
+      test_compiler.require(source)
     end
 
     it 'collects all Oks into a list' do

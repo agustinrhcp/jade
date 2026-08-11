@@ -36,7 +36,7 @@ module Jade
     end
 
     it 'works' do
-      test_compiler.require('pepe', pepe_source)
+      test_compiler.require(pepe_source)
 
       expect(Pepe.hello("Hello lala")).to eql "Hello lala"
       expect(Pepe.hello(nil)).to eql "Hello pepe"
@@ -61,7 +61,7 @@ module Jade
       end
 
       it 'fails' do
-        expect { test_compiler.require('pepe', pepe_source) }
+        expect { test_compiler.require(pepe_source) }
           .to raise_error(CompilationError, /`Maybe` type needs 1 argument but got 0/)
       end
     end

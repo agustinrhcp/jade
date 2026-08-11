@@ -143,7 +143,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('pepe', source) }
+    before { test_compiler.require(source) }
 
     it 'empty has width 0' do
       expect(Pepe.empty_width).to eql 0

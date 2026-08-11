@@ -7,7 +7,7 @@ module Jade
   describe 'placeholders in keyed calls' do
     include_context 'with test compiler'
 
-    before { test_compiler.require('shapes', source) }
+    before { test_compiler.require(source) }
 
     let(:source) do
       <<~JADE

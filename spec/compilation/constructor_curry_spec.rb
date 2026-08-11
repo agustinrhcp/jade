@@ -34,7 +34,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('m', source) }
+    before { test_compiler.require(source) }
 
     it 'never builds a constructor with Method#curry' do
       expect(test_compiler.generated_source('m')).not_to include('.method(:[]).curry')

@@ -39,11 +39,11 @@ module Jade
     end
 
     before do
-      test_compiler.write('exposing', exposing_source)
+      test_compiler.write(exposing_source)
     end
 
     it 'fails because MyType is no in scope' do
-      expect { test_compiler.require('importing', importing_source) }
+      expect { test_compiler.require(importing_source) }
         .to raise_error(CompilationError, /cannot find a `MyType` constructor/)
     end
 
@@ -62,11 +62,11 @@ module Jade
       end
 
       before do
-        test_compiler.require('exposing', exposing_source)
+        test_compiler.require(exposing_source)
       end
 
       it 'fails because MyType is no in scope' do
-        expect { test_compiler.require('importing', importing_source) }
+        expect { test_compiler.require(importing_source) }
           .to raise_error(CompilationError, /cannot find a `MyType` constructor/)
       end
     end
@@ -86,11 +86,11 @@ module Jade
       end
 
       before do
-        test_compiler.write('exposing', exposing_source)
+        test_compiler.write(exposing_source)
       end
 
       it 'works because MyType is in scope' do
-        expect { test_compiler.require('importing', importing_source) }
+        expect { test_compiler.require(importing_source) }
           .to_not raise_error
         expect(Importing.hello).to eql 'My type'
       end
@@ -111,11 +111,11 @@ module Jade
       end
 
       before do
-        test_compiler.require('exposing', exposing_source)
+        test_compiler.require(exposing_source)
       end
 
       it 'it works because Exposing exposes it' do
-        expect { test_compiler.require('importing', importing_source) }
+        expect { test_compiler.require(importing_source) }
           .to_not raise_error
         expect(Importing.hello).to eql 'My type'
       end
@@ -140,7 +140,7 @@ module Jade
         end
 
         it 'fails becausse the constructor is private' do
-          expect { test_compiler.require('importing', importing_source) }
+          expect { test_compiler.require(importing_source) }
             .to raise_error(CompilationError, /cannot find a `Exposing.MyType` variable/)
         end
       end
@@ -161,11 +161,11 @@ module Jade
       end
 
       before do
-        test_compiler.write('exposing', exposing_source)
+        test_compiler.write(exposing_source)
       end
 
       it 'works' do
-        expect { test_compiler.require('importing', importing_source) }
+        expect { test_compiler.require(importing_source) }
           .to_not raise_error
         expect(Importing::Internal.hello(Exposing::MyType[])).to eql 'My type'
       end
@@ -204,7 +204,7 @@ module Jade
       end
 
       it 'fails because MyType constructors are private' do
-        expect { test_compiler.require('importing', importing_source) }
+        expect { test_compiler.require(importing_source) }
           .to raise_error(CompilationError, /Exposing's `MyType` type does not allow `\(\.\.\)`/)
       end
     end
@@ -242,7 +242,7 @@ module Jade
       end
 
       it 'fails because MyType constructors are private' do
-        expect { test_compiler.require('importing', importing_source) }
+        expect { test_compiler.require(importing_source) }
           .to raise_error(CompilationError, /The `Exposing` module does not expose `wacamole`/)
       end
     end
@@ -278,10 +278,10 @@ module Jade
           JADE
         end
 
-        before { test_compiler.write('exposing', exposing_source) }
+        before { test_compiler.write(exposing_source) }
 
         it 'works because the constructor is in scope' do
-          expect { test_compiler.require('importing', importing_source) }
+          expect { test_compiler.require(importing_source) }
             .to_not raise_error
           expect(Importing.hello).to eql 'Hello, Paul'
         end
@@ -301,10 +301,10 @@ module Jade
           JADE
         end
 
-        before { test_compiler.write('exposing', exposing_source) }
+        before { test_compiler.write(exposing_source) }
 
         it 'fails because the constructor is not in scope' do
-          expect { test_compiler.require('importing', importing_source) }
+          expect { test_compiler.require(importing_source) }
             .to raise_error(CompilationError, /cannot find a `Person` constructor/)
         end
       end
@@ -339,10 +339,10 @@ module Jade
           JADE
         end
 
-        before { test_compiler.write('exposing', exposing_source) }
+        before { test_compiler.write(exposing_source) }
 
         it 'fails because the struct constructor is private' do
-          expect { test_compiler.require('importing', importing_source) }
+          expect { test_compiler.require(importing_source) }
             .to raise_error(CompilationError, /Exposing's `Person` type does not allow `\(\.\.\)`/)
         end
       end
@@ -378,7 +378,7 @@ module Jade
       end
 
       it 'fails because MyType constructors are private' do
-        expect { test_compiler.require('importing', importing_source) }
+        expect { test_compiler.require(importing_source) }
           .to_not raise_error
         expect(Importing.hello).to eql 24
       end
@@ -410,9 +410,9 @@ module Jade
       end
 
       it "tells the user to add `Foo(..)` to Producer's exposing list" do
-        test_compiler.require('producer', producer_source)
+        test_compiler.require(producer_source)
 
-        expect { test_compiler.require('consumer', consumer_source) }
+        expect { test_compiler.require(consumer_source) }
           .to raise_error(/`Foo` is exposed by `Producer` but its constructor is private/)
       end
 
@@ -429,9 +429,9 @@ module Jade
         end
 
         it "points at the consumer's own import instead" do
-          test_compiler.require('producer', producer_source)
+          test_compiler.require(producer_source)
 
-          expect { test_compiler.require('consumer', consumer_source) }
+          expect { test_compiler.require(consumer_source) }
             .to raise_error(
               /`Producer` exposes it — add `Foo\(\.\.\)` to this module's `import Producer/,
             )
@@ -463,9 +463,9 @@ module Jade
         end
 
         it 'names the type whose `(..)` is missing' do
-          test_compiler.require('producer', producer_source)
+          test_compiler.require(producer_source)
 
-          expect { test_compiler.require('consumer', consumer_source) }
+          expect { test_compiler.require(consumer_source) }
             .to raise_error(
               /cannot find a `Home` constructor\. `Producer` exposes it — add `Route\(\.\.\)`/,
             )
@@ -489,10 +489,10 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('exposing', exposing_source) }
+      before { test_compiler.require(exposing_source) }
 
       it 'compiles without crashing the comment attacher' do
-        expect { test_compiler.require('importing', importing_source) }
+        expect { test_compiler.require(importing_source) }
           .to_not raise_error
         expect(Importing.hello).to eql 'My type'
       end

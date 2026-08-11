@@ -45,7 +45,7 @@ module Jade
     end
 
     before do
-      test_compiler.require('pepe', pepe_source)
+      test_compiler.require(pepe_source)
     end
 
     context 'on_error' do
@@ -64,7 +64,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('on_error', on_error_source) }
+      before { test_compiler.require(on_error_source) }
 
       it 'passes through Ok unchanged' do
         expect(OnError::Internal.recover(Result::Ok[42])).to be_ok(42)

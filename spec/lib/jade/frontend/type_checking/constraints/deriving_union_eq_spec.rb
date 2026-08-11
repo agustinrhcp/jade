@@ -10,7 +10,7 @@ module Jade
       header = "module #{name} exposing (probe)"
       probe  = "def probe -> List(Bool)\n  #{expr}\nend"
 
-      compiler.require(name, "#{header}\n\n#{decls}\n\n\n#{probe}\n")
+      compiler.require("#{header}\n\n#{decls}\n\n\n#{probe}\n")
 
       Object.const_get(name).probe
     end

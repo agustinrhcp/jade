@@ -27,7 +27,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('chain_test', source) }
+      before { test_compiler.require(source) }
 
       it 'chains two Just values' do
         expect(ChainTest.chain(3, 4)).to eql 7
@@ -74,7 +74,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('chain_test', source) }
+      before { test_compiler.require(source) }
 
       it 'chains two Ok values' do
         result = ChainTest::Internal.chain(3, 4)
@@ -123,7 +123,7 @@ module Jade
       end
 
       it 'raises a compilation error' do
-        expect { test_compiler.require('chain_test', source) }
+        expect { test_compiler.require(source) }
           .to raise_error(CompilationError, /needs at least one type parameter/)
       end
     end
@@ -144,7 +144,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('chain_test', source) }
+      before { test_compiler.require(source) }
 
       it 'maps over Maybe' do
         expect(ChainTest.add_one_maybe(5)).to eql 6

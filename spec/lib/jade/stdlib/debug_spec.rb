@@ -11,7 +11,7 @@ module Jade
         def logged(expr)
           @seq = (@seq || 0) + 1
           name = "DebugLog#{('A'.ord + @seq - 1).chr}"
-          compiler.require(name, <<~JADE)
+          compiler.require(<<~JADE)
             module #{name} exposing (probe)
 
             import Debug

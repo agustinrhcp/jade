@@ -26,16 +26,23 @@ module Jade
       module_name.split('.').map { Source.snake_case(it) }.join('/')
     end
 
-    def write(module_name, source)
+    def module_name_of(source)
+      source[/^module\s+([A-Z][A-Za-z0-9_.]*)/, 1] ||
+        raise(ArgumentError, "source has no module declaration:\n#{source.lines.first}")
+    end
+
+    def write(source)
+      module_name = module_name_of(source)
       path = File.join(@source_root, "#{path_for(module_name)}.jd")
       FileUtils.mkdir_p(File.dirname(path))
       File.write(path, source)
       @written[module_name] = source
     end
 
-    def require(module_name, source)
+    def require(source)
+      module_name = module_name_of(source)
       FormatCheck.assert!(source, label: module_name) unless ENV['JADE_SKIP_FORMAT_CHECK']
-      write(module_name, source)
+      write(source)
 
       key    = [module_name, @written.sort].freeze
       rb_file = File.join(@build_root, "#{path_for(module_name)}.rb")

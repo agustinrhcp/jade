@@ -17,7 +17,7 @@ module Jade
     end
 
     before do
-      test_compiler.require('pepe', pepe_source)
+      test_compiler.require(pepe_source)
     end
 
     it 'works' do
@@ -64,7 +64,7 @@ module Jade
     end
 
     before do
-      test_compiler.require('slicer', source)
+      test_compiler.require(source)
     end
 
     it 'indexes reports every pipe position' do
@@ -122,7 +122,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('strs', source) }
+    before { test_compiler.require(source) }
 
     it 'uncons returns head char' do
       expect(Strs::Internal.first_char('abc')).to be_just('a')
@@ -156,7 +156,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('str_map', source) }
+    before { test_compiler.require(source) }
 
     it 'maps over each char' do
       expect(StrMap.double('abc')).to eql 'abc'
@@ -182,7 +182,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('concat', source) }
+      before { test_compiler.require(source) }
 
       it 'concatenates strings' do
         expect(Concat.greet('Alice')).to eql 'Hello, Alice!'
@@ -201,7 +201,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('concat', source) }
+      before { test_compiler.require(source) }
 
       it 'concatenates lists' do
         expect(Concat.combine([1, 2], [3, 4])).to eql [1, 2, 3, 4]
@@ -225,7 +225,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('mixed', source) }
+      before { test_compiler.require(source) }
 
       it 'binds ++ tighter than |> and looser than ==' do
         expect(Mixed.piped([1, 2], [3, 4])).to eql [4, 3, 2, 1]
@@ -262,7 +262,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('escape', source) }
+    before { test_compiler.require(source) }
 
     it 'resolves \\n to a newline character' do
       expect(Escape.newline).to eql "Hello\nWorld"
@@ -372,7 +372,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('s', source) }
+    before { test_compiler.require(source) }
 
     it 'trims whitespace' do
       expect(S.trim_('  hi  ')).to eql 'hi'
@@ -427,7 +427,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('s', source) }
+    before { test_compiler.require(source) }
 
     it 'returns the half-open substring' do
       expect(S.slice('abcdef', 0, 3)).to eql 'abc'

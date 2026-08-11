@@ -8,7 +8,7 @@ module Jade
 
     def compile(filename)
       source = File.read(File.join(__dir__, '..', 'examples', filename))
-      test_compiler.require(File.basename(filename, '.jd'), source)
+      test_compiler.require(source)
     end
 
     describe 'basics_examples.jd' do

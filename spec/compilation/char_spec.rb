@@ -26,7 +26,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('pepe', source) }
+    before { test_compiler.require(source) }
 
     it 'compares chars' do
       expect(Pepe::Internal.is_a('a')).to be true
@@ -43,7 +43,7 @@ module Jade
     end
 
     it 'parses a char literal' do
-      test_compiler.require('lit', "module Lit exposing (c)\n\ndef c -> Char\n  'x'\nend\n")
+      test_compiler.require("module Lit exposing (c)\n\ndef c -> Char\n  'x'\nend\n")
       expect(Lit::Internal.c).to eql 'x'
     end
   end
