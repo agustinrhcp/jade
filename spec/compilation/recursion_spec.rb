@@ -9,7 +9,7 @@ module Jade
 
     context 'factorial' do
       before do
-        test_compiler.require('fact', fact_source)
+        test_compiler.require(fact_source)
       end
 
       let(:fact_source) do
@@ -29,7 +29,7 @@ module Jade
 
     context 'fib' do
       before do
-        test_compiler.require('fib', fib_source)
+        test_compiler.require(fib_source)
       end
 
       let(:fib_source) do
@@ -49,7 +49,7 @@ module Jade
 
     context 'tail-recursive length (case shape)' do
       before do
-        test_compiler.require('tr_length', source)
+        test_compiler.require(source)
       end
 
       let(:source) do
@@ -79,7 +79,7 @@ module Jade
 
     context 'tail-recursive sum (case shape, different op)' do
       before do
-        test_compiler.require('tr_sum', source)
+        test_compiler.require(source)
       end
 
       let(:source) do
@@ -102,7 +102,7 @@ module Jade
 
     context 'tail-recursive countdown (if/then/else shape)' do
       before do
-        test_compiler.require('tr_countdown', source)
+        test_compiler.require(source)
       end
 
       let(:source) do
@@ -122,7 +122,7 @@ module Jade
 
     context 'fold-shape naive length' do
       before do
-        test_compiler.require('fold_length', source)
+        test_compiler.require(source)
       end
 
       let(:source) do
@@ -156,7 +156,7 @@ module Jade
 
     context 'fold-shape naive sum' do
       before do
-        test_compiler.require('fold_sum', source)
+        test_compiler.require(source)
       end
 
       let(:source) do
@@ -184,7 +184,7 @@ module Jade
 
     context 'fold-shape guards: `rest` referenced outside the recursive call' do
       before do
-        test_compiler.require('rest_leak', source)
+        test_compiler.require(source)
       end
 
       let(:source) do
@@ -213,7 +213,7 @@ module Jade
 
     context 'fold-shape guards: self-call buried in a lambda body' do
       before do
-        test_compiler.require('lambda_buried', source)
+        test_compiler.require(source)
       end
 
       let(:source) do

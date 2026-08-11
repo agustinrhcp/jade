@@ -9,7 +9,7 @@ module Jade
 
     context 'partial application of a function' do
       before do
-        test_compiler.require('hole_app', source)
+        test_compiler.require(source)
       end
 
       let(:source) do
@@ -52,7 +52,7 @@ module Jade
 
     context 'partial application of a constructor' do
       before do
-        test_compiler.require('hole_ctor', source)
+        test_compiler.require(source)
       end
 
       let(:source) do

@@ -7,7 +7,7 @@ module Jade
     include_context 'with test compiler'
 
     it 'attaches constraint when return type wraps the type variable in a struct' do
-      test_compiler.require('repro', <<~JADE)
+      test_compiler.require(<<~JADE)
         module Repro exposing (wrapped)
 
         interface Encoder(a) with
@@ -44,7 +44,7 @@ module Jade
     end
 
     it 'attaches constraints when two where-clauses on the same type variable are used in separate inner calls' do
-      test_compiler.require('repro', <<~JADE)
+      test_compiler.require(<<~JADE)
         module Repro exposing (call_both)
 
         interface A(x) with
@@ -105,7 +105,7 @@ module Jade
     end
 
     it 'dispatches encoder when constrained var is nested in an arg constructor' do
-      test_compiler.require('repro_nested', <<~JADE)
+      test_compiler.require(<<~JADE)
         module ReproNested exposing (encode_maybe, roundtrip)
 
         interface Encoder(a) with
@@ -145,7 +145,7 @@ module Jade
     end
 
     it 'unboxes the constrained var through List, Tuple, nested Maybe, and structs' do
-      test_compiler.require('repro_deep', <<~JADE)
+      test_compiler.require(<<~JADE)
         module ReproDeep exposing (encode_box, encode_double, encode_list, encode_tup)
 
         interface Encoder(a) with
@@ -214,7 +214,7 @@ module Jade
     end
 
     it 'dispatches inner-element dict for List(a) args with a body constraint on a' do
-      test_compiler.require('list_show', <<~JADE)
+      test_compiler.require(<<~JADE)
         module ListShow exposing (go)
 
         interface Show(a) with
@@ -248,7 +248,7 @@ module Jade
     end
 
     it 'threads dict for stdlib DerivedFunction calls in polymorphic helpers' do
-      test_compiler.require('repro_derived', <<~JADE)
+      test_compiler.require(<<~JADE)
         module ReproDerived exposing (encode_int, encode_str)
 
         import Encode exposing (encode)
@@ -275,7 +275,7 @@ module Jade
     end
 
     it 'compiles polymorphic fns with unboxable constraints but exposes no Ruby boundary' do
-      test_compiler.require('repro_unsupported', <<~JADE)
+      test_compiler.require(<<~JADE)
         module ReproUnsupported exposing (apply_then_encode, default_value)
 
         interface Encoder(a) with

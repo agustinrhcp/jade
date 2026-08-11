@@ -24,7 +24,7 @@ module Jade
       end
 
       it 'compiles and runs' do
-        test_compiler.require('zero_arg_fn', src)
+        test_compiler.require(src)
         expect(ZeroArgFn.pi).to be_within(0.001).of(3.14)
         expect(ZeroArgFn.double_pi).to be_within(0.001).of(6.28)
       end
@@ -51,7 +51,7 @@ module Jade
       end
 
       it 'compiles and runs' do
-        test_compiler.require('zero_arg_ctor', src)
+        test_compiler.require(src)
         expect(ZeroArgCtor.bare).to be_nil
         expect(ZeroArgCtor.ordering_label(1, 2)).to eql "less"
         expect(ZeroArgCtor.ordering_label(2, 2)).to eql "equal"
@@ -69,7 +69,7 @@ module Jade
           end
         JADE
 
-        expect { test_compiler.require('bad_ctor', src) }
+        expect { test_compiler.require(src) }
           .to raise_error(Jade::CompilationError, /`Nothing` is a value, not a function/)
       end
 
@@ -87,7 +87,7 @@ module Jade
           end
         JADE
 
-        expect { test_compiler.require('bad_fn', src) }
+        expect { test_compiler.require(src) }
           .to raise_error(Jade::CompilationError, /`pi` is a value, not a function/)
       end
     end
@@ -109,7 +109,7 @@ module Jade
       end
 
       it 'compiles and runs' do
-        test_compiler.require('zero_arg_fn_returns_fn', src)
+        test_compiler.require(src)
         expect(ZeroArgFnReturnsFn.apply_with_1).to eql 1
       end
     end
@@ -131,7 +131,7 @@ module Jade
       end
 
       it 'compiles and runs' do
-        test_compiler.require('pi_in_lambda', src)
+        test_compiler.require(src)
         expect(PiInLambda.eval_at).to be_within(0.001).of(3.14)
       end
     end

@@ -29,7 +29,7 @@ module Jade
       end
 
       it 'compiles' do
-        expect { test_compiler.require('show_test', source) }.not_to raise_error
+        expect { test_compiler.require(source) }.not_to raise_error
       end
     end
 
@@ -60,7 +60,7 @@ module Jade
       end
 
       it 'dispatches show to the Int implementation' do
-        test_compiler.require('show_test', source)
+        test_compiler.require(source)
 
         expect(ShowTest.show_int(42)).to eql 'an int'
       end
@@ -108,7 +108,7 @@ module Jade
       end
 
       it 'dispatches by type' do
-        test_compiler.require('show_test', source)
+        test_compiler.require(source)
 
         expect(ShowTest.show_int(42)).to eql 'int'
         expect(ShowTest.show_str('hi')).to eql 'str'
@@ -147,7 +147,7 @@ module Jade
       end
 
       it 'propagates the Show constraint through helper' do
-        test_compiler.require('show_test', source)
+        test_compiler.require(source)
 
         expect(ShowTest.show_int_via_helper(42)).to eql 'int'
       end
@@ -185,7 +185,7 @@ module Jade
       end
 
       it 'compiles and dispatches' do
-        test_compiler.require('inline_impl', source)
+        test_compiler.require(source)
 
         expect(InlineImpl.show_int(42)).to eql 'int'
         expect(InlineImpl.show_str('hi')).to eql 'str'
@@ -217,7 +217,7 @@ module Jade
       end
 
       it 'compiles and dispatches via the qualified type' do
-        test_compiler.require('qual_impl', source)
+        test_compiler.require(source)
 
         expect(QualImpl.tag_today).to eql 2026
       end
@@ -245,7 +245,7 @@ module Jade
       end
 
       it 'reports an implementation type mismatch' do
-        expect { test_compiler.require('bare_mismatch', source) }
+        expect { test_compiler.require(source) }
           .to raise_error(CompilationError, /Implementation of .*Show\.show/)
       end
     end
@@ -272,7 +272,7 @@ module Jade
       end
 
       it 'resolves identity to Basics.identity via lexical scope' do
-        test_compiler.require('bare_cross_module', source)
+        test_compiler.require(source)
 
         expect(BareCrossModule.run('hi')).to eql 'hi'
       end

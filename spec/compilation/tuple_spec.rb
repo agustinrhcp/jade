@@ -42,7 +42,7 @@ module Jade
     end
 
     before do
-      test_compiler.require('pepe', pepe_source)
+      test_compiler.require(pepe_source)
     end
 
     it 'works' do
@@ -59,7 +59,7 @@ module Jade
     include_context 'with test compiler'
 
     it 'compiles Tuple.Tuple2(...) as a qualified call' do
-      test_compiler.require('Quali', <<~JADE)
+      test_compiler.require(<<~JADE)
         module Quali exposing (mk, swap)
 
         def mk -> (Int, String)
@@ -85,7 +85,7 @@ module Jade
 
     it 'rejects value tuples larger than 4' do
       expect {
-        test_compiler.require('BigVal', <<~JADE)
+        test_compiler.require(<<~JADE)
           module BigVal exposing (big)
 
           def big -> Int
@@ -99,7 +99,7 @@ module Jade
 
     it 'rejects tuple patterns larger than 4' do
       expect {
-        test_compiler.require('BigPat', <<~JADE)
+        test_compiler.require(<<~JADE)
           module BigPat exposing (big)
 
           def big(t: (Int, Int, Int, Int)) -> Int
@@ -113,7 +113,7 @@ module Jade
 
     it 'rejects tuple types larger than 4' do
       expect {
-        test_compiler.require('BigType', <<~JADE)
+        test_compiler.require(<<~JADE)
           module BigType exposing (big)
 
           def big(t: (Int, Int, Int, Int, Int)) -> Int

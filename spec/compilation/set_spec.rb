@@ -146,7 +146,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('pepe', source) }
+    before { test_compiler.require(source) }
 
     let(:set) { ->(xs) { Jade::Set::Set[xs.each_with_object({}) { |x, h| h[x] = true }] } }
 

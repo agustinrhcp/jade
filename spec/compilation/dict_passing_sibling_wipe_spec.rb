@@ -8,7 +8,7 @@ module Jade
     include_context 'with test compiler'
 
     it 'preserves slot order when a single call origin has two same-iface constraints' do
-      test_compiler.require('repro_wipe', <<~JADE)
+      test_compiler.require(<<~JADE)
         module ReproWipe exposing (go)
 
         interface Show(a) with

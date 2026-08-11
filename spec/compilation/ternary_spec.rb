@@ -37,7 +37,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('m', source) }
+    before { test_compiler.require(source) }
 
     it 'evaluates simple ternary expressions' do
       expect(M.abs(-5)).to eql 5
@@ -118,7 +118,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('n', source) }
+    before { test_compiler.require(source) }
 
     it 'works inside function call args, lists, records' do
       expect(N.in_call_arg(true)).to eql 3

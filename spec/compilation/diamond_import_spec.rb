@@ -43,12 +43,12 @@ module Jade
     end
 
     before do
-      test_compiler.write('m/events', events)
-      test_compiler.write('m/middle', middle)
+      test_compiler.write(events)
+      test_compiler.write(middle)
     end
 
     it 'compiles a diamond where a primitive type is used in the shared module' do
-      test_compiler.require('m/b', b)
+      test_compiler.require(b)
       expect(M::B.run).to eql 0
     end
 
@@ -68,7 +68,7 @@ module Jade
       end
 
       it 'still compiles' do
-        test_compiler.require('m/b', b)
+        test_compiler.require(b)
         expect(M::B.run).to eql 0
       end
     end

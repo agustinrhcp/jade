@@ -10,7 +10,7 @@ module Jade
       def shown(expr)
         @seq = (@seq || 0) + 1
         name = "ShowProbe#{('A'.ord + @seq - 1).chr}"
-        compiler.require(name, <<~JADE)
+        compiler.require(<<~JADE)
           module #{name} exposing (probe)
 
           import Show exposing (show)
@@ -44,7 +44,7 @@ module Jade
         probe  = "def probe -> String\n  show(#{expr})\nend"
         import = 'import Show exposing (show)'
 
-        compiler.require(name, "#{header}\n\n#{import}\n\n\n#{decls}\n\n\n#{probe}\n")
+        compiler.require("#{header}\n\n#{import}\n\n\n#{decls}\n\n\n#{probe}\n")
 
         Object.const_get(name).probe
       end

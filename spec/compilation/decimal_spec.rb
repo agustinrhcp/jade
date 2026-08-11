@@ -78,7 +78,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('m', source) }
+    before { test_compiler.require(source) }
 
     describe 'construction' do
       it 'of is coefficient * 10 ^ exponent' do

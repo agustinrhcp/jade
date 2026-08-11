@@ -171,7 +171,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('pepe', source) }
+    before { test_compiler.require(source) }
 
     let(:dict) { ->(h) { Jade::Dict::Dict[h] } }
 
@@ -283,7 +283,7 @@ module Jade
       JADE
     end
 
-    before { test_compiler.require('pepe', source) }
+    before { test_compiler.require(source) }
 
     it 'accepts a Ruby Hash for Dict(String, Int) args' do
       expect(Pepe.size_of({})).to eql 0

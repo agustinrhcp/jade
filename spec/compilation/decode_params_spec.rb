@@ -34,7 +34,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('patch_params', source) }
+      before { test_compiler.require(source) }
 
       it 'returns an empty list when no fields are present' do
         expect(PatchParams::Internal.parse_fields('{}')).to be_ok([])
@@ -85,7 +85,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('create_params', source) }
+      before { test_compiler.require(source) }
 
       it 'fills both defaults when both keys are absent' do
         expect(CreateParams::Internal.parse_fields('{}'))
@@ -132,7 +132,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('multi_arg', source) }
+      before { test_compiler.require(source) }
 
       it 'decodes a multi-arg variant from a nested object' do
         expect(MultiArg::Internal.parse('{"coords":{"x":3,"y":7}}'))
@@ -184,7 +184,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('nested', source) }
+      before { test_compiler.require(source) }
 
       it 'decodes the outer field with an empty inner object' do
         expect(Nested::Internal.parse('{"address":{}}'))

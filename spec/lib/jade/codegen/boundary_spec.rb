@@ -274,7 +274,7 @@ module Jade
       include_context 'with test compiler'
 
       before do
-        test_compiler.require('boundary_test', <<~JADE)
+        test_compiler.require(<<~JADE)
           module BoundaryTest exposing (Wrapper, my_decoder)
 
           import Decode exposing (Decodable, Decoder)

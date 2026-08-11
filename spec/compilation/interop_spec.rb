@@ -51,7 +51,7 @@ module Jade
     end
 
     it 'returns an Int wrapped in Task' do
-      test_compiler.require('with_interop', with_interop_source)
+      test_compiler.require(with_interop_source)
       expect(WithInterop::Internal.today().run).to be_ok(20260131)
       expect(WithInterop::Internal.today_plus_n_days(1).run).to be_ok(20260201)
     end
@@ -85,7 +85,7 @@ module Jade
       end
 
       it 'returns a record wrapped in Task' do
-        test_compiler.require('with_interop', with_interop_source)
+        test_compiler.require(with_interop_source)
 
         expect(WithInterop::Internal.today().run)
           .to be_ok(have_attributes(year: 2026, month: 1, day: 31))
@@ -108,7 +108,7 @@ module Jade
         end
 
         it 'compiles but the fn raises NotExposed when called from Ruby' do
-          test_compiler.require('with_interop', with_interop_source)
+          test_compiler.require(with_interop_source)
           expect { WithInterop.today }
             .to raise_error(Jade::Interop::NotExposed, /WithInterop\.today is not exposed/)
         end
@@ -126,7 +126,7 @@ module Jade
         end
 
         it 'compiles but the fn raises NotExposed when called from Ruby' do
-          test_compiler.require('with_interop', with_interop_source)
+          test_compiler.require(with_interop_source)
           expect { WithInterop.run_(1) }
             .to raise_error(
               Jade::Interop::NotExposed,
@@ -171,7 +171,7 @@ module Jade
         end
 
         it 'coerces the hash into a struct' do
-          test_compiler.require('with_interop', with_interop_source)
+          test_compiler.require(with_interop_source)
 
           expect(WithInterop::Internal.today().run)
             .to be_ok(have_attributes(year: 2026, month: 1, day: 31))
@@ -198,7 +198,7 @@ module Jade
         end
 
         it 'fails — Decodable cannot be derived and the user did not implement it' do
-          expect { test_compiler.require('with_interop', with_interop_source) }
+          expect { test_compiler.require(with_interop_source) }
             .to raise_error(CompilationError, /Port `internal_today` cannot decode its ok arm \(`Date`\): no Decodable instance/)
         end
       end
@@ -232,7 +232,7 @@ module Jade
         end
 
         it 'returns a Just wrapped in Task' do
-          test_compiler.require('with_interop', with_interop_source)
+          test_compiler.require(with_interop_source)
 
           expect(WithInterop::Internal.today().run).to be_ok(look_like(:Just, anything))
         end
@@ -255,7 +255,7 @@ module Jade
         end
 
         it 'fails with NonTaskPort error' do
-          expect { test_compiler.require('with_interop', with_interop_source) }
+          expect { test_compiler.require(with_interop_source) }
             .to raise_error(CompilationError, /Port `internal_today` must return a Task type/)
         end
       end
@@ -277,7 +277,7 @@ module Jade
         end
 
         it 'fails with NestedTaskPort error' do
-          expect { test_compiler.require('with_interop', with_interop_source) }
+          expect { test_compiler.require(with_interop_source) }
             .to raise_error(CompilationError, /tasks must not return tasks/)
         end
       end
@@ -308,7 +308,7 @@ module Jade
       end
 
       it 'returns an Err wrapped in Task' do
-        test_compiler.require('with_interop', with_interop_source)
+        test_compiler.require(with_interop_source)
         expect(WithInterop::Internal.fetch().run).to be_err("not found")
       end
     end
@@ -338,7 +338,7 @@ module Jade
       end
 
       it 'raises immediately when called' do
-        test_compiler.require('with_interop', with_interop_source)
+        test_compiler.require(with_interop_source)
         expect { WithInterop::Internal.fetch() }
           .to raise_error(Jade::Interop::PortNotRegistered, /not a Jade port/)
       end
@@ -369,7 +369,7 @@ module Jade
       end
 
       it 'raises a decode error lazily when run' do
-        test_compiler.require('with_interop', with_interop_source)
+        test_compiler.require(with_interop_source)
         task = WithInterop::Internal.fetch()
         expect { task.run }
           .to raise_error(Jade::Interop::DecodeError, /expected Int, got String/)
@@ -411,7 +411,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('with_interop', with_interop_source) }
+      before { test_compiler.require(with_interop_source) }
 
       it 'chains port tasks and returns the combined result' do
         expect(WithInterop::Internal.sum().run).to be_ok(3)
@@ -455,7 +455,7 @@ module Jade
       end
 
       it 'passes the raw Ruby value through unchanged' do
-        test_compiler.require('with_interop', with_interop_source)
+        test_compiler.require(with_interop_source)
         result = WithInterop::Internal.fetch().run
         expect(result).to be_ok
         expect(result._1).to eql({ totally: 'arbitrary', nested: { stuff: [1, 2, 3] } })
@@ -489,7 +489,7 @@ module Jade
         end
 
         it 'hands Ruby the values untouched and takes them back the same way' do
-          test_compiler.require('with_interop', with_interop_source)
+          test_compiler.require(with_interop_source)
 
           result = WithInterop::Internal.query('select 1', [1, 'two', nil]).run
 
@@ -530,7 +530,7 @@ module Jade
       end
 
       it 'returns the struct as the named class' do
-        test_compiler.require('with_interop', with_interop_source)
+        test_compiler.require(with_interop_source)
         result = WithInterop::Internal.fetch().run
         expect(result).to be_ok
         expect(result._1).to be_a(WithInterop::User)
@@ -570,7 +570,7 @@ module Jade
       end
 
       it 'raises with a path-aware message' do
-        test_compiler.require('with_interop', with_interop_source)
+        test_compiler.require(with_interop_source)
         expect { WithInterop::Internal.fetch().run }
           .to raise_error(Jade::Interop::DecodeError, /missing field `age`/)
       end
@@ -639,7 +639,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('with_interop', with_interop_source) }
+      before { test_compiler.require(with_interop_source) }
 
       it 'decodes the active variant' do
         result = WithInterop::Internal.active().run
@@ -701,7 +701,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('with_interop', with_interop_source) }
+      before { test_compiler.require(with_interop_source) }
 
       it 'decodes a polymorphic port with the caller-side concrete type' do
         result = WithInterop::Internal.patient().run
@@ -756,7 +756,7 @@ module Jade
           JADE
         end
 
-        before { test_compiler.require('both_arms', both_arms_source) }
+        before { test_compiler.require(both_arms_source) }
 
         it 'decodes the ok arm into the caller-side ok type' do
           result = BothArms::Internal.parse_ok().run
@@ -805,7 +805,7 @@ module Jade
           JADE
         end
 
-        before { test_compiler.require('maybe_nested', maybe_source) }
+        before { test_compiler.require(maybe_source) }
 
         it 'composes Decode.nullable around the caller-side decoder' do
           result = MaybeNested::Internal.some().run
@@ -849,7 +849,7 @@ module Jade
         end
 
         it 'composes Decode.list and Decode.nullable around the caller-side decoder' do
-          test_compiler.require('doubly_nested', doubly_source)
+          test_compiler.require(doubly_source)
           result = DoublyNested::Internal.fetch().run
           expect(result).to be_ok
           expect(result._1.length).to eql 3
@@ -890,7 +890,7 @@ module Jade
         end
 
         it 'composes Decode.list around the caller-side decoder' do
-          test_compiler.require('nested', nested_source)
+          test_compiler.require(nested_source)
           result = Nested::Internal.fetch().run
           expect(result).to be_ok
           expect(result._1.length).to eql 2
@@ -936,7 +936,7 @@ module Jade
       end
 
       it 'returns a Task with the date' do
-        test_compiler.require('stdlib_date', stdlib_date)
+        test_compiler.require(stdlib_date)
         result = StdlibDate::Internal.today().run
         expect(result).to be_ok
         expect(StdlibDate::Internal.year(result._1)).to eql 2026
@@ -996,7 +996,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('arg_encoding', with_interop_source) }
+      before { test_compiler.require(with_interop_source) }
 
       it 'hands Ruby the wire form of a rich type, and takes it back' do
         ArgEncoding::Internal
@@ -1068,7 +1068,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('structural', with_interop_source) }
+      before { test_compiler.require(with_interop_source) }
 
       it 'hands Ruby a positional array for a tuple' do
         Structural::Internal
@@ -1114,7 +1114,7 @@ module Jade
       end
 
       it 'is a compile error naming the argument' do
-        expect { test_compiler.require('no_encoder', with_interop_source) }
+        expect { test_compiler.require(with_interop_source) }
           .to raise_error(
             CompilationError,
             /Port `echo` cannot encode argument 1 \(`Shape`\): no Encodable instance/,
@@ -1146,7 +1146,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('anon_record', with_interop_source) }
+      before { test_compiler.require(with_interop_source) }
 
       def decode_pair
         AnonRecord::Internal.pair.run.then { |r| r.deconstruct.first }

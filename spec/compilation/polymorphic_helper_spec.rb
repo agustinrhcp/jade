@@ -62,8 +62,8 @@ module Jade
     end
 
     it 'keeps helper type vars distinct from arg type vars' do
-      test_compiler.require('loader', loader_source)
-      expect { test_compiler.require('app', app_source) }.not_to raise_error
+      test_compiler.require(loader_source)
+      expect { test_compiler.require(app_source) }.not_to raise_error
     end
   end
 end

@@ -18,7 +18,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('thunk', source) }
+      before { test_compiler.require(source) }
 
       it 'calls the thunk and returns its value' do
         expect(Thunk::Internal.run(-> { 42 })).to eql 42
@@ -46,7 +46,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('thunk', source) }
+      before { test_compiler.require(source) }
 
       it 'calls the first thunk when flag is true' do
         expect(Thunk::Internal.pick(true, -> { 1 }, -> { 2 })).to eql 1
@@ -73,7 +73,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('thunk', source) }
+      before { test_compiler.require(source) }
 
       it 'applies the thunk twice and adds the results' do
         expect(Thunk::Internal.double_thunk(-> { 10 })).to eql 20

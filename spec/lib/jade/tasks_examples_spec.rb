@@ -54,7 +54,7 @@ describe 'tasks mocker — DateTasks example' do
     JADE
   end
 
-  before { test_compiler.require('schedule', schedule_source) }
+  before { test_compiler.require(schedule_source) }
 
   describe 'auto-registration via the DSL' do
     it 'exposes a TaskDef accessor on the module' do
@@ -211,7 +211,7 @@ describe 'auto-generated predicates for user-defined unions' do
   include_context 'with test compiler'
 
   before do
-    test_compiler.require('shapes', <<~JADE)
+    test_compiler.require(<<~JADE)
       module Shapes exposing (Shape(..))
 
       type Shape
@@ -235,7 +235,7 @@ describe 'snake_case predicate names for multi-word variants' do
   include_context 'with test compiler'
 
   before do
-    test_compiler.require('events', <<~JADE)
+    test_compiler.require(<<~JADE)
       module Events exposing (Event(..))
 
       type Event

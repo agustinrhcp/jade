@@ -9,6 +9,7 @@ require 'jade/codegen'
 require 'jade/module_loader/cache'
 require 'jade/module_loader/dependency_resolver'
 require 'jade/module_loader/dependency_graph'
+require 'jade/module_loader/module_name'
 require 'jade/module_loader/normalize'
 require 'jade/module_loader/topological_sort'
 require 'jade/diagnostics'
@@ -131,6 +132,10 @@ module Jade
             .add(err.to_diagnostic(source: source))
             .then { raise CompilationError.new(it) }
         end => Ok([raw_ast, comments])
+
+      ModuleName
+        .check(raw_ast, source)
+        .on_err { raise CompilationError.new(it) }
 
       Frontend::CommentAttacher
         .attach(raw_ast, comments, source)

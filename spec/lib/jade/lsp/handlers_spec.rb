@@ -375,7 +375,7 @@ module Jade
 
         it 'renders inferred constraints for constrained function calls' do
           text = <<~JADE
-            module M exposing (caller)
+            module Leaf exposing (caller)
 
             def eq_check(a: a, b: a) -> Bool
               a == b
@@ -392,7 +392,7 @@ module Jade
 
         it 'lists implemented interfaces under a type hover' do
           text = <<~JADE
-            module M exposing (Box, run)
+            module Leaf exposing (Box, run)
 
             type Box = Box(Int)
 
@@ -420,7 +420,7 @@ module Jade
         describe 'pinned-type fallback' do
           let(:locals_text) do
             <<~JADE
-              module M exposing (run)
+              module Leaf exposing (run)
 
               def run(x: Int) -> Int
                 doubled = x * 2
@@ -526,7 +526,7 @@ module Jade
       describe 'references' do
         let(:text) do
           <<~JADE
-            module M exposing (run)
+            module Leaf exposing (run)
 
             def helper(x: Int) -> Int
               x + 1
@@ -569,7 +569,7 @@ module Jade
         end
 
         it 'returns nil when cursor is not on a resolvable symbol' do
-          _, outbound = open_and_find_refs(at: 'module M', include_declaration: true)
+          _, outbound = open_and_find_refs(at: 'module Leaf', include_declaration: true)
           expect(outbound.first[:result]).to be_nil
         end
 
@@ -583,7 +583,7 @@ module Jade
       describe 'rename' do
         let(:text) do
           <<~JADE
-            module M exposing (run)
+            module Leaf exposing (run)
 
             def helper(x: Int) -> Int
               x + 1
@@ -648,7 +648,7 @@ module Jade
 
           it 'returns nil when the cursor is not on a resolvable symbol' do
             _, outbound = open_and_dispatch(
-              method: 'textDocument/prepareRename', id: 43, at: 'module M',
+              method: 'textDocument/prepareRename', id: 43, at: 'module Leaf',
             )
             expect(outbound.first[:result]).to be_nil
           end
@@ -693,7 +693,7 @@ module Jade
         describe 'coverage' do
           let(:text) do
             <<~JADE
-              module M exposing (run, Shape)
+              module Leaf exposing (run, Shape)
 
               type Shape
                 = Circle(Float)
@@ -751,7 +751,7 @@ module Jade
         describe 'declaration narrowing' do
           let(:text) do
             <<~JADE
-              module M exposing (sample)
+              module Leaf exposing (sample)
 
               type Shape
                 = Circle(Float)
@@ -806,7 +806,7 @@ module Jade
       describe 'inlayHint' do
         let(:text) do
           <<~JADE
-            module M exposing (run)
+            module Leaf exposing (run)
 
             def run() -> Int
               x = 42
@@ -849,7 +849,7 @@ module Jade
 
         it 'covers case-of pattern bindings' do
           text = <<~JADE
-            module M exposing (run)
+            module Leaf exposing (run)
 
             def run(m: Maybe(Int)) -> Int
               case m
@@ -881,7 +881,7 @@ module Jade
 
         it 'covers lambda params' do
           text = <<~JADE
-            module M exposing (run)
+            module Leaf exposing (run)
 
             def run() -> List(Int)
               List.map([1, 2, 3], (x) -> { x + 1 })
@@ -944,7 +944,7 @@ module Jade
         let(:unformatted) do
           # extra blank line between `module` and `def` is canonical;
           # the leading whitespace before `def` is the drift
-          "module M exposing (n)\n\n    def n -> Int\n  42\nend\n"
+          "module Leaf exposing (n)\n\n    def n -> Int\n  42\nend\n"
         end
 
         def open_and_format(text)
@@ -973,7 +973,7 @@ module Jade
         end
 
         it 'returns nil when the buffer fails to parse' do
-          _, outbound = open_and_format("module M exposing (n)\n\ndef n -> Int\n  if then else end\nend\n")
+          _, outbound = open_and_format("module Leaf exposing (n)\n\ndef n -> Int\n  if then else end\nend\n")
           expect(outbound.first[:result]).to be_nil
         end
       end

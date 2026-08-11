@@ -8,7 +8,7 @@ module Jade
     include_context 'with test compiler'
 
     before do
-      test_compiler.require('pattern_bind', source)
+      test_compiler.require(source)
     end
 
     context 'record bind in Maybe context' do
@@ -165,7 +165,7 @@ module Jade
     include_context 'with test compiler'
 
     it "doesn't crash on let-binding over a cross-module struct with a Decode.Value field" do
-      test_compiler.require('opaque_lib', <<~JADE)
+      test_compiler.require(<<~JADE)
         module OpaqueLib exposing (T(..), make)
 
         import Decode exposing (Value)
@@ -180,7 +180,7 @@ module Jade
         end
       JADE
 
-      test_compiler.require('opaque_app', <<~JADE)
+      test_compiler.require(<<~JADE)
         module OpaqueApp exposing (go)
 
         import OpaqueLib exposing (T, make)

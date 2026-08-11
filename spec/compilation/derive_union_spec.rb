@@ -7,7 +7,7 @@ module Jade
   describe 'deriving Encodable/Decodable for unions' do
     include_context 'with test compiler'
 
-    before { test_compiler.require('enums', source) }
+    before { test_compiler.require(source) }
 
     let(:source) do
       <<~JADE
@@ -68,7 +68,7 @@ module Jade
     end
 
     describe 'a struct with enum fields' do
-      before { test_compiler.require('budget', envelope_source) }
+      before { test_compiler.require(envelope_source) }
 
       let(:envelope_source) do
         <<~JADE
@@ -112,7 +112,7 @@ module Jade
     end
 
     describe 'a type sharing its name with its module' do
-      before { test_compiler.require('envelope', shadow_source) }
+      before { test_compiler.require(shadow_source) }
 
       let(:shadow_source) do
         <<~JADE
@@ -146,7 +146,7 @@ module Jade
     end
 
     describe 'a hand-written implementation' do
-      before { test_compiler.require('override', override_source) }
+      before { test_compiler.require(override_source) }
 
       let(:override_source) do
         <<~JADE

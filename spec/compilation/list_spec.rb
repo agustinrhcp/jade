@@ -74,7 +74,7 @@ module Jade
     end
 
     before do
-      test_compiler.require('pepe', pepe_source)
+      test_compiler.require(pepe_source)
     end
 
     it 'works' do
@@ -142,7 +142,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('sort_test', source) }
+      before { test_compiler.require(source) }
 
       it 'sorts ints, floats, strings and supports sort_by' do
         expect(SortTest.sort_ints([3, 1, 2])).to eql [1, 2, 3]
@@ -324,7 +324,7 @@ module Jade
         JADE
       end
 
-      before { test_compiler.require('l', source) }
+      before { test_compiler.require(source) }
 
       it 'any / all' do
         expect(L.any_neg([1, 2, 3])).to be false
@@ -400,7 +400,7 @@ module Jade
       end
 
       it 'rejects List.sort_with at compile time' do
-        expect { test_compiler.require('sneaky', source) }
+        expect { test_compiler.require(source) }
           .to raise_error(CompilationError, /sort_with/)
       end
     end

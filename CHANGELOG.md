@@ -21,6 +21,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   scope, listing the offending keys and the correction. Hashes mixing string
   and symbol keys are left alone; that is a real shape mismatch, and the
   per-field errors describe it better than a guess would.
+- **A module declared under the wrong file name is now a compile error.** A
+  module is keyed by the name its file implies — imports resolve `Shop.Cart`
+  to `shop/cart.jd` and back — but nothing checked that against what the file
+  declared. `module Cart` in `orders.jd` compiled clean and emitted a `Cart`
+  module whose own type references pointed at `Orders`, so the first call
+  raised `NameError: uninitialized constant Cart::Internal::Orders` far from
+  the cause. It now fails at compile time, pointing at the declared name and
+  offering both the rename and the move.
 
 ## [0.5.0]
 
