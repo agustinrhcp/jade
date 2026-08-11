@@ -1,0 +1,15 @@
+module Pipelines exposing (safe_divide, shout)
+
+def safe_divide(a: Int, b: Int) -> Maybe(Int)
+  case b == 0
+  in True then Nothing
+  in False then Just(a / b)
+  end
+end
+
+
+def shout(words: List(String)) -> String
+  words
+    |> List.map(String.to_upper)
+    |> String.join(" ")
+end

@@ -1,0 +1,80 @@
+name: Deploy site
+
+on:
+  push:
+    branches: [master]
+    paths: ['web/**', 'lib/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+# The wasm runtime and the compiler bundle are generated, never committed, so
+# the deploy always ships the compiler that is actually on master.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install playground runtime
+        working-directory: web
+        run: npm ci
+
+      - name: Vendor ruby.wasm and bundle the compiler
+        working-directory: web
+        run: npm run assets
+
+      - name: Recompile the diptych examples
+        run: ruby web/build.rb
+
+      - name: Fail if the committed Ruby is stale
+        run: |
+          git diff --exit-code web/index.html \
+            || (echo "::error::web/index.html is out of date — run 'ruby web/build.rb' and commit"; exit 1)
+
+      # Only the files the browser actually fetches. `web/` also holds
+      # node_modules (~94 MB, three copies of the Ruby wasm including the
+      # debug build) plus the build scripts, none of which belong on a
+      # public site.
+      - name: Stage the site
+        run: |
+          mkdir -p _site/vendor
+          cp web/index.html web/style.css web/playground.js _site/
+          cp web/vendor/ruby-wasm.umd.js \
+             web/vendor/ruby+stdlib.wasm \
+             web/vendor/lib-bundle.json \
+             _site/vendor/
+          du -sh _site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

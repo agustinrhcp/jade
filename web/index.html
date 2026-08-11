@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jade — a functional compilation layer for Ruby</title>
+<meta name="description" content="A statically typed functional language that compiles to readable Ruby. Per-module, one gem, and the compiled Ruby is yours.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="wrap head">
+  <span class="mark">jade<span class="dot">.</span></span>
+  <nav class="nav">
+    <a href="#docs">Docs</a>
+    <a href="#tooling">Tooling</a>
+    <a href="https://github.com/agustinrhcp/jade">GitHub</a>
+  </nav>
+</header>
+
+<main>
+
+<section class="wrap hero">
+  <h1>A functional compilation layer for the Ruby you already have.</h1>
+  <p class="lede">Write the parts that deserve types in a statically typed functional
+    language. Compile them to Ruby you'd have written yourself, and call them from
+    the app you already have.</p>
+  <p class="kicker">one gem · per-module · the compiled Ruby is yours</p>
+  <div class="cta">
+    <a class="btn" href="#docs">Read the tour</a>
+    <a href="#diptych">See it compile ↓</a>
+  </div>
+</section>
+
+<section class="wrap diptych" id="diptych">
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" aria-controls="ex-0" id="tab-0">Pattern matching</button>
+    <button role="tab" aria-selected="false" aria-controls="ex-1" id="tab-1">Pipelines</button>
+    <button role="tab" aria-selected="false" aria-controls="ex-2" id="tab-2">Records</button>
+  </div>
+
+  <div class="panes">
+    <div class="ex" id="ex-0" role="tabpanel" aria-labelledby="tab-0">
+      <div class="pane">
+        <div class="chrome">shapes.jd<span class="hint">editable</span></div>
+        <div class="editor">
+          <pre class="code" data-mirror aria-hidden="true"></pre>
+          <textarea class="code" data-src="shapes" spellcheck="false" autocapitalize="off"
+            autocorrect="off" autocomplete="off" aria-label="Jade source, editable">module Shapes exposing (area, describe)
+
+type Shape
+  = Circle(Float)
+  | Rectangle(Float, Float)
+
+
+def area(shape: Shape) -&gt; Float
+  case shape
+  in Circle(r) then 3.14159 * r * r
+  in Rectangle(w, h) then w * h
+  end
+end
+
+
+def describe(shape: Shape) -&gt; String
+  case shape
+  in Circle(_) then "circle"
+  in Rectangle(_, _) then "rectangle"
+  end
+end</textarea>
+        </div>
+      </div>
+      <div class="pane">
+        <div class="chrome">shapes.rb</div>
+        <div class="scroll"><pre class="code" data-hl="code" data-gen="shapes.rb">module Shapes
+  extend self
+
+  Circle = Data.define(:_1) do
+    def circle?; true; end
+    def rectangle?; false; end
+  end
+
+  Rectangle = Data.define(:_1, :_2) do
+    def circle?; false; end
+    def rectangle?; true; end
+  end
+
+  module Internal
+    extend self
+
+    def area(shape)
+      case shape
+      in Shapes::Circle(r) then ((3.14159 * r) * r)
+      in Shapes::Rectangle(w, h) then (w * h)
+      end
+    end
+
+    def describe(shape)
+      case shape
+      in Shapes::Circle(_) then "circle"
+      in Shapes::Rectangle(_, _) then "rectangle"
+      end
+    end
+  end
+
+  def self.area(*)
+    raise Jade::Interop::NotExposed.new(module_name: "Shapes", function_name: :area, hint: "argument 1 of type Shape has no Decodable instance")
+  end
+
+  def self.describe(*)
+    raise Jade::Interop::NotExposed.new(module_name: "Shapes", function_name: :describe, hint: "argument 1 of type Shape has no Decodable instance")
+  end
+end</pre></div>
+      </div>
+    </div>
+    <div class="ex" id="ex-1" role="tabpanel" aria-labelledby="tab-1" hidden>
+      <div class="pane">
+        <div class="chrome">pipelines.jd<span class="hint">editable</span></div>
+        <div class="editor">
+          <pre class="code" data-mirror aria-hidden="true"></pre>
+          <textarea class="code" data-src="pipelines" spellcheck="false" autocapitalize="off"
+            autocorrect="off" autocomplete="off" aria-label="Jade source, editable">module Pipelines exposing (safe_divide, shout)
+
+def safe_divide(a: Int, b: Int) -&gt; Maybe(Int)
+  case b == 0
+  in True then Nothing
+  in False then Just(a / b)
+  end
+end
+
+
+def shout(words: List(String)) -&gt; String
+  words
+    |&gt; List.map(String.to_upper)
+    |&gt; String.join(" ")
+end</textarea>
+        </div>
+      </div>
+      <div class="pane">
+        <div class="chrome">pipelines.rb</div>
+        <div class="scroll"><pre class="code" data-hl="code" data-gen="pipelines.rb">module Pipelines
+  extend self
+
+  module Internal
+    extend self
+
+    def safe_divide(a, b)
+      case (b == 0)
+      in true then Jade::Maybe::Nothing[]
+      in false then Jade::Maybe::Just[(a / b)]
+      end
+    end
+
+    def shout(words)
+      words.map(&amp;Jade::Runtime.intr('String.to_upper')).join(" ")
+    end
+  end
+
+  def self.safe_divide(a, b)
+    Internal.safe_divide(
+      Jade::Interop::Boundary.integer("Int", a),
+      Jade::Interop::Boundary.integer("Int", b),
+    ).then { it.is_a?(::Jade::Maybe::Just) ? it._1 : nil }
+  end
+
+  def self.shout(words)
+    Internal.shout(Jade::Interop::Boundary.list_of(::String, "List(String)", words))
+  end
+end</pre></div>
+      </div>
+    </div>
+    <div class="ex" id="ex-2" role="tabpanel" aria-labelledby="tab-2" hidden>
+      <div class="pane">
+        <div class="chrome">records.jd<span class="hint">editable</span></div>
+        <div class="editor">
+          <pre class="code" data-mirror aria-hidden="true"></pre>
+          <textarea class="code" data-src="records" spellcheck="false" autocapitalize="off"
+            autocorrect="off" autocomplete="off" aria-label="Jade source, editable">module Records exposing (birthday)
+
+struct Person = {
+  name: String,
+  age: Int,
+  email: String
+}
+
+
+def birthday(person: Person) -&gt; Person
+  { person | age: person.age + 1 }
+end</textarea>
+        </div>
+      </div>
+      <div class="pane">
+        <div class="chrome">records.rb</div>
+        <div class="scroll"><pre class="code" data-hl="code" data-gen="records.rb">module Records
+  extend self
+
+  Person = Data.define(:name, :age, :email)
+
+  module Internal
+    extend self
+
+    def birthday(person)
+      person.with(age: (person.age + 1))
+    end
+  end
+
+  def self.decode_person(value)
+    Jade::Interop::Boundary.hash("Person", value).then do |h|
+      ::Records::Person[
+        Jade::Interop::Boundary.string("String", h["name"]),
+        Jade::Interop::Boundary.integer("Int", h["age"]),
+        Jade::Interop::Boundary.string("String", h["email"]),
+      ]
+    end
+  end
+
+  def self.encode_person(p)
+    { "name" =&gt; p.name, "age" =&gt; p.age, "email" =&gt; p.email }
+  end
+
+  def self.birthday(person)
+    encode_person(Internal.birthday(decode_person(person)))
+  end
+end</pre></div>
+      </div>
+    </div>
+  </div>
+  <p class="status" data-status>Edit the Jade on the left — it compiles in your browser.</p>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2 class="h2 narrow">Four things the compiler guarantees.</h2>
+    <div class="grid-2 tiles">
+      <div class="tile">
+        <div class="label">Absence</div>
+        <h3>Maybe instead of nil</h3>
+        <p>Absence is a type, and errors are values. No <code>NoMethodError</code> on nil, ever.</p>
+        <div class="pane flat"><pre class="code sm" data-hl="code">def withdraw(balance: Int, amount: Int) -> Result(Int, String)
+  amount > balance ? Err("insufficient funds") : Ok(balance - amount)
+end</pre></div>
+      </div>
+      <div class="tile">
+        <div class="label">Inference</div>
+        <h3>Inference, not annotation</h3>
+        <p>Annotate the signature; the compiler works out the rest.</p>
+        <div class="pane flat"><pre class="code sm" data-hl="code">def shout(words: List(String)) -> String
+  words
+    |> List.map(String.to_upper)
+    |> String.join(" ")
+end</pre></div>
+      </div>
+      <div class="tile">
+        <div class="label">Records</div>
+        <h3>Records, updated structurally</h3>
+        <p>Field access and update are expressions, and the result keeps its type.</p>
+        <div class="pane flat"><pre class="code sm" data-hl="code">def birthday(user: User) -> User
+  { user | age: user.age + 1 }
+end</pre></div>
+      </div>
+      <div class="tile">
+        <div class="label">Deriving</div>
+        <h3>Instances derive</h3>
+        <p><code>Eq</code>, <code>Show</code>, <code>Encodable</code> and <code>Decodable</code>
+          come free for structs and unions.</p>
+        <div class="pane flat"><pre class="code sm" data-hl="code">struct User = {
+  name: String,
+  age: Int
+}</pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band sunk">
+  <div class="wrap grid-2 gap-lg">
+    <div class="col-narrow">
+      <h2 class="h2 sm">Add a variant, and every <code>case</code> that forgot it stops compiling.</h2>
+      <p class="muted">The check is structural — the compiler names the cases you're missing,
+        not just the line.</p>
+    </div>
+    <div class="pane">
+      <div class="chrome">$ jade check shapes.jd</div>
+      <div class="scroll x"><pre class="code" data-hl="error">error: Pattern match is not exhaustive. Missing cases:
+  Triangle(_, _, _)
+   --> shapes.jd:10:3
+   |
+10 |   case shape
+   |   ^^^^^^^^^^
+11 |   in Circle(_) then "circle"
+12 |   in Rectangle(_, _) then "rectangle"
+13 |   end
+   | ^^^^^ non-exhaustive pattern match
+   |
+
+1 error in .</pre></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2 class="h2 narrow">Nothing reaches the outside world without saying so.</h2>
+    <p class="muted measure">Jade has no implicit side effects. Every call out to Ruby is
+      declared in a <code>uses</code> block, takes a <code>Task</code> return type, and
+      doesn't run until something runs it — so a function's signature tells you whether
+      it does IO.</p>
+    <div class="grid-3">
+      <div>
+        <div class="caption">declare it in Jade</div>
+        <div class="pane flat"><pre class="code sm" data-hl="code">uses Mailer with
+  deliver : String -> Task(Bool, String)
+end
+
+
+def run(email: String) -> Task(Bool, String)
+  deliver(email)
+end</pre></div>
+      </div>
+      <div>
+        <div class="caption">implement it in Ruby</div>
+        <div class="pane flat"><pre class="code sm" data-hl="code">module Mailer
+  extend Jade::Port
+
+  task :deliver do |t, email|
+    t.ok(Mail.welcome(email).deliver)
+  end
+end</pre></div>
+      </div>
+      <div>
+        <div class="caption">nothing runs until you run it</div>
+        <div class="pane flat"><pre class="code sm" data-hl="code">task = Signup::Internal.run('ada@example.com')  # nothing has happened
+task.run                                        # => Ok(true)
+
+Signup.run('ada@example.com')                   # => ["ok", true]
+Signup.run!('ada@example.com')                  # => true, raises on err</pre></div>
+      </div>
+    </div>
+    <p class="muted measure mt">Because effects are values, tests stub them without touching
+      the network — there are RSpec matchers for it.</p>
+  </div>
+</section>
+
+<section class="band sunk">
+  <div class="wrap">
+    <h2 class="h2">A typed edge, not a leaky one.</h2>
+    <p class="muted measure">Arguments are decoded on the way in and encoded on the way out.
+      Ruby sees ordinary hashes, strings and numbers — never Jade's internal
+      representation — and Jade never sees a value that didn't typecheck.</p>
+    <div class="grid-2">
+      <div>
+        <div class="caption">generated, not hand-written</div>
+        <div class="pane flat"><pre class="code sm" data-hl="code">def self.decode_person(value)
+  Jade::Interop::Boundary.hash("Person", value).then do |h|
+    ::Records::Person[
+      Jade::Interop::Boundary.string("String", h["name"]),
+      Jade::Interop::Boundary.integer("Int", h["age"]),
+      Jade::Interop::Boundary.string("String", h["email"]),
+    ]
+  end
+end
+
+def self.encode_person(p)
+  { "name" => p.name, "age" => p.age, "email" => p.email }
+end</pre></div>
+      </div>
+      <div>
+        <div class="caption">when Ruby lies</div>
+        <div class="pane flat"><pre class="code sm" data-hl="lies">task :raw_fetch do |t, id|
+  t.ok({ name: "Paul" })   # oops — missing :id
+end
+
+Users.fetch(1)
+# => raises Jade::Interop::DecodeError:
+#    Port returned a value that failed to decode at value:
+#    missing field `id` ({name: "Paul"})</pre></div>
+      </div>
+    </div>
+    <p class="muted measure-wide mt">A port returning the wrong shape is a bug, not a runtime
+      condition — the boundary raises rather than pass a malformed value inward.</p>
+    <p class="muted measure-wide mt">Not every function can cross. A function is callable
+      from Ruby only when all of its parameters are <code>Decodable</code> and its return
+      type is <code>Encodable</code> — one that isn't still compiles, and its
+      <code>Internal</code> form still works, but the public method raises
+      <code>NotExposed</code> naming the type that disqualified it. That's what the
+      collapsed wrappers under the diptych are.</p>
+    <p class="muted measure mt">For JSON that isn't a boundary crossing,
+      <a href="https://github.com/agustinrhcp/jade/blob/master/docs/json.md">Decode</a> and
+      <a href="https://github.com/agustinrhcp/jade/blob/master/docs/json.md">Encode</a> are
+      ordinary composable pipelines, and both auto-derive for structs.</p>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2 class="h2">It goes in the app you already have.</h2>
+    <div class="layer">
+      <div class="item">
+        <h3>Per module.</h3>
+        <p>Point Jade at a source root and <code>require</code> modules by name. Each
+          <code>.jd</code> compiles to <code>.jade/build/&lt;module&gt;.rb</code> on first
+          require, and only when the source changed. There is no "Jade app."</p>
+      </div>
+      <div class="item">
+        <h3>Ordinary constants on the Ruby side.</h3>
+        <p>A compiled module is a module. <code>Signup.run(email)</code> is just a method
+          call — nothing to boot, no context to thread.</p>
+      </div>
+      <div class="item">
+        <h3>One gem.</h3>
+        <p><code>jade-lang</code>, which depends on <code>base64</code> and nothing else.</p>
+      </div>
+      <div class="item last">
+        <h3>You can leave.</h3>
+        <p>The compiled Ruby is the deliverable — readable, in your tree, under your version
+          control. Drop the gem and you keep the output.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="tooling">
+  <div class="wrap">
+    <h2 class="h2">The whole toolchain is one command.</h2>
+    <div class="grid-2 gap-lg">
+      <div class="stack">
+        <div class="pane flat"><pre class="code" data-hl="cli">jade check [file...]      # type-check; exits 1 on errors, generates nothing
+jade fmt [-i|-c] [file]   # format .jd source (stdin or file)
+jade lsp                  # language server over stdio
+jade q hover FILE:L:C     # headless JSON queries — hover/defn/refs/symbols</pre></div>
+        <div class="pane flat"><pre class="code" data-hl="json">$ jade q api List.fold
+{
+  "name": "fold",
+  "qualified_name": "List.fold",
+  "kind": "function",
+  "signature": "List.fold : (List(a), b, (b, a) -> b) -> b"
+}</pre></div>
+      </div>
+      <div class="stack prose">
+        <div>
+          <h3 class="h3">In your editor.</h3>
+          <p class="muted">A language server ships in the box — type errors, inferred types,
+            jump-to-definition in anything that speaks LSP. <code>jade fmt</code> is
+            deterministic and idempotent; wire it to a pre-commit hook.</p>
+        </div>
+        <div>
+          <h3 class="h3">For coding agents.</h3>
+          <p class="muted"><code>jade q</code> answers the same questions as one-shot JSON,
+            so a tool that doesn't speak LSP can still ask. <code>jade q api</code> reads
+            signatures straight from the compiler's registry, so the answer can't drift
+            from the compiler.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="docs">
+  <div class="wrap">
+    <h2 class="h2">Docs.</h2>
+    <div class="docs">
+      <div class="row"><a href="https://github.com/agustinrhcp/jade/blob/master/docs/syntax.md">syntax.md</a><span>the full language tour</span></div>
+      <div class="row"><a href="https://github.com/agustinrhcp/jade/blob/master/docs/interop.md">interop.md</a><span>the Ruby boundary: ports, decoding, what crosses</span></div>
+      <div class="row"><a href="https://github.com/agustinrhcp/jade/blob/master/docs/json.md">json.md</a><span>Decode / Encode, by hand and auto-derived</span></div>
+      <div class="row"><a href="https://github.com/agustinrhcp/jade/blob/master/docs/testing.md">testing.md</a><span>stubbing Tasks, the RSpec matchers</span></div>
+      <div class="row"><a href="https://github.com/agustinrhcp/jade/blob/master/docs/stdlib.md">stdlib.md</a><span>module-by-module map</span></div>
+      <div class="row"><a href="https://github.com/agustinrhcp/jade/blob/master/docs/lsp.md">lsp.md</a><span>language server and <code>jade q</code> setup</span></div>
+      <div class="row"><a href="https://github.com/agustinrhcp/jade/tree/master/examples">examples/</a><span>runnable <code>.jd</code> files</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <p class="muted measure"><span class="strong">Early and experimental</span> — being tried
+      out on small projects. In progress: <code>Comparable</code> derivation for user types,
+      partial record types in signatures, a stable REPL.</p>
+    <p class="muted measure mt-sm">Not great for: throwaway scripts, libraries you ship to
+      other Ruby projects, and performance-critical hot paths.</p>
+  </div>
+</section>
+
+<section class="band" id="install">
+  <div class="wrap">
+    <h2 class="h2">Add it to a Gemfile.</h2>
+    <div class="pane">
+      <div class="chrome">Gemfile</div>
+      <div class="scroll x"><pre class="code" data-hl="code">gem 'jade-lang'</pre></div>
+    </div>
+    <p class="muted mt-sm">Modules compile to <code>.jade/build/</code> on first require.</p>
+    <div class="cta mt">
+      <a href="https://github.com/agustinrhcp/jade/blob/master/docs/syntax.md">Language tour</a>
+      <a href="https://github.com/agustinrhcp/jade">GitHub</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap foot">
+  <span>Jade — MIT licensed</span>
+  <span class="pip"></span>
+</footer>
+
+<script type="module">
+import { attach } from './playground.js';
+
+const KW = new Set(['module','def','type','struct','exposing','case','in','then','end',
+  'uses','with','extend','self','do','true','false','nil','if','else','return']);
+const TOKEN = /(--[^\n]*|#[^\n]*)|("(?:[^"\\]|\\.)*")|(\b\d+(?:\.\d+)?\b)|(\b[A-Z][A-Za-z0-9_]*\b)|(\b[a-z_][A-Za-z0-9_?!]*\b)/g;
+
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const wrap = (cls, t) => (cls ? `<span class="${cls}">${esc(t)}</span>` : esc(t));
+
+function code(src) {
+  let out = '', last = 0, m;
+  TOKEN.lastIndex = 0;
+  while ((m = TOKEN.exec(src)) !== null) {
+    out += esc(src.slice(last, m.index));
+    if (m[1]) out += wrap('t-com', m[1]);
+    else if (m[2]) out += wrap('t-str', m[2]);
+    else if (m[3]) out += wrap('t-num', m[3]);
+    else if (m[4]) out += wrap('t-typ', m[4]);
+    else if (m[5]) out += KW.has(m[5]) ? wrap('t-kw', m[5]) : esc(m[5]);
+    last = m.index + m[0].length;
+  }
+  return out + esc(src.slice(last));
+}
+
+function scan(src, re, pick) {
+  let out = '', last = 0, m;
+  re.lastIndex = 0;
+  while ((m = re.exec(src)) !== null) {
+    out += esc(src.slice(last, m.index));
+    out += wrap(pick(m), m[0]);
+    last = m.index + m[0].length;
+  }
+  return out + esc(src.slice(last));
+}
+
+const HL = {
+  code,
+  error: (src) => scan(src, /(error:)|(warning:)|(-->)|(\^+)|(\|)|(^[ ]*\d+(?=[ ]*\|))/gm,
+    (m) => (m[1] ? 't-err' : m[2] ? 't-typ' : m[4] ? 't-caret' : 't-gutter')),
+  cli: (src) => scan(src, /(#[^\n]*)|(^\$ [^\n]*)|(^jade\b)/gm, (m) => (m[1] ? 't-com' : 't-kw')),
+  json: (src) => scan(src, /("(?:[^"\\]|\\.)*"\s*:)|("(?:[^"\\]|\\.)*")|([{}\[\],])|(^\$ [^\n]*)/gm,
+    (m) => (m[4] ? 't-kw' : m[1] ? 't-key' : m[2] ? 't-str' : 't-gutter')),
+  lies: (src) => src.split('\n').map((line) =>
+    !/^\s*#/.test(line) ? code(line)
+      : line.split('Jade::Interop::DecodeError').map((p) => wrap('t-com', p))
+          .join('<span class="t-err">Jade::Interop::DecodeError</span>')).join('\n'),
+};
+
+document.querySelectorAll('[data-hl]:not([data-gen])').forEach((el) => {
+  const fn = HL[el.dataset.hl];
+  if (fn) el.innerHTML = fn(el.textContent);
+});
+
+/* ---- compiled Ruby: core up front, boundary wrappers behind a disclosure ----
+
+   Everything the compiler emits for the Ruby boundary sits at the end of the
+   module at two-space indent (`def self.x`, cached BOUNDARY_ constants). It is
+   real output, but it is bookkeeping rather than the translation of your code,
+   so it starts collapsed. Same split for the pre-baked panes and for live
+   compiles, so they can never disagree. */
+
+function splitRuby(text) {
+  const lines = text.split('\n');
+  const at = lines.findIndex((l) => /^  (def self\.|BOUNDARY_[A-Z0-9_]+ =)/.test(l));
+  if (at === -1) return { core: text, boundary: '' };
+
+  const core = lines.slice(0, at).join('\n').replace(/\s+$/, '') + '\nend';
+  const boundary = lines.slice(at, lines[lines.length - 1] === 'end' ? -1 : undefined)
+    .join('\n').replace(/\s+$/, '');
+
+  return { core, boundary };
+}
+
+function renderRuby(pane, text) {
+  const { core, boundary } = splitRuby(text);
+  pane.innerHTML = code(core);
+
+  const host = pane.parentElement;
+  host.querySelector('.boundary')?.remove();
+  if (!boundary) return;
+
+  const count = boundary.split('\n').filter((l) => l.trim()).length;
+  const details = document.createElement('details');
+  details.className = 'boundary';
+  details.innerHTML =
+    `<summary>${count} more lines — the Ruby boundary</summary>` +
+    `<pre class="code"></pre>`;
+  details.querySelector('pre').innerHTML = code(boundary);
+  host.appendChild(details);
+}
+
+document.querySelectorAll('[data-gen]').forEach((el) => renderRuby(el, el.textContent));
+
+/* ---- tabs ---- */
+
+const tabs = [...document.querySelectorAll('.tabs button')];
+const panels = tabs.map((t) => document.getElementById(t.getAttribute('aria-controls')));
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let current = 0;
+
+function show(i) {
+  if (i === current) return;
+  const from = panels[current], to = panels[i];
+  tabs[current].setAttribute('aria-selected', 'false');
+  tabs[i].setAttribute('aria-selected', 'true');
+  current = i;
+
+  if (reduce) { from.hidden = true; to.hidden = false; return; }
+  from.classList.add('fade');
+  setTimeout(() => {
+    from.hidden = true;
+    from.classList.remove('fade');
+    to.hidden = false;
+    to.classList.add('fade');
+    requestAnimationFrame(() => to.classList.remove('fade'));
+  }, 120);
+}
+
+tabs.forEach((t, i) => {
+  t.addEventListener('click', () => show(i));
+  t.addEventListener('keydown', (e) => {
+    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    const next = (current + d + tabs.length) % tabs.length;
+    tabs[next].focus();
+    show(next);
+  });
+});
+
+/* ---- live editor ---- */
+
+const editors = [...document.querySelectorAll('textarea[data-src]')];
+const status = document.querySelector('[data-status]');
+const mirrorOf = (ta) => ta.parentElement.querySelector('[data-mirror]');
+
+editors.forEach((ta) => {
+  const mirror = mirrorOf(ta);
+  const sync = () => { mirror.innerHTML = code(ta.value) + '\n'; };
+  sync();
+  ta.addEventListener('input', sync);
+  ta.addEventListener('scroll', () => {
+    mirror.scrollTop = ta.scrollTop;
+    mirror.scrollLeft = ta.scrollLeft;
+  });
+  ta.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab' || e.shiftKey) return;
+    e.preventDefault();
+    const { selectionStart: s, selectionEnd: t, value } = ta;
+    ta.value = value.slice(0, s) + '  ' + value.slice(t);
+    ta.selectionStart = ta.selectionEnd = s + 2;
+    ta.dispatchEvent(new Event('input'));
+  });
+});
+
+attach({
+  editors,
+  onStatus(text, kind) {
+    status.textContent = text;
+    if (kind) status.dataset.kind = kind;
+    else status.removeAttribute('data-kind');
+  },
+  onResult(editor, { ruby, rendered, failed }) {
+    const out = editor.closest('.ex').querySelector('[data-gen]');
+
+    // `rendered` is the compiler's own diagnostic output — the same source
+    // excerpt and caret runs `jade check` prints in a terminal.
+    if (failed) {
+      out.parentElement.querySelector('.boundary')?.remove();
+      out.innerHTML = HL.error(rendered);
+      return;
+    }
+
+    renderRuby(out, ruby || '');
+    if (rendered) out.innerHTML = HL.error(rendered) + '\n\n' + out.innerHTML;
+  },
+});
+</script>
+
+</body>
+</html>
