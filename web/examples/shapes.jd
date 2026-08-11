@@ -1,0 +1,21 @@
+module Shapes exposing (area, describe)
+
+type Shape
+  = Circle(Float)
+  | Rectangle(Float, Float)
+
+
+def area(shape: Shape) -> Float
+  case shape
+  in Circle(r) then 3.14159 * r * r
+  in Rectangle(w, h) then w * h
+  end
+end
+
+
+def describe(shape: Shape) -> String
+  case shape
+  in Circle(_) then "circle"
+  in Rectangle(_, _) then "rectangle"
+  end
+end

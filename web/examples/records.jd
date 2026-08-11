@@ -1,0 +1,12 @@
+module Records exposing (birthday)
+
+struct Person = {
+  name: String,
+  age: Int,
+  email: String
+}
+
+
+def birthday(person: Person) -> Person
+  { person | age: person.age + 1 }
+end
