@@ -18,9 +18,18 @@ module Jade
 
           def encode(type, value_expr, registry)
             inner = inner_of(type) or return nil
-            inner_enc = Specialized.encode_expr(inner, 'it._1', registry) or return nil
+            inner_enc = element_encoder(inner, registry) or return nil
 
             "#{value_expr}.then { it.is_a?(::Jade::Maybe::Just) ? #{inner_enc} : nil }"
+          end
+
+          # `encode_expr` returns nil both for an identity encoder and for a
+          # type it cannot specialize. Only the first may pass the element
+          # through untouched; the second has to decline so the caller falls
+          # back to the generic encoder.
+          def element_encoder(inner, registry)
+            Specialized.encode_expr(inner, 'it._1', registry) ||
+              (Specialized.identity_encoder?(inner) ? 'it._1' : nil)
           end
 
           def specializable?(type, registry, seen)

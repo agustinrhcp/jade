@@ -330,8 +330,11 @@ module Jade
       let(:source) do
         <<~JADE
           module MaybeBoundary exposing (
+            boxed,
+            crated,
             custom,
             derived,
+            empty_boxed,
             holder,
             nothing,
             number,
@@ -374,6 +377,18 @@ module Jade
           }
 
 
+          struct Box = {
+            label: String,
+            count: Maybe(Int)
+          }
+
+
+          struct Crate = {
+            label: String,
+            pick: Maybe(Custom)
+          }
+
+
           def number -> Maybe(Int)
             Just(7)
           end
@@ -402,6 +417,21 @@ module Jade
           def nothing -> Maybe(Custom)
             Nothing
           end
+
+
+          def boxed -> Box
+            Box("a", Just(7))
+          end
+
+
+          def empty_boxed -> Box
+            Box("b", Nothing)
+          end
+
+
+          def crated -> Crate
+            Crate("c", Just(Small))
+          end
         JADE
       end
 
@@ -426,6 +456,18 @@ module Jade
 
       it 'maps Nothing to nil' do
         expect(MaybeBoundary.nothing).to be_nil
+      end
+
+      it 'unwraps a Maybe field of an otherwise specializable struct' do
+        expect(MaybeBoundary.boxed).to eq({ 'label' => 'a', 'count' => 7 })
+      end
+
+      it 'maps an absent Maybe field to nil' do
+        expect(MaybeBoundary.empty_boxed).to eq({ 'label' => 'b', 'count' => nil })
+      end
+
+      it 'encodes a Maybe field whose element is a union' do
+        expect(MaybeBoundary.crated).to eq({ 'label' => 'c', 'pick' => 'SMALL' })
       end
     end
 
