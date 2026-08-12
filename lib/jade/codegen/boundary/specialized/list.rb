@@ -20,9 +20,9 @@ module Jade
 
           def encode(type, value_expr, registry)
             inner = inner_of(type) or return nil
-            return nil if Specialized.identity_encoder?(inner)
+            elem = Specialized.encode_expr(inner, '_1', registry)
+            return nil unless elem.is_a?(::String)
 
-            elem = Specialized.encode_expr(inner, '_1', registry) or return nil
             "#{value_expr}.map { #{elem} }"
           end
 

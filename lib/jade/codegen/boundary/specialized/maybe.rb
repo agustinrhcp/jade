@@ -23,13 +23,14 @@ module Jade
             "#{value_expr}.then { it.is_a?(::Jade::Maybe::Just) ? #{inner_enc} : nil }"
           end
 
-          # `encode_expr` returns nil both for an identity encoder and for a
-          # type it cannot specialize. Only the first may pass the element
-          # through untouched; the second has to decline so the caller falls
-          # back to the generic encoder.
+          # A Maybe is never identity even when its element is — the Just
+          # still has to be unwrapped.
           def element_encoder(inner, registry)
-            Specialized.encode_expr(inner, 'it._1', registry) ||
-              (Specialized.identity_encoder?(inner) ? 'it._1' : nil)
+            case Specialized.encode_expr(inner, 'it._1', registry)
+            in :identity then 'it._1'
+            in ::String => expr then expr
+            in nil then nil
+            end
           end
 
           def specializable?(type, registry, seen)

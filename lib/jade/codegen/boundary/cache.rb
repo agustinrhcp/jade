@@ -36,8 +36,7 @@ module Jade
               Boundary::Specialized.decode_expr(t, '_', registry)
             },
             encoders: cache_map(per_fn.flat_map { it[:encoders] }, 'ENC') { |t|
-              Boundary::Specialized.identity_encoder?(t) ||
-                Boundary::Specialized.encode_expr(t, '_', registry)
+              Boundary::Specialized.encode_expr(t, '_', registry)
             },
           }
         end

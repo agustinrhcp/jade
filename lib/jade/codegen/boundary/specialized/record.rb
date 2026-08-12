@@ -138,7 +138,7 @@ module Jade
 
           def encode_helper(struct, registry)
             struct.record_type.fields
-              .map { |k, t| "#{k.inspect} => #{field_encode_value(t, "p.#{k}", registry)}" }
+              .map { |k, t| "#{k.inspect} => #{field_encode(k, t, "p.#{k}", registry)}" }
               .then { "{ #{it.join(', ')} }" }
               .then { Pretty.block("def self.#{encode_helper_name(struct)}(p)", it) }
           end
@@ -148,8 +148,12 @@ module Jade
               fail("non-specializable field type for #{key}: #{type}")
           end
 
-          def field_encode_value(type, accessor, registry)
-            Specialized.encode_expr(type, accessor, registry) || accessor
+          def field_encode(key, type, accessor, registry)
+            case Specialized.encode_expr(type, accessor, registry)
+            in :identity then accessor
+            in ::String => expr then expr
+            in nil then fail("non-encodable field type for #{key}: #{type}")
+            end
           end
 
           def snake(name)
