@@ -326,6 +326,151 @@ module Jade
       end
     end
 
+    context 'a Maybe return whose element is a union' do
+      let(:source) do
+        <<~JADE
+          module MaybeBoundary exposing (
+            boxed,
+            crated,
+            custom,
+            derived,
+            empty_boxed,
+            holder,
+            nothing,
+            number,
+            point,
+          )
+
+          import Decode exposing (Value)
+          import Encode exposing (Encodable)
+
+
+          type Derived
+            = Red
+            | Green
+
+
+          type Custom
+            = Big
+            | Small
+
+
+          implements Encodable(Custom) with
+            encoder: encode_custom
+          end
+
+
+          def encode_custom(c: Custom) -> Value
+            case c
+            in Big then Encode.string("BIG")
+            in Small then Encode.string("SMALL")
+            end
+          end
+
+
+          struct Holder = { tag: Custom }
+
+
+          struct Point = {
+            x: Int,
+            y: Int
+          }
+
+
+          struct Box = {
+            label: String,
+            count: Maybe(Int)
+          }
+
+
+          struct Crate = {
+            label: String,
+            pick: Maybe(Custom)
+          }
+
+
+          def number -> Maybe(Int)
+            Just(7)
+          end
+
+
+          def point -> Maybe(Point)
+            Just(Point(1, 2))
+          end
+
+
+          def derived -> Maybe(Derived)
+            Just(Red)
+          end
+
+
+          def custom -> Maybe(Custom)
+            Just(Big)
+          end
+
+
+          def holder -> Maybe(Holder)
+            Just(Holder(Big))
+          end
+
+
+          def nothing -> Maybe(Custom)
+            Nothing
+          end
+
+
+          def boxed -> Box
+            Box("a", Just(7))
+          end
+
+
+          def empty_boxed -> Box
+            Box("b", Nothing)
+          end
+
+
+          def crated -> Crate
+            Crate("c", Just(Small))
+          end
+        JADE
+      end
+
+      before { test_compiler.require(source) }
+
+      it 'encodes a union through its derived instance' do
+        expect(MaybeBoundary.derived).to eq('red')
+      end
+
+      it 'encodes a union through its hand-written instance' do
+        expect(MaybeBoundary.custom).to eq('BIG')
+      end
+
+      it 'encodes a struct whose field is a union' do
+        expect(MaybeBoundary.holder).to eq({ 'tag' => 'BIG' })
+      end
+
+      it 'still encodes primitives and plain structs' do
+        expect(MaybeBoundary.number).to eq(7)
+        expect(MaybeBoundary.point).to eq({ 'x' => 1, 'y' => 2 })
+      end
+
+      it 'maps Nothing to nil' do
+        expect(MaybeBoundary.nothing).to be_nil
+      end
+
+      it 'unwraps a Maybe field of an otherwise specializable struct' do
+        expect(MaybeBoundary.boxed).to eq({ 'label' => 'a', 'count' => 7 })
+      end
+
+      it 'maps an absent Maybe field to nil' do
+        expect(MaybeBoundary.empty_boxed).to eq({ 'label' => 'b', 'count' => nil })
+      end
+
+      it 'encodes a Maybe field whose element is a union' do
+        expect(MaybeBoundary.crated).to eq({ 'label' => 'c', 'pick' => 'SMALL' })
+      end
+    end
+
     context 'Encode.encode passed as a value (polymorphic fn argument)' do
       let(:source) do
         <<~JADE

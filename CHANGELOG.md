@@ -8,6 +8,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A `Maybe` return encodes its element.** A function returning `Maybe(T)`
+  handed Ruby the internal `Data` object whenever `T` was a union, or a struct
+  holding one — no error, just an un-encoded value across the boundary. The
+  specialized encoder fell back to emitting the raw element when it couldn't
+  specialize it, instead of declining so the generic encoder could take over;
+  `decode`, five lines above it, already declined correctly. `Maybe(Int)` and
+  `Maybe(SomeStruct)` were unaffected, which is why it stayed hidden — identity
+  happens to be right for primitives. Both derived and hand-written
+  `Encodable` instances are now applied, and a `Maybe` field of a struct
+  unwraps the same way a `Maybe` return does.
 - **Boundary decode errors name the right side.** `DecodeError` reported
   "Port returned a value that failed to decode" for every failure, including
   values Ruby passed *into* an exposed function, where no port is involved —

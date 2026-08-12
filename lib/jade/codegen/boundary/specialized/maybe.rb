@@ -17,10 +17,22 @@ module Jade
           end
 
           def encode(type, value_expr, registry)
-            inner = inner_of(type) or return nil
-            inner_enc = Specialized.encode_expr(inner, 'it._1', registry) || 'it._1'
+            inner_of(type)
+              &.then { element_encoder(it, registry) }
+              &.then { unwrap_expr(it, value_expr) }
+          end
 
-            "#{value_expr}.then { it.is_a?(::Jade::Maybe::Just) ? #{inner_enc} : nil }"
+          def unwrap_expr(elem, value_expr)
+            "#{value_expr}.then { it.is_a?(::Jade::Maybe::Just) ? #{elem} : nil }"
+          end
+
+          # Never identity even when the element is: the Just still unwraps.
+          def element_encoder(inner, registry)
+            case Specialized.encode_expr(inner, 'it._1', registry)
+            in :identity then 'it._1'
+            in ::String => expr then expr
+            in nil then nil
+            end
           end
 
           def specializable?(type, registry, seen)
