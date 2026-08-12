@@ -19,11 +19,16 @@ module Jade
           end
 
           def encode(type, value_expr, registry)
-            inner = inner_of(type) or return nil
-            return nil if Specialized.identity_encoder?(inner)
+            inner_of(type)
+              &.then { Specialized.encode_expr(it, '_1', registry) }
+              &.then { map_expr(it, value_expr) }
+          end
 
-            elem = Specialized.encode_expr(inner, '_1', registry) or return nil
-            "#{value_expr}.map { #{elem} }"
+          def map_expr(elem, value_expr)
+            case elem
+            in ::String then "#{value_expr}.map { #{elem} }"
+            in :identity then nil
+            end
           end
 
           def identity_encoder?(type)

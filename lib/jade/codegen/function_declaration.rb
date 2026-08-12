@@ -80,14 +80,15 @@ module Jade
       end
 
       def encode_return(return_type, call_expr, registry)
-        if Codegen::Boundary::Specialized.identity_encoder?(return_type)
-          call_expr
-        elsif (expr = Codegen::Boundary::Specialized.encode_expr(return_type, call_expr, registry))
-          expr
-        else
+        case Codegen::Boundary::Specialized.encode_expr(return_type, call_expr, registry)
+        in :identity then call_expr
+
+        in ::String => expr then expr
+
+        in nil
           Codegen::Boundary::Cache
             .encoder_for(return_type, registry)
-            .then { |encoder| "#{encoder}.call(#{call_expr})" }
+            .then { "#{it}.call(#{call_expr})" }
         end
       end
 

@@ -28,10 +28,14 @@ module Jade
             Record.decode(type, input, registry)
         end
 
-        # Ruby expression that encodes `value_expr` to the wire form, or
-        # `nil` if the encoder is identity (caller skips the wrap) or the
-        # type isn't specializable (caller falls back to the cache).
+        # How to encode `value_expr` to the wire form:
+        #
+        #   String    inline expression
+        #   :identity the value is already wire-shaped; emit it unchanged
+        #   nil       not specializable; fall back to the cached encoder
         def encode_expr(type, value_expr, registry)
+          return :identity if identity_encoder?(type)
+
           Record.encode(type, value_expr, registry) ||
             List.encode(type, value_expr, registry) ||
             Maybe.encode(type, value_expr, registry)
