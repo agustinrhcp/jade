@@ -18,7 +18,7 @@ module Jade
 
           def encode(type, value_expr, registry)
             inner = inner_of(type) or return nil
-            inner_enc = Specialized.encode_expr(inner, 'it._1', registry) || 'it._1'
+            inner_enc = Specialized.encode_expr(inner, 'it._1', registry) or return nil
 
             "#{value_expr}.then { it.is_a?(::Jade::Maybe::Just) ? #{inner_enc} : nil }"
           end
