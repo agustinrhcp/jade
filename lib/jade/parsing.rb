@@ -583,8 +583,27 @@ module Jade
     }
 
     parser(:interop_function) {
-      (identifier >> type(:colon).skip >> type_expression)
+      (identifier >> interop_tags >> type(:colon).skip >> type_expression)
         .map(&AST.interop_function)
+    }
+
+    # Parenthesised when there is more than one, because commas already
+    # separate the declarations in a `uses` block: `foo as read, bar : T`
+    # is ambiguous — `bar` is a legal bare tag and a legal next port name.
+    parser(:interop_tags) {
+      one = capability_name.map { [it] }
+      many = grouped(at_least_one(capability_name, separated_by: type(:comma).skip))
+
+      optional(type(:as).skip >> (many | one), default: []).map { [it] }
+    }
+
+    parser(:capability_name) {
+      path = optional(
+        at_least_one(constant, separated_by: type(:dot).skip) >> type(:dot).skip,
+        default: [],
+      ).map { [it] }
+
+      (path >> identifier).map(&AST.capability_name)
     }
 
     parser(:implementation) {

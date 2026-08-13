@@ -392,6 +392,14 @@ module Jade
       def render_value(symbol, registry)
         type_and_constraints(symbol, registry)
           .then { |(t, cs)| render_signature(symbol.name, t, cs) }
+          .then { "#{it}#{render_capabilities(symbol)}" }
+      end
+
+      def render_capabilities(symbol)
+        return '' unless symbol.is_a?(Jade::Symbol::InteropFunction)
+        return '' if symbol.capabilities.empty?
+
+        "\n\nperforms #{symbol.capabilities.join(', ')}"
       end
 
       def type_and_constraints(symbol, registry)

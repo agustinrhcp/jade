@@ -69,7 +69,8 @@ module Jade
 
     define(:InteropImportDeclaration, :module, :functions)
     define(:InteropModule, :name)
-    define(:InteropFunction, :name, :type)
+    define(:InteropFunction, :name, :type, :tags)
+    define(:CapabilityName, :path, :name)
 
     define(:Implementation, :interface, :applied_type, :extends, :functions)
     define(:ImplementationFunction, :name, :fn)
@@ -645,11 +646,25 @@ module Jade
     end
 
     def interop_function
-      ->((name, type_expression)) do
+      ->((name, tags, type_expression)) do
         InteropFunction[
           name.value,
           type_expression,
+          tags,
           name.range.begin...type_expression.range.end,
+        ]
+      end
+    end
+
+    # A bare tag is qualified by the module that declares the port, which
+    # only the forward-declaration pass knows — the parser records the
+    # path it was written with, empty when there wasn't one.
+    def capability_name
+      ->((path, name)) do
+        CapabilityName[
+          path.map(&:value),
+          name.value,
+          (path.first || name).range.begin...name.range.end,
         ]
       end
     end

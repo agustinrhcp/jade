@@ -59,8 +59,19 @@ module Jade
               interop_mod_name.name,
               constraints: implicit_decodable_constraints(symbol.return_type) +
                 implicit_encodable_constraints(symbol.params),
+              capabilities: capability_names(function_node, entry),
             )
             .then { [it, lifted_errors] }
+        end
+
+        # A bare tag belongs to the module that declared the port, which is
+        # what keeps two gems from colliding on `read` without anyone
+        # keeping a registry of capability names.
+        def capability_names(function_node, entry)
+          function_node
+            .tags
+            .map { |tag| (tag.path.empty? ? [entry.name] : tag.path) + [tag.name] }
+            .map { |parts| parts.join('.') }
         end
 
         # Free type variables anywhere under the return TypeApplication's

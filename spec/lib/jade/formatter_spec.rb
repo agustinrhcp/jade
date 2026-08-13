@@ -1056,5 +1056,29 @@ module Jade
         end
       end
     end
+
+    context 'capability tags on a uses block' do
+      let(:text) do
+        <<~JADE.strip
+          uses JadeSql::Runtime with
+            port_execute_many as read : String -> Task(Int, String),
+            port_execute_one as (read, write) : String -> Task(Int, String),
+            port_notify as Infra.Mail.send : String -> Task(Int, String),
+            port_raw : String -> Task(Int, String)
+          end
+        JADE
+      end
+
+      it 'round-trips every form' do
+        is_expected.to eql <<~JADE.strip
+          uses JadeSql::Runtime with
+            port_execute_many as read : String -> Task(Int, String),
+            port_execute_one as (read, write) : String -> Task(Int, String),
+            port_notify as Infra.Mail.send : String -> Task(Int, String),
+            port_raw : String -> Task(Int, String)
+          end
+        JADE
+      end
+    end
   end
 end

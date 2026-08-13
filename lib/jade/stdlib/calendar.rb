@@ -87,7 +87,7 @@ module Jade
 
 
           uses Jade::Calendar::Runtime with
-            today_raw : Task({ year: Int, month: Int, day: Int }, Never)
+            today_raw as date : Task({ year: Int, month: Int, day: Int }, Never)
           end
 
 

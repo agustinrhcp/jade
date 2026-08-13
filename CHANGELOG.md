@@ -6,6 +6,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Capability tags on ports.** `uses JadeSql::Runtime with port_execute_many
+  as read : ... end` names what a port does, and a bare tag is qualified by the
+  module that declared it — `Sql.read`. A port may carry several (`as (read,
+  write)`) for the ones that genuinely back both. Tags carry no semantics: they
+  do not touch type checking, codegen or dispatch. An untagged port is not an
+  untracked one, it reads as its own qualified name, so tagging changes how an
+  effect is named and never whether it is seen. `Clock.now_raw` is tagged
+  `Clock.time` and `Calendar.today_raw` is `Calendar.date`.
+- **`Jade::Capabilities.analyze(registry)`** reports, per function, the ports
+  and effectful intrinsics it can reach through the call graph, with the
+  shortest path to each. Nothing calls it yet — it is analysis only, and
+  compile time is unchanged.
+- **`effect:` on stdlib intrinsics**, naming the capability a Ruby-backed
+  stdlib function performs. `Debug.log` is the only one: it writes to the
+  outside world without being a port, so an analysis that only knew about ports
+  would read it as pure.
+
 ## [0.5.0]
 
 ### Added

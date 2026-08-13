@@ -95,7 +95,15 @@ module Jade
       extend Helper
 
       def format(node, indent:, source:)
-        "#{node.name} : #{format_type(node.type)}"
+        "#{node.name}#{format_tags(node.tags)} : #{format_type(node.type)}"
+      end
+
+      def format_tags(tags)
+        return '' if tags.empty?
+
+        tags
+          .map { (it.path + [it.name]).join('.') }
+          .then { it.one? ? " as #{it.first}" : " as (#{it.join(', ')})" }
       end
     end
 

@@ -55,7 +55,7 @@ module Jade
 
 
           uses Jade::Clock::Runtime with
-            now_raw : Task({ millis: Int }, Never)
+            now_raw as time : Task({ millis: Int }, Never)
           end
 
 

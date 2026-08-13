@@ -1291,6 +1291,47 @@ module Jade
         it { is_expected.to be_a(AST::InteropImportDeclaration) }
         its(:functions) { is_expected.to have(2).items }
       end
+
+      context 'with capability tags' do
+        let(:text) do
+          <<~JADE
+            uses Jade::Store with
+              plain : Int,
+              bare as read : Int,
+              several as (read, write) : Int,
+              qualified as Infra.Mail.send : Int
+            end
+          JADE
+        end
+
+        def tags_of(name)
+          subject
+            .functions
+            .find { it.name == name }
+            .tags
+            .map { (it.path + [it.name]).join('.') }
+        end
+
+        it 'leaves an untagged port with none' do
+          expect(tags_of('plain')).to be_empty
+        end
+
+        it 'reads a bare tag' do
+          expect(tags_of('bare')).to eql ['read']
+        end
+
+        it 'reads a parenthesised list' do
+          expect(tags_of('several')).to eql %w[read write]
+        end
+
+        it 'reads a qualified tag' do
+          expect(tags_of('qualified')).to eql ['Infra.Mail.send']
+        end
+
+        it 'does not read the next declaration as a second tag' do
+          expect(subject.functions.map(&:name)).to eql %w[plain bare several qualified]
+        end
+      end
     end
 
     describe 'interop import' do

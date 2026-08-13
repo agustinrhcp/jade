@@ -27,7 +27,12 @@ module Jade
 
     PROPAGATING = ::Set[:called, :as_value].freeze
 
-    Atom = Data.define(:kind, :module_name, :name, :host) do
+    # `capabilities` are the names an atom is permitted and diffed under.
+    # An untagged port falls back to its own qualified name rather than to
+    # nothing, which keeps the port -> capability map total: tagging is
+    # then purely a matter of reading well, and can never change what the
+    # analysis catches.
+    Atom = Data.define(:kind, :module_name, :name, :host, :capabilities) do
       def to_s
         case kind
         in :port then "#{host}.#{name}"
@@ -52,6 +57,10 @@ module Jade
 
       def names
         atoms.keys.map(&:to_s).sort
+      end
+
+      def capabilities
+        atoms.keys.flat_map(&:capabilities).uniq.sort
       end
 
       def path_to(atom)
@@ -181,11 +190,12 @@ module Jade
 
     def atom(symbol)
       case symbol
-      in Symbol::InteropFunction(module_name:, name:, interop_module_name:)
-        Atom[:port, module_name, name, interop_module_name]
+      in Symbol::InteropFunction(module_name:, name:, interop_module_name:, capabilities:)
+        Atom[:port, module_name, name, interop_module_name, []]
+          .then { it.with(capabilities: capabilities.empty? ? [it.to_s] : capabilities) }
 
-      in Symbol::StdlibFunction(module_name:, name:, effect: String)
-        Atom[:intrinsic, module_name, name, nil]
+      in Symbol::StdlibFunction(module_name:, name:, effect: String => effect)
+        Atom[:intrinsic, module_name, name, nil, [effect]]
 
       else
         nil

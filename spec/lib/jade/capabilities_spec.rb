@@ -275,6 +275,56 @@ module Jade
       end
     end
 
+    describe 'capability tags' do
+      let(:text) do
+        <<~JADE
+          module Sql exposing (fetch, execute, raw)
+
+          uses JadeSql::Runtime with
+            port_execute_many as read : String -> Task(Int, String),
+            port_execute_one as (read, write) : String -> Task(Int, String),
+            port_raw : String -> Task(Int, String)
+          end
+
+
+          def fetch(q: String) -> Task(Int, String)
+            port_execute_many(q)
+          end
+
+
+          def execute(q: String) -> Task(Int, String)
+            port_execute_one(q)
+          end
+
+
+          def raw(q: String) -> Task(Int, String)
+            port_raw(q)
+          end
+        JADE
+      end
+
+      def caps_of(name)
+        reach.fetch(['Sql', name]).capabilities
+      end
+
+      it 'qualifies a bare tag with the module that declared the port' do
+        expect(caps_of('fetch')).to eql ['Sql.read']
+      end
+
+      it 'keeps every tag a port carries' do
+        expect(caps_of('execute')).to eql ['Sql.read', 'Sql.write']
+      end
+
+      it 'falls back to the qualified name of an untagged port' do
+        expect(caps_of('raw')).to eql ['JadeSql::Runtime.port_raw']
+      end
+
+      it 'leaves the atom itself the port, whatever it is tagged' do
+        expect(reach.fetch(['Sql', 'fetch']).names)
+          .to eql ['JadeSql::Runtime.port_execute_many']
+      end
+    end
+
     describe '.for' do
       let(:text) do
         <<~JADE
