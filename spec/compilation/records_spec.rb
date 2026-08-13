@@ -627,6 +627,29 @@ module Jade
           expect(Forms::Internal.nested).to eql Forms::Wrapper[Forms::Address['Main', 'Paris']]
         end
 
+        it 'compares equal across modules when the shape matches' do
+          test_compiler.require(<<~JADE)
+            module Maker exposing (make)
+
+            def make -> { x: Int, y: String }
+              { x: 1, y: "a" }
+            end
+          JADE
+
+          test_compiler.require(<<~JADE)
+            module Consumer exposing (same?)
+
+            import Maker
+
+
+            def same? -> Bool
+              { x: 1, y: "a" } == Maker.make
+            end
+          JADE
+
+          expect(Consumer::Internal.same?).to be true
+        end
+
         it 'anonymous record cannot stand in for a nominal struct' do
           source = <<~JADE
             module Forms exposing (bad)
