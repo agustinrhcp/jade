@@ -6,6 +6,8 @@ require 'jade/decode'
 require 'jade/interop/boundary'
 
 module Jade
+  module Records; end
+
   module Tuple
     Tuple2 = Data.define(:_1, :_2) do
       def to_s = "(#{[_1, _2].map(&:to_s).join(', ')})"
@@ -123,8 +125,12 @@ module Jade
     # `{a: 1, b: 2}` expression evaluated in a hot loop would call
     # `Data.define(:a, :b)` and allocate a fresh anonymous class, defeating
     # YJIT's inline cache on every subsequent property access.
+    # Named, so the first module to assign it doesn't lend it a name
+    # pointing at an unrelated module.
     def record(*keys)
-      RECORD_CLASSES[keys] ||= Data.define(*keys)
+      RECORD_CLASSES[keys] ||= Data
+        .define(*keys)
+        .tap { Jade::Records.const_set(:"Record_#{keys.join('_')}", it) }
     end
 
     def register_impl(interface_name, ruby_class, functions)

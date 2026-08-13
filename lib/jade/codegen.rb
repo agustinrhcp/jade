@@ -91,7 +91,7 @@ module Jade
         shape_consts = collect_record_shapes(body)
           .sort
           .map { |keys|
-            "#{record_shape_constant(keys)} = Data.define(#{keys.map { ":#{it}" }.join(', ')})"
+            "#{record_shape_constant(keys)} = #{record_class(keys)}"
           }
 
         boundary_cache   = Boundary::Cache.collect(body, registry)
