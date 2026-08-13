@@ -61,7 +61,7 @@ module Jade
         end
       end
 
-      def function(name, params, ret, constraints: [], body: nil, private: false, &block)
+      def function(name, params, ret, constraints: [], body: nil, private: false, effect: nil, &block)
         qualified_fn_name = "#{module_name}.#{name}"
 
         codegen = body || "Jade::Runtime.intr('#{qualified_fn_name}')"
@@ -74,6 +74,7 @@ module Jade
             Symbol.parse(ret),
             codegen,
             constraints:,
+            effect:,
           )
           .with(module_name:)
           .tap { store(it) }
