@@ -1,14 +1,15 @@
-# Compiles web/examples/*.jd and injects both columns of the diptych into
-# index.html. Run it after touching an example, or after the compiler changes:
+# Compiles web/examples/**/*.jd with the compiler in this repo and injects the
+# results into the pages, so nothing shown on the site can drift from what the
+# compiler actually emits.
 #
 #   ruby web/build.rb
 #
-# Exits non-zero if anything fails to compile, so CI can assert the Ruby column
-# is not stale:
+# CI runs it and fails on a diff:
 #
-#   ruby web/build.rb && git diff --exit-code web/index.html
+#   ruby web/build.rb && git diff --exit-code web/
 
 require 'fileutils'
+require 'tmpdir'
 
 WEB = __dir__
 JADE_LIB = ENV.fetch('JADE_LIB', File.expand_path('../lib', WEB))
@@ -16,23 +17,42 @@ JADE_LIB = ENV.fetch('JADE_LIB', File.expand_path('../lib', WEB))
 $LOAD_PATH.unshift(JADE_LIB)
 require 'jade'
 
-EXAMPLES = %w[shapes pipelines records].freeze
+PAGES = %w[index.html tour.html].freeze
+
+# Each root is its own source root: a module's file name has to imply its
+# declared name, so tour/values.jd is `Values`, not `Tour.Values`.
+ROOTS = {
+  '' => 'examples',
+  'tour/' => 'examples/tour',
+  'project/' => 'examples/project/src',
+}.freeze
 
 PREAMBLE = /\A(?:\$LOAD_PATH.*|require .*|require_relative .*|\s*)*\n(?=module )/
 
-def compile(name)
-  reg = Jade::ModuleLoader.load("#{WEB}/examples", "#{name}.jd", tolerant: true)
-  mod = reg.modules.values.reject { Jade::Stdlib.is_stdlib?(it) }.last
-
-  errors = mod.diagnostics.items.select { it.severity == :error }
-  unless errors.empty?
-    warn "#{name}.jd failed to compile:"
-    errors.each { warn "  #{it.message}" }
-    exit 1
+def examples
+  ROOTS.flat_map do |prefix, dir|
+    Dir.glob("#{WEB}/#{dir}/*.jd")
+      .sort
+      .map { ["#{prefix}#{File.basename(it, '.jd')}", dir, File.basename(it)] }
   end
+end
 
-  mod.diagnostics.items.each { warn "#{name}.jd: #{it.severity} #{it.message}" }
-  mod.generated.sub(PREAMBLE, '')
+def compile(dir, file)
+  Jade::ModuleLoader
+    .load("#{WEB}/#{dir}", file, tolerant: true)
+    .modules
+    .values
+    .reject { Jade::Stdlib.is_stdlib?(it) }
+    .last
+    .tap { report!(file, it.diagnostics.items) }
+end
+
+def report!(file, items)
+  items.each { warn "#{file}: #{it.severity} #{it.message}" }
+  return if items.none? { it.severity == :error }
+
+  warn "#{file} failed to compile"
+  exit 1
 end
 
 def escape(text)
@@ -42,25 +62,68 @@ def escape(text)
     .gsub('>', '&gt;')
 end
 
-def inject(html, tag, attr, slot, body)
-  pattern = /(<#{tag}[^>]*#{attr}="#{Regexp.escape(slot)}"[^>]*>).*?(<\/#{tag}>)/m
+def slot(html, tag, attr, name, body)
+  pattern = /(<#{tag}[^>]*#{attr}="#{Regexp.escape(name)}"[^>]*>).*?(<\/#{tag}>)/m
 
-  unless html.match?(pattern)
-    warn "no #{tag} slot #{attr}=\"#{slot}\" in index.html"
-    exit 1
+  html.gsub(pattern) { "#{$1}#{escape(body.strip)}#{$2}" }
+end
+
+# Runs the four-file project the way a reader would, so the numbers on the page
+# come from the compiler and the runtime rather than from someone typing them.
+def project_transcript
+  Dir.mktmpdir do |build|
+    Jade::ModuleLoader
+      .load("#{WEB}/examples/project/src", 'cart.jd', tolerant: true)
+      .then { Jade::ModuleLoader.emit(it, path: build) }
+
+    $LOAD_PATH.unshift(build)
+    require File.join(build, 'cart')
+
+    lines = [
+      { 'name' => 'Coffee', 'cents' => 450, 'qty' => 2 },
+      { 'name' => 'Book', 'cents' => 1200, 'qty' => 1 },
+    ]
+
+    [
+      'irb> Cart.subtotal(lines)',
+      "=> #{Cart.subtotal(lines).inspect}",
+      '',
+      'irb> Cart.receipt(lines)',
+      "=> #{Cart.receipt(lines).inspect}",
+      '',
+      'irb> Cart.subtotal([{ "qty" => "two", ... }])',
+      "=> #{decode_failure}",
+    ].join("\n")
+  end
+end
+
+def decode_failure
+  Cart.subtotal([{ 'name' => 'Tea', 'cents' => 300, 'qty' => 'two' }])
+  raise 'expected the boundary to reject a String qty'
+rescue Jade::Interop::DecodeError => e
+  "#{e.class}:\n   #{e.message.lines.first.strip}"
+end
+
+compiled = examples.to_h { |name, dir, file| [name, compile(dir, file)] }
+transcript = project_transcript
+
+PAGES.each do |page|
+  path = "#{WEB}/#{page}"
+  next unless File.exist?(path)
+
+  html = File.read(path)
+
+  compiled.each do |name, mod|
+    source = File.read("#{WEB}/#{ROOTS.fetch(name[%r{\A\w+/}].to_s)}/#{name.split('/').last}.jd")
+
+    html = slot(html, 'textarea', 'data-src', name, source)
+    html = slot(html, 'pre', 'data-src', name, source)
+    html = slot(html, 'pre', 'data-gen', "#{name}.rb", mod.generated.sub(PREAMBLE, ''))
   end
 
-  html.sub(pattern) { "#{$1}#{escape(body.strip)}#{$2}" }
+  html = slot(html, 'pre', 'data-run', 'project', transcript)
+
+  File.write(path, html)
 end
 
-index = File.read("#{WEB}/index.html")
-
-EXAMPLES.each do |name|
-  source = File.read("#{WEB}/examples/#{name}.jd")
-
-  index = inject(index, 'textarea', 'data-src', name, source)
-  index = inject(index, 'pre', 'data-gen', "#{name}.rb", compile(name))
-end
-
-File.write("#{WEB}/index.html", index)
-puts "compiled #{EXAMPLES.size} examples with jade at #{JADE_LIB}"
+puts "compiled #{compiled.size} examples with jade at #{JADE_LIB}"

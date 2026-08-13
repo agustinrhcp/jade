@@ -1,0 +1,17 @@
+module Maybes exposing (halve, label, safe_divide)
+
+def safe_divide(a: Int, b: Int) -> Maybe(Int)
+  if b == 0 then Nothing else Just(a / b) end
+end
+
+
+def halve(n: Int) -> Maybe(Int)
+  safe_divide(n, 2)
+end
+
+
+def label(n: Int) -> String
+  safe_divide(100, n)
+    |> Maybe.map(String.from_int)
+    |> Maybe.with_default("undefined")
+end

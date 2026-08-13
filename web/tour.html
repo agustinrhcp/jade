@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tour — Jade</title>
+<meta name="description" content="A tour of Jade, from primitives to the Ruby boundary. Every example compiles in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="wrap head">
+  <a class="mark" href="index.html">jade<span class="dot">.</span></a>
+  <nav class="nav">
+    <a href="index.html">Home</a>
+    <a href="https://github.com/agustinrhcp/jade/blob/master/docs/syntax.md">Docs</a>
+    <a href="https://github.com/agustinrhcp/jade">GitHub</a>
+  </nav>
+</header>
+
+<main class="tour">
+
+<section class="wrap-narrow hero">
+  <h1>The tour.</h1>
+  <p class="lede">Enough of the language to read and write it, from primitives to the Ruby
+    boundary. Every example below is a whole module that compiles — press <em>try it</em>
+    and it will, in this tab.</p>
+</section>
+
+<nav class="toc" aria-label="Sections">
+      <a href="#values">Values and primitives</a>
+      <a href="#functions">Functions</a>
+      <a href="#unions">Union types</a>
+      <a href="#structs">Structs and records</a>
+      <a href="#matching">Pattern matching</a>
+      <a href="#conditionals">Conditionals</a>
+      <a href="#pipes">Pipes, lambdas, placeholders</a>
+      <a href="#maybes">Maybe and Result</a>
+      <a href="#interfaces">Interfaces</a>
+      <a href="#imports">Modules and imports</a>
+      <a href="#interop">Reaching Ruby</a>
+</nav>
+
+<section class="band" id="values">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Values and primitives</h2>
+    <p class="muted measure"><code>Int</code>, <code>Float</code>, <code>String</code>, <code>Char</code> and <code>Bool</code>. Annotations go on the signature; inside a function the compiler works the rest out. A zero-argument function is a value where you reference it — <code>total</code>, not <code>total()</code>, though the <code>()</code> stays at the definition so it is greppable.</p>
+    <div class="try" id="try-values" data-file="values.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/values">module Values exposing (greeting, initial, pi, ready, total)
+
+def total() -&gt; Int
+  6 * 7
+end
+
+
+def pi() -&gt; Float
+  3.14159
+end
+
+
+def greeting() -&gt; String
+  "hello" ++ ", " ++ "world"
+end
+
+
+def initial() -&gt; Char
+  'J'
+end
+
+
+def ready() -&gt; Bool
+  total &gt; 0
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-values">try it →</button>
+  </div>
+</section>
+<section class="band" id="functions">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Functions</h2>
+    <p class="muted measure">Every function declares its argument and return types. <code>++</code> joins strings and lists alike, through the <code>Appendable</code> interface.</p>
+    <div class="try" id="try-functions" data-file="functions.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/functions">module Functions exposing (full_name, shout)
+
+def full_name(first: String, last: String) -&gt; String
+  first ++ " " ++ last
+end
+
+
+def shout(name: String) -&gt; String
+  name
+    |&gt; full_name("hey")
+    |&gt; String.to_upper
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-functions">try it →</button>
+  </div>
+</section>
+<section class="band" id="unions">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Union types</h2>
+    <p class="muted measure">A type is one of a fixed set of shapes, each carrying whatever it needs. Adding a variant is how you find every place that has to care.</p>
+    <div class="try" id="try-unions" data-file="unions.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/unions">module Unions exposing (describe, radius_of)
+
+type Shape
+  = Circle(Float)
+  | Rectangle(Float, Float)
+  | Point
+
+
+def describe(shape: Shape) -&gt; String
+  case shape
+  in Circle(_) then "circle"
+  in Rectangle(_, _) then "rectangle"
+  in Point then "point"
+  end
+end
+
+
+def radius_of(shape: Shape) -&gt; Maybe(Float)
+  case shape
+  in Circle(r) then Just(r)
+  in Rectangle(_, _) then Nothing
+  in Point then Nothing
+  end
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-unions">try it →</button>
+  </div>
+</section>
+<section class="band" id="structs">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Structs and records</h2>
+    <p class="muted measure">Named records with typed fields. <code>{ p | age: … }</code> produces a new value with one field replaced — the result keeps its type.</p>
+    <div class="try" id="try-structs" data-file="structs.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/structs">module Structs exposing (birthday, label, rename)
+
+struct Person = {
+  name: String,
+  age: Int
+}
+
+
+def birthday(p: Person) -&gt; Person
+  { p | age: p.age + 1 }
+end
+
+
+def rename(p: Person, name: String) -&gt; Person
+  { p | name: name }
+end
+
+
+def label(p: Person) -&gt; String
+  p.name ++ " (" ++ String.from_int(p.age) ++ ")"
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-structs">try it →</button>
+  </div>
+</section>
+<section class="band" id="matching">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Pattern matching</h2>
+    <p class="muted measure"><code>case</code> destructures as it branches, and the compiler rejects a match that forgets a case. Keyed variant payloads read as records; lists split head from rest.</p>
+    <div class="try" id="try-matching" data-file="matching.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/matching">module Matching exposing (first_word, sum, total_of)
+
+type Payment
+  = Cash(Int)
+  | Card(last4: String, cents: Int)
+
+
+def total_of(p: Payment) -&gt; Int
+  case p
+  in Cash(c) then c
+  in Card(d) then d.cents
+  end
+end
+
+
+def sum(xs: List(Int)) -&gt; Int
+  case xs
+  in [] then 0
+  in [x | rest] then x + sum(rest)
+  end
+end
+
+
+def first_word(words: List(String)) -&gt; Maybe(String)
+  List.head(words)
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-matching">try it →</button>
+  </div>
+</section>
+<section class="band" id="conditionals">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Conditionals</h2>
+    <p class="muted measure"><code>if</code> is an expression, so it always needs its <code>else</code>. Use <code>case</code> for data shapes and <code>if</code> for booleans.</p>
+    <div class="try" id="try-conditionals" data-file="conditionals.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/conditionals">module Conditionals exposing (abs, sign)
+
+def abs(n: Int) -&gt; Int
+  if n &lt; 0 then 0 - n else n end
+end
+
+
+def sign(n: Int) -&gt; Int
+  if n &lt; 0 then
+    -1
+  else
+    if n &gt; 0 then 1 else 0 end
+  end
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-conditionals">try it →</button>
+  </div>
+</section>
+<section class="band" id="pipes">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Pipes, lambdas, placeholders</h2>
+    <p class="muted measure"><code>|&gt;</code> feeds a value into the next call. A lambda is <code>(x) -&gt; { … }</code>, and <code>_</code> in an argument position curries the call — <code>add(_, 1)</code> is a function of one argument.</p>
+    <div class="try" id="try-pipes" data-file="pipes.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/pipes">module Pipes exposing (add, increments, loud_names)
+
+def loud_names(names: List(String)) -&gt; String
+  names
+    |&gt; List.map(String.to_upper)
+    |&gt; String.join(", ")
+end
+
+
+def add(a: Int, b: Int) -&gt; Int
+  a + b
+end
+
+
+def increments(xs: List(Int)) -&gt; List(Int)
+  List.map(xs, add(_, 1))
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-pipes">try it →</button>
+  </div>
+</section>
+<section class="band" id="maybes">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Maybe and Result</h2>
+    <p class="muted measure">Absence is a type rather than a value, so there is no nil to forget. <code>Result</code> is the same idea carrying a reason for the failure.</p>
+    <div class="try" id="try-maybes" data-file="maybes.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/maybes">module Maybes exposing (halve, label, safe_divide)
+
+def safe_divide(a: Int, b: Int) -&gt; Maybe(Int)
+  if b == 0 then Nothing else Just(a / b) end
+end
+
+
+def halve(n: Int) -&gt; Maybe(Int)
+  safe_divide(n, 2)
+end
+
+
+def label(n: Int) -&gt; String
+  safe_divide(100, n)
+    |&gt; Maybe.map(String.from_int)
+    |&gt; Maybe.with_default("undefined")
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-maybes">try it →</button>
+  </div>
+</section>
+<section class="band" id="interfaces">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Interfaces</h2>
+    <p class="muted measure">Like typeclasses: the compiler picks the implementation from the argument's type, at compile time. <code>Eq</code>, <code>Comparable</code> and <code>Appendable</code> ship built in, and you can declare your own.</p>
+    <div class="try" id="try-interfaces" data-file="interfaces.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/interfaces">module Interfaces exposing (describe, larger)
+
+struct Money = {
+  cents: Int
+}
+
+
+interface Show(a) with
+  show : a -&gt; String
+end
+
+
+implements Show(Money) with
+  show: (m) -&gt; { String.from_int(m.cents) ++ "c" }
+end
+
+
+def describe(m: Money) -&gt; String
+  show(m)
+end
+
+
+def larger(a: a, b: a) -&gt; a
+  case compare(a, b)
+  in GT then a
+  else b
+  end
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-interfaces">try it →</button>
+  </div>
+</section>
+<section class="band" id="imports">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Modules and imports</h2>
+    <p class="muted measure">One module per file, and the file name has to imply the module name — <code>Shop.Cart</code> lives in <code>shop/cart.jd</code>. <code>exposing</code> lists the public surface.</p>
+    <div class="try" id="try-imports" data-file="imports.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/imports">module Imports exposing (lookup, tally)
+
+import Dict exposing (Dict)
+
+
+def tally(words: List(String)) -&gt; Dict(String, Int)
+  List.fold(words, Dict.empty, (acc, w) -&gt; {
+    Dict.insert(acc, w, 1)
+  })
+end
+
+
+def lookup(counts: Dict(String, Int), word: String) -&gt; Int
+  counts
+    |&gt; Dict.get(word)
+    |&gt; Maybe.with_default(0)
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-imports">try it →</button>
+  </div>
+</section>
+<section class="band" id="interop">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Reaching Ruby</h2>
+    <p class="muted measure">Jade has no implicit side effects. A <code>uses</code> block declares a port, its return type is a <code>Task</code>, and nothing runs until something runs it.</p>
+    <div class="try" id="try-interop" data-file="interop.jd">
+      <div class="pane flat"><pre class="code sm" data-hl="code" data-src="tour/interop">module Interop exposing (welcome)
+
+uses Mailer with
+  deliver : String -&gt; Task(Bool, String)
+end
+
+
+def welcome(email: String) -&gt; Task(Bool, String)
+  deliver(email)
+end</pre></div>
+    </div>
+    <button class="ghost" data-try="try-interop">try it →</button>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap-narrow">
+    <h2 class="h2 sm">Where next.</h2>
+    <p class="muted measure">The <a href="https://github.com/agustinrhcp/jade/blob/master/docs/syntax.md">syntax
+      reference</a> covers what this skipped — tuples, anonymous records, <code>Never</code>,
+      monadic bind. <a href="https://github.com/agustinrhcp/jade/blob/master/docs/interop.md">Interop</a>
+      goes deeper on ports and decoding, and <a href="index.html#install">the home page</a>
+      has the four files you need to start.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap foot">
+  <span>Jade — MIT licensed</span>
+  <span class="pip"></span>
+</footer>
+
+<script type="module" src="tour.js"></script>
+
+</body>
+</html>

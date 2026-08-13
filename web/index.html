@@ -15,6 +15,7 @@
 <header class="wrap head">
   <span class="mark">jade<span class="dot">.</span></span>
   <nav class="nav">
+    <a href="tour.html">Tour</a>
     <a href="#docs">Docs</a>
     <a href="#tooling">Tooling</a>
     <a href="https://github.com/agustinrhcp/jade">GitHub</a>
@@ -30,7 +31,7 @@
     the app you already have.</p>
   <p class="kicker">one gem · per-module · the compiled Ruby is yours</p>
   <div class="cta">
-    <a class="btn" href="#docs">Read the tour</a>
+    <a class="btn" href="tour.html">Read the tour</a>
     <a href="#diptych">See it compile ↓</a>
   </div>
 </section>
@@ -40,6 +41,7 @@
     <button role="tab" aria-selected="true" aria-controls="ex-0" id="tab-0">Pattern matching</button>
     <button role="tab" aria-selected="false" aria-controls="ex-1" id="tab-1">Pipelines</button>
     <button role="tab" aria-selected="false" aria-controls="ex-2" id="tab-2">Records</button>
+    <button role="tab" aria-selected="false" aria-controls="ex-3" id="tab-3">Interfaces</button>
   </div>
 
   <div class="panes">
@@ -226,6 +228,90 @@ end</textarea>
 end</pre></div>
       </div>
     </div>
+    <div class="ex" id="ex-3" role="tabpanel" aria-labelledby="tab-3" hidden>
+      <div class="pane">
+        <div class="chrome">shows.jd<span class="hint">editable</span></div>
+        <div class="editor">
+          <pre class="code" data-mirror aria-hidden="true"></pre>
+          <textarea class="code" data-src="shows" spellcheck="false" autocapitalize="off"
+            autocorrect="off" autocomplete="off" aria-label="Jade source, editable">module Shows exposing (describe, loudest)
+
+struct Person = {
+  name: String,
+  age: Int
+}
+
+
+interface Show(a) with
+  show : a -&gt; String
+end
+
+
+implements Show(Person) with
+  show: (p) -&gt; { p.name ++ " (age " ++ String.from_int(p.age) ++ ")" }
+end
+
+
+def describe(p: Person) -&gt; String
+  show(p)
+end
+
+
+def loudest(people: List(Person)) -&gt; List(String)
+  List.map(people, (p) -&gt; { String.to_upper(show(p)) })
+end</textarea>
+        </div>
+      </div>
+      <div class="pane">
+        <div class="chrome">shows.rb</div>
+        <div class="scroll"><pre class="code" data-hl="code" data-gen="shows.rb">module Shows
+  extend self
+
+  Person = Data.define(:name, :age)
+
+  Jade::Runtime.register_impl("Shows.Show", ::Shows::Person, { "show" =&gt; -&gt;(*args) { ::Shows::Internal.__impl_Show_Person_show__(*args) } })
+
+  module Internal
+    extend self
+
+    def __impl_Show_Person_show__(p)
+      (p.name + (" (age " + (p.age.to_s + ")")))
+    end
+
+    def describe(p)
+      Shows::Internal.method(:__impl_Show_Person_show__).call(p)
+    end
+
+    def loudest(people)
+      people.map { |p| Shows::Internal.method(:__impl_Show_Person_show__).call(p).upcase }
+    end
+  end
+
+  def self.decode_person(value)
+    Jade::Interop::Boundary.hash("Person", value).then do |h|
+      ::Shows::Person[
+        Jade::Interop::Boundary.string("String", h["name"]),
+        Jade::Interop::Boundary.integer("Int", h["age"]),
+      ]
+    end
+  end
+
+  def self.encode_person(p)
+    { "name" =&gt; p.name, "age" =&gt; p.age }
+  end
+
+  def self.describe(p)
+    Internal.describe(decode_person(p))
+  end
+
+  def self.loudest(people)
+    Internal.loudest(
+      Jade::Interop::Boundary.array("List(Person)", people).map { decode_person(_1) },
+    )
+  end
+end</pre></div>
+      </div>
+    </div>
   </div>
   <p class="status" data-status>Edit the Jade on the left — it compiles in your browser.</p>
 </section>
@@ -351,24 +437,60 @@ Signup.run!('ada@example.com')                  # => true, raises on err</pre></
       representation — and Jade never sees a value that didn't typecheck.</p>
     <div class="grid-2">
       <div>
-        <div class="caption">generated, not hand-written</div>
-        <div class="pane flat"><pre class="code sm" data-hl="code">def self.decode_person(value)
-  Jade::Interop::Boundary.hash("Person", value).then do |h|
-    ::Records::Person[
-      Jade::Interop::Boundary.string("String", h["name"]),
-      Jade::Interop::Boundary.integer("Int", h["age"]),
-      Jade::Interop::Boundary.string("String", h["email"]),
-    ]
-  end
-end
+        <div class="caption">what you write</div>
+        <div class="pane flat"><pre class="code sm" data-hl="code" data-src="records">module Records exposing (birthday)
 
-def self.encode_person(p)
-  { "name" => p.name, "age" => p.age, "email" => p.email }
+struct Person = {
+  name: String,
+  age: Int,
+  email: String
+}
+
+
+def birthday(person: Person) -&gt; Person
+  { person | age: person.age + 1 }
 end</pre></div>
       </div>
       <div>
-        <div class="caption">when Ruby lies</div>
-        <div class="pane flat"><pre class="code sm" data-hl="lies">task :raw_fetch do |t, id|
+        <div class="caption">the boundary it generates</div>
+        <div class="pane flat"><pre class="code sm" data-hl="code" data-gen="records.rb" data-part="boundary">module Records
+  extend self
+
+  Person = Data.define(:name, :age, :email)
+
+  module Internal
+    extend self
+
+    def birthday(person)
+      person.with(age: (person.age + 1))
+    end
+  end
+
+  def self.decode_person(value)
+    Jade::Interop::Boundary.hash("Person", value).then do |h|
+      ::Records::Person[
+        Jade::Interop::Boundary.string("String", h["name"]),
+        Jade::Interop::Boundary.integer("Int", h["age"]),
+        Jade::Interop::Boundary.string("String", h["email"]),
+      ]
+    end
+  end
+
+  def self.encode_person(p)
+    { "name" =&gt; p.name, "age" =&gt; p.age, "email" =&gt; p.email }
+  end
+
+  def self.birthday(person)
+    encode_person(Internal.birthday(decode_person(person)))
+  end
+end</pre></div>
+      </div>
+    </div>
+    <p class="muted measure mt">You write neither side of that conversion. Both are derived
+      from the <code>struct</code>, and both are in your tree to read.</p>
+
+    <div class="caption mt">when Ruby lies</div>
+    <div class="pane flat"><pre class="code sm" data-hl="lies">task :raw_fetch do |t, id|
   t.ok({ name: "Paul" })   # oops — missing :id
 end
 
@@ -376,8 +498,6 @@ Users.fetch(1)
 # => raises Jade::Interop::DecodeError:
 #    Port returned a value that failed to decode at value:
 #    missing field `id` ({name: "Paul"})</pre></div>
-      </div>
-    </div>
     <p class="muted measure-wide mt">A port returning the wrong shape is a bug, not a runtime
       condition — the boundary raises rather than pass a malformed value inward.</p>
     <p class="muted measure-wide mt">Not every function can cross. A function is callable
@@ -421,6 +541,65 @@ Users.fetch(1)
   </div>
 </section>
 
+<section class="band sunk">
+  <div class="wrap">
+    <h2 class="h2">What a project looks like.</h2>
+    <p class="muted measure">Four files. The Gemfile pulls the compiler in, the manifest
+      tells the CLI where your source lives, the module is yours, and Ruby calls it like
+      any other constant.</p>
+
+    <div class="grid-2 mt">
+      <div>
+        <div class="caption">Gemfile</div>
+        <div class="pane flat"><pre class="code sm" data-hl="code">source 'https://rubygems.org'
+
+gem 'jade-lang'</pre></div>
+
+        <div class="caption mt">jade.json</div>
+        <div class="pane flat"><pre class="code sm" data-hl="json">{ "source_roots": ["src"] }</pre></div>
+        <p class="muted mt-sm">Tools that run outside your app — <code>jade check</code>,
+          the language server — read this to find your sources. The app itself uses
+          <code>Jade.setup</code>.</p>
+      </div>
+      <div>
+        <div class="caption">src/cart.jd</div>
+        <div class="pane flat"><pre class="code sm" data-hl="code" data-src="project/cart">module Cart exposing (receipt, subtotal)
+
+struct Line = {
+  name: String,
+  cents: Int,
+  qty: Int
+}
+
+
+def subtotal(lines: List(Line)) -&gt; Int
+  lines
+    |&gt; List.map((l) -&gt; { l.cents * l.qty })
+    |&gt; List.fold(0, (acc, c) -&gt; { acc + c })
+end
+
+
+def receipt(lines: List(Line)) -&gt; List(String)
+  List.map(lines, (l) -&gt; { l.name ++ " x" ++ String.from_int(l.qty) })
+end</pre></div>
+      </div>
+    </div>
+
+    <div class="caption mt">then, from a console</div>
+    <div class="pane flat"><pre class="code sm" data-hl="irb" data-run="project">irb&gt; Cart.subtotal(lines)
+=&gt; 2100
+
+irb&gt; Cart.receipt(lines)
+=&gt; ["Coffee x2", "Book x1"]
+
+irb&gt; Cart.subtotal([{ "qty" =&gt; "two", ... }])
+=&gt; Jade::Interop::DecodeError:
+   Ruby passed a value that failed to decode at value: expected Int, got String ("two")</pre></div>
+    <p class="muted measure mt-sm">That transcript is produced by running this project when
+      the site is built, so the values are the compiler's, not ours.</p>
+  </div>
+</section>
+
 <section class="band" id="tooling">
   <div class="wrap">
     <h2 class="h2">The whole toolchain is one command.</h2>
@@ -447,7 +626,9 @@ jade q hover FILE:L:C     # headless JSON queries — hover/defn/refs/symbols</p
         </div>
         <div>
           <h3 class="h3">For coding agents.</h3>
-          <p class="muted"><code>jade q</code> answers the same questions as one-shot JSON,
+          <p class="muted"><code>jade check</code> and the language server read <code>jade.json</code>
+            to find your sources, so both work outside a running app. <code>jade q</code>
+            answers the same questions as one-shot JSON,
             so a tool that doesn't speak LSP can still ask. <code>jade q api</code> reads
             signatures straight from the compiler's registry, so the answer can't drift
             from the compiler.</p>
@@ -504,185 +685,7 @@ jade q hover FILE:L:C     # headless JSON queries — hover/defn/refs/symbols</p
   <span class="pip"></span>
 </footer>
 
-<script type="module">
-import { attach } from './playground.js';
-
-const KW = new Set(['module','def','type','struct','exposing','case','in','then','end',
-  'uses','with','extend','self','do','true','false','nil','if','else','return']);
-const TOKEN = /(--[^\n]*|#[^\n]*)|("(?:[^"\\]|\\.)*")|(\b\d+(?:\.\d+)?\b)|(\b[A-Z][A-Za-z0-9_]*\b)|(\b[a-z_][A-Za-z0-9_?!]*\b)/g;
-
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const wrap = (cls, t) => (cls ? `<span class="${cls}">${esc(t)}</span>` : esc(t));
-
-function code(src) {
-  let out = '', last = 0, m;
-  TOKEN.lastIndex = 0;
-  while ((m = TOKEN.exec(src)) !== null) {
-    out += esc(src.slice(last, m.index));
-    if (m[1]) out += wrap('t-com', m[1]);
-    else if (m[2]) out += wrap('t-str', m[2]);
-    else if (m[3]) out += wrap('t-num', m[3]);
-    else if (m[4]) out += wrap('t-typ', m[4]);
-    else if (m[5]) out += KW.has(m[5]) ? wrap('t-kw', m[5]) : esc(m[5]);
-    last = m.index + m[0].length;
-  }
-  return out + esc(src.slice(last));
-}
-
-function scan(src, re, pick) {
-  let out = '', last = 0, m;
-  re.lastIndex = 0;
-  while ((m = re.exec(src)) !== null) {
-    out += esc(src.slice(last, m.index));
-    out += wrap(pick(m), m[0]);
-    last = m.index + m[0].length;
-  }
-  return out + esc(src.slice(last));
-}
-
-const HL = {
-  code,
-  error: (src) => scan(src, /(error:)|(warning:)|(-->)|(\^+)|(\|)|(^[ ]*\d+(?=[ ]*\|))/gm,
-    (m) => (m[1] ? 't-err' : m[2] ? 't-typ' : m[4] ? 't-caret' : 't-gutter')),
-  cli: (src) => scan(src, /(#[^\n]*)|(^\$ [^\n]*)|(^jade\b)/gm, (m) => (m[1] ? 't-com' : 't-kw')),
-  json: (src) => scan(src, /("(?:[^"\\]|\\.)*"\s*:)|("(?:[^"\\]|\\.)*")|([{}\[\],])|(^\$ [^\n]*)/gm,
-    (m) => (m[4] ? 't-kw' : m[1] ? 't-key' : m[2] ? 't-str' : 't-gutter')),
-  lies: (src) => src.split('\n').map((line) =>
-    !/^\s*#/.test(line) ? code(line)
-      : line.split('Jade::Interop::DecodeError').map((p) => wrap('t-com', p))
-          .join('<span class="t-err">Jade::Interop::DecodeError</span>')).join('\n'),
-};
-
-document.querySelectorAll('[data-hl]:not([data-gen])').forEach((el) => {
-  const fn = HL[el.dataset.hl];
-  if (fn) el.innerHTML = fn(el.textContent);
-});
-
-/* ---- compiled Ruby: core up front, boundary wrappers behind a disclosure ----
-
-   Everything the compiler emits for the Ruby boundary sits at the end of the
-   module at two-space indent (`def self.x`, cached BOUNDARY_ constants). It is
-   real output, but it is bookkeeping rather than the translation of your code,
-   so it starts collapsed. Same split for the pre-baked panes and for live
-   compiles, so they can never disagree. */
-
-function splitRuby(text) {
-  const lines = text.split('\n');
-  const at = lines.findIndex((l) => /^  (def self\.|BOUNDARY_[A-Z0-9_]+ =)/.test(l));
-  if (at === -1) return { core: text, boundary: '' };
-
-  const core = lines.slice(0, at).join('\n').replace(/\s+$/, '') + '\nend';
-  const boundary = lines.slice(at, lines[lines.length - 1] === 'end' ? -1 : undefined)
-    .join('\n').replace(/\s+$/, '');
-
-  return { core, boundary };
-}
-
-function renderRuby(pane, text) {
-  const { core, boundary } = splitRuby(text);
-  pane.innerHTML = code(core);
-
-  const host = pane.parentElement;
-  host.querySelector('.boundary')?.remove();
-  if (!boundary) return;
-
-  const count = boundary.split('\n').filter((l) => l.trim()).length;
-  const details = document.createElement('details');
-  details.className = 'boundary';
-  details.innerHTML =
-    `<summary>${count} more lines — the Ruby boundary</summary>` +
-    `<pre class="code"></pre>`;
-  details.querySelector('pre').innerHTML = code(boundary);
-  host.appendChild(details);
-}
-
-document.querySelectorAll('[data-gen]').forEach((el) => renderRuby(el, el.textContent));
-
-/* ---- tabs ---- */
-
-const tabs = [...document.querySelectorAll('.tabs button')];
-const panels = tabs.map((t) => document.getElementById(t.getAttribute('aria-controls')));
-const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let current = 0;
-
-function show(i) {
-  if (i === current) return;
-  const from = panels[current], to = panels[i];
-  tabs[current].setAttribute('aria-selected', 'false');
-  tabs[i].setAttribute('aria-selected', 'true');
-  current = i;
-
-  if (reduce) { from.hidden = true; to.hidden = false; return; }
-  from.classList.add('fade');
-  setTimeout(() => {
-    from.hidden = true;
-    from.classList.remove('fade');
-    to.hidden = false;
-    to.classList.add('fade');
-    requestAnimationFrame(() => to.classList.remove('fade'));
-  }, 120);
-}
-
-tabs.forEach((t, i) => {
-  t.addEventListener('click', () => show(i));
-  t.addEventListener('keydown', (e) => {
-    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-    if (!d) return;
-    e.preventDefault();
-    const next = (current + d + tabs.length) % tabs.length;
-    tabs[next].focus();
-    show(next);
-  });
-});
-
-/* ---- live editor ---- */
-
-const editors = [...document.querySelectorAll('textarea[data-src]')];
-const status = document.querySelector('[data-status]');
-const mirrorOf = (ta) => ta.parentElement.querySelector('[data-mirror]');
-
-editors.forEach((ta) => {
-  const mirror = mirrorOf(ta);
-  const sync = () => { mirror.innerHTML = code(ta.value) + '\n'; };
-  sync();
-  ta.addEventListener('input', sync);
-  ta.addEventListener('scroll', () => {
-    mirror.scrollTop = ta.scrollTop;
-    mirror.scrollLeft = ta.scrollLeft;
-  });
-  ta.addEventListener('keydown', (e) => {
-    if (e.key !== 'Tab' || e.shiftKey) return;
-    e.preventDefault();
-    const { selectionStart: s, selectionEnd: t, value } = ta;
-    ta.value = value.slice(0, s) + '  ' + value.slice(t);
-    ta.selectionStart = ta.selectionEnd = s + 2;
-    ta.dispatchEvent(new Event('input'));
-  });
-});
-
-attach({
-  editors,
-  onStatus(text, kind) {
-    status.textContent = text;
-    if (kind) status.dataset.kind = kind;
-    else status.removeAttribute('data-kind');
-  },
-  onResult(editor, { ruby, rendered, failed }) {
-    const out = editor.closest('.ex').querySelector('[data-gen]');
-
-    // `rendered` is the compiler's own diagnostic output — the same source
-    // excerpt and caret runs `jade check` prints in a terminal.
-    if (failed) {
-      out.parentElement.querySelector('.boundary')?.remove();
-      out.innerHTML = HL.error(rendered);
-      return;
-    }
-
-    renderRuby(out, ruby || '');
-    if (rendered) out.innerHTML = HL.error(rendered) + '\n\n' + out.innerHTML;
-  },
-});
-</script>
+<script type="module" src="site.js"></script>
 
 </body>
 </html>

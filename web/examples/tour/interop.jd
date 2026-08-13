@@ -1,0 +1,10 @@
+module Interop exposing (welcome)
+
+uses Mailer with
+  deliver : String -> Task(Bool, String)
+end
+
+
+def welcome(email: String) -> Task(Bool, String)
+  deliver(email)
+end

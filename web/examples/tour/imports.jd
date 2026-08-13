@@ -1,0 +1,17 @@
+module Imports exposing (lookup, tally)
+
+import Dict exposing (Dict)
+
+
+def tally(words: List(String)) -> Dict(String, Int)
+  List.fold(words, Dict.empty, (acc, w) -> {
+    Dict.insert(acc, w, 1)
+  })
+end
+
+
+def lookup(counts: Dict(String, Int), word: String) -> Int
+  counts
+    |> Dict.get(word)
+    |> Maybe.with_default(0)
+end

@@ -1,0 +1,25 @@
+module Values exposing (greeting, initial, pi, ready, total)
+
+def total() -> Int
+  6 * 7
+end
+
+
+def pi() -> Float
+  3.14159
+end
+
+
+def greeting() -> String
+  "hello" ++ ", " ++ "world"
+end
+
+
+def initial() -> Char
+  'J'
+end
+
+
+def ready() -> Bool
+  total > 0
+end

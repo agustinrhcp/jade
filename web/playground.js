@@ -121,22 +121,22 @@ export function compile(vm, source) {
 
 const PREAMBLE = /^(?:\$LOAD_PATH.*|require .*|require_relative .*)\n/gm;
 
-export function attach({ editors, onResult, onStatus }) {
+export function attach(panels) {
   let vm = null;
   let timer = null;
 
-  async function ensureVm() {
+  async function ensureVm(panel) {
     if (vm) return vm;
-    if (!booting) booting = boot(onStatus);
+    if (!booting) booting = boot((text, kind) => panel.status(text, kind));
     vm = await booting;
     return vm;
   }
 
-  async function run(editor) {
+  async function run(panel) {
     try {
-      await ensureVm();
+      await ensureVm(panel);
     } catch (error) {
-      onStatus(`could not start the compiler — ${error.message}`, 'error');
+      panel.status(`could not start the compiler — ${error.message}`, 'error');
       return;
     }
 
@@ -144,39 +144,40 @@ export function attach({ editors, onResult, onStatus }) {
     let result;
 
     try {
-      result = compile(vm, editor.value);
+      result = compile(vm, panel.editor.value);
     } catch (error) {
-      onStatus(`compiler crashed — ${error.message}`, 'error');
+      panel.status(`compiler crashed — ${error.message}`, 'error');
       return;
     }
 
     const elapsed = Math.round(performance.now() - started);
     const errors = result.severities.filter((s) => s === 'error').length;
 
-    onResult(editor, {
+    panel.render({
       ruby: result.ruby ? result.ruby.replace(PREAMBLE, '').trim() : null,
       rendered: result.rendered,
       failed: errors > 0,
     });
 
     if (errors) {
-      onStatus(`${errors} error${errors > 1 ? 's' : ''}`, 'error');
+      panel.status(`${errors} error${errors > 1 ? 's' : ''}`, 'error');
     } else {
       const warnings = result.severities.length;
-      onStatus(
+      panel.status(
         `compiled in ${elapsed}ms` + (warnings ? ` · ${warnings} warning${warnings > 1 ? 's' : ''}` : ''),
         'ok',
       );
     }
   }
 
-  editors.forEach((editor) => {
+  panels.forEach((panel) => {
     const schedule = () => {
       clearTimeout(timer);
-      timer = setTimeout(() => run(editor), 150);
+      timer = setTimeout(() => run(panel), 150);
     };
 
-    editor.addEventListener('input', schedule);
-    editor.addEventListener('focus', () => { if (!vm) schedule(); }, { once: true });
+    panel.editor.addEventListener('input', schedule);
+    panel.editor.addEventListener('focus', () => { if (!vm) schedule(); }, { once: true });
+    if (panel.eager) schedule();
   });
 }

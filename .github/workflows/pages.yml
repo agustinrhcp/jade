@@ -48,8 +48,8 @@ jobs:
 
       - name: Fail if the committed Ruby is stale
         run: |
-          git diff --exit-code web/index.html \
-            || (echo "::error::web/index.html is out of date — run 'ruby web/build.rb' and commit"; exit 1)
+          git diff --exit-code web/ \
+            || (echo "::error::web/ is out of date — run 'ruby web/build.rb' and commit"; exit 1)
 
       # Only the files the browser actually fetches. `web/` also holds
       # node_modules (~94 MB, three copies of the Ruby wasm including the
@@ -58,7 +58,9 @@ jobs:
       - name: Stage the site
         run: |
           mkdir -p _site/vendor
-          cp web/index.html web/style.css web/playground.js _site/
+          cp web/index.html web/tour.html web/style.css _site/
+          cp web/playground.js web/highlight.js web/editor.js \
+             web/site.js web/tour.js _site/
           cp web/vendor/ruby-wasm.umd.js \
              web/vendor/ruby+stdlib.wasm \
              web/vendor/lib-bundle.json \
