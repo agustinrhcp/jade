@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0]
+
 ### Fixed
 
 - **A `Maybe` return encodes its element.** A function returning `Maybe(T)`
@@ -362,7 +364,9 @@ Initial release.
 - `jade` CLI dispatcher: `fmt`, `lsp`, `q`.
 - Language server and headless query interface for editor/agent tooling.
 
-[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/agustinrhcp/jade/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/agustinrhcp/jade/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/agustinrhcp/jade/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/agustinrhcp/jade/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/agustinrhcp/jade/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/agustinrhcp/jade/compare/v0.2.0...v0.3.0
