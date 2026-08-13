@@ -5,8 +5,7 @@ def full_name(first: String, last: String) -> String
 end
 
 
-def shout(name: String) -> String
-  name
-    |> full_name("hey")
+def shout(first: String, last: String) -> String
+  full_name(first, last)
     |> String.to_upper
 end

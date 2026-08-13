@@ -121,6 +121,12 @@ export function compile(vm, source) {
 
 const PREAMBLE = /^(?:\$LOAD_PATH.*|require .*|require_relative .*)\n/gm;
 
+// One VM for the whole page, however many examples ask for it.
+export async function ready(onProgress) {
+  if (!booting) booting = boot(onProgress);
+  return booting;
+}
+
 export function attach(panels) {
   let vm = null;
   let timer = null;
@@ -180,4 +186,55 @@ export function attach(panels) {
     panel.editor.addEventListener('focus', () => { if (!vm) schedule(); }, { once: true });
     if (panel.eager) schedule();
   });
+}
+
+// Compiles, writes every emitted module into the VM's in-memory filesystem and
+// loads the entry so expressions can be evaluated against it. `load` rather
+// than `require`, with the constant dropped first, so editing the source really
+// does replace what the console is talking to.
+export function loadModule(vm, source) {
+  return JSON.parse(vm.eval(`
+    source = JSON.parse(${rubyString(source)})
+    name = source[/\\Amodule\\s+([A-Z][A-Za-z0-9_]*)/, 1]
+
+    begin
+      raise 'no module declaration' if name.nil?
+
+      uri = name.gsub(/([a-z0-9])([A-Z])/, '\\\\1_\\\\2').downcase + '.jd'
+      registry = Jade::ModuleLoader.load('/src', uri, overlays: { uri => source }, tolerant: true)
+      mod = registry.modules.values.reject { Jade::Stdlib.is_stdlib?(it) }.last
+
+      if mod.nil? || mod.generated.nil? || mod.diagnostics.items.any? { it.severity == :error }
+        JSON.dump({ 'loaded' => false })
+      else
+        FileUtils.rm_rf('/build')
+        Jade::ModuleLoader.emit(registry, path: '/build')
+        $LOAD_PATH.unshift('/build') unless $LOAD_PATH.include?('/build')
+        Object.send(:remove_const, name) if Object.const_defined?(name, false)
+        load File.join('/build', uri.sub(/\\.jd\\z/, '') + '.rb')
+        JSON.dump({ 'loaded' => true, 'module' => name })
+      end
+    rescue Exception => e
+      JSON.dump({ 'loaded' => false })
+    end
+  `).toString());
+}
+
+export function evaluate(vm, expression) {
+  return JSON.parse(vm.eval(`
+    begin
+      JSON.dump({ 'ok' => eval(${rubyLiteral(expression)}).inspect })
+    rescue Jade::Interop::NotExposed => e
+      message = e.message.lines.first.to_s.strip
+      found = message.match(/\\A(\\S+)\\.(\\w+) is not exposed/)
+
+      JSON.dump({
+        'cls' => e.class.name,
+        'msg' => message,
+        'hint' => found && "try #{found[1]}::Internal.#{found[2]}",
+      })
+    rescue Exception => e
+      JSON.dump({ 'cls' => e.class.name, 'msg' => e.message.lines.first.to_s.strip })
+    end
+  `).toString());
 }
