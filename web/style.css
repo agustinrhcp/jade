@@ -45,7 +45,7 @@ html, body {
   color: var(--ink);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 a {
@@ -455,8 +455,6 @@ h1 {
 
 /* ---------- tour ---------- */
 
-body.tour { --serif: 'Instrument Serif', Georgia, serif; }
-
 .shell { display: flex; align-items: flex-start; min-height: 100vh; }
 
 .rail {
@@ -513,11 +511,11 @@ body.tour { --serif: 'Instrument Serif', Georgia, serif; }
 
 .tourhead { padding-bottom: 20px; }
 .tour h1 {
-  font-family: var(--serif);
+  font-family: var(--heading);
   font-weight: 400;
   font-size: clamp(34px, 4.4vw, 52px);
   line-height: 1.08;
-  letter-spacing: 0;
+  letter-spacing: var(--heading-tracking);
   margin: 0;
 }
 .tour .lede { margin-top: 18px; font-size: 16.5px; }
@@ -531,11 +529,11 @@ body.tour { --serif: 'Instrument Serif', Georgia, serif; }
   color: var(--jade);
 }
 .tour section h2 {
-  font-family: var(--serif);
+  font-family: var(--heading);
   font-weight: 400;
   font-size: 30px;
   line-height: 1.18;
-  letter-spacing: 0;
+  letter-spacing: var(--heading-tracking);
   margin: 12px 0;
 }
 .tour section .muted { margin-bottom: 22px; font-size: 16px; line-height: 1.62; }
