@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Jade — a functional compilation layer for Ruby</title>
+<title>Jade: a functional compilation layer for Ruby</title>
 <meta name="description" content="A statically typed functional language that compiles to readable Ruby. Per-module, one gem, and the compiled Ruby is yours.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -313,7 +313,7 @@ end</pre></div>
       </div>
     </div>
   </div>
-  <p class="status" data-status>Edit the Jade on the left — it compiles in your browser.</p>
+  <p class="status" data-status>Edit the Jade on the left. It compiles in your browser.</p>
 </section>
 
 <section class="band">
@@ -365,7 +365,7 @@ end</pre></div>
   <div class="wrap grid-2 gap-lg">
     <div class="col-narrow">
       <h2 class="h2 sm">Add a variant, and every <code>case</code> that forgot it stops compiling.</h2>
-      <p class="muted">The check is structural — the compiler names the cases you're missing,
+      <p class="muted">The check is structural. The compiler names the cases you're missing,
         not just the line.</p>
     </div>
     <div class="pane">
@@ -392,7 +392,7 @@ end</pre></div>
     <h2 class="h2 narrow">Nothing reaches the outside world without saying so.</h2>
     <p class="muted measure">Jade has no implicit side effects. Every call out to Ruby is
       declared in a <code>uses</code> block, takes a <code>Task</code> return type, and
-      doesn't run until something runs it — so a function's signature tells you whether
+      doesn't run until something runs it, so a function's signature tells you whether
       it does IO.</p>
     <div class="grid-3">
       <div>
@@ -426,7 +426,7 @@ Signup.run!('ada@example.com')                  # => true, raises on err</pre></
       </div>
     </div>
     <p class="muted measure mt">Because effects are values, tests stub them without touching
-      the network — there are RSpec matchers for it.</p>
+      the network. There are RSpec matchers for it.</p>
   </div>
 </section>
 
@@ -434,8 +434,8 @@ Signup.run!('ada@example.com')                  # => true, raises on err</pre></
   <div class="wrap">
     <h2 class="h2">A typed edge, not a leaky one.</h2>
     <p class="muted measure">Arguments are decoded on the way in and encoded on the way out.
-      Ruby sees ordinary hashes, strings and numbers — never Jade's internal
-      representation — and Jade never sees a value that didn't typecheck.</p>
+      Ruby sees ordinary hashes, strings and numbers, never Jade's internal
+      representation, and Jade never sees a value that didn't typecheck.</p>
     <div class="grid-2">
       <div>
         <div class="caption">what you write</div>
@@ -492,7 +492,7 @@ end</pre></div>
 
     <div class="caption mt">when Ruby lies</div>
     <div class="pane flat"><pre class="code sm" data-hl="lies">task :raw_fetch do |t, id|
-  t.ok({ name: "Paul" })   # oops — missing :id
+  t.ok({ name: "Paul" })   # oops, missing :id
 end
 
 Users.fetch(1)
@@ -500,10 +500,10 @@ Users.fetch(1)
 #    Port returned a value that failed to decode at value:
 #    missing field `id` ({name: "Paul"})</pre></div>
     <p class="muted measure-wide mt">A port returning the wrong shape is a bug, not a runtime
-      condition — the boundary raises rather than pass a malformed value inward.</p>
+      condition. The boundary raises rather than pass a malformed value inward.</p>
     <p class="muted measure-wide mt">Not every function can cross. A function is callable
       from Ruby only when all of its parameters are <code>Decodable</code> and its return
-      type is <code>Encodable</code> — one that isn't still compiles, and its
+      type is <code>Encodable</code>. One that isn't still compiles, and its
       <code>Internal</code> form still works, but the public method raises
       <code>NotExposed</code> naming the type that disqualified it. That's what the
       collapsed wrappers under the diptych are.</p>
@@ -527,7 +527,7 @@ Users.fetch(1)
       <div class="item">
         <h3>Ordinary constants on the Ruby side.</h3>
         <p>A compiled module is a module. <code>Signup.run(email)</code> is just a method
-          call — nothing to boot, no context to thread.</p>
+          call, with nothing to boot and no context to thread.</p>
       </div>
       <div class="item">
         <h3>One gem.</h3>
@@ -535,7 +535,7 @@ Users.fetch(1)
       </div>
       <div class="item last">
         <h3>You can leave.</h3>
-        <p>The compiled Ruby is the deliverable — readable, in your tree, under your version
+        <p>The compiled Ruby is the deliverable: readable, in your tree, under your version
           control. Drop the gem and you keep the output.</p>
       </div>
     </div>
@@ -558,8 +558,8 @@ gem 'jade-lang'</pre></div>
 
         <div class="caption mt">jade.json</div>
         <div class="pane flat"><pre class="code sm" data-hl="json">{ "source_roots": ["src"] }</pre></div>
-        <p class="muted mt-sm">Tools that run outside your app — <code>jade check</code>,
-          the language server — read this to find your sources. The app itself uses
+        <p class="muted mt-sm">Tools that run outside your app, like <code>jade check</code> and
+          the language server, read this to find your sources. The app itself uses
           <code>Jade.setup</code>.</p>
       </div>
       <div>
@@ -609,7 +609,7 @@ irb&gt; Cart.subtotal([{ "qty" =&gt; "two", ... }])
         <div class="pane flat"><pre class="code" data-hl="cli">jade check [file...]      # type-check; exits 1 on errors, generates nothing
 jade fmt [-i|-c] [file]   # format .jd source (stdin or file)
 jade lsp                  # language server over stdio
-jade q hover FILE:L:C     # headless JSON queries — hover/defn/refs/symbols</pre></div>
+jade q hover FILE:L:C     # headless JSON queries: hover/defn/refs/symbols</pre></div>
         <div class="pane flat"><pre class="code" data-hl="json">$ jade q api List.fold
 {
   "name": "fold",
@@ -621,7 +621,7 @@ jade q hover FILE:L:C     # headless JSON queries — hover/defn/refs/symbols</p
       <div class="stack prose">
         <div>
           <h3 class="h3">In your editor.</h3>
-          <p class="muted">A language server ships in the box — type errors, inferred types,
+          <p class="muted">A language server ships in the box: type errors, inferred types,
             jump-to-definition in anything that speaks LSP. <code>jade fmt</code> is
             deterministic and idempotent; wire it to a pre-commit hook.</p>
         </div>
@@ -656,7 +656,7 @@ jade q hover FILE:L:C     # headless JSON queries — hover/defn/refs/symbols</p
 
 <section class="band">
   <div class="wrap">
-    <p class="muted measure"><span class="strong">Early and experimental</span> — being tried
+    <p class="muted measure"><span class="strong">Early and experimental</span>, being tried
       out on small projects. In progress: <code>Comparable</code> derivation for user types,
       partial record types in signatures, a stable REPL.</p>
     <p class="muted measure mt-sm">Not great for: throwaway scripts, libraries you ship to
@@ -682,7 +682,7 @@ jade q hover FILE:L:C     # headless JSON queries — hover/defn/refs/symbols</p
 </main>
 
 <footer class="wrap foot">
-  <span>Jade — MIT licensed</span>
+  <span>Jade, MIT licensed</span>
   <span class="pip"></span>
 </footer>
 

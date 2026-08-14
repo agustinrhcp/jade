@@ -7,7 +7,7 @@
 const VENDOR = 'vendor';
 
 // Ruby double-quoted strings interpolate #{...}, and both the compiler source
-// and user input are full of it — escape before embedding in evaluated Ruby.
+// and user input are full of it. Escape before embedding in evaluated Ruby.
 
 // Embeds text as a Ruby string literal.
 const rubyLiteral = (text) => JSON.stringify(text).replace(/#/g, '\\#');
@@ -103,7 +103,7 @@ export function compile(vm, source) {
         })
       rescue Jade::CompilationError => e
         # Parse failures raise rather than land in a module's diagnostics, but
-        # the exception carries the same list — render it the same way so a
+        # the exception carries the same list, so render it the same way and a
         # syntax error still points at the offending span.
         JSON.dump({
           'ruby' => nil,
@@ -141,7 +141,7 @@ export function attach(panels) {
     try {
       await ensureVm(panel);
     } catch (error) {
-      panel.status(`could not start the compiler — ${error.message}`, 'error');
+      panel.status(`could not start the compiler: ${error.message}`, 'error');
       return;
     }
 
@@ -151,7 +151,7 @@ export function attach(panels) {
     try {
       result = compile(vm, panel.editor.value);
     } catch (error) {
-      panel.status(`compiler crashed — ${error.message}`, 'error');
+      panel.status(`compiler crashed: ${error.message}`, 'error');
       return;
     }
 

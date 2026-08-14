@@ -6,7 +6,7 @@ A statically typed, functional language that compiles to readable Ruby.
 Inspired by Elm. Type inference, union types, exhaustive pattern matching, and
 typed boundaries to Ruby.
 
-**[agustinrhcp.github.io/jade](https://agustinrhcp.github.io/jade/)** — the
+**[agustinrhcp.github.io/jade](https://agustinrhcp.github.io/jade/)** is the
 pitch, and a [tour](https://agustinrhcp.github.io/jade/tour.html) whose
 examples compile and run in the browser.
 
@@ -77,7 +77,7 @@ Jade.require('greeter')
 Greeter.greet('Ada')   # => "Hello, Ada"
 ```
 
-Tools that run outside your app — `jade check`, the language server — read a
+Tools that run outside your app, like `jade check` and the language server, read a
 `jade.json` at the project root instead:
 
 ```json
@@ -89,7 +89,7 @@ It's plain Ruby on disk, so it sits inside a Rails app like any other file.
 ## If it doesn't work out
 
 Run the compiler one last time, commit the generated `.rb`, and drop the `.jd`
-files. The output is already plain Ruby — no rewrite, no migration.
+files. The output is already plain Ruby: no rewrite, no migration.
 
 Worst case: you wrote Ruby with a nicer authoring layer for a while.
 
@@ -99,13 +99,13 @@ Worst case: you wrote Ruby with a nicer authoring layer for a while.
 jade check [file...]      # type-check; exits 1 on errors, generates nothing
 jade fmt [-i|-c] [file]   # format .jd source (stdin or file)
 jade lsp                  # language server over stdio
-jade q hover FILE:L:C     # headless JSON queries — hover/symbols/defn/refs
+jade q hover FILE:L:C     # headless JSON queries: hover/symbols/defn/refs
 jade q api List.fold      # stdlib signatures, read from the registry
 ```
 
 `jade fmt` is deterministic and idempotent; wire it into your editor or a
 pre-commit hook. For tools that don't speak LSP, `jade q` answers the same
-questions as one-shot JSON — which is also what makes coding agents workable
+questions as one-shot JSON, which is also what makes coding agents workable
 here, along with the generated Ruby giving them a second source of truth.
 
 ## Standard library
@@ -117,18 +117,18 @@ dispatch layer.
 
 ## Docs
 
-- [the tour](https://agustinrhcp.github.io/jade/tour.html) — the language, with a console
-- [docs/syntax.md](docs/syntax.md) — the full syntax reference
-- [docs/interop.md](docs/interop.md) — the Ruby boundary: ports, decoding, what crosses
-- [docs/json.md](docs/json.md) — `Decode` / `Encode`, by hand and auto-derived
-- [docs/testing.md](docs/testing.md) — stubbing Tasks, the RSpec matchers
-- [docs/stdlib.md](docs/stdlib.md) — module-by-module map
-- [docs/lsp.md](docs/lsp.md) — language server and `jade q` setup
-- [examples/](examples/) — runnable `.jd` files
+- [the tour](https://agustinrhcp.github.io/jade/tour.html): the language, with a console
+- [docs/syntax.md](docs/syntax.md): the full syntax reference
+- [docs/interop.md](docs/interop.md): the Ruby boundary, ports, decoding, what crosses
+- [docs/json.md](docs/json.md): `Decode` / `Encode`, by hand and auto-derived
+- [docs/testing.md](docs/testing.md): stubbing Tasks, the RSpec matchers
+- [docs/stdlib.md](docs/stdlib.md): module-by-module map
+- [docs/lsp.md](docs/lsp.md): language server and `jade q` setup
+- [examples/](examples/): runnable `.jd` files
 
 ## Status
 
-Early and experimental — being tried out on small projects.
+Early and experimental, being tried out on small projects.
 
 **In progress:** `Comparable` derivation for user types, partial record types
 in signatures, a stable REPL.

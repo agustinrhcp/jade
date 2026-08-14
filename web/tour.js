@@ -169,9 +169,9 @@ function expand(section) {
 
     if (errors) {
       renderOutput(compiled, { rendered: result.rendered, failed: true });
-      status(`${errors} error${errors > 1 ? 's' : ''} — module not loaded`, 'error');
+      status(`${errors} error${errors > 1 ? 's' : ''}, module not loaded`, 'error');
       views[1].click();
-      if (live) say('— it no longer compiles, so the module is unchanged —', 'dim');
+      if (live) say('it no longer compiles, so the module is unchanged', 'dim');
       live = false;
       return;
     }
@@ -188,7 +188,7 @@ function expand(section) {
         showResult(evaluate(machine, line));
       });
     } else {
-      say(`— reloaded ${file} —`, 'dim');
+      say(`reloaded ${file}`, 'dim');
     }
 
     live = true;
@@ -221,7 +221,7 @@ function expand(section) {
     pos = -1;
     showEntry(expression);
 
-    if (!live) return say('the module did not compile — nothing to run', 'dim');
+    if (!live) return say('the module did not compile, so there is nothing to run', 'dim');
     showResult(evaluate(vm, expression));
   });
 

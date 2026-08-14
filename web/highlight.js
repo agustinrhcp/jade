@@ -88,7 +88,7 @@ export function renderRuby(pane, text) {
   const count = boundary.split('\n').filter((l) => l.trim()).length;
   const details = document.createElement('details');
   details.className = 'boundary';
-  details.innerHTML = `<summary>${count} more lines — the Ruby boundary</summary><pre class="code"></pre>`;
+  details.innerHTML = `<summary>${count} more lines, the Ruby boundary</summary><pre class="code"></pre>`;
   details.querySelector('pre').innerHTML = code(boundary);
   host.appendChild(details);
 }
