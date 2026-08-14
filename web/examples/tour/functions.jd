@@ -1,0 +1,11 @@
+module Functions exposing (full_name, shout)
+
+def full_name(first: String, last: String) -> String
+  first ++ " " ++ last
+end
+
+
+def shout(first: String, last: String) -> String
+  full_name(first, last)
+    |> String.to_upper
+end

@@ -1,0 +1,26 @@
+module Shows exposing (describe, loudest)
+
+struct Person = {
+  name: String,
+  age: Int
+}
+
+
+interface Show(a) with
+  show : a -> String
+end
+
+
+implements Show(Person) with
+  show: (p) -> { p.name ++ " (age " ++ String.from_int(p.age) ++ ")" }
+end
+
+
+def describe(p: Person) -> String
+  show(p)
+end
+
+
+def loudest(people: List(Person)) -> List(String)
+  List.map(people, (p) -> { String.to_upper(show(p)) })
+end

@@ -1,0 +1,24 @@
+module Unions exposing (describe, radius_of)
+
+type Shape
+  = Circle(Float)
+  | Rectangle(Float, Float)
+  | Point
+
+
+def describe(shape: Shape) -> String
+  case shape
+  in Circle(_) then "circle"
+  in Rectangle(_, _) then "rectangle"
+  in Point then "point"
+  end
+end
+
+
+def radius_of(shape: Shape) -> Maybe(Float)
+  case shape
+  in Circle(r) then Just(r)
+  in Rectangle(_, _) then Nothing
+  in Point then Nothing
+  end
+end
