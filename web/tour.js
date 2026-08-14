@@ -1,11 +1,8 @@
-import { HL, code, renderRuby, esc } from './highlight.js';
+import { HL, code, esc, highlightAll, renderOutput } from './highlight.js';
 import { ready, compile, loadModule, evaluate } from './playground.js';
 import { mountEditor } from './editor.js';
 
-document.querySelectorAll('[data-hl]').forEach((el) => {
-  const fn = HL[el.dataset.hl];
-  if (fn) el.innerHTML = fn(el.textContent);
-});
+highlightAll();
 
 const sections = [...document.querySelectorAll('[data-section]')];
 
@@ -172,7 +169,7 @@ function expand(section) {
     const errors = result.severities.filter((s) => s === 'error').length;
 
     if (errors) {
-      compiled.innerHTML = HL.error(result.rendered);
+      renderOutput(compiled, { rendered: result.rendered, failed: true });
       status(`${errors} error${errors > 1 ? 's' : ''} — module not loaded`, 'error');
       views[1].click();
       if (live) say('— it no longer compiles, so the module is unchanged —', 'dim');
@@ -180,7 +177,7 @@ function expand(section) {
       return;
     }
 
-    renderRuby(compiled, result.ruby || '');
+    renderOutput(compiled, { ruby: result.ruby, rendered: result.rendered, failed: false });
     loadModule(machine, editor.value);
     status('module loaded · evaluates on enter', 'ok');
 

@@ -1,11 +1,8 @@
-import { HL, code, renderRuby, splitRuby } from './highlight.js';
+import { code, renderRuby, splitRuby, highlightAll, renderOutput } from './highlight.js';
 import { attach } from './playground.js';
 import { mountEditor } from './editor.js';
 
-document.querySelectorAll('[data-hl]:not([data-gen])').forEach((el) => {
-  const fn = HL[el.dataset.hl];
-  if (fn) el.innerHTML = fn(el.textContent);
-});
+highlightAll();
 
 document.querySelectorAll('[data-gen]').forEach((el) => {
   if (el.dataset.part === 'boundary') el.innerHTML = code(splitRuby(el.textContent).boundary);
@@ -67,15 +64,6 @@ attach([...document.querySelectorAll('textarea[data-src]')].map((editor) => {
       else status.removeAttribute('data-kind');
     },
 
-    render({ ruby, rendered, failed }) {
-      if (failed) {
-        out.parentElement.querySelector('.boundary')?.remove();
-        out.innerHTML = HL.error(rendered);
-        return;
-      }
-
-      renderRuby(out, ruby || '');
-      if (rendered) out.innerHTML = HL.error(rendered) + '\n\n' + out.innerHTML;
-    },
+    render: (result) => renderOutput(out, result),
   };
 }));

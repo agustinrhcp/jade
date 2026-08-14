@@ -95,3 +95,23 @@ export function renderRuby(pane, text) {
   details.querySelector('pre').innerHTML = code(boundary);
   host.appendChild(details);
 }
+
+export function highlightAll(root = document) {
+  root.querySelectorAll('[data-hl]:not([data-gen])').forEach((el) => {
+    const fn = HL[el.dataset.hl];
+    if (fn) el.innerHTML = fn(el.textContent);
+  });
+}
+
+// One rendering of a compile result, so both pages show warnings the same way
+// and neither quietly drops them.
+export function renderOutput(pane, { ruby, rendered, failed }) {
+  if (failed) {
+    pane.parentElement.querySelector('.boundary')?.remove();
+    pane.innerHTML = HL.error(rendered);
+    return;
+  }
+
+  renderRuby(pane, ruby || '');
+  if (rendered) pane.innerHTML = HL.error(rendered) + '\n\n' + pane.innerHTML;
+}
