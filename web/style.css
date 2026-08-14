@@ -38,6 +38,8 @@
 
 * { box-sizing: border-box; }
 
+img, svg, video, canvas, iframe { max-width: 100%; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -45,7 +47,6 @@ html, body {
   color: var(--ink);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
-  overflow-x: clip;
 }
 
 a {
