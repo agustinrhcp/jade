@@ -20,6 +20,7 @@ module Jade
     define(:Bind, :pattern, :expression)
     define(:VariableReference, :name)
     define(:ConstructorReference, :name)
+    define(:CurriedConstructor, :name)
 
     define(:Module, :name, :exposing, :body)
     define(:Body, :expressions)
@@ -149,6 +150,15 @@ module Jade
     def constructor_reference
       ->(constant) do
         ConstructorReference[
+          constant.value,
+          constant.range,
+        ]
+      end
+    end
+
+    def curried_constructor
+      ->(constant) do
+        CurriedConstructor[
           constant.value,
           constant.range,
         ]

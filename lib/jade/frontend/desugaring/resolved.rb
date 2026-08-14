@@ -2,6 +2,7 @@ module Jade
   module Frontend
     module Desugaring
       extend self
+      extend Codegen::Helpers
 
       # Runs after SemanticAnalysis (which resolves names and attaches
       # symbols). Add new post-resolution rewrites as `in` branches
@@ -13,6 +14,9 @@ module Jade
 
       def desugar_resolved(node, registry)
         case node
+        in AST::CurriedConstructor
+          curry_constructor(node, registry)
+
         in AST::VariableReference | AST::QualifiedAccess
           zero_arg_fn?(node.symbol, registry) ? wrap_call(node) : node
 
@@ -22,6 +26,37 @@ module Jade
       end
 
       private
+
+      # `^C` is `C(_, _, …)` with the arity filled in — which needs the
+      # resolved symbol, so it cannot be done at parse time.
+      def curry_constructor(node, registry)
+        arity = registry.lookup(node.symbol)&.args&.length || 0
+        names = (0...arity).map { param_synthetic_name(it) }
+
+        AST::FunctionCall
+          .new(
+            callee: AST::ConstructorReference[node.name, node.range].with(symbol: node.symbol),
+            args: names.map { AST::VariableReference[it, node.range].with(symbol: Symbol.var(it, nil)) },
+            infix: false,
+            dictionaries: [],
+            range: node.range,
+            symbol: nil,
+            id: node.id,
+            leading_comments: node.leading_comments,
+            trailing_comments: node.trailing_comments,
+            dangling_comments: node.dangling_comments,
+            trailing_comma: false,
+          )
+          .then do |call|
+            names.reverse.reduce(call) do |body, name|
+              AST::Lambda[
+                [AST::Pattern::Binding[name, node.range]],
+                AST::Body[[body], node.range],
+                node.range,
+              ]
+            end
+          end
+      end
 
       def map_children(node)
         node

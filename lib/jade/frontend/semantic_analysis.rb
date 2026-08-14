@@ -76,7 +76,7 @@ module Jade
         in AST::CharLiteral then CharLiteral
         in AST::Assign then Assign
         in AST::VariableReference then VariableReference
-        in AST::ConstructorReference then ConstructorReference
+        in AST::ConstructorReference | AST::CurriedConstructor then ConstructorReference
         in AST::Body then Body
         in AST::FunctionDeclaration then FunctionDeclaration
         in AST::FunctionCall then FunctionCall

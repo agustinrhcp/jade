@@ -51,3 +51,69 @@ module Jade
     end
   end
 end
+
+  describe '`^Ctor` sugar' do
+    include_context 'with test compiler'
+
+    it 'is the constructor curried, and equals the all-placeholder form' do
+      test_compiler.require(<<~JADE)
+        module Caret exposing (from_caret, from_placeholders)
+
+        import Decode exposing (Decoder)
+
+
+        struct C = {
+          a: String,
+          b: Bool
+        }
+
+
+        def caret_decoder -> Decoder(C)
+          Decode.succeed(^C)
+            |> Decode.and_map(Decode.field("a", Decode.string))
+            |> Decode.and_map(Decode.field("b", Decode.bool))
+        end
+
+
+        def placeholder_decoder -> Decoder(C)
+          Decode.succeed(C(_, _))
+            |> Decode.and_map(Decode.field("a", Decode.string))
+            |> Decode.and_map(Decode.field("b", Decode.bool))
+        end
+
+
+        def from_caret(json: String) -> Result(C, Decode.DecodeError)
+          Decode.decode_string(caret_decoder, json)
+        end
+
+
+        def from_placeholders(json: String) -> Result(C, Decode.DecodeError)
+          Decode.decode_string(placeholder_decoder, json)
+        end
+      JADE
+
+      json = '{"a": "x", "b": true}'
+      expect(Caret::Internal.from_caret(json)).to eql Caret::Internal.from_placeholders(json)
+      expect(Caret::Internal.from_caret(json)).to be_ok(have_attributes(a: 'x', b: true))
+    end
+
+    it 'curries a variant constructor too' do
+      test_compiler.require(<<~JADE)
+        module CaretVariant exposing (run)
+
+        type Pair = Pair(Int, Int)
+
+
+        def run -> Pair
+          apply(^Pair)
+        end
+
+
+        def apply(f: Int -> (Int -> Pair)) -> Pair
+          f(1)(2)
+        end
+      JADE
+
+      expect(CaretVariant::Internal.run).to look_like(:Pair, 1, 2)
+    end
+  end

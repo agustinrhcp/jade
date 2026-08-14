@@ -66,6 +66,7 @@ module Jade
       '<|' => :pipe_backward,
       '<-' => :bind,
 
+      '^' => :caret, # `^Ctor` — the constructor, curried
       '_' => :wildcard, # also used as placeholder
       '::' => :coloncolon,
       # Ternary `cond ? a : b`. Predicate-`?` attaches via the identifier

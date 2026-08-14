@@ -266,6 +266,10 @@ Lambdas are `(params) -> { body }` — the one construct that uses braces.
 A `_` in an argument position curries the call: each `_` becomes a parameter,
 left to right, so `add(_, 5)` is a one-argument function.
 
+`^Ctor` is the constructor with every field curried — `^Point` is
+`Point(_, _)` without counting the fields, and stays right when the struct
+gains one.
+
 ```jade
 module Curry exposing (add_five, add_one)
 
