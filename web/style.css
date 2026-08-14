@@ -455,15 +455,18 @@ h1 {
 
 /* ---------- tour ---------- */
 
-.shell { display: flex; align-items: flex-start; min-height: 100vh; }
+.shell { min-height: 100vh; }
 
+/* Fixed rather than sticky: a full-height rail is what fixed describes, and it
+   cannot be broken by an ancestor's overflow. */
 .rail {
-  position: sticky;
+  position: fixed;
   top: 0;
-  align-self: start;
+  left: 0;
+  z-index: 20;
   height: 100vh;
   width: 224px;
-  flex: 0 0 224px;
+  background: var(--paper);
   border-right: 1px solid var(--rule);
   display: flex;
   flex-direction: column;
@@ -506,7 +509,7 @@ h1 {
 .railtoggle .glyph { color: var(--jade); font-size: 11px; }
 .raillist { border-top: 1px solid var(--rule); padding: 8px 0 14px; max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; }
 
-.tour main { flex: 1 1 auto; min-width: 0; }
+.tour main { margin-left: 224px; min-width: 0; }
 .column { max-width: 720px; margin: 0 auto; padding: 44px 40px 0; }
 
 .tourhead { padding-bottom: 20px; }
@@ -629,6 +632,7 @@ h1 {
 
 @media (max-width: 900px) {
   .rail { display: none; }
+  .tour main { margin-left: 0; }
   .railbar {
     display: block;
     position: sticky;
