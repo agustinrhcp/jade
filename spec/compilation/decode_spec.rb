@@ -429,11 +429,11 @@ module Jade
           def parse_updates(value: Value) -> Result(List(Update), DecodeError)
             decoder = Decode.succeed(make_pair(_, _))
               |> Decode.and_map(
-              Decode.optional_field("name", Decode.map(Decode.string, name_update)),
-            )
+                Decode.optional_field("name", Decode.map(Decode.string, name_update)),
+              )
               |> Decode.and_map(
-              Decode.optional_field("age", Decode.map(Decode.int, age_update)),
-            )
+                Decode.optional_field("age", Decode.map(Decode.int, age_update)),
+              )
             Decode.decode(decoder, value)
           end
         JADE
@@ -556,13 +556,13 @@ module Jade
           def parse_shape -> Decoder(Shape)
             Decode.type_
               |> Decode.variant(
-            "circle",
-            Decode.map(Decode.index(1, Decode.float), Circle),
-          )
+                "circle",
+                Decode.map(Decode.index(1, Decode.float), Circle),
+              )
               |> Decode.variant(
-            "square",
-            Decode.map(Decode.index(1, Decode.float), Square),
-          )
+                "square",
+                Decode.map(Decode.index(1, Decode.float), Square),
+              )
           end
 
 

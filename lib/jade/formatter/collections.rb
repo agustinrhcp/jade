@@ -22,12 +22,12 @@ module Jade
       extend self
       extend Helper
 
-      def format(node, indent:, source:)
+      def format(node, indent:, source:, open: false)
         node => AST::List(items:, trailing_comma:)
 
         format_delimited(
           items.map { format_node(it, source:) },
-          '[', ']', trailing_comma, indent,
+          '[', ']', trailing_comma || open, indent,
         )
       end
     end
@@ -36,13 +36,13 @@ module Jade
       extend self
       extend Helper
 
-      def format(node, indent:, source:)
+      def format(node, indent:, source:, open: false)
         node => AST::RecordLiteral(fields:, trailing_comma:)
 
         field_strs = fields.map { "#{it.key}: #{format_node(it.value, source:)}" }
         inline     = "{ #{field_strs.join(', ')} }"
 
-        if trailing_comma || too_long?(inline, indent)
+        if trailing_comma || open || too_long?(inline, indent)
           inner = field_strs
             .map { "#{it.then(&and_indent(indent + 1))}," }
             .join("\n")
