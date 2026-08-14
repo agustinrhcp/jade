@@ -402,7 +402,8 @@ end</pre></div>
       </section>
       <section id="ports" data-section data-file="ports.jd"
         data-example="tour/ports" data-seed='Ports.welcome("ada@example.com")'
-        data-note='the port has no Ruby behind it — give it one: module Mailer; extend Jade::Port; task(:deliver) { |t, email| t.ok(true) }; end'>
+        data-setup='module Mailer; extend Jade::Port; task(:deliver) { |t, email| t.ok(true) }; end'
+        data-note='Mailer is the Ruby side of the port. Without it the call raises NameError — try deleting it and calling welcome again.'>
         <div class="num">11</div>
         <h2>Reaching Ruby</h2>
         <p class="muted">Nothing in Jade touches the outside world on its own. A <code>uses</code> block declares what you want from Ruby, you write that bit in Ruby, and the call hands back a <code>Task</code> that has not run yet — so a signature tells you whether a function does IO. Nothing implements this port here; the console will say so, and you can write one into it.</p>

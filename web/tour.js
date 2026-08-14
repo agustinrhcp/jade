@@ -90,8 +90,8 @@ function expand(section) {
           <button type="button" class="close">close</button>
         </div>
         <div class="editor">
-          <pre class="code sm" data-mirror aria-hidden="true"></pre>
-          <textarea class="code sm" spellcheck="false" autocapitalize="off" autocorrect="off"
+          <pre class="code" data-mirror aria-hidden="true"></pre>
+          <textarea class="code" spellcheck="false" autocapitalize="off" autocorrect="off"
             autocomplete="off" aria-label="Jade source, editable"></textarea>
         </div>
       </div>
@@ -185,10 +185,12 @@ function expand(section) {
     status('module loaded · evaluates on enter', 'ok');
 
     if (first) {
-      const seed = section.dataset.seed;
-      showEntry(seed);
-      showResult(evaluate(machine, seed));
       if (section.dataset.note) say(esc(section.dataset.note), 'dim');
+
+      [section.dataset.setup, section.dataset.seed].filter(Boolean).forEach((line) => {
+        showEntry(line);
+        showResult(evaluate(machine, line));
+      });
     } else {
       say(`— reloaded ${file} —`, 'dim');
     }
