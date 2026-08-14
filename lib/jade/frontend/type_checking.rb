@@ -23,14 +23,56 @@ module Jade
       def check(entry, registry)
         Loader
           .load(entry, registry)
-          .then { check_node(entry.ast, registry, State.init(it, skip_constraints: true), Expected.infer(it.fresh)) }
-          .then { Generalizer.generalize(it.first.env) }
+          .then { collect_constraints(entry, registry, it) }
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
           .then { finalize(*it, registry) }
           .map { Canonicalize.run(entry.ast, it, registry) }
           .map { it.canonicalize_node_types }
           .map { entry.with(env: it) }
           .and_then { PortResolution.resolve(it, registry) }
+      end
+
+      # A collecting pass walks declarations in source order, so a call to a
+      # function declared later sees it before its constraints are known and
+      # collects nothing. Each repeat carries them one caller further back, so
+      # a chain of forward references needs as many rounds as it is long.
+      def collect_constraints(entry, registry, env, rounds = declaration_count(entry))
+        return env if rounds.zero?
+
+        collect_round(entry, registry, env)
+          .then do |collected|
+            next env if same_constraints?(collected, env)
+
+            collect_constraints(entry, registry, collected, rounds - 1)
+          end
+      end
+
+      def collect_round(entry, registry, env)
+        State
+          .init(env, skip_constraints: true)
+          .then { check_node(entry.ast, registry, it, Expected.infer(env.fresh)) }
+          .then { Generalizer.generalize(it.first.env) }
+      end
+
+      def same_constraints?(one, other)
+        constraint_fingerprint(one) == constraint_fingerprint(other)
+      end
+
+      def constraint_fingerprint(env)
+        env
+          .bindings
+          .map { |name, binding| [name, binding.constraints.map { [it.interface, it.type.to_s] }.sort] }
+          .sort
+      end
+
+      def declaration_count(entry)
+        case entry.ast
+        in AST::Module(body: AST::Body(expressions:)) then expressions
+        in AST::Body(expressions:) then expressions
+        else []
+        end
+          .count { it.is_a?(AST::FunctionDeclaration) }
+          .then { it + 1 }
       end
 
       def finalize(state, result, registry)

@@ -42,7 +42,7 @@ module Jade
                 )
               end
               .then do |st|
-                next st if st.env.bindings[symbol.qualified_name].is_a?(Scheme)
+                next st if st.env.bindings[symbol.qualified_name].is_a?(Scheme) && !st.skip_constraints
 
                 updated_constraints = (fn_constraints + body_result.constraints)
                   .map { st.env.substitution.apply(it) }

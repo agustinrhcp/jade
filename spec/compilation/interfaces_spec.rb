@@ -458,5 +458,56 @@ module Jade
         expect(InterfaceTest.gte(low, high)).to be false
       end
     end
+    describe 'a witness needed by a function declared later in the file' do
+      it 'is forwarded through the caller' do
+        test_compiler.require(<<~JADE)
+          module Fwd exposing (run)
+
+          def flags(xs: List(a), y: a) -> List(Bool)
+            xs |> List.map((x) -> { same(x, y) })
+          end
+
+
+          def same(p: a, q: a) -> Bool
+            p == q
+          end
+
+
+          def run -> List(Bool)
+            flags([1, 2], 2)
+          end
+        JADE
+
+        expect(Fwd.run).to eql [false, true]
+      end
+
+      it 'is forwarded down a chain of them' do
+        test_compiler.require(<<~JADE)
+          module Chain exposing (run)
+
+          def top(p: a, q: a) -> Bool
+            mid(p, q)
+          end
+
+
+          def mid(p: a, q: a) -> Bool
+            bottom(p, q)
+          end
+
+
+          def bottom(p: a, q: a) -> Bool
+            p == q
+          end
+
+
+          def run -> List(Bool)
+            [top(1, 1), top(1, 2)]
+          end
+        JADE
+
+        expect(Chain.run).to eql [true, false]
+      end
+    end
+
   end
 end
