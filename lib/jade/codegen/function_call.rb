@@ -26,7 +26,7 @@ module Jade
 
       def constructor_call(callee, args, registry)
         resolve_callee_symbol(callee, registry)
-          .then { to_qualified(it.qualified_name) }
+          .then { "::#{to_qualified(it.qualified_name)}" }
           .then { "#{it}[#{generate_many(args, registry)}]" }
       end
 
@@ -151,7 +151,7 @@ module Jade
       end
 
       def generate_keyed_variant_call(constructor, args, registry)
-        qualified = to_qualified(constructor.qualified_name)
+        qualified = "::#{to_qualified(constructor.qualified_name)}"
         record_fields = constructor.args[0].fields.keys
 
         args[0] => arg
