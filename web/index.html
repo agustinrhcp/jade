@@ -323,7 +323,8 @@ end</pre></div>
       <div class="tile">
         <div class="label">Absence</div>
         <h3>Maybe instead of nil</h3>
-        <p>Absence is a type, and errors are values. No <code>NoMethodError</code> on nil, ever.</p>
+        <p>A value that might be missing says so, and you cannot read it without handling
+          the empty case. No <code>NoMethodError</code> on nil.</p>
         <div class="pane flat"><pre class="code sm" data-hl="code">def withdraw(balance: Int, amount: Int) -> Result(Int, String)
   amount > balance ? Err("insufficient funds") : Ok(balance - amount)
 end</pre></div>
@@ -340,17 +341,17 @@ end</pre></div>
       </div>
       <div class="tile">
         <div class="label">Records</div>
-        <h3>Records, updated structurally</h3>
-        <p>Field access and update are expressions, and the result keeps its type.</p>
+        <h3>Records you copy, not mutate</h3>
+        <p>Like <code>Struct#with</code>, but the compiler knows the field is there.</p>
         <div class="pane flat"><pre class="code sm" data-hl="code">def birthday(user: User) -> User
   { user | age: user.age + 1 }
 end</pre></div>
       </div>
       <div class="tile">
-        <div class="label">Deriving</div>
-        <h3>Instances derive</h3>
-        <p><code>Eq</code>, <code>Show</code>, <code>Encodable</code> and <code>Decodable</code>
-          come free for structs and unions.</p>
+        <div class="label">Derived</div>
+        <h3>The obvious code is written for you</h3>
+        <p><code>==</code>, <code>inspect</code>, and JSON in both directions come free for
+          structs and unions. No <code>as_json</code> to keep in sync.</p>
         <div class="pane flat"><pre class="code sm" data-hl="code">struct User = {
   name: String,
   age: Int

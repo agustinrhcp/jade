@@ -103,7 +103,7 @@ end</pre></div>
         data-example="tour/functions" data-seed='Functions.shout("hey", "there")'>
         <div class="num">02</div>
         <h2>Functions</h2>
-        <p class="muted">Arguments and returns are annotated. <code>++</code> joins strings and lists alike, through the <code>Appendable</code> interface.</p>
+        <p class="muted">Arguments and returns are annotated; the body is one expression, so there is no <code>return</code>. <code>++</code> joins strings and arrays alike.</p>
         <div class="block">
           <div class="pane">
             <div class="chrome">
@@ -128,7 +128,7 @@ end</pre></div>
         data-example="tour/unions" data-seed='Unions::Internal.describe(Unions::Circle[2.0])'>
         <div class="num">03</div>
         <h2>Union types</h2>
-        <p class="muted">A type is one of a fixed set of shapes, each carrying whatever it needs. Adding a variant is how you find every place that has to care about it.</p>
+        <p class="muted">One type, a fixed set of shapes, each carrying its own data. Where Ruby would reach for a status string or a subclass per case, this is checked — add a shape and the compiler walks you round every place that has to handle it.</p>
         <div class="block">
           <div class="pane">
             <div class="chrome">
@@ -166,7 +166,7 @@ end</pre></div>
         data-example="tour/structs" data-seed='Structs.label({ "name" => "Ada", "age" => 40 })'>
         <div class="num">04</div>
         <h2>Structs and records</h2>
-        <p class="muted">Named records with typed fields. <code>{ p | age: … }</code> produces a new value with one field replaced, and the result keeps its type.</p>
+        <p class="muted">A typed <code>Struct</code>, near enough. <code>{ p | age: … }</code> is <code>#with</code> — a copy with one field replaced. Nothing mutates, so nothing changes underneath a caller holding the old one.</p>
         <div class="block">
           <div class="pane">
             <div class="chrome">
@@ -201,7 +201,7 @@ end</pre></div>
         data-example="tour/matching" data-seed='Matching.sum([1, 2, 3])'>
         <div class="num">05</div>
         <h2>Pattern matching</h2>
-        <p class="muted"><code>case</code> destructures as it branches, and the compiler rejects a match that forgets a case. Keyed payloads read as records; lists split head from rest.</p>
+        <p class="muted">Ruby's <code>case/in</code>, with the compiler counting. It pulls values out as it branches and refuses to build if you have missed a shape — no <code>else</code> that quietly swallows the case you forgot.</p>
         <div class="block">
           <div class="pane">
             <div class="chrome">
@@ -241,7 +241,7 @@ end</pre></div>
         data-example="tour/conditionals" data-seed='Conditionals.abs(-7)'>
         <div class="num">06</div>
         <h2>Conditionals</h2>
-        <p class="muted"><code>if</code> is an expression, so it always needs its <code>else</code>. Use <code>case</code> for data shapes and <code>if</code> for booleans.</p>
+        <p class="muted"><code>if</code> returns a value, like Ruby's, so it always needs the <code>else</code> — there is no implicit nil branch. <code>case</code> is for shapes, <code>if</code> is for booleans.</p>
         <div class="block">
           <div class="pane">
             <div class="chrome">
@@ -269,7 +269,7 @@ end</pre></div>
         data-example="tour/pipes" data-seed='Pipes.loud_names(["ada", "grace"])'>
         <div class="num">07</div>
         <h2>Pipes and lambdas</h2>
-        <p class="muted"><code>|&gt;</code> feeds a value into the next call. A lambda is <code>(x) -&gt; { … }</code>, and <code>_</code> in an argument position curries the call — <code>add(_, 1)</code> is a function of one argument.</p>
+        <p class="muted"><code>|&gt;</code> feeds a value into the next call, the way you would chain <code>.map.join</code> in Ruby. A lambda is <code>(x) -&gt; { … }</code>. Leave a <code>_</code> where an argument goes and you get back a function still waiting for it — <code>add(_, 1)</code> is Ruby's <code>method(:add).curry[1]</code>, without the ceremony.</p>
         <div class="block">
           <div class="pane">
             <div class="chrome">
@@ -300,7 +300,7 @@ end</pre></div>
         data-example="tour/maybes" data-seed='Maybes.label(4)'>
         <div class="num">08</div>
         <h2>Maybe and Result</h2>
-        <p class="muted">Absence is a type rather than a value, so there is no nil to forget. <code>Result</code> is the same idea carrying a reason for the failure.</p>
+        <p class="muted">There is no <code>nil</code>. A value that might be missing says so in its type, and you cannot read it without handling the empty case — so <code>NoMethodError</code> on nil has nowhere to come from. <code>Result</code> is the same trick for something that can fail, carrying the reason.</p>
         <div class="block">
           <div class="pane">
             <div class="chrome">
@@ -331,7 +331,7 @@ end</pre></div>
         data-example="tour/interfaces" data-seed='Interfaces.describe({ "cents" => 250 })'>
         <div class="num">09</div>
         <h2>Interfaces</h2>
-        <p class="muted">Like typeclasses: the compiler picks the implementation from the argument's type, at compile time. <code>Eq</code>, <code>Comparable</code> and <code>Appendable</code> ship built in, and you can declare your own.</p>
+        <p class="muted">Closest thing to a Ruby module you <code>include</code> — except you never wire it up. Declare what a type can do, implement it, and every call site resolves to the right implementation while it compiles. <code>==</code>, <code>compare</code> and <code>++</code> work this way already.</p>
         <div class="block">
           <div class="pane">
             <div class="chrome">
@@ -373,7 +373,7 @@ end</pre></div>
         data-example="tour/imports" data-seed='Imports.tally(["a", "b", "a"])'>
         <div class="num">10</div>
         <h2>Modules and imports</h2>
-        <p class="muted">One module per file, and the file name has to imply the module name — <code>Shop.Cart</code> lives in <code>shop/cart.jd</code>. <code>exposing</code> lists the public surface.</p>
+        <p class="muted">One module per file, and the path has to match the name — <code>Shop.Cart</code> lives in <code>shop/cart.jd</code>, the way Zeitwerk expects. <code>exposing</code> is the public surface; everything else stays private.</p>
         <div class="block">
           <div class="pane">
             <div class="chrome">
@@ -405,7 +405,7 @@ end</pre></div>
         data-note='the port has no Ruby behind it — give it one: module Mailer; extend Jade::Port; task(:deliver) { |t, email| t.ok(true) }; end'>
         <div class="num">11</div>
         <h2>Reaching Ruby</h2>
-        <p class="muted">Jade has no implicit side effects. A <code>uses</code> block declares a port, its return type is a <code>Task</code>, and nothing runs until something runs it. The port has no Ruby behind it here — the console will say so, and you can give it one.</p>
+        <p class="muted">Nothing in Jade touches the outside world on its own. A <code>uses</code> block declares what you want from Ruby, you write that bit in Ruby, and the call hands back a <code>Task</code> that has not run yet — so a signature tells you whether a function does IO. Nothing implements this port here; the console will say so, and you can write one into it.</p>
         <div class="block">
           <div class="pane">
             <div class="chrome">
