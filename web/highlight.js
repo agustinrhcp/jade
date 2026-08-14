@@ -1,5 +1,4 @@
-// Syntax colouring shared by the landing page and the tour. Emits escaped HTML
-// so the same function can serve pre-baked markup and live compiler output.
+// Emits escaped HTML, so it serves pre-baked markup and live compiler output.
 
 const KW = new Set(['module', 'def', 'type', 'struct', 'exposing', 'case', 'in',
   'then', 'end', 'uses', 'with', 'extend', 'self', 'do', 'true', 'false', 'nil',
@@ -63,9 +62,7 @@ export const HL = {
           .join('<span class="t-err">Jade::Interop::DecodeError</span>')).join('\n'),
 };
 
-// Everything the compiler emits for the Ruby boundary sits at the end of the
-// module at two-space indent. Real output, but bookkeeping rather than a
-// translation of your code, so it starts collapsed.
+// The boundary sits at the end of the module at two-space indent.
 export function splitRuby(text) {
   const lines = text.split('\n');
   const at = lines.findIndex((l) => /^  (def self\.|BOUNDARY_[A-Z0-9_]+ =)/.test(l));
@@ -103,8 +100,6 @@ export function highlightAll(root = document) {
   });
 }
 
-// One rendering of a compile result, so both pages show warnings the same way
-// and neither quietly drops them.
 export function renderOutput(pane, { ruby, rendered, failed }) {
   if (failed) {
     pane.parentElement.querySelector('.boundary')?.remove();

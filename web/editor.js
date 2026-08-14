@@ -1,6 +1,4 @@
-// A textarea layered over a highlighted <pre>: transparent text, visible caret,
-// scroll positions kept in step. Keeps the page working without JS — the
-// source is real text in the markup either way.
+// A textarea layered over a highlighted <pre>, scroll positions kept in step.
 
 export function mountEditor(textarea, highlight) {
   const mirror = textarea.parentElement.querySelector('[data-mirror]');

@@ -1,12 +1,4 @@
-# Compiles web/examples/**/*.jd with the compiler in this repo and injects the
-# results into the pages, so nothing shown on the site can drift from what the
-# compiler actually emits.
-#
-#   ruby web/build.rb
-#
-# CI runs it and fails on a diff:
-#
-#   ruby web/build.rb && git diff --exit-code web/
+# Injects compiled examples into the pages. CI runs it and fails on a diff.
 
 require 'fileutils'
 require 'tmpdir'
@@ -19,8 +11,8 @@ require 'jade'
 
 PAGES = %w[index.html tour.html].freeze
 
-# Each root is its own source root: a module's file name has to imply its
-# declared name, so tour/values.jd is `Values`, not `Tour.Values`.
+# A module's file name has to imply its declared name, so each directory is
+# its own source root.
 ROOTS = {
   '' => 'examples',
   'tour/' => 'examples/tour',
@@ -68,8 +60,6 @@ def slot(html, tag, attr, name, body)
   html.gsub(pattern) { "#{$1}#{escape(body.strip)}#{$2}" }
 end
 
-# Runs the four-file project the way a reader would, so the numbers on the page
-# come from the compiler and the runtime rather than from someone typing them.
 def project_transcript
   Dir.mktmpdir do |build|
     Jade::ModuleLoader

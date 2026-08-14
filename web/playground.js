@@ -121,7 +121,6 @@ export function compile(vm, source) {
 
 const PREAMBLE = /^(?:\$LOAD_PATH.*|require .*|require_relative .*)\n/gm;
 
-// One VM for the whole page, however many examples ask for it.
 export async function ready(onProgress) {
   if (!booting) booting = boot(onProgress);
   return booting;
@@ -188,10 +187,8 @@ export function attach(panels) {
   });
 }
 
-// Compiles, writes every emitted module into the VM's in-memory filesystem and
-// loads the entry so expressions can be evaluated against it. `load` rather
-// than `require`, with the constant dropped first, so editing the source really
-// does replace what the console is talking to.
+// `load` rather than `require`, constant dropped first, so an edit really does
+// replace what the console is talking to.
 export function loadModule(vm, source) {
   return JSON.parse(vm.eval(`
     source = JSON.parse(${rubyString(source)})

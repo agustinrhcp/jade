@@ -6,6 +6,10 @@ A statically typed, functional language that compiles to readable Ruby.
 Inspired by Elm. Type inference, union types, exhaustive pattern matching, and
 typed boundaries to Ruby.
 
+**[agustinrhcp.github.io/jade](https://agustinrhcp.github.io/jade/)** — the
+pitch, and a [tour](https://agustinrhcp.github.io/jade/tour.html) whose
+examples compile and run in the browser.
+
 ## What it looks like
 
 ```jade
@@ -367,7 +371,8 @@ dispatch layer.
 
 ## Docs
 
-- [docs/syntax.md](docs/syntax.md) — the full language tour
+- [the tour](https://agustinrhcp.github.io/jade/tour.html) — the language, with a console
+- [docs/syntax.md](docs/syntax.md) — the full syntax reference
 - [docs/interop.md](docs/interop.md) — the Ruby boundary: ports, decoding, what crosses
 - [docs/json.md](docs/json.md) — `Decode` / `Encode`, by hand and auto-derived
 - [docs/testing.md](docs/testing.md) — stubbing Tasks, the RSpec matchers

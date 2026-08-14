@@ -44,8 +44,7 @@ raillist.addEventListener('click', (e) => {
 
 /* ---- one live section at a time ---- */
 
-// The VM holds one loaded module, so opening a second example closes the first
-// rather than leaving a console that answers about code you can no longer see.
+// The VM holds one loaded module, so opening one example closes the last.
 let open = null;
 let vm = null;
 
