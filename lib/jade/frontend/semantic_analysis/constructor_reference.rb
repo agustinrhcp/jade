@@ -6,7 +6,7 @@ module Jade
         extend Helper
 
         def analyze(node, registry, scope, entry)
-          node => AST::ConstructorReference(name:)
+          name = node.name
 
           symbol = scope.lookup(name) || resolve_private_constructor(name, registry)
 

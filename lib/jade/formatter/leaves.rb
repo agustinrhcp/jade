@@ -21,6 +21,15 @@ module Jade
       end
     end
 
+    module CurriedConstructor
+      extend self
+      extend Helper
+
+      def format(node, indent:, source:)
+        "^#{node.name}".then(&and_indent(indent))
+      end
+    end
+
     module CharLiteral
       extend self
       extend Helper

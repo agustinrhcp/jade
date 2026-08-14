@@ -175,7 +175,8 @@ module Jade
           AST::TypeDeclaration | AST::ImportDeclaration |
           AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard |
           AST::Pattern::Record | AST::InteropImportDeclaration | AST::StructDeclaration |
-          AST::QualifiedAccess | AST::Placeholder | AST::InterfaceDeclaration
+          AST::QualifiedAccess | AST::Placeholder | AST::InterfaceDeclaration |
+          AST::CurriedConstructor
 
           node
         end

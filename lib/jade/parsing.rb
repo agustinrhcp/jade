@@ -336,7 +336,8 @@ module Jade
     }
 
     parser(:atom) {
-      variable_reference | negative_literal | literal | constructor_reference |
+      variable_reference | negative_literal | literal |
+        curried_constructor | constructor_reference |
         lambda | tuple | grouping |
         record_literal | record_update_sugar | record_access_sugar | record_update
     }
@@ -508,6 +509,10 @@ module Jade
 
     # Should refactor to just an Constant node
     parser(:constructor_reference) { constant.map(&AST.constructor_reference) }
+
+    parser(:curried_constructor) {
+      (type(:caret) >> constant).map { AST.curried_constructor.call(it.last) }
+    }
 
     parser(:param) {
       (

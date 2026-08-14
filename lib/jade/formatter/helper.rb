@@ -59,6 +59,7 @@ module Jade
         in AST::RecordUpdate                 then RecordUpdate
         in AST::VariableReference            then VariableReference
         in AST::ConstructorReference         then ConstructorReference
+        in AST::CurriedConstructor           then CurriedConstructor
         in AST::CharLiteral                  then CharLiteral
         in AST::Literal                      then Literal
         end
