@@ -569,10 +569,12 @@ h1 {
 .block .status[data-kind="error"] { color: var(--red); }
 
 .live { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
-.live > .pane { display: flex; flex-direction: column; height: 430px; }
-.live .chrome { flex: 0 0 auto; }
-.live .editor { flex: 1 1 auto; height: auto; }
-.live .view { flex: 1 1 auto; min-height: 0; }
+/* Grid, not flex: a 1fr track is a definite size, so the editor's absolutely
+   positioned layers get a height to fill and the transcript can shrink enough
+   to scroll. Flex items default to min-height: auto and do neither. */
+.live > .pane { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 430px; }
+.live .editor { height: auto; min-height: 0; }
+.live .view { min-height: 0; }
 .live .view.scroll { overflow: auto; max-height: none; height: auto; padding: 18px 16px; }
 
 .chrome.tabs { padding: 0 14px; gap: 20px; justify-content: flex-start; }
@@ -589,9 +591,10 @@ h1 {
 }
 .chrome.tabs button[aria-selected="true"] { color: var(--console-ink); border-bottom-color: var(--jade); }
 
-.view[data-view="console"] { display: flex; flex-direction: column; }
+.view[data-view="console"] { display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+.live .view[hidden] { display: none; }
 .transcript {
-  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   padding: 18px 16px 6px;
   font-family: var(--mono);
@@ -606,7 +609,7 @@ h1 {
 .transcript .err .cls { color: var(--red); font-weight: 600; }
 .transcript .dim { color: var(--ink-soft); font-style: italic; font-size: 12.5px; }
 
-.prompt { flex: 0 0 auto; display: flex; align-items: baseline; gap: 8px; padding: 2px 16px 16px; }
+.prompt { display: flex; align-items: baseline; gap: 8px; padding: 2px 16px 16px; }
 .prompt span { font-family: var(--mono); font-size: 13px; line-height: 1.65; color: var(--jade-bright); }
 .prompt input {
   flex: 1 1 auto;
