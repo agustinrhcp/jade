@@ -10,7 +10,7 @@ module Jade
       end
 
       def from_symbol(symbol)
-        qualified = to_qualified(symbol.qualified_name)
+        qualified = "::#{to_qualified(symbol.qualified_name)}"
         symbol.args.empty? ? "#{qualified}[]" : "#{qualified}.method(:[])"
       end
     end

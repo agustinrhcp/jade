@@ -490,7 +490,7 @@ module Jade
         JADE
       end
 
-      it { is_expected.to eql "Person = Data.define(:name, :age)\n__Test__::Person[\"Guybrush\", 28]" }
+      it { is_expected.to eql "Person = Data.define(:name, :age)\n::__Test__::Person[\"Guybrush\", 28]" }
     end
 
     describe 'tuple' do
@@ -501,7 +501,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "Jade::Tuple::Tuple2[1, 2]" }
+        it { is_expected.to eql "::Jade::Tuple::Tuple2[1, 2]" }
       end
 
       context 'three elements' do
@@ -511,7 +511,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "Jade::Tuple::Tuple3[1, 2, 3]" }
+        it { is_expected.to eql "::Jade::Tuple::Tuple3[1, 2, 3]" }
       end
 
       context 'four elements' do
@@ -521,7 +521,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to eql "Jade::Tuple::Tuple4[1, 2, 3, 4]" }
+        it { is_expected.to eql "::Jade::Tuple::Tuple4[1, 2, 3, 4]" }
       end
     end
 
@@ -580,7 +580,7 @@ module Jade
             JADE
           end
 
-          it { is_expected.to eql "def test\n  (Jade::Maybe::Nothing[] == Jade::Maybe::Just[1])\nend" }
+          it { is_expected.to eql "def test\n  (::Jade::Maybe::Nothing[] == ::Jade::Maybe::Just[1])\nend" }
 
           context 'when calling !=' do
             let(:text) do
@@ -591,7 +591,7 @@ module Jade
               JADE
             end
 
-            it { is_expected.to eql "def test\n  (Jade::Maybe::Nothing[] != Jade::Maybe::Just[1])\nend" }
+            it { is_expected.to eql "def test\n  (::Jade::Maybe::Nothing[] != ::Jade::Maybe::Just[1])\nend" }
           end
 
           context 'with a type with different type params per variant' do
@@ -603,7 +603,7 @@ module Jade
               JADE
             end
 
-            it { is_expected.to eql "def test\n  (Jade::Result::Ok[\"OK\"] != Jade::Result::Err[404])\nend" }
+            it { is_expected.to eql "def test\n  (::Jade::Result::Ok[\"OK\"] != ::Jade::Result::Err[404])\nend" }
           end
         end
 
