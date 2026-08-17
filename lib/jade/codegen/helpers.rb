@@ -16,6 +16,12 @@ module Jade
         Stdlib.stdlib_name?(module_name) ? "Jade::#{base}" : base
       end
 
+      # Rooted, so a module whose own type shares its name (`Changeset` in
+      # `Changeset`) can't shadow the module on lookup from inside it.
+      def to_rooted(module_name)
+        "::#{to_qualified(module_name)}"
+      end
+
       def data_define(fields)
         return "Data.define" if fields.empty?
 

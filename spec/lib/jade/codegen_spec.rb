@@ -364,7 +364,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to include "in __Test__::Nothing then 0\nin __Test__::Just(x) then x\nend" }
+        it { is_expected.to include "in ::__Test__::Nothing then 0\nin ::__Test__::Just(x) then x\nend" }
       end
 
       context 'with record pattern' do
@@ -399,7 +399,7 @@ module Jade
           JADE
         end
 
-        it { is_expected.to include "->(__p0__) {\n  __p0__ => __Test__::Box(x)\n  x\n}" }
+        it { is_expected.to include "->(__p0__) {\n  __p0__ => ::__Test__::Box(x)\n  x\n}" }
       end
 
       context 'with a wildcard param' do
