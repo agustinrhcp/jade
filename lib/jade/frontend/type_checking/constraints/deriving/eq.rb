@@ -22,6 +22,8 @@ module Jade
               index_map = type_vars.each_with_index.map.to_h
               variants  = symbol.variants.map { registry.lookup(it) }
 
+              return native_eq(constraint, type_vars) if variants.empty?
+
               concrete = variants
                 .flat_map(&:args)
                 .reject { it in Symbol::Variable }
@@ -47,6 +49,14 @@ module Jade
 
                   Ok[build_union_impl(constraint, type_vars, concrete, eq_fn, deps)]
                 end
+            end
+
+            # A variant-less union stands in for an opaque native — `Decode.Value`,
+            # `List` — so there is nothing to match on and equality is Ruby's.
+            def native_eq(constraint, type_vars)
+              Symbol::DerivedFunction
+                .new(params: ["one", "other"], body: [:==, [:var, "one"], [:var, "other"]])
+                .then { Ok[build_union_impl(constraint, type_vars, [], it, [])] }
             end
 
             def build_union_impl(constraint, type_vars, concrete, eq_fn, deps)

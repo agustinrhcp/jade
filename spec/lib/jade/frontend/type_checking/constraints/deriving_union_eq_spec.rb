@@ -56,5 +56,36 @@ module Jade
       expect(compiled('Tags', mixed, '[Tagged("t", 9) == Tagged("t", 9), None == None]'))
         .to eql [true, true]
     end
+
+    context 'a variant-less union standing in for an opaque native' do
+      let(:values) do
+        <<~JADE
+          module Values exposing (kept, same?)
+
+          import Decode exposing (Value)
+
+
+          def same?(one: Value, other: Value) -> Bool
+            one == other
+          end
+
+
+          def kept(all: List(Value), wanted: List(Value)) -> List(Value)
+            all |> List.filter((v) -> { List.member?(wanted, v) })
+          end
+        JADE
+      end
+
+      before { compiler.require(values) }
+
+      it 'compares by native equality rather than answering false' do
+        expect(Values.same?({ id: 1 }, { id: 1 })).to be true
+        expect(Values.same?({ id: 1 }, { id: 2 })).to be false
+      end
+
+      it 'carries that equality into List.member?' do
+        expect(Values.kept([1, 2, 3], [2, 3])).to eql [2, 3]
+      end
+    end
   end
 end
