@@ -6,6 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `Assignable` also derives for structs, naming one column per field in
+  declaration order. A field renamed to dodge a keyword (`type_`) maps back to
+  the column it came from. Generic structs derive at the type they are applied
+  to. Inert unless jade-sql is loaded.
+
+### Changed
+
+- The derived jade-sql interface is now `Sql.Assignable`, was `Sql.SqlMapper`.
+  It is matched by name, so jade-sql must move to the new name in the same
+  release.
+
 ## [0.7.0]
 
 ### Added
@@ -67,6 +80,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Generated output moves for any code that names a constructor or builds an
   anonymous record. A project that CI-checks committed artifacts will see a
   diff.
+
 
 ## [0.6.0]
 
