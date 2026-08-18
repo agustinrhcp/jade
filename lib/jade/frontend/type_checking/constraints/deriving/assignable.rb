@@ -6,11 +6,11 @@ module Jade
           # jade-sql's interface, derived here rather than there: the
           # deriving framework is not extensible, and this stays inert
           # without jade-sql, since nothing else names the interface.
-          module SqlMapper
+          module Assignable
             extend self
             include Helpers
 
-            INTERFACE = 'Sql.SqlMapper'
+            INTERFACE = 'Sql.Assignable'
             ASSIGNMENT = 'Sql.Assignment'
             ASSIGNMENT_FIELDS = %w[col value_sql params].freeze
 
