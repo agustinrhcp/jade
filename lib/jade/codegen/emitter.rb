@@ -17,6 +17,9 @@ module Jade
         in [:and, expr1, expr2]
           "#{emit(expr1)} && #{emit(expr2)}"
 
+        in [:==, expr1, expr2]
+          "#{emit(expr1)} == #{emit(expr2)}"
+
         in Integer | TrueClass | FalseClass | Float
           ir.to_s
 
