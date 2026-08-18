@@ -125,7 +125,7 @@ module Jade
             .each_with_index
             .filter_map { |c, i| dispatch_value(dictionaries[i], registry) if c.type.is_a?(Type::Var) }
             .then { (param_names + it).join(', ') }
-            .then { "#{to_qualified(fn.module_name)}::Internal.#{fn_target_name(fn, registry)}(#{it})" }
+            .then { "#{to_rooted(fn.module_name)}::Internal.#{fn_target_name(fn, registry)}(#{it})" }
             .then { Pretty.lambda(param_names.join(', '), it) }
 
         in Symbol::InterfaceFunction => fn
@@ -197,7 +197,7 @@ module Jade
           generate_node(callee, registry)
 
         in Symbol::Function => fn_sym
-          to_qualified(fn_sym.module_name) + "::Internal." + fn_target_name(fn_sym, registry)
+          to_rooted(fn_sym.module_name) + "::Internal." + fn_target_name(fn_sym, registry)
 
         in Symbol::StdlibImplementation => symbol
           dictionaries
@@ -321,10 +321,10 @@ module Jade
         # 0-arg fn: Ruby auto-invokes on bare reference. Result is the
         # dispatch-slot value (decoder, encoder template, ...) ready to use.
         in Symbol::Function => fn if fn.constant?
-          "#{to_qualified(fn.module_name)}::Internal.#{fn.name}"
+          "#{to_rooted(fn.module_name)}::Internal.#{fn.name}"
 
         in Symbol::Function => fn
-          "#{to_qualified(fn.module_name)}::Internal.method(:#{fn.name})"
+          "#{to_rooted(fn.module_name)}::Internal.method(:#{fn.name})"
         end
       end
 

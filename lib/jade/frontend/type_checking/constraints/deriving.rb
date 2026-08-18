@@ -1,4 +1,5 @@
 require_relative './deriving/helpers.rb'
+require_relative './deriving/attribute.rb'
 require_relative './deriving/eq.rb'
 require_relative './deriving/decodable.rb'
 require_relative './deriving/encodable.rb'
@@ -12,7 +13,7 @@ module Jade
         module Deriving
           extend self
 
-          DERIVERS = [Eq, Show, Decodable, Encodable, SqlMapper]
+          DERIVERS = [Eq, Show, Decodable, Encodable, SqlMapper, Attribute]
 
           def derivable?(interface)
             DERIVERS.any? { it.supports?(interface) }

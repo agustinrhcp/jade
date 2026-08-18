@@ -165,7 +165,7 @@ module Jade
             codegen
 
           in Symbol::Function => fn
-            "#{to_qualified(fn.module_name)}::Internal.method(:#{fn.name})"
+            "#{to_rooted(fn.module_name)}::Internal.method(:#{fn.name})"
 
           else
             name
@@ -220,7 +220,7 @@ module Jade
             codegen
 
           in Symbol::Function => fn
-            "#{to_qualified(fn.module_name)}::Internal.method(:#{fn.name})"
+            "#{to_rooted(fn.module_name)}::Internal.method(:#{fn.name})"
 
           in Symbol::Constructor => sym
             ConstructorReference.from_symbol(sym)
