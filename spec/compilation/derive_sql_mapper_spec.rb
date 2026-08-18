@@ -98,6 +98,100 @@ module Jade
       end
     end
 
+    context 'a struct' do
+      let(:row_source) do
+        <<~JADE.strip
+          module Charge exposing (Charge(..), assigns)
+
+          import Sql exposing (Assignment, SqlMapper, to_assigns)
+
+
+          struct Charge = {
+            id: Int,
+            name: String,
+            balance: Maybe(Int)
+          }
+
+
+          def assigns(c: Charge) -> List(Assignment)
+            to_assigns(c)
+          end
+        JADE
+      end
+
+      before { test_compiler.require(row_source) }
+
+      it 'names one column per field, in declaration order' do
+        expect(Charge::Internal.assigns(Charge::Charge[1, 'Ana', Maybe::Just[3]]))
+          .to eql [
+            Sql::Assignment['id', '?', [1]],
+            Sql::Assignment['name', '?', ['Ana']],
+            Sql::Assignment['balance', '?', [3]],
+          ]
+      end
+
+      it 'writes null for Nothing rather than skipping the column' do
+        expect(Charge::Internal.assigns(Charge::Charge[1, 'Ana', Maybe::Nothing[]]).last)
+          .to eql Sql::Assignment['balance', '?', [nil]]
+      end
+    end
+
+    context 'a struct field renamed to dodge a keyword' do
+      let(:reserved_source) do
+        <<~JADE.strip
+          module Reserved exposing (Entry(..), assigns)
+
+          import Sql exposing (Assignment, SqlMapper, to_assigns)
+
+
+          struct Entry = {
+            type_: String,
+            total_: Int
+          }
+
+
+          def assigns(e: Entry) -> List(Assignment)
+            to_assigns(e)
+          end
+        JADE
+      end
+
+      before { test_compiler.require(reserved_source) }
+
+      it 'maps back to the column name only when the field name is a keyword' do
+        expect(Reserved::Internal.assigns(Reserved::Entry['debit', 5]))
+          .to eql [
+            Sql::Assignment['type', '?', ['debit']],
+            Sql::Assignment['total_', '?', [5]],
+          ]
+      end
+    end
+
+    context 'a generic struct' do
+      let(:wrapped_source) do
+        <<~JADE.strip
+          module Wrapped exposing (Box(..), assigns)
+
+          import Sql exposing (Assignment, SqlMapper, to_assigns)
+
+
+          struct Box(a) = { value: a }
+
+
+          def assigns(b: Box(Int)) -> List(Assignment)
+            to_assigns(b)
+          end
+        JADE
+      end
+
+      before { test_compiler.require(wrapped_source) }
+
+      it 'encodes the field at the type it was applied to' do
+        expect(Wrapped::Internal.assigns(Wrapped::Box[7]))
+          .to eql [Sql::Assignment['value', '?', [7]]]
+      end
+    end
+
     context 'a different module that happens to be called Sql' do
       let(:imposter_source) do
         <<~JADE.strip

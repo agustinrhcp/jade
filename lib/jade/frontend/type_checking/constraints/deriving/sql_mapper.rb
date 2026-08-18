@@ -20,11 +20,11 @@ module Jade
               return failed(constraint, entry_name) unless assignment_matches?(registry)
 
               case constraint.type
-              in Type::Application(constructor: Type::Constructor(name:), args: [])
+              in Type::Application(constructor: Type::Constructor(name:), args:)
                 Symbol
                   .type_ref_from_qualified_name(name)
                   .then { registry.lookup(it) }
-                  .then { derive_for(constraint, it, registry, lookup, entry_name) }
+                  .then { derive_for(constraint, it, args, registry, lookup, entry_name) }
 
               else
                 failed(constraint, entry_name)
@@ -47,10 +47,13 @@ module Jade
                 end
             end
 
-            def derive_for(constraint, symbol, registry, lookup, entry_name)
+            def derive_for(constraint, symbol, args, registry, lookup, entry_name)
               case symbol
-              in Symbol::Union if single_payload?(symbol, registry)
+              in Symbol::Union if args.empty? && single_payload?(symbol, registry)
                 derive_union(constraint, symbol, registry, lookup, entry_name)
+
+              in Symbol::Struct
+                derive_struct(constraint, symbol, args, registry, lookup, entry_name)
 
               else
                 failed(constraint, entry_name)
@@ -72,6 +75,43 @@ module Jade
                 .map { lookup.call(it) }
                 .then { Results.sequence(it) }
                 .map { implementation(constraint, union_body(vs), it) }
+            end
+
+            def derive_struct(constraint, struct_sym, args, registry, lookup, entry_name)
+              fields = struct_fields(struct_sym, args, registry)
+
+              fields
+                .map { |_, type| Type.constraint('Encode.Encodable', type, nil) }
+                .map { lookup.call(it) }
+                .then { Results.sequence(it) }
+                .map { implementation(constraint, struct_body(fields), it) }
+            end
+
+            def struct_body(fields)
+              fields
+                .each_with_index
+                .map { |(name, _), idx| field_assignment(name, idx) }
+                .then { [:list, it] }
+            end
+
+            def field_assignment(name, idx)
+              [:call,
+                [:struct_constructor, ASSIGNMENT, 3],
+                [
+                  column_name(name),
+                  '?',
+                  [:list,
+                    [[:call, [:impl_arg, idx, 'encoder'], [[:access, [:var, 'f'], name.to_s]]]],
+                  ],
+                ],
+              ]
+            end
+
+            def column_name(field)
+              field
+                .to_s
+                .then { it.end_with?('_') ? it.delete_suffix('_') : it }
+                .then { Lexer::KEYWORDS.include?(it) ? it : field.to_s }
             end
 
             def encodable_dep(variant, registry)
