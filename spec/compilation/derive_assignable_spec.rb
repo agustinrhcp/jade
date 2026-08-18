@@ -4,7 +4,7 @@ require 'jade'
 require 'jade/module_loader'
 
 module Jade
-  describe 'deriving SqlMapper' do
+  describe 'deriving Assignable' do
     include_context 'with test compiler'
 
     # Stands in for jade-sql, which jade does not depend on. The deriver
@@ -12,7 +12,7 @@ module Jade
     # written down.
     let(:sql_source) do
       <<~JADE.strip
-        module Sql exposing (Assignment(..), SqlMapper, to_assigns)
+        module Sql exposing (Assignable, Assignment(..), to_assigns)
 
         import Decode exposing (Value)
 
@@ -24,7 +24,7 @@ module Jade
         }
 
 
-        interface SqlMapper(a) with
+        interface Assignable(a) with
           to_assigns : a -> List(Assignment)
         end
       JADE
@@ -34,7 +34,7 @@ module Jade
       <<~JADE.strip
         module Fields exposing (Field(..), assigns)
 
-        import Sql exposing (Assignment, SqlMapper, to_assigns)
+        import Sql exposing (Assignable, Assignment, to_assigns)
 
 
         type Field
@@ -79,7 +79,7 @@ module Jade
         <<~JADE.strip
           module Two exposing (Field(..), assigns)
 
-          import Sql exposing (Assignment, SqlMapper, to_assigns)
+          import Sql exposing (Assignable, Assignment, to_assigns)
 
 
           type Field
@@ -94,7 +94,7 @@ module Jade
       end
 
       it 'refuses, since two values name one column' do
-        expect { test_compiler.require(two_source) }.to raise_error(/SqlMapper/)
+        expect { test_compiler.require(two_source) }.to raise_error(/Assignable/)
       end
     end
 
@@ -103,7 +103,7 @@ module Jade
         <<~JADE.strip
           module Charge exposing (Charge(..), assigns)
 
-          import Sql exposing (Assignment, SqlMapper, to_assigns)
+          import Sql exposing (Assignable, Assignment, to_assigns)
 
 
           struct Charge = {
@@ -141,7 +141,7 @@ module Jade
         <<~JADE.strip
           module Reserved exposing (Entry(..), assigns)
 
-          import Sql exposing (Assignment, SqlMapper, to_assigns)
+          import Sql exposing (Assignable, Assignment, to_assigns)
 
 
           struct Entry = {
@@ -172,7 +172,7 @@ module Jade
         <<~JADE.strip
           module Wrapped exposing (Box(..), assigns)
 
-          import Sql exposing (Assignment, SqlMapper, to_assigns)
+          import Sql exposing (Assignable, Assignment, to_assigns)
 
 
           struct Box(a) = { value: a }
@@ -195,7 +195,7 @@ module Jade
     context 'a different module that happens to be called Sql' do
       let(:imposter_source) do
         <<~JADE.strip
-          module Sql exposing (Assignment(..), SqlMapper, to_assigns)
+          module Sql exposing (Assignable, Assignment(..), to_assigns)
 
           struct Assignment = {
             label: String,
@@ -203,7 +203,7 @@ module Jade
           }
 
 
-          interface SqlMapper(a) with
+          interface Assignable(a) with
             to_assigns : a -> List(Assignment)
           end
         JADE
@@ -213,7 +213,7 @@ module Jade
         <<~JADE.strip
           module Other exposing (Field(..), assigns)
 
-          import Sql exposing (Assignment, SqlMapper, to_assigns)
+          import Sql exposing (Assignable, Assignment, to_assigns)
 
 
           type Field = Name(String)
@@ -229,7 +229,7 @@ module Jade
         other = TestCompiler.new
         other.require(imposter_source)
 
-        expect { other.require(user_source) }.to raise_error(/SqlMapper/)
+        expect { other.require(user_source) }.to raise_error(/Assignable/)
       end
     end
 
@@ -238,7 +238,7 @@ module Jade
         <<~JADE.strip
           module Mixed exposing (Field(..), assigns)
 
-          import Sql exposing (Assignment, SqlMapper, to_assigns)
+          import Sql exposing (Assignable, Assignment, to_assigns)
 
 
           type Field
@@ -253,7 +253,7 @@ module Jade
       end
 
       it 'refuses, since a nullary variant names no value to assign' do
-        expect { test_compiler.require(mixed_source) }.to raise_error(/SqlMapper/)
+        expect { test_compiler.require(mixed_source) }.to raise_error(/Assignable/)
       end
     end
   end
