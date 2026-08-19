@@ -74,7 +74,7 @@ module Jade
 
               inner_types
                 .map { Type.constraint(INTERFACE, it, nil) }
-                .map { resolve_dep(it, lookup, entry_name) }
+                .map { resolve_dep(it, lookup) }
                 .then { Results.sequence(it) }
                 .map { implementation(constraint, body, it) }
             end
@@ -99,7 +99,7 @@ module Jade
               end
 
               field_deps
-                .map { resolve_dep(it, lookup, entry_name) }
+                .map { resolve_dep(it, lookup) }
                 .then { Results.sequence(it) }
                 .map { implementation(constraint, record_body(fields, constructor_ref), it) }
             end
@@ -129,18 +129,6 @@ module Jade
                   constructor_ref,
                 ],
               ]
-            end
-
-            # Free-var inner constraints fall back to the constraint marker
-            # itself — codegen later resolves it from the caller's dict env.
-            # Without this, `Decodable(List(a))` with `a` free would bail
-            # with UnresolvedConstraint.
-            def resolve_dep(dep, lookup, entry_name)
-              lookup
-                .call(dep)
-                .on_err(Error::UnresolvedConstraint) {
-                  dep.type.is_a?(Type::Var) ? Ok[dep] : Err[it]
-                }
             end
 
             def implementation(constraint, body, deps)

@@ -160,7 +160,7 @@ module Jade
         in Ok[impl] then Codegen::FunctionCall.generate_impl_dispatch(impl, registry)
         in Err      then nil
         end
-      rescue NoMethodError, NoMatchingPatternError
+      rescue MissingDictionary, NoMethodError, NoMatchingPatternError
         # Deriver assumes derivability (type-check-time invariant); boundary
         # synthesis may probe types whose deps fail — treat as ineligible.
         nil

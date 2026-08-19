@@ -46,7 +46,7 @@ module Jade
 
                 updated_constraints = (fn_constraints + body_result.constraints)
                   .map { st.env.substitution.apply(it) }
-                  .uniq
+                  .uniq { it.type.is_a?(Type::Var) ? [it.interface, it.type] : it }
 
                 # TODO: for impl function declarations, unresolved constraints here
                 # (e.g. Eq(a) when the body calls == on a field of type a) should

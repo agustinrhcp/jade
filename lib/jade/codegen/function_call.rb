@@ -89,8 +89,10 @@ module Jade
         in Symbol::Implementation
           generate_impl_dispatch(dep, registry)
 
-        in Type::Constraint(type: Type::Var)
-          dispatch_value(dep, registry)
+        in Type::Constraint(interface:, type: Type::Var => var)
+          dispatch_value(dep, registry) ||
+            raise(MissingDictionary, "no dict in scope for #{interface} #{var}" \
+                                    " — this is a jade bug, please report it")
         end
       end
 

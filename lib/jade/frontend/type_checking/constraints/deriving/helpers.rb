@@ -54,6 +54,16 @@ module Jade
               )
             end
 
+            # A free-var inner constraint falls back to the marker itself —
+            # codegen resolves it from the caller's dict env.
+            def resolve_dep(dep, lookup)
+              lookup
+                .call(dep)
+                .on_err(Error::UnresolvedConstraint) {
+                  dep.type.is_a?(Type::Var) ? Ok[dep] : Err[it]
+                }
+            end
+
             def resolve_field_deps(field_types, lookup, origin)
               field_types
                 .map { lookup.call(Type.constraint(self::INTERFACE, it, origin)) }
