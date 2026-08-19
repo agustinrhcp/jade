@@ -65,12 +65,31 @@ module Jade
           .map { env.substitution.apply(it) }
       end
 
-      # Subset of fn_constraints that need a runtime dict param: those whose
-      # type is a bare Type::Var. Other constraints (e.g. Eq(Maybe(α)) where α
-      # is unbound but the outer constructor is concrete) are resolved at
-      # finalize via the impl table — no dict threaded for them.
+      # Subset of fn_constraints that need a runtime dict param: those no
+      # caller-independent implementation can satisfy. Other constraints
+      # (e.g. Eq(Maybe(α)) where α is unbound but the outer constructor is
+      # concrete) are resolved at finalize via the impl table — no dict
+      # threaded for them.
       def dict_constraints(fn_symbol, registry)
-        fn_constraints(fn_symbol, registry).select { |c| c.type.is_a?(Type::Var) }
+        fn_constraints(fn_symbol, registry).select { dict_slot?(it, registry) }
+      end
+
+      def dict_slot?(constraint, registry)
+        Frontend::TypeChecking::Constraints.caller_supplied?(constraint, registry)
+      end
+
+      # Dict env key. A bare var is keyed by its id; a constructed type by
+      # its shape, with vars reduced to ids so a name never enters the key.
+      def dict_key(constraint)
+        [constraint.interface, type_key(constraint.type)]
+      end
+
+      def type_key(type)
+        case type
+        in Type::Var(id:) then id
+        in Type::Application(constructor:, args:) then [constructor.name, args.map { type_key(it) }]
+        else type.to_s
+        end
       end
 
       # Ruby classes that back primitive Jade types. Mirrors stdlib's

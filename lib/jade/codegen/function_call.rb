@@ -81,7 +81,7 @@ module Jade
 
       # An Implementation's dep is one of two dictionary-slot shapes: a
       # concrete Implementation (recurse to a `{fn_name => ruby_code}` hash)
-      # or a Type::Constraint(Var) marker for a free-var dep that's late-bound
+      # or a Type::Constraint marker for a free-var dep that's late-bound
       # from the caller's dict env (emit the raw dict reference as a String —
       # build_impl_arg threads it into the impl_arg slot without re-wrapping).
       def dispatch_for_dep(dep, registry)
@@ -89,17 +89,17 @@ module Jade
         in Symbol::Implementation
           generate_impl_dispatch(dep, registry)
 
-        in Type::Constraint(interface:, type: Type::Var => var)
+        in Type::Constraint
           dispatch_value(dep, registry) ||
-            raise(MissingDictionary, "no dict in scope for #{interface} #{var}" \
+            raise(MissingDictionary, "no dict in scope for #{dep}" \
                                     " — this is a jade bug, please report it")
         end
       end
 
       def dispatch_value(entry, registry)
         case entry
-        in Type::Constraint(interface:, type: Type::Var(id:))
-          Codegen.dict_env[[interface, id]]
+        in Type::Constraint
+          Codegen.dict_env[dict_key(entry)]
 
         in Symbol::Implementation
           Pretty.hash(generate_impl_dispatch(entry, registry))
@@ -125,7 +125,7 @@ module Jade
 
           fn_constraints(fn, registry)
             .each_with_index
-            .filter_map { |c, i| dispatch_value(dictionaries[i], registry) if c.type.is_a?(Type::Var) }
+            .filter_map { |c, i| dispatch_value(dictionaries[i], registry) if dict_slot?(c, registry) }
             .then { (param_names + it).join(', ') }
             .then { "#{to_qualified(fn.module_name)}::Internal.#{fn_target_name(fn, registry)}(#{it})" }
             .then { Pretty.lambda(param_names.join(', '), it) }
@@ -241,7 +241,7 @@ module Jade
 
         fn_constraints(symbol, registry)
           .each_with_index
-          .filter_map { |c, i| dispatch_value(dictionaries[i], registry) if c.type.is_a?(Type::Var) }
+          .filter_map { |c, i| dispatch_value(dictionaries[i], registry) if dict_slot?(c, registry) }
           .join(', ')
       end
 
@@ -252,9 +252,9 @@ module Jade
         in Symbol::Implementation
           generate_impl_dispatch(entry, registry)
 
-        in Type::Constraint(interface:, type: Type::Var(id:))
-          Codegen.dict_env[[interface, id]] ||
-            fail("no dict in scope for #{interface}")
+        in Type::Constraint
+          Codegen.dict_env[dict_key(entry)] ||
+            fail("no dict in scope for #{entry.interface}")
         end
       end
 
@@ -263,9 +263,9 @@ module Jade
       # in the current dict_env (e.g. an anonymous lambda's body).
       def dispatch_lookup(entry, fn_name, registry, &fallback)
         case entry
-        in Type::Constraint(interface:, type: Type::Var(id:))
+        in Type::Constraint
           Codegen
-            .dict_env[[interface, id]]
+            .dict_env[dict_key(entry)]
             &.then { "#{it}[#{fn_name.inspect}]" } || fallback.call
 
         in Symbol::Implementation

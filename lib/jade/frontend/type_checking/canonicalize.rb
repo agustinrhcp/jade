@@ -75,6 +75,10 @@ module Jade
         # pattern-binding unified α with Int), resolve the impl now so codegen
         # can dispatch directly — previously this only handled var-stayed-var
         # and the substituted-to-concrete case crashed codegen's dict lookup.
+        #
+        # A constructed type no implementation can be chosen for yet
+        # (`Assignable(Writes(c, a))`) stays a marker: its dict comes from
+        # the enclosing function, keyed on the substituted shape.
         def canonicalize_dictionaries(node, sub, registry, entry_name)
           node.dictionaries.each_with_index do |entry, i|
             next unless entry.is_a?(Type::Constraint)
@@ -82,7 +86,7 @@ module Jade
             applied = sub.apply(entry.type)
             resolved = entry.with(type: applied)
 
-            if applied.is_a?(Type::Var)
+            if Constraints.caller_supplied?(resolved, registry)
               node.dictionaries[i] = resolved
             else
               Constraints

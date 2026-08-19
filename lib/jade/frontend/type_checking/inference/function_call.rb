@@ -65,42 +65,18 @@ module Jade
               # attachment, which would otherwise emit double dispatch code.
               next [st, base_rs.with(constraints: propagated)] if st.skip_constraints
 
-              # Attach a resolution per callee constraint, in callee order, so codegen
-              # can pass dicts positionally. Concrete constraints attach a resolved
-              # Implementation; var-typed ones attach themselves as a marker meaning
+              # Attach a resolution per callee constraint, in callee order, so
+              # codegen can pass dicts positionally. Constraints with no slot
+              # to attach to — deriving deps — are skipped; the rest resolve
+              # to an Implementation, or to themselves as a marker meaning
               # "use the enclosing function's local dict".
-              callee_errors = callee_subst
-                .flat_map do |c|
-                  case c
-                  in Type::Constraint(index: :unindex) then []
-
-                  in Type::Constraint(type: Type::Var)
-                    Constraints.attach_dictionary(c, c)
-                    []
-
-                  else
-                    Constraints.solve_at_call_site(c, registry, st.env.entry_name)
-                  end
-                end
+              callee_errors = solve_all(callee_subst, registry, st.env.entry_name)
 
               # Args' constraints dispatch at their own origins (inner call sites,
               # or a QualifiedAccess/VariableReference when a polymorphic fn is
-              # passed as a value). Var-typed ones attach themselves as a marker,
-              # mirroring the callee path, so reference-as-value codegen can
-              # resolve via the enclosing function's dict_env.
-              args_errors = args_subst
-                .flat_map do |c|
-                  case c
-                  in Type::Constraint(index: :unindex) then []
-
-                  in Type::Constraint(type: Type::Var)
-                    Constraints.attach_dictionary(c, c)
-                    []
-
-                  else
-                    Constraints.solve_at_call_site(c, registry, st.env.entry_name)
-                  end
-                end
+              # passed as a value), so reference-as-value codegen can resolve
+              # via the enclosing function's dict_env.
+              args_errors = solve_all(args_subst, registry, st.env.entry_name)
 
               st
                 .add_errors(callee_errors + args_errors)
@@ -109,6 +85,15 @@ module Jade
           end
 
           private
+
+          def solve_all(constraints, registry, entry_name)
+            constraints.flat_map do |c|
+              case c
+              in Type::Constraint(index: :unindex) then []
+              else Constraints.solve_at_call_site(c, registry, entry_name)
+              end
+            end
+          end
 
           # Only bare-var constraints earn a dict param, so a constraint that
           # still holds free vars (`Decodable(List(a))`) surfaces its deps as
@@ -121,6 +106,7 @@ module Jade
             Constraints
               .resolve(constraint, registry, entry_name)
               .map { var_markers(it) }
+              .on_err(Error::UnresolvedConstraint) { Ok[[constraint]] }
               .with_default([])
           end
 
