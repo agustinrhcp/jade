@@ -73,7 +73,7 @@ module Jade
 
               inner_types
                 .map { Type.constraint(INTERFACE, it, nil) }
-                .map { lookup.call(it) }
+                .map { resolve_dep(it, lookup) }
                 .then { Results.sequence(it) }
                 .map { implementation(constraint, params: [param], body:, deps: it) }
             end
@@ -111,7 +111,7 @@ module Jade
                 .then { [:hash, it] }
 
               field_deps
-                .map { lookup.call(it) }
+                .map { resolve_dep(it, lookup) }
                 .then { Results.sequence(it) }
                 .map { implementation(constraint, params: ['rec'], body:, deps: it) }
             end

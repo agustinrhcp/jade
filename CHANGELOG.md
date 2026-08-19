@@ -6,6 +6,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A constraint on a compound type holding a free var gets its dictionary.**
+  A polymorphic function whose body needed something like
+  `Decodable(List(a))`, `Decodable(Maybe(a))`, or `Decodable({ value: a })`
+  crashed codegen with `undefined method 'map' for nil` — no span, no message.
+  The derived instance depends on `Decodable(a)`, but only *bare* var
+  constraints earn a dict param, so the enclosing function took none and the
+  dep had nothing to bind to. Those deps are now surfaced as constraints of
+  their own, so the function takes the dict and callers pass their witness
+  down. Should a dep still find no dict in scope, codegen now fails naming the
+  constraint instead of handing `nil` on to the pretty-printer.
+- **The `Encodable` deriver keeps its free-var deps.** The mirror of the above,
+  and quieter: `Encodable(List(a))` with `a` free dropped the derivation
+  outright, and `Encode.encode(items)` compiled to Ruby referencing an
+  `impl_arg` that was never bound — a `NameError` at run time, no compile-time
+  complaint. The deriver now falls back to the constraint marker for a free
+  var, the way `Decodable` already did.
+
 ## [0.6.0]
 
 ### Fixed

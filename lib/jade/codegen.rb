@@ -1,3 +1,4 @@
+require 'jade/codegen/error'
 require 'jade/codegen/context'
 require 'jade/codegen/helpers'
 require 'jade/codegen/pretty'

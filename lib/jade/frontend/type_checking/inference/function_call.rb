@@ -57,7 +57,7 @@ module Jade
                 .map { st.env.substitution.apply(it) }
 
               propagated = (callee_subst + args_subst)
-                .select { it.type.is_a?(Type::Var) }
+                .flat_map { propagate(it, registry, st.env.entry_name) }
 
               # Pass 1 still needs propagation so constraints from inner calls
               # bubble up through outer constructor calls and reach the function
@@ -71,10 +71,13 @@ module Jade
               # "use the enclosing function's local dict".
               callee_errors = callee_subst
                 .flat_map do |c|
-                  case c.type
-                  in Type::Var
+                  case c
+                  in Type::Constraint(index: :unindex) then []
+
+                  in Type::Constraint(type: Type::Var)
                     Constraints.attach_dictionary(c, c)
                     []
+
                   else
                     Constraints.solve_at_call_site(c, registry, st.env.entry_name)
                   end
@@ -87,10 +90,13 @@ module Jade
               # resolve via the enclosing function's dict_env.
               args_errors = args_subst
                 .flat_map do |c|
-                  case c.type
-                  in Type::Var
+                  case c
+                  in Type::Constraint(index: :unindex) then []
+
+                  in Type::Constraint(type: Type::Var)
                     Constraints.attach_dictionary(c, c)
                     []
+
                   else
                     Constraints.solve_at_call_site(c, registry, st.env.entry_name)
                   end
@@ -103,6 +109,28 @@ module Jade
           end
 
           private
+
+          # Only bare-var constraints earn a dict param, so a constraint that
+          # still holds free vars (`Decodable(List(a))`) surfaces its deps as
+          # markers of their own — unindexed, since they occupy no slot in
+          # this call's dictionary list.
+          def propagate(constraint, registry, entry_name)
+            return [constraint] if constraint.type.is_a?(Type::Var)
+            return [] if constraint.unbound_vars.empty?
+
+            Constraints
+              .resolve(constraint, registry, entry_name)
+              .map { var_markers(it) }
+              .with_default([])
+          end
+
+          def var_markers(dep)
+            case dep
+            in Symbol::Implementation(deps:) then deps.flat_map { var_markers(it) }
+            in Type::Constraint(type: Type::Var) then [dep.with(origin: nil, index: :unindex)]
+            else []
+            end
+          end
 
           def unify_callee(state, callee_result, args_acc, node, outer)
             return_type = state.fresh
