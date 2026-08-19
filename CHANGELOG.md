@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0]
+
+### Added
+
+- **`^Ctor` — the constructor, curried.** `Decode.succeed(Spec(_, _, _, _))`
+  opens an applicative decode pipeline, and those underscores are coupled to
+  the struct's arity: add a field and every pipeline needs another one,
+  reported as a type mismatch at the pipeline rather than at the struct.
+  `^Spec` desugars to exactly the same curried lambda, with the arity read off
+  the resolved constructor. Works on variants as well as structs.
+
 ### Fixed
 
 - **A constraint on a compound type holding a free var gets its dictionary.**
@@ -24,6 +35,38 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `impl_arg` that was never bound — a `NameError` at run time, no compile-time
   complaint. The deriver now falls back to the constraint marker for a free
   var, the way `Decodable` already did.
+- **A witness reaches a callee declared later in the file.** A polymorphic
+  function calling a polymorphic function declared below it lost the interface
+  witness — the call type-checked, then died at run time missing a dictionary
+  argument. Moving the callee above the caller fixed it, which is what made
+  this look like it was about lambdas. The collecting pass walks declarations
+  in source order, so the callee's constraints weren't known yet; it now
+  repeats until the constraint sets stop growing.
+- **Anonymous records of the same shape compare equal across modules.** Each
+  module hoisted its own class per record shape, so `{ x: 1 }` built in one
+  module compared false against the same record built in another — both have
+  type `{ x: Int }`, and it type-checks fine, so nothing warned you. A record
+  decoded at a port boundary compared false against either. Shapes now resolve
+  through the interned `Jade::Runtime.record` registry, named under
+  `Jade::Records` so they don't inspect as belonging to whichever module
+  happened to assign one first.
+- **`struct Probe` in `module Probe` loads.** It type-checked clean and died at
+  Ruby load with `uninitialized constant Probe::Probe::Probe` — the emitter
+  wrote an unrooted `Probe::Probe[n]` from inside `module Probe`, while the
+  boundary decoder three lines below already wrote `::Probe::Probe`. Unions
+  escaped it because their generated constants are the variants. All three
+  unrooted sites are now rooted.
+- **`Eq` on a variant-less union is native equality.** A union with no variants
+  represents an opaque native (`Decode.Value`, `List`), and the derived `Eq`
+  was one case branch per variant plus a `_ then false` fallthrough — with no
+  variants, the fallthrough was the whole function and `x == x` answered false,
+  no warning, no type error.
+
+### Changed
+
+- Generated output moves for any code that names a constructor or builds an
+  anonymous record. A project that CI-checks committed artifacts will see a
+  diff.
 
 ## [0.6.0]
 
