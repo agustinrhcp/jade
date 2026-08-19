@@ -6,6 +6,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`Assignable` derives for `Writes(c, a)`.** The pair carries a value struct
+  and the columns of the table it is headed for, so each field is checked
+  against a real column at compile time and fails naming it: ``no column
+  `slog` ``, ``column `price` is Int, field is String``. Inert unless jade-sql
+  is loaded.
+
+### Fixed
+
+- **A constraint on a constructed type gets its dictionary.** `insert` inducing
+  `Assignable(Writes(c, a))` — a constraint only the caller can resolve, since
+  only the caller knows `c` and `a` — compiled and then died at run time with
+  `No implementation of Sql.Assignable for Sql::Writes`. Three places assumed a
+  constraint needing a caller's dictionary is keyed by a bare type var: it was
+  resolved in the module declaring the function rather than deferred, dropped
+  instead of carried into that function's scheme, and finally dispatched at run
+  time off the value's class — which cannot work, since the instance is chosen
+  by *both* type arguments and a `Writes` value carries no trace of the columns
+  it was built for. A constraint now earns a dict param whenever no
+  implementation can be chosen where the function is declared, and the dict env
+  is keyed on the constraint's type rather than a var id, so the witness is
+  passed statically the way a bare-var one already was.
+
 ## [0.8.0]
 
 ### Added

@@ -38,9 +38,31 @@ module Jade
               .then { return it }
           end
 
+          if constraint.type.unbound_vars.any?
+            Error::UnresolvedConstraint
+              .new(entry_name, constraint.origin&.range, constraint:)
+              .then { return Err[it] }
+          end
+
           constraint.origin.range
             .then { Error::MissingImplementation.new(entry_name, it, constraint:) }
             .then { Err[it] }
+        end
+
+        # Whether the caller has to hand the dictionary in: a bare var, or a
+        # constructed type still open enough that no implementation can be
+        # chosen where the function is declared — `Assignable(Writes(c, a))`,
+        # which only the call site can pin down. Codegen asks this to decide
+        # which constraints earn a dict param, so declaration and call site
+        # agree by construction.
+        def caller_supplied?(constraint, registry)
+          return true if constraint.type.is_a?(Type::Var)
+          return false if constraint.unbound_vars.empty?
+
+          resolve(constraint, registry, nil)
+            .map { false }
+            .on_err(Error::UnresolvedConstraint) { Ok[true] }
+            .with_default(false)
         end
 
         # An origin's dictionaries can be touched by multiple inference frames:
@@ -71,15 +93,27 @@ module Jade
             .with_default([])
         end
 
+        # A constraint nothing can be chosen for here — a bare var, or a
+        # constructed type whose args only the caller knows — attaches itself
+        # as a marker: the dictionary comes from the enclosing function.
         def solve_at_call_site(constraint, registry, entry_name)
           resolve(constraint, registry, entry_name)
             .map { |impl| attach_dictionary(constraint, impl); [] }
+            .on_err(Error::UnresolvedConstraint) { attach_marker(constraint); Ok[[]] }
             .on_err(Error::MissingImplementation) { Ok[[it]] }
             .on_err(Error::DerivationFailed) { Ok[[it]] }
             .with_default([])
         end
 
         private
+
+        # Deriving deps hold no dictionary slot, so there is nowhere to
+        # attach; they surface as constraints of their own instead.
+        def attach_marker(constraint)
+          return if constraint.index == :unindex
+
+          attach_dictionary(constraint, constraint)
+        end
 
         def lookup(constraint, registry)
           key =

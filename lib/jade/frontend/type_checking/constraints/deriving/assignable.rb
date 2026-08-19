@@ -13,6 +13,8 @@ module Jade
             INTERFACE = 'Sql.Assignable'
             ASSIGNMENT = 'Sql.Assignment'
             ASSIGNMENT_FIELDS = %w[col value_sql params].freeze
+            WRITES = 'Sql.Writes'
+            EXPR = 'Sql.Expr'
 
             def supports?(interface) = interface == INTERFACE
 
@@ -20,6 +22,9 @@ module Jade
               return failed(constraint, entry_name) unless assignment_matches?(registry)
 
               case constraint.type
+              in Type::Application(constructor: Type::Constructor(name: WRITES), args: [cols, value])
+                derive_writes(constraint, cols, value, registry, lookup, entry_name)
+
               in Type::Application(constructor: Type::Constructor(name:), args:)
                 Symbol
                   .type_ref_from_qualified_name(name)
@@ -75,6 +80,105 @@ module Jade
                 .map { lookup.call(it) }
                 .then { Results.sequence(it) }
                 .map { implementation(constraint, union_body(vs), it) }
+            end
+
+            # `Writes(c, a)` pairs a value with the columns of the table it is
+            # headed for, so each field can be checked against a real column
+            # instead of becoming one by having a name.
+            def derive_writes(constraint, cols, value, registry, lookup, entry_name)
+              # Which columns and which fields is not knowable until the caller
+              # says; deriving here would report "cannot derive" for a table
+              # nobody has named yet.
+              if (cols.unbound_vars + value.unbound_vars).any?
+                Error::UnresolvedConstraint
+                  .new(entry_name, constraint.origin&.range, constraint:)
+                  .then { return Err[it] }
+              end
+
+              columns = fields_of(cols, registry)
+              fields = fields_of(value, registry)
+
+              return failed(constraint, entry_name) if columns.nil? || fields.nil?
+
+              fields
+                .map { |name, type| check_column(columns, name, type) }
+                .compact
+                .first
+                .then { return failed(constraint, entry_name, reason: it) if it }
+
+              fields
+                .map { |_, type| Type.constraint('Encode.Encodable', type, nil) }
+                .map { lookup.call(it) }
+                .then { Results.sequence(it) }
+                .map { implementation(constraint, writes_body(fields), it) }
+            end
+
+            def check_column(columns, name, type)
+              column = column_name(name)
+
+              case columns[column]
+              in nil
+                "no column `#{column}`"
+
+              in ^type
+                nil
+
+              in found
+                "column `#{column}` is #{found}, field is #{type}"
+              end
+            end
+
+            # Columns are `Expr(t)`; the value's field carries the `t`.
+            def fields_of(type, registry)
+              case type
+              in Type::Application(constructor: Type::Constructor(name:), args:)
+                Symbol
+                  .type_ref_from_qualified_name(name)
+                  .then { registry.lookup(it) }
+                  .then do
+                    case it
+                    in Symbol::Struct => sym
+                      struct_fields(sym, args, registry)
+                        .to_h { |field, t| [column_name(field), unwrap_expr(t)] }
+
+                    else nil
+                    end
+                  end
+
+              else nil
+              end
+            end
+
+            def unwrap_expr(type)
+              case type
+              in Type::Application(constructor: Type::Constructor(name: EXPR), args: [inner])
+                inner
+
+              else type
+              end
+            end
+
+            def writes_body(fields)
+              fields
+                .each_with_index
+                .map { |(name, _), idx| writes_assignment(name, idx) }
+                .then { [:list, it] }
+            end
+
+            def writes_assignment(name, idx)
+              [:call,
+                [:struct_constructor, ASSIGNMENT, 3],
+                [
+                  column_name(name),
+                  '?',
+                  [:list,
+                    [[:call,
+                      [:impl_arg, idx, 'encoder'],
+                      [[:access, [:access, [:var, 'f'], 'value'], name.to_s]],
+                    ]],
+                  ],
+                ],
+              ]
             end
 
             def derive_struct(constraint, struct_sym, args, registry, lookup, entry_name)
@@ -141,10 +245,10 @@ module Jade
                 .then { [:list, [it]] }
             end
 
-            def failed(constraint, entry_name)
+            def failed(constraint, entry_name, reason: nil)
               Err[
                 Error::DerivationFailed.new(
-                  entry_name, constraint.origin&.range, constraint:, trace: [],
+                  entry_name, constraint.origin&.range, constraint:, trace: [], reason:,
                 )
               ]
             end

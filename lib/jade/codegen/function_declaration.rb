@@ -192,7 +192,7 @@ module Jade
         var_cs
           .each_with_index
           .reduce({}) do |env, (c, i)|
-            env.merge([c.interface, c.type.id] => dict_synthetic_name(i))
+            env.merge(dict_key(c) => dict_synthetic_name(i))
           end
       end
     end
