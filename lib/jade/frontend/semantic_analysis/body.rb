@@ -24,8 +24,36 @@ module Jade
             end
 
           analyze_in_sequence(expressions, registry, scope, entry)
-            .add_errors(duplicate_errors)
+            .add_errors(duplicate_errors + duplicate_implementation_errors(expressions, entry))
             .map_node { node.with(expressions: it) }
+        end
+
+        private
+
+        def duplicate_implementation_errors(expressions, entry)
+          expressions
+            .select { it.is_a?(AST::Implementation) }
+            .group_by { implementation_key(it, entry) }
+            .reject { |key, impls| key.nil? || impls.size < 2 }
+            .flat_map do |(interface, type), (first, *rest)|
+              rest.map do |dup|
+                Error::DuplicateImplementation.new(
+                  entry.name,
+                  dup.range,
+                  interface:,
+                  type:,
+                  first_span: first.range,
+                  parameterized: dup.applied_type.args.any?,
+                )
+              end
+            end
+        end
+
+        def implementation_key(node, entry)
+          interface = entry.lookup_type(node.interface)
+          type = lookup_applied_type(node.applied_type, entry)
+
+          [interface.qname, type.qname] if interface && type
         end
       end
     end

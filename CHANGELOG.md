@@ -32,6 +32,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   drives an explicit stack of continuations from one loop, so a chain is
   bounded by memory: 500,000 links run where 100,000 used to fail.
 
+- **Two implementations for the same head type is now an error.** An
+  implementation is registered under `[interface, head type]`, so a second
+  `implements Assignable(Box(Cols2, Val2))` overwrote
+  `implements Assignable(Box(Cols, Val))` and every call — including ones whose
+  types matched the first — dispatched to the second. It compiled clean and
+  died at run time in the implementation body, or worse, didn't. The second
+  declaration is now reported, with the first as a secondary label and a note
+  that type arguments do not select between implementations. Duplicates can
+  only arise within one module: the orphan rule and cycle detection between
+  them rule out the cross-module case.
+
 ## [0.8.0]
 
 ### Added

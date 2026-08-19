@@ -73,16 +73,6 @@ module Jade
 
         private
 
-        def lookup_applied_type(applied_type, entry)
-          case applied_type.constructor
-          in AST::TypeName(type:)
-            entry.lookup_type(type)
-          in AST::QualifiedTypeName(path:)
-            *module_parts, type_name = path
-            entry.lookup_qualified_type(module_parts.join('.'), type_name)
-          end
-        end
-
         def local_type_name(applied_type)
           case applied_type.constructor
           in AST::TypeName(type:) then type
