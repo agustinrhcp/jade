@@ -38,6 +38,12 @@ module Jade
               .then { return it }
           end
 
+          if constraint.type.unbound_vars.any?
+            Error::UnresolvedConstraint
+              .new(entry_name, constraint.origin&.range, constraint:)
+              .then { return Err[it] }
+          end
+
           constraint.origin.range
             .then { Error::MissingImplementation.new(entry_name, it, constraint:) }
             .then { Err[it] }
