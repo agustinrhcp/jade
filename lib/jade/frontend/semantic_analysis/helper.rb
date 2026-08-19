@@ -49,6 +49,16 @@ module Jade
           Result[results.map(&:node), results.flat_map(&:errors), scope]
         end
 
+        private def lookup_applied_type(applied_type, entry)
+          case applied_type.constructor
+          in AST::TypeName(type:)
+            entry.lookup_type(type)
+          in AST::QualifiedTypeName(path:)
+            *module_parts, type_name = path
+            entry.lookup_qualified_type(module_parts.join('.'), type_name)
+          end
+        end
+
         def analyze_duplicate_fields(fields, entry)
           fields
             .group_by(&:key)

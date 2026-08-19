@@ -21,6 +21,10 @@ module Jade
       []
     end
 
+    def secondary
+      []
+    end
+
     def queried_name
       nil
     end
@@ -39,6 +43,7 @@ module Jade
       Jade::Diagnostics::Diagnostic.error(
         message,
         primary: Jade::Diagnostics::Label[source, span, label],
+        secondary: secondary.map { |sp, text| Jade::Diagnostics::Label[source, sp, text] },
         annotations: notes + did_you_mean_notes,
       )
     end

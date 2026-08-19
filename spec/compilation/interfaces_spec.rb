@@ -120,6 +120,109 @@ module Jade
       end
     end
 
+    context 'two implementations for the same head type' do
+      let(:source) do
+        <<~JADE
+          module InterfaceTest exposing (Assignable, Box(..), Cols(..), Val(..), Val2(..), go, to_assigns)
+
+          struct Cols = { name: String }
+
+
+          struct Val = { name: String }
+
+
+          struct Val2 = { size: String }
+
+
+          struct Box(c, a) = { value: a }
+
+
+          interface Assignable(w) with
+            to_assigns : w -> List(String)
+          end
+
+
+          implements Assignable(Box(Cols, Val)) with
+            to_assigns: val_assigns
+          end
+
+
+          def val_assigns(w: Box(Cols, Val)) -> List(String)
+            [w.value.name]
+          end
+
+
+          implements Assignable(Box(Cols, Val2)) with
+            to_assigns: val2_assigns
+          end
+
+
+          def val2_assigns(w: Box(Cols, Val2)) -> List(String)
+            [w.value.size]
+          end
+
+
+          def go -> List(String)
+            to_assigns(Box(Val("Widget")))
+          end
+        JADE
+      end
+
+      it 'reports the duplicate instead of letting the second win' do
+        expect { test_compiler.require(source) }
+          .to raise_error(CompilationError, /Duplicate implementation of InterfaceTest.Assignable for InterfaceTest.Box/)
+      end
+    end
+
+    context 'one interface implemented for two different head types' do
+      let(:source) do
+        <<~JADE
+          module InterfaceTest exposing (Named, Other(..), Pepe(..), names)
+
+          struct Pepe = { name: String }
+
+
+          struct Other = { title: String }
+
+
+          interface Named(a) with
+            name_of : a -> String
+          end
+
+
+          implements Named(Pepe) with
+            name_of: pepe_name
+          end
+
+
+          def pepe_name(p: Pepe) -> String
+            p.name
+          end
+
+
+          implements Named(Other) with
+            name_of: other_name
+          end
+
+
+          def other_name(o: Other) -> String
+            o.title
+          end
+
+
+          def names -> List(String)
+            [name_of(Pepe("pepe")), name_of(Other("other"))]
+          end
+        JADE
+      end
+
+      it 'compiles' do
+        test_compiler.require(source)
+
+        expect(InterfaceTest.names).to eql ['pepe', 'other']
+      end
+    end
+
     context 'orphan implementation' do
       let(:source) do
         <<~JADE

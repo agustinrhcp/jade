@@ -1718,6 +1718,49 @@ module Jade
       its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::OrphanImplementation) }
     end
 
+    describe 'duplicate implementation' do
+      let(:text) do
+        <<~JADE
+          struct Box(c, a) = { value: a }
+          struct Cols = { name: String }
+          struct Val = { name: String }
+          struct Val2 = { size: String }
+          interface Assignable(w) with
+            to_assigns : w -> String
+          end
+          implements Assignable(Box(Cols, Val)) with
+            to_assigns: val_assigns
+          end
+          def val_assigns(w: Box(Cols, Val)) -> String
+            w.value.name
+          end
+          implements Assignable(Box(Cols, Val2)) with
+            to_assigns: val2_assigns
+          end
+          def val2_assigns(w: Box(Cols, Val2)) -> String
+            w.value.size
+          end
+        JADE
+      end
+
+      subject { frontend => Err(errors); errors }
+
+      it { is_expected.to have(1).item }
+      its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::DuplicateImplementation) }
+      its([0]) do
+        is_expected
+          .to have_attributes(message: 'Duplicate implementation of __Test__.Assignable for __Test__.Box')
+      end
+
+      it 'points at the second implementation, with the first as a secondary label' do
+        error = subject[0]
+        first_span, label = error.secondary.first
+
+        expect(error.span.first).to be > first_span.first
+        expect(label).to eql 'first implemented here'
+      end
+    end
+
     describe 'implementation with unknown function' do
       let(:text) do
         <<~JADE
