@@ -10,6 +10,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **A struct written to a table is checked against its columns.** jade-sql maps
+  a struct's fields onto columns by name, and the mapping derives, so nothing
+  compared the two — a field the table has no column for reached Postgres as
+  invalid SQL, and a field whose type disagreed with its column failed at
+  decode. Calls to `Sql.Mutation.insert`, `insert_all` and `update` now report
+  both at compile time, naming the field. Both types are concrete at the call
+  site, so this is a check rather than anything the type system has to carry.
+  A call through a generic helper of your own has neither type in hand and
+  stays unchecked. Inert without jade-sql, since nothing else declares those
+  functions.
+
+### Added
+
 - `Assignable` also derives for structs, naming one column per field in
   declaration order. A field renamed to dodge a keyword (`type_`) maps back to
   the column it came from. Generic structs derive at the type they are applied

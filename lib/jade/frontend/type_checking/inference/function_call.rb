@@ -102,8 +102,16 @@ module Jade
                   end
                 end
 
+              column_errors = Checks::SqlColumns.check(
+                callee_name(callee),
+                args_acc.types.map { st.env.substitution.apply(it) },
+                registry,
+                st.env.entry_name,
+                node.range,
+              )
+
               st
-                .add_errors(callee_errors + args_errors)
+                .add_errors(callee_errors + args_errors + column_errors)
                 .then { [it, base_rs.with(constraints: propagated)] }
             end
           end
@@ -114,6 +122,18 @@ module Jade
           # still holds free vars (`Decodable(List(a))`) surfaces its deps as
           # markers of their own — unindexed, since they occupy no slot in
           # this call's dictionary list.
+          # Only a directly named callee can be matched against jade-sql's
+          # entry points; a call through a local binding or a lambda leaves
+          # nothing to name, and the check stays quiet.
+          def callee_name(callee)
+            case callee
+            in AST::VariableReference(symbol: Symbol::Variable) then nil
+            in AST::VariableReference(symbol:) then symbol.qualified_name
+            in AST::QualifiedAccess(symbol:) then symbol.qualified_name
+            else nil
+            end
+          end
+
           def propagate(constraint, registry, entry_name)
             return [constraint] if constraint.type.is_a?(Type::Var)
             return [] if constraint.unbound_vars.empty?
