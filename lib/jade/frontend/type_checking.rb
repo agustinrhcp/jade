@@ -1,5 +1,6 @@
 require 'jade/frontend/type_checking/canonicalize'
 require 'jade/frontend/type_checking/constraints'
+require 'jade/frontend/type_checking/checks/sql_columns'
 require 'jade/frontend/type_checking/definition'
 require 'jade/frontend/type_checking/env'
 require 'jade/frontend/type_checking/error'
