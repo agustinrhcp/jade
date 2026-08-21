@@ -5,6 +5,7 @@ module Jade
     extend self
 
     ALLOWED = %w[jade-sql].freeze
+    PHASES = %i[call].freeze
 
     class NotAllowed < StandardError
       def initialize(gem_name)
@@ -15,45 +16,49 @@ module Jade
       end
     end
 
-    def register_deriver(gem_name, deriver)
-      allow!(gem_name)
-      derivers << deriver unless derivers.include?(deriver)
-    end
-
-    PHASES = %i[call].freeze
-
     class UnknownPhase < StandardError
       def initialize(phase)
         super("no such check phase #{phase.inspect}; known: #{PHASES.join(', ')}")
       end
     end
 
-    # `check(context) -> [error]`. The node travels with the types because a
-    # literal's value — a SQL string, a constant predicate — is not in them.
+    def register_deriver(gem_name, deriver)
+      allow!(gem_name)
+      @derivers = derivers | [deriver]
+    end
+
+    # A `:call` check answers `watches -> [qualified name]` and
+    # `check(context) -> [error]`. Watching by name keeps every other call in
+    # the program off the check's path entirely.
     def register_check(gem_name, phase, check)
       allow!(gem_name)
       fail UnknownPhase.new(phase) unless PHASES.include?(phase)
 
-      (checks[phase] ||= []) << check unless checks[phase]&.include?(check)
+      @call_checks = check
+        .watches
+        .reduce(call_checks) { |acc, name| acc.merge(name => acc.fetch(name, []) | [check]) }
     end
 
     def derivers = @derivers ||= []
 
-    def checks = @checks ||= {}
+    def call_checks = @call_checks ||= {}
 
+    # The node travels with the types because a literal's value — a SQL string,
+    # a constant predicate — is not in them.
     CallContext = Data.define(:name, :arg_types, :node, :registry, :entry_name, :span)
 
     def check_call(name, arg_types, node, registry, entry_name, span)
-      registered = checks[:call]
-      return [] if registered.nil? || registered.empty? || name.nil?
+      call_checks[name].then do |watching|
+        next [] if watching.nil?
 
-      CallContext[name, arg_types, node, registry, entry_name, span]
-        .then { |ctx| registered.flat_map { it.check(ctx) } }
+        CallContext[name, arg_types, node, registry, entry_name, span]
+          .then { |ctx| watching.flat_map { it.check(ctx) } }
+      end
     end
 
     def reset!
       @derivers = []
-      @checks = {}
+      @call_checks = {}
     end
 
     private

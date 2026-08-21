@@ -6,6 +6,10 @@ module Jade
   describe Extensions do
     after { described_class.reset! }
 
+    def call(name, arg_types = [])
+      described_class.check_call(name, arg_types, :the_node, nil, nil, nil)
+    end
+
     let(:deriver) do
       Module.new do
         def self.supports?(interface) = interface == 'Fake.Thing'
@@ -15,7 +19,9 @@ module Jade
 
     let(:check) do
       Module.new do
-        def self.check(ctx) = ctx.name == 'Fake.go' ? [ctx.node] : []
+        def self.watches = ['Fake.go']
+
+        def self.check(ctx) = [ctx.node]
       end
     end
 
@@ -39,14 +45,14 @@ module Jade
     it 'runs a registered check for every call' do
       described_class.register_check('jade-sql', :call, check)
 
-      expect(described_class.check_call('Fake.go', [], :the_node, nil, nil, nil)).to eql [:the_node]
-      expect(described_class.check_call('Other.go', [], :the_node, nil, nil, nil)).to eql []
+      expect(call('Fake.go')).to eql [:the_node]
+      expect(call('Other.go')).to eql []
     end
 
     it 'hands the check the call node, not only its types' do
       described_class.register_check('jade-sql', :call, check)
 
-      expect(described_class.check_call('Fake.go', [], :the_node, nil, nil, nil)).to eql [:the_node]
+      expect(call('Fake.go')).to eql [:the_node]
     end
 
     it 'refuses a phase it does not have' do
@@ -57,11 +63,11 @@ module Jade
     it 'says nothing when the callee cannot be named' do
       described_class.register_check('jade-sql', :call, check)
 
-      expect(described_class.check_call(nil, [], :the_node, nil, nil, nil)).to eql []
+      expect(call(nil)).to eql []
     end
 
     it 'costs nothing when no check is registered' do
-      expect(described_class.check_call('Fake.go', [], :the_node, nil, nil, nil)).to eql []
+      expect(call('Fake.go')).to eql []
     end
 
     it 'registers a deriver once, however many times it is asked' do
