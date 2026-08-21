@@ -23,6 +23,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   jade-sql's interface outright, with a comment apologising for it; it now
   holds only the built-ins and whatever an allowed gem registers.
 
+### Fixed
+
+- **A long chain of `Task.and_then` no longer exhausts the Ruby stack.** Each
+  `and_then` ran the next task from inside the previous one's `run`, so depth
+  cost a stack frame and anything built by recursion, a batch loop or a retry,
+  died with `SystemStackError` somewhere past ten thousand links. `run` now
+  drives an explicit stack of continuations from one loop, so a chain is
+  bounded by memory: 500,000 links run where 100,000 used to fail.
+
 ## [0.8.0]
 
 ### Added
@@ -112,7 +121,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Generated output moves for any code that names a constructor or builds an
   anonymous record. A project that CI-checks committed artifacts will see a
   diff.
-
 
 ## [0.6.0]
 
