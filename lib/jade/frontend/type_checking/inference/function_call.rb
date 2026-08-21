@@ -102,9 +102,10 @@ module Jade
                   end
                 end
 
-              column_errors = Checks::SqlColumns.check(
+              column_errors = Extensions.check_call(
                 callee_name(callee),
                 args_acc.types.map { st.env.substitution.apply(it) },
+                node,
                 registry,
                 st.env.entry_name,
                 node.range,
@@ -122,9 +123,8 @@ module Jade
           # still holds free vars (`Decodable(List(a))`) surfaces its deps as
           # markers of their own — unindexed, since they occupy no slot in
           # this call's dictionary list.
-          # Only a directly named callee can be matched against jade-sql's
-          # entry points; a call through a local binding or a lambda leaves
-          # nothing to name, and the check stays quiet.
+          # A call through a local binding or a lambda has no name to give a
+          # check, which asks by qualified name.
           def callee_name(callee)
             case callee
             in AST::VariableReference(symbol: Symbol::Variable) then nil
