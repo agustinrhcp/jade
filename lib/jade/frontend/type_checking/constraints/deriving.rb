@@ -2,7 +2,6 @@ require_relative './deriving/helpers.rb'
 require_relative './deriving/eq.rb'
 require_relative './deriving/decodable.rb'
 require_relative './deriving/encodable.rb'
-require_relative './deriving/assignable.rb'
 require_relative './deriving/show.rb'
 
 module Jade
@@ -12,14 +11,16 @@ module Jade
         module Deriving
           extend self
 
-          DERIVERS = [Eq, Show, Decodable, Encodable, Assignable]
+          BUILTIN = [Eq, Show, Decodable, Encodable].freeze
+
+          def derivers = BUILTIN + Extensions.derivers
 
           def derivable?(interface)
-            DERIVERS.any? { it.supports?(interface) }
+            derivers.any? { it.supports?(interface) }
           end
 
           def derive(constraint, registry, entry_name, &lookup)
-            DERIVERS
+            derivers
               .find { it.supports?(constraint.interface) }
               .then { it.derive(constraint, registry, entry_name, &lookup) }
           end

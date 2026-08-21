@@ -1,4 +1,5 @@
 require 'jade/version'
+require 'jade/extensions'
 require 'jade/project'
 require 'jade/did_you_mean'
 require 'jade/symbol'

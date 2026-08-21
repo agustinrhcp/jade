@@ -6,6 +6,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`Jade::Extensions`, where a gem hooks into compilation.** Two kinds, both
+  read-only: a *deriver* builds an implementation for an interface it owns,
+  and a *check* reads a call site and returns errors. Checks register against
+  a named phase — `:call` today — and receive the call's AST node alongside
+  its resolved argument types, because types alone cannot see a raw SQL
+  string's placeholders or a constant predicate. Only gems named in
+  `Extensions::ALLOWED` may register, so the compiler knows who extends it and
+  nothing about what they do.
+
+### Changed
+
+- **The `Sql.Assignable` deriver moves to jade-sql.** The deriver list named
+  jade-sql's interface outright, with a comment apologising for it; it now
+  holds only the built-ins and whatever an allowed gem registers.
+
 ## [0.8.0]
 
 ### Added
