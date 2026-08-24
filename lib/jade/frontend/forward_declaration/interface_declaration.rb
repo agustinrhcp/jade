@@ -28,6 +28,19 @@ module Jade
           node => AST::InterfaceDeclaration(name:, functions:)
 
           symbol = entry.lookup_type(name)
+
+          unless symbol.is_a?(Symbol::Interface)
+            return Result[entry, [
+              Error::DuplicateTypeName.new(
+                entry.name,
+                node.range,
+                name,
+                declaring: 'an interface',
+                existing: Error::DuplicateTypeName.kind_of(symbol),
+              ),
+            ]]
+          end
+
           interface_ref = symbol.to_ref
 
           functions

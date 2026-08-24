@@ -22,6 +22,18 @@ module Jade
 
           symbol = entry.lookup_type(name)
 
+          unless symbol.is_a?(Symbol::Union)
+            return Result[entry, [
+              Error::DuplicateTypeName.new(
+                entry.name,
+                node.range,
+                name,
+                declaring: 'a type',
+                existing: Error::DuplicateTypeName.kind_of(symbol),
+              ),
+            ]]
+          end
+
           variants
             .map do |var|
               var.args.map { figure_out_type(entry, it) }
