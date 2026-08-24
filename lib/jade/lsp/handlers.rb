@@ -39,9 +39,15 @@ module Jade
 
       def on_initialize(state, message)
         params = (message['params'] || {})
+        # The editor's root is the project root; modules are addressed
+        # relative to the source root, and reading the manifest is also what
+        # loads the extension gems whose modules a project imports. Without
+        # it the LSP names every module after its path from the project root
+        # and disagrees with the compiler about what a module is called.
         root = params
           .then { it['rootUri'] || it.dig('workspaceFolders', 0, 'uri') }
           .then { it ? it.sub(%r{\Afile://}, '') : Dir.pwd }
+          .then { Project.find(it)&.source_root || it }
 
         {
           capabilities: {
@@ -116,7 +122,18 @@ module Jade
       end
 
       def on_completion(state, message)
-        [state, [respond(message['id'], Converters.completion_items)]]
+        message
+          .dig('params', 'textDocument', 'uri')
+          .then { module_name_for(it, state.source_root) }
+          .then { [state, [respond(message['id'], Converters.completion_items(it))]] }
+      end
+
+      def module_name_for(uri, source_root)
+        return nil unless uri && source_root
+
+        Converters
+          .relative_path(uri, source_root)
+          .then { Source.module_name_for(it) }
       end
 
       def on_prepare_rename(state, message)
@@ -297,7 +314,22 @@ module Jade
       rescue StandardError => e
         $stderr.puts "[jade-lsp] compile crash: #{e.class}: #{e.message}"
         $stderr.puts e.backtrace.first(20).join("\n")
-        [nil, {}]
+        [nil, crash_diagnostic(source_root, entry_path, overlays, e)]
+      end
+
+      # Publishing nothing would render a crashed compile as a clean file,
+      # which is how an LSP bug comes to look like working code.
+      def crash_diagnostic(source_root, entry_path, overlays, error)
+        Jade::Source
+          .new(uri: entry_path, text: overlays[entry_path] || '')
+          .then { Jade::Diagnostics::Label[it, 0...0, nil] }
+          .then do
+            Jade::Diagnostics::Diagnostic.error(
+              "jade-lsp crashed compiling this file: #{error.class}: #{error.message}",
+              primary: it,
+            )
+          end
+          .then { { Converters.lsp_uri(entry_path, source_root) => [it] } }
       end
 
       def collect_diagnostics(registry, source_root)

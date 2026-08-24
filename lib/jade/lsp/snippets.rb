@@ -105,6 +105,19 @@ module Jade
 
       module_function
 
+      # `module` is the one snippet an editor can fill in for you: the
+      # compiler requires the name to match the file's path, so the
+      # placeholder offers a decision with exactly one right answer.
+      def for_module(module_name)
+        return ALL unless module_name
+
+        ALL.map do
+          next it unless it.label == 'module'
+
+          it.with(body: "module #{module_name} exposing (${0})")
+        end
+      end
+
       # Every form, as plain Jade — what `jade q syntax` serves.
       def catalog
         ALL.map { { form: it.label, detail: it.detail, source: it.source } }

@@ -228,6 +228,14 @@ module Jade
           @fn = block
         end
 
+        # No token consumed: the error sits on the token the parser started
+        # from, or on the end of input it started at.
+        def stalled?(error, state)
+          return state.eof? if error.span.nil?
+
+          error.span.begin == state.current&.range&.begin
+        end
+
         def call(tokens)
           @fn.call(tokens)
         end
@@ -280,6 +288,19 @@ module Jade
 
         def commit
           map_error(&:commit)
+        end
+
+        # Names what this alternation was looking for. A failure on the very
+        # first token means nothing here could start one, and the last
+        # alternative's expectation (`lbrace`, from a record literal) is an
+        # accident of ordering — say what was actually wanted instead. A
+        # failure further in got somewhere, and that error is the useful one.
+        def describe(what)
+          P.new do |state|
+            call(state).map_error do |(err, err_state)|
+              [!err.committed? && stalled?(err, state) ? err.expecting(what) : err, err_state]
+            end
+          end
         end
 
         def context(name)

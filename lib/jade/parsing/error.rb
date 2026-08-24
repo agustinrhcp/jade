@@ -21,6 +21,17 @@ module Jade
         self
       end
 
+      def expecting(what)
+        self.class.new(
+          entry:     @entry,
+          span:      @span,
+          actual:    @actual,
+          expected:  what,
+          committed: @committed,
+          context:   @context,
+        )
+      end
+
       def with_context(name)
         self.class.new(
           entry:     @entry,
@@ -149,6 +160,20 @@ module Jade
 
       def label
         "missing `then`"
+      end
+    end
+
+    # A block that closes without producing anything: `def f -> Int end`,
+    # or an `if` arm with nothing in it. Jade is expression-based, so the
+    # fault is the missing body, not the terminator the parser stopped on.
+    class MissingBodyError < Error
+      def message
+        "#{context_prefix}This body is empty — it has to produce a value " \
+          "(got #{@actual.value.inspect} with nothing before it)"
+      end
+
+      def label
+        'missing body'
       end
     end
 

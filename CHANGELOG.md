@@ -6,6 +6,41 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Parse errors no longer name `lbrace` where a `{` could never go.** An
+  alternation reported whichever branch it tried last, and a record literal is
+  last in several chains — so `module Pepe exposing`, `def f -> Int end`, and
+  `(x, y) = p` all came back as "expected lbrace". A failure on the token the
+  alternation started from now says what the position wanted — an expression, a
+  type, a declaration — while a failure further in, which got somewhere, is
+  still the one reported. `exposing` also commits on its keyword, so a header
+  stopped after it asks for `(` rather than blaming the body.
+- **An empty body says so.** `def f -> Int end` reported "unexpected `end`",
+  underlining the one token that was certainly right. It now names the missing
+  body and underlines the gap where it belongs — the state every function
+  passes through while it is being typed.
+- **`Name(field: _)` on a variant explains which variant you have.** The
+  message stated the rule; it now says whether the arguments have no names at
+  all (with the `|>` form that needs no placeholder) or carry a record (with
+  the lambda). A positional variant no longer also reports every key as an
+  unknown field.
+- **The LSP reads `jade.json`.** `on_initialize` took the editor's root as the
+  source root, so in a project with `"source_roots": ["lib"]` every module was
+  named from the project root — the editor demanded `Lib.Test` while the
+  compiler compiled `Test`. Reading the manifest also loads the extension gems
+  whose modules a project imports.
+- **A crashed compile publishes a diagnostic instead of silence.** Zero
+  diagnostics is indistinguishable from a clean file, so an LSP bug looked
+  exactly like working code.
+
+### Added
+
+- **The `module` snippet fills in the name.** A module's name is fixed by its
+  path, so the placeholder was offering a decision with one right answer;
+  completion now derives it from the document URI — `sql/mutation.jd` →
+  `module Sql.Mutation exposing (…)`.
+
 ### Added
 
 - **`Jade::Extensions`, where a gem hooks into compilation.** Two kinds, both

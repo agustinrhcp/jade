@@ -44,8 +44,11 @@ module Jade
         # still bare AST and `Placeholder.lift` can turn the call into a
         # lambda — the same route a positional partial application takes.
         def partially_applied(node, callee, fields, parent, constructor, registry, scope, entry, callee_r)
-          errors = Validation.errors(node, fields, parent, constructor, registry, entry) +
-            placeholder_errors(fields, parent, entry)
+          # A positional variant has no field names at all, so every key is
+          # also an unknown field — three errors for one mistake. The
+          # placeholder error is the one that explains it.
+          errors = placeholder_errors(fields, parent, constructor, entry)
+            .then { it.any? ? it : Validation.errors(node, fields, parent, constructor, registry, entry) }
 
           return Result[node, callee_r.errors + errors, scope] if errors.any?
 
@@ -81,12 +84,26 @@ module Jade
             end
         end
 
-        def placeholder_errors(fields, parent, entry)
-          return [] if parent.is_a?(Symbol::Struct)
+        # No constructor means the callee isn't one — a keyed call on a plain
+        # function, which Validation reports on its own terms.
+        def placeholder_errors(fields, parent, constructor, entry)
+          return [] if constructor.nil? || parent.is_a?(Symbol::Struct)
 
           fields
             .select { it.value.is_a?(AST::Placeholder) }
-            .map { Error::PlaceholderNotAllowed.new(entry.name, it.range, field: it.key) }
+            .map do
+              Error::PlaceholderNotAllowed.new(
+                entry.name,
+                it.range,
+                field: it.key,
+                name: constructor.name,
+                keyed: keyed_variant?(constructor),
+              )
+            end
+        end
+
+        def keyed_variant?(constructor)
+          constructor in Symbol::Constructor(args: [Symbol::RecordType])
         end
 
         def lower(node, callee, fields, parent, constructor, registry)

@@ -92,7 +92,7 @@ module Jade
     parser(:program) { module_ | program_body }
 
     parser(:program_body) {
-      (declaration | statement).then { |item|
+      (declaration | statement).describe('a declaration or an expression').then { |item|
         P.new do |state|
           (
             state.tolerant ?
@@ -105,7 +105,7 @@ module Jade
       }
     }
 
-    parser(:statement) { bind | assign | expression }
+    parser(:statement) { (bind | assign | expression).describe('an expression') }
 
     parser(:declaration) {
       function_declaration | type_declaration | import_declaration | interop_import_declaration |
@@ -233,6 +233,20 @@ module Jade
       state.current&.type == :then ? body.call(state.advance) : body.call(state)
     end
 
+    def empty_body?(state)
+      !state.eof? && BODY_TERMINATORS.include?(state.current.type)
+    end
+
+    # The gap the body should have filled, so the squiggle lands on what is
+    # missing rather than on the terminator, which is the one token here
+    # that is certainly right.
+    def empty_body_span(state)
+      state
+        .tokens[state.position - 1]
+        &.range
+        &.then { it.end...state.current.range.begin } || state.current.range
+    end
+
     def checked_branch_body(in_tok)
       P.new do |state|
         next body.call(state.advance) if state.current&.type == :then
@@ -308,7 +322,27 @@ module Jade
       ).map(&AST.record_field_pattern)
     }
 
-    parser(:body) { sequence(lazy { statement }).map(&AST.body) }
+    # Tokens that close a block. One of them here, with nothing before it,
+    # is an empty body — a parse error worth naming, since every function
+    # passes through this state while it is being typed.
+    BODY_TERMINATORS = %i[end else rbrace in].freeze
+
+    parser(:body) {
+      P.new do |state|
+        next sequence(lazy { statement }).map(&AST.body).call(state) unless empty_body?(state)
+
+        Err[[
+          MissingBodyError.new(
+            entry:     state.entry,
+            span:      empty_body_span(state),
+            actual:    state.current,
+            expected:  'an expression',
+            committed: true,
+          ),
+          state,
+        ]]
+      end
+    }
 
     parser(:operator) {
       type(:plus) | type(:minus) | type(:star) | type(:slash) |
@@ -399,9 +433,11 @@ module Jade
 
     parser(:exposing) {
       (type(:exposing).skip >>
-          type(:lparen).skip >>
-          (expose_list | expose_all) >>
-          type(:rparen).skip
+          (
+            type(:lparen).skip >>
+            (expose_list | expose_all).describe('a name to expose, or `..`') >>
+            type(:rparen).skip
+          ).commit
       ) | expose_none
     }
 
@@ -437,7 +473,7 @@ module Jade
             ) >>
             type(:arrow).skip >>
             type_expression >>
-            sequence(statement).map(&AST.body) >>
+            body >>
             type(:end)
           ).commit
       ).map(&AST.function_declaration)

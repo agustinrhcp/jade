@@ -1365,6 +1365,73 @@ module Jade
       end
     end
 
+    context 'an incomplete module header' do
+      let(:text) { "module Pepe exposing\n" }
+
+      include_examples 'a committed parse error'
+
+      it { result => Err(err); expect(err.message).to eq('Unexpected end of input, expected lparen') }
+    end
+
+    context 'a module with no body' do
+      let(:text) { "module Pepe exposing (something)\n" }
+
+      include_examples 'a committed parse error'
+
+      it do
+        result => Err(err)
+        expect(err.message)
+          .to eq('Unexpected end of input, expected a declaration or an expression')
+      end
+    end
+
+    context 'an empty function body' do
+      let(:text) do
+        <<~JADE
+          def f -> Int
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it { result => Err(err); expect(err).to be_a(Parsing::MissingBodyError) }
+
+      it 'names the missing body rather than the token it stopped on' do
+        result => Err(err)
+
+        expect(err.message)
+          .to eq('While parsing function declaration: This body is empty — ' \
+                 'it has to produce a value (got "end" with nothing before it)')
+      end
+
+      it 'spans the gap the body should have filled, not the `end`' do
+        result => Err(err)
+
+        expect(text[err.span]).to eq("\n")
+      end
+    end
+
+    context 'a statement that cannot start' do
+      let(:text) do
+        <<~JADE
+          def f -> Int
+            (x, y) = p
+            x
+          end
+        JADE
+      end
+
+      include_examples 'a committed parse error'
+
+      it 'names what was wanted, not the last alternative tried' do
+        result => Err(err)
+
+        expect(err.message)
+          .to eq('While parsing function declaration: Unexpected token "=", expected an expression')
+      end
+    end
+
     context 'function declaration without -> and return type' do
       let(:text) do
         <<~JADE
@@ -1388,7 +1455,7 @@ module Jade
 
       include_examples 'a committed parse error'
 
-      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected lbrace') }
+      it { result => Err(err); expect(err.message).to eq('While parsing function declaration: Unexpected token "end", expected a type') }
     end
 
     context 'incomplete type declaration' do
