@@ -20,6 +20,18 @@ module Jade
 
           symbol = entry.lookup_type(name)
 
+          unless symbol.is_a?(Symbol::Struct)
+            return Result[entry, [
+              Error::DuplicateTypeName.new(
+                entry.name,
+                node.range,
+                name,
+                declaring: 'a struct',
+                existing: Error::DuplicateTypeName.kind_of(symbol),
+              ),
+            ]]
+          end
+
           figure_out_type(entry, record_type)
             .map do |record_type_symbol|
               constructor_fn_symbol = Symbol.constructor(

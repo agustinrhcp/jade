@@ -67,5 +67,55 @@ module Jade
         expect(::Signal.flip(::Signal.on)).to eql 'off'
       end
     end
+
+    context 'when two declarations share a name' do
+      def expect_collision(source, message)
+        expect { test_compiler.require(source) }
+          .to raise_error(CompilationError, message)
+      end
+
+      it 'reports a struct and a type' do
+        expect_collision(<<~JADE, /already declared as a type/)
+          module ClashA exposing (Shape(..))
+
+          struct Shape = { n: Int }
+
+
+          type Shape
+            = Round
+            | Square
+        JADE
+      end
+
+      it 'reports an interface after a type' do
+        expect_collision(<<~JADE, /already declared as an interface/)
+          module ClashB exposing (Shape(..), area)
+
+          type Shape
+            = Round
+            | Square
+
+
+          interface Shape(a) with
+            area : a -> Int
+          end
+        JADE
+      end
+
+      it 'reports a type after an interface' do
+        expect_collision(<<~JADE, /already declared as a type/)
+          module ClashC exposing (Shape(..), area)
+
+          interface Shape(a) with
+            area : a -> Int
+          end
+
+
+          type Shape
+            = Round
+            | Square
+        JADE
+      end
+    end
   end
 end
