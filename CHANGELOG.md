@@ -6,6 +6,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Parse errors no longer name `lbrace` where a `{` could never go.** An
+  alternation reported whichever branch it tried last, and a record literal is
+  last in several chains, so `module Pepe exposing`, `def f -> Int end`, and
+  `(x, y) = p` all came back as "expected lbrace". A failure on the token the
+  alternation started from now says what the position wanted (an expression, a
+  type, a declaration), while a failure further in, which got somewhere, is
+  still the one reported. `exposing` also commits on its keyword, so a header
+  stopped after it asks for `(` rather than blaming the body.
+- **An empty body says so.** `def f -> Int end` reported `expected lbrace` and
+  underlined the `end`, the one token there that was certainly right. It now
+  reads `expected an expression (a body has to produce a value)` and underlines
+  the construct the body belongs to. Every function passes through that state
+  while it is being typed.
+- **`Name(field: _)` on a variant explains which variant you have.** The
+  message stated the rule; it now says whether the arguments have no names at
+  all (offering the `|>` form, which needs no placeholder) or carry a record
+  (offering the lambda). A positional variant no longer also reports every key as an
+  unknown field.
+
 ### Added
 
 - **`Jade::Extensions`, where a gem hooks into compilation.** Two kinds, both

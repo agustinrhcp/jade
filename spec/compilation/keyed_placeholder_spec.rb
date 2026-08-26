@@ -81,5 +81,37 @@ module Jade
     its([0]) do
       is_expected.to be_a(Frontend::SemanticAnalysis::Error::PlaceholderNotAllowed)
     end
+
+    it 'says the record literal is what has no hole, and offers the lambda' do
+      expect(subject[0].message)
+        .to eq('`Rect` carries a record, and a record literal has no ' \
+               'placeholder, so `w: _` cannot be a hole')
+      expect(subject[0].notes.map(&:message))
+        .to eql ['write the lambda instead: `(v) -> { Rect(w: v, ...) }`']
+    end
+
+    context 'a variant whose arguments are positional' do
+      let(:text) do
+        <<~JADE
+          type Shape = Circle(Int) | Rect(Int, Int)
+          def make -> Shape
+            Rect(w: _, h: 2)
+          end
+        JADE
+      end
+
+      # `w:` and `h:` are also unknown fields on a positional variant, so
+      # the generic path reports three errors for the one mistake.
+      it { is_expected.to have(1).item }
+
+      it 'names the situation and the two ways out' do
+        expect(subject[0].message)
+          .to eq('`Rect` is a union variant; its arguments are positional ' \
+                 'and have no names, so `w:` has nothing to refer to')
+        expect(subject[0].notes.map(&:message))
+          .to eql ['write `Rect(_, x)` positionally, or pipe into the ' \
+                   'first argument with `|> Rect(x)`']
+      end
+    end
   end
 end

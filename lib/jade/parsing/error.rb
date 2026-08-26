@@ -21,14 +21,15 @@ module Jade
         self
       end
 
-      def with_context(name)
+      def copy(**changes)
         self.class.new(
-          entry:     @entry,
-          span:      @span,
-          actual:    @actual,
-          expected:  @expected,
+          entry: @entry,
+          span: @span,
+          actual: @actual,
+          expected: @expected,
           committed: @committed,
-          context:   [name, *@context],
+          context: @context,
+          **changes,
         )
       end
 
@@ -149,6 +150,16 @@ module Jade
 
       def label
         "missing `then`"
+      end
+    end
+
+    class MissingBodyError < UnexpectedTokenError
+      def hint
+        '(a body has to produce a value)'
+      end
+
+      def label
+        'missing body'
       end
     end
 
