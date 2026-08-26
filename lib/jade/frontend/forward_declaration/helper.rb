@@ -10,6 +10,24 @@ module Jade
           ForwardDeclaration.deep_declare_node(ast, entry, registry)
         end
 
+        # Only the shallow pass still has the declaration being replaced;
+        # by the deep pass the entry holds the winner alone. The deep pass
+        # keeps its kind check to bail out, not to report.
+        def duplicate_type_error(entry, name, span, declaring:)
+          entry.defined_types[name].then do |existing|
+            next nil if existing.nil? || existing.decl_span == span
+
+            Error::DuplicateTypeName.new(
+              entry.name,
+              span,
+              name,
+              declaring:,
+              existing: Error::DuplicateTypeName.kind_of(existing),
+              first_span: existing.decl_span,
+            )
+          end
+        end
+
         def figure_out_type(entry, node)
           case node
           in AST::TypeVar(type:)

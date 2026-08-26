@@ -46,6 +46,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   of one variable look unrelated unless you notice the digits match. Within a
   message they render as `a`, `b`, `c`, the letters the signature syntax
   already uses. The ids stay internal.
+- **A module named after its principal type loads.** `module Plan` holding
+  `type Plan` emitted `Plan::Building` and `Plan::Internal`, which Ruby resolves
+  lexically: inside `module Plan` the constant `Plan` is the *type*, so those
+  became `Plan::Plan::Building` and died at load with `uninitialized constant`,
+  after compiling clean. Every reference to generated code is now rooted;
+  constructor calls already were, patterns and `Internal` calls were not.
+  Naming a module after its type (`Plan`, `Member`, `Money`) is ordinary, so
+  this would have kept happening.
+- **The same type declared twice is an error.** Two `type AgeTiers` blocks in
+  one module compiled, emitted both, and left the *Ruby interpreter* to mention
+  it with `warning: already initialized constant`, naming the generated file
+  rather than the `.jd`. The clash check only fired between kinds (a `struct` against a
+  `type`); it now fires within a kind too, and moved to the pass that can still
+  see both declarations, so the error lands on the second and points at the
+  first.
 
 ### Added
 

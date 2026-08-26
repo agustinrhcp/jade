@@ -16,6 +16,17 @@ module Jade
         Stdlib.stdlib_name?(module_name) ? "Jade::#{base}" : base
       end
 
+      # Inside `module Plan` holding `type Plan`, a bare `Plan::Internal`
+      # resolves to `Plan::Plan::Internal`. Only `module X` itself, which
+      # cannot be rooted, is written unqualified.
+      def rooted(module_name)
+        "::#{to_qualified(module_name)}"
+      end
+
+      def internal(module_name)
+        "#{rooted(module_name)}::Internal"
+      end
+
       def data_define(fields)
         return "Data.define" if fields.empty?
 

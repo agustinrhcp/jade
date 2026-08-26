@@ -8,6 +8,9 @@ module Jade
         def shallow(node, registry, entry)
           node => AST::TypeDeclaration(name:, type_params:, variants:)
 
+          duplicate_type_error(entry, name, node.range, declaring: 'a type')
+            .then { return Result[entry, [it]] if it }
+
           predeclared_variants = variants
             .map { |var| Symbol.predeclared_constructor(var.name, var.range) }
 
@@ -22,17 +25,7 @@ module Jade
 
           symbol = entry.lookup_type(name)
 
-          unless symbol.is_a?(Symbol::Union)
-            return Result[entry, [
-              Error::DuplicateTypeName.new(
-                entry.name,
-                node.range,
-                name,
-                declaring: 'a type',
-                existing: Error::DuplicateTypeName.kind_of(symbol),
-              ),
-            ]]
-          end
+          return Result[entry, []] unless symbol.is_a?(Symbol::Union)
 
           variants
             .map do |var|
