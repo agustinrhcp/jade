@@ -92,7 +92,7 @@ module Jade
     parser(:program) { module_ | program_body }
 
     parser(:program_body) {
-      (declaration | statement).then { |item|
+      (declaration | statement).expecting('a declaration or an expression').then { |item|
         P.new do |state|
           (
             state.tolerant ?
@@ -105,7 +105,7 @@ module Jade
       }
     }
 
-    parser(:statement) { bind | assign | expression }
+    parser(:statement) { (bind | assign | expression).expecting('an expression') }
 
     parser(:declaration) {
       function_declaration | type_declaration | import_declaration | interop_import_declaration |
@@ -129,7 +129,7 @@ module Jade
           type(:colon).skip >>
           lazy { expression }
         ).commit
-        .context("ternary")
+        .parsing("ternary")
     }
 
     parser(:tuple) {
@@ -182,7 +182,8 @@ module Jade
             type(:end)
           ).commit
       ).map(&AST.if_then_else)
-       .context("if/then/else")
+       .parsing("if/then/else")
+       .spanning_empty_body
     }
 
     parser(:case_of) {
@@ -195,7 +196,8 @@ module Jade
             type(:end)
           ).commit
       ).map(&AST.case_of)
-       .context("case")
+       .parsing("case")
+       .spanning_empty_body
     }
 
     # `then` is optional before a branch body. The formatter emits it for
@@ -231,6 +233,21 @@ module Jade
 
     def body_after_optional_then(state)
       state.current&.type == :then ? body.call(state.advance) : body.call(state)
+    end
+
+    def empty_body?(state)
+      state.position.positive? &&
+        !state.eof? &&
+        BODY_TERMINATORS.include?(state.current.type)
+    end
+
+    # Widened to the whole construct by `spanning_empty_body`.
+    def empty_body_start(state)
+      state
+        .tokens[state.position - 1]
+        .range
+        .end
+        .then { it...(it + 1) }
     end
 
     def checked_branch_body(in_tok)
@@ -308,7 +325,25 @@ module Jade
       ).map(&AST.record_field_pattern)
     }
 
-    parser(:body) { sequence(lazy { statement }).map(&AST.body) }
+    # One of these with nothing before it is an empty body.
+    BODY_TERMINATORS = %i[end else rbrace in].freeze
+
+    parser(:body) {
+      P.new do |state|
+        next sequence(lazy { statement }).map(&AST.body).call(state) unless empty_body?(state)
+
+        Err[[
+          MissingBodyError.new(
+            entry: state.entry,
+            span: empty_body_start(state),
+            actual: state.current,
+            expected: 'an expression',
+            committed: true,
+          ),
+          state,
+        ]]
+      end
+    }
 
     parser(:operator) {
       type(:plus) | type(:minus) | type(:star) | type(:slash) |
@@ -394,14 +429,16 @@ module Jade
             optional(exposing, default: [[]])
           ).commit
       ).map(&AST.import_declaration)
-       .context("import declaration")
+       .parsing("import declaration")
     }
 
     parser(:exposing) {
       (type(:exposing).skip >>
-          type(:lparen).skip >>
-          (expose_list | expose_all) >>
-          type(:rparen).skip
+          (
+            type(:lparen).skip >>
+            (expose_list | expose_all).expecting('a name to expose, or `..`') >>
+            type(:rparen).skip
+          ).commit
       ) | expose_none
     }
 
@@ -437,11 +474,12 @@ module Jade
             ) >>
             type(:arrow).skip >>
             type_expression >>
-            sequence(statement).map(&AST.body) >>
+            body >>
             type(:end)
           ).commit
       ).map(&AST.function_declaration)
-       .context("function declaration")
+       .parsing("function declaration")
+       .spanning_empty_body
     }
 
     parser(:type_declaration) {
@@ -454,7 +492,7 @@ module Jade
             sequence(variant_declaration, separated_by: type(:pipe).skip).map { [it] }
           ).commit
       ).map(&AST.type_declaration)
-       .context("type declaration")
+       .parsing("type declaration")
     }
 
     parser(:record_declaration) {
@@ -571,7 +609,7 @@ module Jade
           (interop_module_name >> type(:with) >> interop_functions >> type(:end))
             .commit
       ).map(&AST.interop_import_declaration)
-       .context("interop import declaration")
+       .parsing("interop import declaration")
     }
 
     parser(:interop_namespace_sep) { type(:coloncolon) }
@@ -615,7 +653,7 @@ module Jade
             type(:end)
           ).commit
       ).map(&AST.implementation)
-       .context("implementation")
+       .parsing("implementation")
     }
 
     parser(:interface_declaration) {
@@ -635,7 +673,7 @@ module Jade
             type(:end)
           ).commit
       ).map(&AST.interface_declaration)
-       .context("interface declaration")
+       .parsing("interface declaration")
     }
 
     parser(:interface_function_decl) {
@@ -665,7 +703,7 @@ module Jade
             type_record
           ).commit
       ).map(&AST.struct_declaration)
-       .context("struct declaration")
+       .parsing("struct declaration")
     }
 
     parser(:int)   { type(:int).map(&AST.literal) }

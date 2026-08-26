@@ -5,7 +5,9 @@ module Jade
     module Type
       extend Combinators::Dsl
 
-      parser(:type_expression) { type_function | type_atom | type_record }
+      parser(:type_expression) {
+        (type_function | type_atom | type_record).expecting('a type')
+      }
 
       parser(:type_atom) {
         type_application | type_var | type_tuple | grouped(lazy { type_function })

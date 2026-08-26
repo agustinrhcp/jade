@@ -228,6 +228,12 @@ module Jade
           @fn = block
         end
 
+        def stalled?(error, state)
+          return state.eof? if error.span.nil?
+
+          error.span.begin == state.current&.range&.begin
+        end
+
         def call(tokens)
           @fn.call(tokens)
         end
@@ -282,8 +288,32 @@ module Jade
           map_error(&:commit)
         end
 
-        def context(name)
-          map_error { |err| err.with_context(name) }
+        # A stalled alternation reports whichever branch it tried last, so
+        # say what the position wanted instead. One that got somewhere is
+        # already reporting the useful error.
+        def expecting(what)
+          P.new do |state|
+            call(state).map_error do |(err, err_state)|
+              [!err.committed? && stalled?(err, state) ? err.copy(expected: what) : err, err_state]
+            end
+          end
+        end
+
+        def parsing(name)
+          map_error { |err| err.copy(context: [name, *err.context]) }
+        end
+
+        # Opens an empty body's span out to the construct it belongs to.
+        # The innermost one gets there first; past that the span is wider
+        # than the marker `body` left, so an enclosing construct skips it.
+        def spanning_empty_body
+          P.new do |state|
+            call(state).map_error do |(err, err_state)|
+              next [err, err_state] unless err.is_a?(MissingBodyError) && err.span.size == 1
+
+              [err.copy(span: state.current.range.begin...err.actual.range.end), err_state]
+            end
+          end
         end
       end
     end
