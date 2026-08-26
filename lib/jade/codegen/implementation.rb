@@ -83,7 +83,7 @@ module Jade
           impl_sym
             .functions[fn_name]
             .then { it.is_a?(Symbol::ValueRef) ? it : nil }
-            &.then { "::#{to_qualified(it.module_name)}::Internal.#{it.name}" }
+            &.then { "#{internal(it.module_name)}.#{it.name}" }
             &.then { Pretty.block("def #{ruby_method}(other)", "#{it}(self, other)") }
         end
       end
@@ -143,7 +143,7 @@ module Jade
         fn_map = symbol.functions.filter_map { |fn_name, ref|
           next unless ref.is_a?(Symbol::ValueRef)
 
-          [fn_name, "->(*args) { ::#{to_qualified(ref.module_name)}::Internal.#{ref.name}(*args) }"]
+          [fn_name, "->(*args) { #{internal(ref.module_name)}.#{ref.name}(*args) }"]
         }.to_h
 
         return "" if fn_map.empty?

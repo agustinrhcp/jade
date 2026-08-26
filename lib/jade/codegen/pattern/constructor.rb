@@ -8,7 +8,7 @@ module Jade
         def generate(node, registry)
           node => AST::Pattern::Constructor(symbol:, patterns:)
           constructor = registry.lookup(symbol)
-          qualified = to_qualified(constructor.qualified_name)
+          qualified = rooted(constructor.qualified_name)
 
           if keyed_variant?(constructor)
             generate_keyed(qualified, patterns.first, registry)

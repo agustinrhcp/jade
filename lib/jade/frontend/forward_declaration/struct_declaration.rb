@@ -8,6 +8,9 @@ module Jade
         def shallow(node, registry, entry)
           node => AST::StructDeclaration(name:, type_params:)
 
+          duplicate_type_error(entry, name, node.range, declaring: 'a struct')
+            .then { return Result[entry, [it]] if it }
+
           type_params
             .map { Symbol.var(it.name, it.range) }
             .then { Symbol.predeclared_struct(name, it, node.range) }
@@ -20,17 +23,7 @@ module Jade
 
           symbol = entry.lookup_type(name)
 
-          unless symbol.is_a?(Symbol::Struct)
-            return Result[entry, [
-              Error::DuplicateTypeName.new(
-                entry.name,
-                node.range,
-                name,
-                declaring: 'a struct',
-                existing: Error::DuplicateTypeName.kind_of(symbol),
-              ),
-            ]]
-          end
+          return Result[entry, []] unless symbol.is_a?(Symbol::Struct)
 
           figure_out_type(entry, record_type)
             .map do |record_type_symbol|

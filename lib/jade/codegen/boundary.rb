@@ -175,7 +175,7 @@ module Jade
 
         case fn_sym
         in Symbol::Function
-          "#{to_qualified(fn_sym.module_name)}::Internal.method(:#{fn_sym.name})"
+          "#{internal(fn_sym.module_name)}.method(:#{fn_sym.name})"
 
         in Symbol::StdlibFunction(codegen:) if codegen.is_a?(String)
           codegen

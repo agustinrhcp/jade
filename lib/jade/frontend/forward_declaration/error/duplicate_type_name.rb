@@ -13,10 +13,11 @@ module Jade
             KINDS.fetch(symbol.class)
           end
 
-          def initialize(entry, span, name, declaring:, existing:)
+          def initialize(entry, span, name, declaring:, existing:, first_span: nil)
             @name = name
             @declaring = declaring
             @existing = existing
+            @first_span = first_span
             super(entry:, span:)
           end
 
@@ -26,6 +27,12 @@ module Jade
 
           def label
             "cannot declare #{@declaring} `#{@name}`"
+          end
+
+          def secondary
+            return [] unless @first_span
+
+            [[@first_span, 'first declared here']]
           end
         end
       end

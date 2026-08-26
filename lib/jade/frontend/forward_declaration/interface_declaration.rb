@@ -8,6 +8,9 @@ module Jade
         def shallow(node, _registry, entry)
           node => AST::InterfaceDeclaration(name:, type_param:, functions:)
 
+          duplicate_type_error(entry, name, node.range, declaring: 'an interface')
+            .then { return Result[entry, [it]] if it }
+
           interface_ref = Symbol.type_ref(entry.name, name)
           type_var = Symbol.var(type_param.name, type_param.range)
 
@@ -29,17 +32,7 @@ module Jade
 
           symbol = entry.lookup_type(name)
 
-          unless symbol.is_a?(Symbol::Interface)
-            return Result[entry, [
-              Error::DuplicateTypeName.new(
-                entry.name,
-                node.range,
-                name,
-                declaring: 'an interface',
-                existing: Error::DuplicateTypeName.kind_of(symbol),
-              ),
-            ]]
-          end
+          return Result[entry, []] unless symbol.is_a?(Symbol::Interface)
 
           interface_ref = symbol.to_ref
 
