@@ -35,10 +35,14 @@ module Jade
     end
 
     def to_module_name
-      uri
+      Source.module_name_for(uri)
+    end
+
+    def self.module_name_for(path)
+      path
         .delete_suffix('.jd')
         .split('/')
-        .map { Source.camelize(it) }
+        .map { camelize(it) }
         .join('.')
     end
 

@@ -105,6 +105,18 @@ module Jade
 
       module_function
 
+      # The compiler requires the name to match the path, so a placeholder
+      # here offers a decision with one right answer.
+      def for_module(module_name)
+        return ALL unless module_name
+
+        ALL.map do
+          next it unless it.label == 'module'
+
+          it.with(body: "module #{module_name} exposing (${0})")
+        end
+      end
+
       # Every form, as plain Jade — what `jade q syntax` serves.
       def catalog
         ALL.map { { form: it.label, detail: it.detail, source: it.source } }

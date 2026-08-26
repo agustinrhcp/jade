@@ -66,8 +66,8 @@ module Jade
         nil
       end
 
-      def completion_items
-        Snippets::ALL.map do |snippet|
+      def completion_items(module_name = nil)
+        Snippets.for_module(module_name).map do |snippet|
           {
             label: snippet.label,
             kind: COMPLETION_KIND_SNIPPET,
