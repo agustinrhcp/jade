@@ -938,6 +938,54 @@ module Jade
           expect(def_item[:insertText]).to end_with("\nend")
           expect(def_item[:insertText]).to include('${1:')
         end
+
+        # The compiler requires the name to match the path, so a placeholder
+        # would be offering a decision with one right answer.
+        it 'fills the module snippet in from the document path' do
+          expect(items.find { it[:label] == 'module' }[:insertText])
+            .to eq 'module Leaf exposing (${0})'
+        end
+
+        context 'a module in a subdirectory' do
+          let(:uri) { "file://#{src}/sql/mutation.jd" }
+
+          it 'qualifies the name the way the compiler does' do
+            expect(items.find { it[:label] == 'module' }[:insertText])
+              .to eq 'module Sql.Mutation exposing (${0})'
+          end
+        end
+      end
+
+      # rootUri is the project root; modules are addressed relative to the
+      # source root, and the manifest is the only place that says which is
+      # which.
+      describe 'initialize with a jade.json' do
+        let(:manifest_state) do
+          File.write(File.join(project, 'jade.json'), '{ "source_roots": ["src"] }')
+          Handlers.dispatch(State.empty, {
+            'method' => 'initialize',
+            'id' => 1,
+            'params' => { 'rootUri' => "file://#{project}" },
+          }).first
+        end
+
+        it 'takes the source root from the manifest, not the editor root' do
+          expect(manifest_state.source_root).to eq src
+        end
+
+        it 'names a module the way the compiler does' do
+          _, out = Handlers.dispatch(manifest_state, {
+            'method' => 'textDocument/completion',
+            'id' => 31,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'position' => { 'line' => 0, 'character' => 0 },
+            },
+          })
+
+          expect(out.first[:result].find { it[:label] == 'module' }[:insertText])
+            .to eq 'module Leaf exposing (${0})'
+        end
       end
 
       describe 'formatting' do
