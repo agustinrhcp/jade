@@ -364,9 +364,15 @@ module Jade
           module_parts.map(&:value).join('.'),
           exposing,
           body,
-          module_parts.first.range.begin...(body.expressions.last.range.end),
+          module_parts.first.range.begin...module_end(module_parts, body),
         ]
       end
+    end
+
+    # Tolerant mode drops a declaration it cannot parse, so a module whose
+    # only declaration is half-written has an empty body.
+    def module_end(module_parts, body)
+      body.expressions.last&.range&.end || module_parts.last.range.end
     end
 
     def if_then_else
