@@ -123,4 +123,38 @@ module Jade
       }.to raise_error(CompilationError, /Tuple of 5 items is too big/)
     end
   end
+
+  describe 'destructuring a tuple in a binding' do
+    include_context 'with test compiler'
+
+    before do
+      test_compiler.require(<<~JADE.strip)
+        module Pairs exposing (first_of, pair, swapped)
+
+        def pair -> (Int, String)
+          (1, "one")
+        end
+
+
+        def first_of -> Int
+          (n, _) = pair
+          n
+        end
+
+
+        def swapped -> (String, Int)
+          (n, s) = pair
+          (s, n)
+        end
+      JADE
+    end
+
+    it 'binds each element' do
+      expect(Pairs::Internal.first_of).to be 1
+    end
+
+    it 'binds them in order' do
+      expect(Pairs::Internal.swapped).to eql Tuple::Tuple2['one', 1]
+    end
+  end
 end

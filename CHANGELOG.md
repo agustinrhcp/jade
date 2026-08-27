@@ -6,6 +6,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`(x, y) = p` destructures a tuple.** A tuple's arity is fixed by its type,
+  so the binding is irrefutable exactly as `T(x, y) = t` already was; the
+  workaround was a three-line `case` for a destructure that cannot fail. The
+  pattern was accepted all along, but a `(` opening a line was read as a call
+  on whatever the line above ended with, so the binding never got the chance.
+
+### Changed
+
+- **A `(` that opens a line starts a statement rather than continuing the one
+  above.** `foo` on one line and `(1, 2)` on the next is now two statements, not
+  a call. The same rule applies to a type's arguments, so a return type no
+  longer reaches across a newline to swallow the body's first line.
+
 ### Fixed
 
 - **A module whose only declaration is half-written no longer crashes the

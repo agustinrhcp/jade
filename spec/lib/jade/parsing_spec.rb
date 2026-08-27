@@ -1412,6 +1412,24 @@ module Jade
       end
     end
 
+    context 'a call whose parenthesis opens a new line' do
+      let(:text) do
+        <<~JADE
+          def f(p: (Int, Int)) -> Int
+            (x, y) = p
+            x
+          end
+        JADE
+      end
+
+      it 'is a tuple binding, not a call on the line above' do
+        result => Ok([ast, _])
+
+        expect(ast.expressions.first.body.expressions.first)
+          .to be_a(AST::Assign)
+      end
+    end
+
     context 'an empty if branch' do
       let(:text) do
         <<~JADE
@@ -1438,9 +1456,8 @@ module Jade
     context 'a statement that cannot start' do
       let(:text) do
         <<~JADE
-          def f -> Int
-            (x, y) = p
-            x
+          def f -> List(Int)
+            [_, 10]
           end
         JADE
       end
@@ -1451,7 +1468,7 @@ module Jade
         result => Err(err)
 
         expect(err.message)
-          .to eq('While parsing function declaration: Unexpected token "=", expected an expression')
+          .to eq('While parsing function declaration: Unexpected token "[", expected an expression')
       end
     end
 

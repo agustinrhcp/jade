@@ -67,8 +67,8 @@ module Jade
         no_args = [Combinators::CommaList.empty, nil]
 
         (
-          (type_name >> optional(type_application_args, default: no_args)) |
-          (type_var  >> type_application_args)
+          (type_name >> optional(type_application_args.on_same_line, default: no_args)) |
+          (type_var  >> type_application_args.on_same_line)
         ).map(&AST.type_application)
       }
 
