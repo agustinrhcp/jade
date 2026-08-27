@@ -42,10 +42,10 @@ module Jade
         # The editor's root is the project root, not the source root the
         # compiler names modules from. Reading the manifest also loads the
         # extension gems a project imports.
-        root = params
+        project = params
           .then { it['rootUri'] || it.dig('workspaceFolders', 0, 'uri') }
           .then { it ? it.sub(%r{\Afile://}, '') : Dir.pwd }
-          .then { Project.find(it)&.source_root || it }
+          .then { [Project.find(it), it] }
 
         {
           capabilities: {
@@ -62,7 +62,7 @@ module Jade
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
-          .then { [state.with_root(root), [respond(message['id'], it)]] }
+          .then { [state.with_project(*project), [respond(message['id'], it)]] }
       end
 
       def negotiate_encoding(params)
@@ -74,7 +74,7 @@ module Jade
       def on_did_open(state, params)
         params['textDocument']
           .then { state.put_buffer(it['uri'], it['text']) }
-          .then { recompile_and_publish(it) }
+          .then { recompile_and_publish(it, scope: :project) }
       end
 
       def on_did_change(state, params)
@@ -87,7 +87,7 @@ module Jade
 
       def on_did_close(state, params)
         params['textDocument']['uri']
-          .then { recompile_and_publish(state.close(it), extra_uris: [it]) }
+          .then { recompile_and_publish(state.close(it), extra_uris: [it], scope: :project) }
       end
 
       def on_document_symbol(state, message)
@@ -276,43 +276,89 @@ module Jade
       # extra_uris always receive a publishDiagnostics, but compile output
       # wins: if a real diagnostic came back for the URI, we send that, not
       # an empty clear.
-      def recompile_and_publish(state, extra_uris: [])
-        if state.buffers.empty? || state.source_root.nil?
-          return [state, extra_uris.map { publish_for(it, []) }]
-        end
+      def recompile_and_publish(state, extra_uris: [], scope: :buffers)
+        return [state, extra_uris.map { publish_for(it, []) }] if state.source_root.nil?
 
         overlays = state.buffers
           .to_h { |uri, text| [Converters.relative_path(uri, state.source_root), text] }
 
-        diagnostics_by_uri, registry = compile_each(state.source_root, overlays)
+        diagnostics_by_uri, registry =
+          compile_each(state, overlays, entries(state, overlays, scope))
 
-        uris = (diagnostics_by_uri.keys + state.buffers.keys + extra_uris).uniq
+        uris = (diagnostics_by_uri.keys + state.buffers.keys + state.published + extra_uris).uniq
         messages = uris.map { publish_for(it, diagnostics_by_uri[it] || []) }
 
-        next_state = registry ? state.set_registry(registry) : state
+        next_state = (registry ? state.set_registry(registry) : state)
+          .with_published(diagnostics_by_uri.keys)
         [next_state, messages]
       end
 
-      # Compile from each open buffer so unrelated modules still produce
-      # diagnostics. The same module reached twice yields identical
-      # diagnostics (deterministic over overlays), so Hash#merge is safe.
-      def compile_each(source_root, overlays)
-        overlays.keys.reduce([{}, nil]) do |(diag_acc, reg_acc), entry|
-          registry, diagnostics = compile(source_root, entry, overlays)
-          [diag_acc.merge(diagnostics), registry || reg_acc]
-        end
+      # Typing recompiles what is open; opening and closing sweep.
+      def entries(state, overlays, scope)
+        return overlays.keys if scope == :buffers
+
+        Dir
+          .glob('**/*.jd', base: state.source_root)
+          .sort
+          .then { imported_last(it, state.registry) }
       end
 
-      def compile(source_root, entry_path, overlays)
+      # Compiling a module compiles what it imports, so the modules nothing
+      # imports cover the project in one pass. A file the last compile never
+      # saw goes first, since it may be the new root.
+      def imported_last(paths, registry)
+        return paths unless registry
+
+        [imported(registry), module_names(registry)]
+          .then { |names, by_path| paths.partition { !names.include?(by_path[it]) } }
+          .flatten
+      end
+
+      def imported(registry)
+        registry.dependency_graph.nodes.values.flatten.to_set
+      end
+
+      def module_names(registry)
+        registry
+          .modules
+          .each_value
+          .filter_map { [it.source.uri, it.name] if it.source }
+          .to_h
+      end
+
+      def compile_each(state, overlays, entries)
+        entries
+          .reduce([{}, nil, []]) { |acc, entry| compile_unless_seen(acc, state, overlays, entry) }
+          .first(2)
+      end
+
+      def compile_unless_seen((diagnostics, registry, seen), state, overlays, entry)
+        return [diagnostics, registry, seen] if seen.include?(entry)
+
+        compile(state, entry, overlays)
+          .then { |(compiled, found)| [diagnostics.merge(found), compiled || registry, seen + compiled_paths(compiled)] }
+      end
+
+      def compiled_paths(registry)
+        return [] unless registry
+
+        registry
+          .modules
+          .each_value
+          .reject { Stdlib.is_stdlib?(it) }
+          .filter_map { it.source&.uri }
+      end
+
+      def compile(state, entry_path, overlays)
         ModuleLoader
-          .load(source_root, entry_path, tolerant: true, overlays:)
-          .then { [it, collect_diagnostics(it, source_root)] }
+          .load(state.source_root, entry_path, cache_dir: state.cache_dir, tolerant: true, overlays:)
+          .then { [it, collect_diagnostics(it, state.source_root)] }
       rescue Jade::CompilationError => e
-        [nil, diagnostics_by_uri(e.diagnostics, source_root)]
+        [nil, diagnostics_by_uri(e.diagnostics, state.source_root)]
       rescue StandardError => e
         $stderr.puts "[jade-lsp] compile crash: #{e.class}: #{e.message}"
         $stderr.puts e.backtrace.first(20).join("\n")
-        [nil, crash_diagnostic(source_root, entry_path, overlays, e)]
+        [nil, crash_diagnostic(state.source_root, entry_path, overlays, e)]
       end
 
       # Publishing nothing renders a crashed compile as a clean file.
