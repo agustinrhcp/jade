@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **A call short of its arguments says so.** `Rec(id: 1, status: Issued)`,
+  where `Issued` carries an `Int`, reported `expected (Int, Status) -> Rec but
+  found (Int, (Int) -> Status) -> Rec` and left the reader to notice which slot
+  had become a function. It now adds ``help: `Issued` needs 1 argument``, and a
+  call with the wrong number of arguments outright reads ``help: `add` takes 2
+  arguments, 1 given``.
+
 ### Fixed
 
 - **Parse errors no longer name `lbrace` where a `{` could never go.** An
