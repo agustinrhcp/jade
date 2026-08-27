@@ -83,9 +83,11 @@ module Jade
             end
         end
 
-        # Validation already reports a keyed call on a plain function.
+        # Validation already reports a keyed call on a plain function. A
+        # keyed variant lowers to a record literal, which takes holes.
         def placeholder_errors(fields, parent, constructor, entry)
           return [] if constructor.nil? || parent.is_a?(Symbol::Struct)
+          return [] if keyed_variant?(constructor)
 
           fields
             .select { it.value.is_a?(AST::Placeholder) }
@@ -95,7 +97,6 @@ module Jade
                 it.range,
                 field: it.key,
                 name: constructor.name,
-                keyed: keyed_variant?(constructor),
               )
             end
         end

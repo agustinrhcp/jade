@@ -8,6 +8,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`_` works in a tuple or record literal.** `5 |> (_, "five")` and
+  `{ w: _, h: 2 }` make a function of the hole, the way `f(_, y)` already did.
+  A variant carrying a record gets it too, since that is what a keyed call
+  lowers to: `Rect(w: _, h: 4)` was the one shape with no way to express it
+  short of writing the lambda out.
+
+### Removed
+
+- The error saying a record literal has no placeholder, which is no longer
+  true. `Name(field: _)` on a *positional* variant still reports: there are no
+  field names there to refer to.
+
+### Added
+
 - **`(x, y) = p` destructures a tuple.** A tuple's arity is fixed by its type,
   so the binding is irrefutable exactly as `T(x, y) = t` already was; the
   workaround was a three-line `case` for a destructure that cannot fail. The
