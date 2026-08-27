@@ -42,6 +42,21 @@ module Jade
         expect(ast.body.expressions.map(&:name)).to eq(%w[a c])
       end
 
+      it 'survives a module whose only declaration is broken' do
+        result = parse(<<~JADE)
+          module M exposing (go)
+
+          def go -> Int
+            x = 1
+            foo(
+          end
+        JADE
+
+        result => Ok([ast, _, diagnostics])
+        expect(ast.body.expressions).to be_empty
+        expect(diagnostics.items.length).to eq(1)
+      end
+
       it 'recovers when the first declaration is broken' do
         result = parse(<<~JADE)
           module M exposing (b)

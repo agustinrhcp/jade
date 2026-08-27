@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A module whose only declaration is half-written no longer crashes the
+  tolerant parser.** Recovery drops a declaration it cannot parse, and the
+  module node took its span from the last one, so a file with nothing left
+  raised `undefined method 'range' for nil` inside the parser. In the editor
+  that surfaced as a crash notice on a file you were part-way through typing,
+  which is the state it exists to cope with.
+
 ### Added
 
 - **`List.sum` and `List.product`.** Both fold over `Numeric`, which gained
