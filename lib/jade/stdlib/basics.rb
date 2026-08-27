@@ -41,11 +41,25 @@ module Jade
       interface(
         'Numeric',
         'a',
-        { '(+)' => 'a, a -> a', '(-)' => 'a, a -> a', '(*)' => 'a, a -> a', '(/)' => 'a, a -> a' }
+        {
+          '(+)' => 'a, a -> a',
+          '(-)' => 'a, a -> a',
+          '(*)' => 'a, a -> a',
+          '(/)' => 'a, a -> a',
+          'from_int' => 'Int -> a',
+        }
       )
 
-      implementation('Numeric', 'Int',   '(+)' => 'int_add', '(-)' => 'int_sub', '(*)' => 'int_mul', '(/)' => 'int_div')
-      implementation('Numeric', 'Float', '(+)' => 'float_add', '(-)' => 'float_sub', '(*)' => 'float_mul', '(/)' => 'float_div')
+      implementation(
+        'Numeric', 'Int',
+        '(+)' => 'int_add', '(-)' => 'int_sub', '(*)' => 'int_mul', '(/)' => 'int_div',
+        'from_int' => 'identity'
+      )
+      implementation(
+        'Numeric', 'Float',
+        '(+)' => 'float_add', '(-)' => 'float_sub', '(*)' => 'float_mul', '(/)' => 'float_div',
+        'from_int' => 'to_float'
+      )
 
       interface(
         'Appendable',

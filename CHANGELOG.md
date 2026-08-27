@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`List.sum` and `List.product`.** Both fold over `Numeric`, which gained
+  `from_int : Int -> a` so the seed can come from the interface rather than the
+  list: `sum([])` is `0`, not "nothing", so a `Maybe` return would have modelled
+  a non-problem as a failure. `Int` implements it with `identity`, `Float` with
+  `to_float`, `Decimal` by scaling. A type of your own that implements `Numeric`
+  needs the new member.
+
 ### Fixed
 
 - **The LSP reports errors in files you do not have open.** It compiled from

@@ -150,11 +150,17 @@ module Jade
           end
 
 
+          def from_int(n: Int) -> Decimal
+            Decimal(n, 0)
+          end
+
+
           implements Numeric(Decimal) with
             (+): add,
             (-): sub,
             (*): mul,
-            (/): divide
+            (/): divide,
+            from_int: from_int
           end
 
 
