@@ -31,7 +31,6 @@ module Jade
 
           private
 
-          # A message with 27 free variables has other problems.
           def letter(index)
             LETTERS[index] || "t#{index - LETTERS.size + 1}"
           end
