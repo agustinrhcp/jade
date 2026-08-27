@@ -908,6 +908,47 @@ module Jade
         end
       end
 
+      describe 'a file nobody has open' do
+        let(:broken) do
+          <<~JADE
+            module Broken exposing (n)
+
+            def n -> Int
+              "not an int"
+            end
+          JADE
+        end
+
+        def open_leaf
+          File.write(File.join(src, 'leaf.jd'), leaf)
+          File.write(File.join(src, 'broken.jd'), broken)
+          Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => leaf } },
+          })
+        end
+
+        it 'still reports its errors' do
+          _, out = open_leaf
+          published = out.to_h { [it[:params][:uri], it[:params][:diagnostics]] }
+
+          expect(published["file://#{src}/broken.jd"]).not_to be_empty
+        end
+
+        it 'clears them once they are fixed' do
+          state, = open_leaf
+          File.write(File.join(src, 'broken.jd'), broken.sub('"not an int"', '42'))
+
+          _, out = Handlers.dispatch(state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => leaf } },
+          })
+          published = out.to_h { [it[:params][:uri], it[:params][:diagnostics]] }
+
+          expect(published["file://#{src}/broken.jd"]).to eq []
+        end
+      end
+
       describe 'completion' do
         let(:items) do
           _, out = Handlers.dispatch(initialized_state, {

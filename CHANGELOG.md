@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The LSP reports errors in files you do not have open.** It compiled from
+  each open buffer, so a module nobody had opened was only ever reached as
+  someone else's import, and a broken one that nothing imports was reported
+  nowhere. Opening or closing a file now compiles every module under the source
+  root, starting from the modules nothing imports so the pass covers the project
+  once, and diagnostics published for a file are cleared when it is fixed even
+  if it was never open. Typing still recompiles only what is open, and the LSP
+  now reads and writes the project's compile cache the way the CLI does.
+
 ### Added
 
 - **A call short of its arguments says so.** `Rec(id: 1, status: Issued)`,
