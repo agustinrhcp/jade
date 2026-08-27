@@ -44,8 +44,8 @@ module Jade
         # still bare AST and `Placeholder.lift` can turn the call into a
         # lambda — the same route a positional partial application takes.
         def partially_applied(node, callee, fields, parent, constructor, registry, scope, entry, callee_r)
-          # A positional variant has no field names, so every key is also an
-          # unknown field: one mistake, three errors.
+          # A positional variant has no field names, so every key is also
+          # an unknown field. The placeholder error is the one that says why.
           errors = placeholder_errors(fields, parent, constructor, entry)
             .then { it.any? ? it : Validation.errors(node, fields, parent, constructor, registry, entry) }
 
