@@ -171,6 +171,42 @@ module Jade
       )
 
       function(
+        :sum,
+        { list: 'List(a)' },
+        'a',
+        constraints: [['Basics.Numeric', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['list'],
+          body: [:call,
+            [:stdlib_fn, 'List.fold'],
+            [
+              [:var, 'list'],
+              [:call, [:impl_arg, 0, 'from_int'], [0]],
+              [:impl_arg, 0, '(+)'],
+            ],
+          ],
+        ),
+      )
+
+      function(
+        :product,
+        { list: 'List(a)' },
+        'a',
+        constraints: [['Basics.Numeric', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: ['list'],
+          body: [:call,
+            [:stdlib_fn, 'List.fold'],
+            [
+              [:var, 'list'],
+              [:call, [:impl_arg, 0, 'from_int'], [1]],
+              [:impl_arg, 0, '(*)'],
+            ],
+          ],
+        ),
+      )
+
+      function(
         'maximum_with',
         { list: 'List(a)', cmp: 'a, a -> Ordering' },
         'Maybe(a)',

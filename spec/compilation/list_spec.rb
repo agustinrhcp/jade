@@ -406,6 +406,83 @@ module Jade
     end
   end
 
+  describe 'List.sum and List.product' do
+    include_context 'with test compiler'
+
+    before do
+      test_compiler.require(<<~JADE.strip)
+        module Aggregates exposing (cents, cents_expected, empty, ints, rate, sizes)
+
+        import Decimal exposing (Decimal)
+
+
+        def ints -> Int
+          List.sum([1, 2, 3])
+        end
+
+
+        def empty -> Int
+          List.sum([])
+        end
+
+
+        def rate -> Float
+          List.sum([1.5, 2.5])
+        end
+
+
+        def sizes -> Int
+          List.product([2, 3, 4])
+        end
+
+
+        def cents -> Decimal
+          List.sum([Decimal.scaled(110, 2), Decimal.scaled(220, 2)])
+        end
+
+
+        def cents_expected -> Decimal
+          Decimal.scaled(330, 2)
+        end
+      JADE
+    end
+
+    it 'sums Ints' do
+      expect(Aggregates::Internal.ints).to be 6
+    end
+
+    # `sum([])` is 0, not "nothing", which is why the seed comes from the
+    # interface rather than the list.
+    it 'sums nothing to zero' do
+      expect(Aggregates::Internal.empty).to be 0
+    end
+
+    it 'sums Floats' do
+      expect(Aggregates::Internal.rate).to eql 4.0
+    end
+
+    it 'multiplies' do
+      expect(Aggregates::Internal.sizes).to be 24
+    end
+
+    it 'works for a type that implements Numeric itself' do
+      expect(Aggregates::Internal.cents).to eql Aggregates::Internal.cents_expected
+    end
+
+    it 'rejects a list of something that is not Numeric' do
+      source = <<~JADE
+        module NoNumeric exposing (nope)
+
+        def nope -> String
+          List.sum(["a", "b"])
+        end
+      JADE
+
+      expect { test_compiler.require(source) }
+        .to raise_error(CompilationError, /Basics.Numeric/)
+    end
+  end
+
   describe 'List.range' do
     include_context 'with test compiler'
 
