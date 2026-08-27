@@ -76,18 +76,17 @@ module Jade
       errors
     end
 
-    it { is_expected.to have(1).item }
-
+    # The variant lowers to a record literal, and those take holes now, so
+    # the call is a function of the hole. Returning it where a `Shape` is
+    # wanted is the only complaint left, reported at the call and again at
+    # the body around it.
     its([0]) do
-      is_expected.to be_a(Frontend::SemanticAnalysis::Error::PlaceholderNotAllowed)
+      is_expected.to be_a(Frontend::TypeChecking::Error::TypeMismatch)
     end
 
-    it 'says the record literal is what has no hole, and offers the lambda' do
-      expect(subject[0].message)
-        .to eq('`Rect` carries a record, and a record literal has no ' \
-               'placeholder, so `w: _` cannot be a hole')
-      expect(subject[0].notes.map(&:message))
-        .to eql ['write the lambda instead: `(v) -> { Rect(w: v, ...) }`']
+    it 'reports the shape it built, not a rule about placeholders' do
+      expect(subject.map(&:message))
+        .to all(match(/\(Int\) -> Shape|\(a\) -> b/))
     end
 
     context 'a variant whose arguments are positional' do
@@ -112,6 +111,57 @@ module Jade
           .to eql ['write `Rect(_, x)` positionally, or pipe into the ' \
                    'first argument with `|> Rect(x)`']
       end
+    end
+  end
+
+  describe 'holes in literals' do
+    include_context 'with test compiler'
+
+    before do
+      test_compiler.require(<<~JADE.strip)
+        module Holes exposing (Shape(..), paired, rect_of, sized, tagged)
+
+        type Shape = Rect(w: Int, h: Int)
+
+
+        def paired -> (Int, String)
+          5 |> (_, "five")
+        end
+
+
+        def sized -> { w: Int, h: Int }
+          g = { w: _, h: 2 }
+          g(3)
+        end
+
+
+        def rect_of -> Shape
+          g = Rect(w: _, h: 4)
+          g(6)
+        end
+
+
+        def tagged -> (String, Int)
+          swap = (_, 1)
+          swap("one")
+        end
+      JADE
+    end
+
+    it 'fills a tuple literal' do
+      expect(Holes::Internal.paired).to eql Tuple::Tuple2[5, 'five']
+    end
+
+    it 'fills a record literal' do
+      expect(Holes::Internal.sized.to_h).to eql({ w: 3, h: 2 })
+    end
+
+    it 'fills a keyed variant, which lowers to a record literal' do
+      expect(Holes::Internal.rect_of).to eql Holes::Rect[w: 6, h: 4]
+    end
+
+    it 'binds the hole as the lambda parameter' do
+      expect(Holes::Internal.tagged).to eql Tuple::Tuple2['one', 1]
     end
   end
 end

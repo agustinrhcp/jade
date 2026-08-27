@@ -98,7 +98,10 @@ module Jade
             .with(items: items.map { desugar(it) })
 
         in AST::RecordLiteral(fields:)
-          fields.map { desugar(it) }.then { node.with(fields: it) }
+          fields
+            .map { desugar(it) }
+            .then { node.with(fields: it) }
+            .then { Placeholder.lift(it) }
 
         in AST::RecordUpdate(fields:)
           fields.map { desugar(it) }.then { node.with(fields: it) }
@@ -130,12 +133,14 @@ module Jade
             end
 
         in AST::Tuple(items:)
-          AST::FunctionCall.new(
-            callee: AST::ConstructorReference["Tuple.Tuple#{items.size}", node.range],
-            args: items.map { desugar(it) },
-            infix: false,
-            range: node.range,
-          )
+          AST::FunctionCall
+            .new(
+              callee: AST::ConstructorReference["Tuple.Tuple#{items.size}", node.range],
+              args: items.map { desugar(it) },
+              infix: false,
+              range: node.range,
+            )
+            .then { Placeholder.lift(it) }
 
         in AST::Pattern::Tuple(patterns:)
           AST::ConstructorReference[

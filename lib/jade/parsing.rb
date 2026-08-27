@@ -135,9 +135,9 @@ module Jade
     parser(:tuple) {
       (
         type(:lparen) >>
-          lazy { expression } >>
+          function_call_arg >>
           type(:comma).skip >>
-          comma_sequence(lazy { expression }) >>
+          comma_sequence(function_call_arg) >>
           type(:rparen)
       ).map(&AST.tuple)
     }
@@ -587,7 +587,7 @@ module Jade
     parser(:record_fields) { comma_sequence(record_field) }
 
     parser(:record_field) {
-      (identifier >> type(:colon).skip >> lazy { expression }).map(&AST.record_field)
+      (identifier >> type(:colon).skip >> function_call_arg).map(&AST.record_field)
     }
 
     parser(:record_access_sugar) {
