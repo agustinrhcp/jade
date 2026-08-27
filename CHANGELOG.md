@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`List.range` returns `List(Int)`.** Its signature said `List(a)`, with the
+  `a` free and bound by nothing, so `List.range(1, 3)` type-checked as a list
+  of anything the caller happened to want.
+
+### Fixed
+
 - **Parse errors no longer name `lbrace` where a `{` could never go.** An
   alternation reported whichever branch it tried last, and a record literal is
   last in several chains, so `module Pepe exposing`, `def f -> Int end`, and

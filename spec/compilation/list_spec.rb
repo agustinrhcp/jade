@@ -405,4 +405,21 @@ module Jade
       end
     end
   end
+
+  describe 'List.range' do
+    include_context 'with test compiler'
+
+    it 'is a list of Ints, not of whatever the caller asks for' do
+      source = <<~JADE
+        module Ranges exposing (wrong)
+
+        def wrong -> List(String)
+          List.range(1, 3)
+        end
+      JADE
+
+      expect { test_compiler.require(source) }
+        .to raise_error(CompilationError, /expected List\(String\) but found List\(Int\)/)
+    end
+  end
 end

@@ -12,7 +12,7 @@ module Jade
 
       function(:singleton, { element: 'a' }, 'List(a)')
       function(:repeat, { element: 'a', times: 'Int' }, 'List(a)')
-      function(:range, { begin_: 'Int', end_: 'Int' }, 'List(a)')
+      function(:range, { begin_: 'Int', end_: 'Int' }, 'List(Int)')
       function(:"empty?", { list: 'List(a)' }, 'Bool')
       function(:head, { list: 'List(a)' }, 'Maybe(a)')
       function(:tail, { list: 'List(a)' }, 'List(a)')
