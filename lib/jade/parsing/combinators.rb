@@ -216,6 +216,13 @@ module Jade
           with(diagnostics: diagnostics.add(diagnostic))
         end
 
+        # Is the token here on the same line as the one before it?
+        def continues_line?
+          return true if eof? || position.zero?
+
+          same_line?(tokens[position - 1].range.begin, current.range.begin)
+        end
+
         def skip_until(sync_types)
           (position...tokens.length)
             .find { sync_types.include?(tokens[it].type) }
@@ -296,6 +303,25 @@ module Jade
             call(state).map_error do |(err, err_state)|
               [!err.committed? && stalled?(err, state) ? err.copy(expected: what) : err, err_state]
             end
+          end
+        end
+
+        # A `(` opening a new line starts a statement, it does not continue
+        # the expression above it: `(x, y) = p` is a binding, not a call on
+        # whatever the line before ended with.
+        def on_same_line
+          P.new do |state|
+            next Err[[
+              Parsing::UnexpectedTokenError.new(
+                entry: state.entry,
+                span: state.current.range,
+                actual: state.current,
+                expected: 'the same line',
+              ),
+              state,
+            ]] unless state.continues_line?
+
+            call(state)
           end
         end
 

@@ -377,7 +377,7 @@ module Jade
         record_literal | record_update_sugar | record_access_sugar | record_update
     }
 
-    parser(:postfix) { function_call | member_access }
+    parser(:postfix) { function_call.on_same_line | member_access }
 
     parser(:module_name) {
       sequence(constant, separated_by: type(:dot).skip).map { [it] }
