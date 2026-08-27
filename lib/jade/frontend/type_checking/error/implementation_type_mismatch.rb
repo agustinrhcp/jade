@@ -11,7 +11,7 @@ module Jade
 
           def message
             "Implementation of #{@interface}.#{@fn_name}: " \
-              "expected #{@expected} but the provided function has type #{@actual}"
+              "expected #{naming[@expected]} but the provided function has type #{naming[@actual]}"
           end
         end
       end

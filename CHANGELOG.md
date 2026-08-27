@@ -34,9 +34,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **A crashed compile publishes a diagnostic instead of silence.** Zero
   diagnostics is indistinguishable from a clean file, so an LSP bug looked
   exactly like working code.
+- **One mistake, one message.** `t |> Plan(_, 150)` reported four errors: the
+  call that failed to unify, the expression around it, and the body that
+  returned it, each wearing the type the one below left behind. Mismatches on a
+  single span are now read as one failure: the most specific of them survives,
+  since a subclass exists for no other reason. A later error naming an
+  inference variable an earlier one already named is downstream of it, so it
+  goes too. Errors that share nothing still both appear.
+- **Inference ids no longer leak into messages.** `t8894` is a counter: it
+  means nothing to a reader, it changes between compiles, and two occurrences
+  of one variable look unrelated unless you notice the digits match. Within a
+  message they render as `a`, `b`, `c`, the letters the signature syntax
+  already uses. The ids stay internal.
 
 ### Added
 
+- **A call with a hole and one argument too many says so.** `xs |> f(_, y)`
+  reads as though the `_` marks where the piped value goes, but `|>` has
+  already put it in front. The message now names the shape and the fix
+  instead of leaving a unification failure to be decoded.
 - **The `module` snippet fills in the name.** A module's name is fixed by its
   path, so the placeholder was offering a decision with one right answer;
   completion now derives it from the document URI, turning `sql/mutation.jd`

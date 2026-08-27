@@ -286,7 +286,7 @@ module Jade
 
           it 'fails with type mismatch' do
             expect { test_compiler.require(pepe_source) }
-              .to raise_error(CompilationError, /Pattern is trying to match { name : String, id : Int } with { t\d+ | name : Maybe(String) }/)
+              .to raise_error(CompilationError, /Pattern is trying to match { name : String, id : Int } with { a | name : Maybe(String) }/)
           end
         end
       end

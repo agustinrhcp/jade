@@ -1,5 +1,6 @@
 require 'jade/error'
 
+require 'jade/frontend/type_checking/error/display'
 require 'jade/frontend/type_checking/error/type_mismatch'
 
 require 'jade/frontend/type_checking/error/case_of_branches_type_mismatch'
