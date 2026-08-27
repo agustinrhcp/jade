@@ -171,6 +171,8 @@ module Jade
                 actual: e.actual,
                 infix: node.infix,
                 lifted_placeholder: lifted_placeholder?(node),
+                callee_name: source_name(node.callee),
+                arg_names: node.args.map { source_name(it) },
               )
             end
           end
@@ -179,6 +181,20 @@ module Jade
           # reads as an argument referring to one by the time we get here.
           def lifted_placeholder?(node)
             node.args.any? { it in AST::VariableReference(name: /\A__p\d+__\z/) }
+          end
+
+          # What the author called this, where they called it something.
+          def source_name(node)
+            case node
+            in AST::ConstructorReference | AST::VariableReference
+              node.name
+
+            in AST::QualifiedAccess(path:)
+              path.join('.')
+
+            else
+              nil
+            end
           end
         end
       end

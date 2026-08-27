@@ -45,9 +45,10 @@ module Jade
 
         it 'names the shape and the fix' do
           expect(errors[0].notes.map(&:message))
-            .to eql ['a `_` makes this a function of the hole, and the call has ' \
-                     'one argument too many for that. If you piped into it, `|>` ' \
-                     'already supplies the first argument, so drop the `_`']
+            .to eql ['a `_` makes this a function waiting for that argument, and ' \
+                     'the call has one argument too many for that. If you piped ' \
+                     'into it, `|>` already supplies the first argument, so drop ' \
+                     'the `_`']
         end
       end
 
@@ -66,6 +67,39 @@ module Jade
         it 'says nothing about placeholders' do
           expect(errors.flat_map { it.notes.map(&:message) }.join)
             .not_to include('drop the `_`')
+        end
+      end
+
+      context 'a variant used without its argument' do
+        let(:text) do
+          <<~JADE
+            type Status = Draft | Issued(Int)
+            struct Rec = { id: Int, status: Status }
+            def f -> Rec
+              Rec(id: 1, status: Issued)
+            end
+          JADE
+        end
+
+        it 'names the argument that is short, and by how much' do
+          expect(errors[0].notes.map(&:message)).to eql ['`Issued` needs 1 argument']
+        end
+      end
+
+      context 'a call with too few arguments' do
+        let(:text) do
+          <<~JADE
+            def add(a: Int, b: Int) -> Int
+              a + b
+            end
+            def f -> Int
+              add(1)
+            end
+          JADE
+        end
+
+        it 'counts them' do
+          expect(errors[0].notes.map(&:message)).to eql ['`add` takes 2 arguments, 1 given']
         end
       end
 
