@@ -1,3 +1,4 @@
+require 'jade/frontend/type_checking/cascade'
 require 'jade/frontend/type_checking/canonicalize'
 require 'jade/frontend/type_checking/constraints'
 require 'jade/frontend/type_checking/definition'
@@ -97,7 +98,7 @@ module Jade
         # with those constraints — rather than being dropped silently.
 
         state
-          .with(errors: state.errors + errors)
+          .with(errors: Cascade.prune(state.errors + errors))
           .to_result
       end
 

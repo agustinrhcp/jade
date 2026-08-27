@@ -10,11 +10,19 @@ module Jade
           end
 
           def message
-            "Expected #{@expected} but got #{@actual}"
+            "Expected #{naming[@expected]} but got #{naming[@actual]}"
           end
 
           def label
-            "expected #{@expected}, got #{@actual}"
+            "expected #{naming[@expected]}, got #{naming[@actual]}"
+          end
+
+          attr_reader :expected, :actual
+
+          private
+
+          def naming
+            @naming ||= Display.naming(@expected, @actual)
           end
         end
       end

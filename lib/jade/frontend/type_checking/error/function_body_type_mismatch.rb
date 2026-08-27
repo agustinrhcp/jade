@@ -9,12 +9,12 @@ module Jade
           end
 
           def message
-            "There's a problem with the body of `#{@function_name}` definition: " ++
-              "it returns #{@actual} but its signature says it should be #{@expected}"
+            "There\u0027s a problem with the body of `#{@function_name}` definition: " \
+              "it returns #{naming[@actual]} but its signature says it should be #{naming[@expected]}"
           end
 
           def label
-            "returns #{@actual}, expected #{@expected}"
+            "returns #{naming[@actual]}, expected #{naming[@expected]}"
           end
         end
       end

@@ -4,8 +4,8 @@ module Jade
       module Error
         class RecordAccessTypeMismatch  < TypeMismatch
           def message
-            "Something is off with this record access, it expects #{@expected} " +
-              "but found #{@actual}"
+            "Something is off with this record access, it expects #{naming[@expected]} " +
+              "but found #{naming[@actual]}"
           end
         end
       end

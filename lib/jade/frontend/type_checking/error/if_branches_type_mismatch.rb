@@ -9,7 +9,7 @@ module Jade
 
           def message
             "If branches must return the same type. The then branch produces " +
-              "#{@expected} but the else branch produces #{@actual}"
+              "#{naming[@expected]} but the else branch produces #{naming[@actual]}"
           end
         end
       end

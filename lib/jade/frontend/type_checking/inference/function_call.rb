@@ -170,8 +170,15 @@ module Jade
                 expected: e.expected,
                 actual: e.actual,
                 infix: node.infix,
+                lifted_placeholder: lifted_placeholder?(node),
               )
             end
+          end
+
+          # Desugaring lifted the `_` into a lambda parameter, so a hole
+          # reads as an argument referring to one by the time we get here.
+          def lifted_placeholder?(node)
+            node.args.any? { it in AST::VariableReference(name: /\A__p\d+__\z/) }
           end
         end
       end

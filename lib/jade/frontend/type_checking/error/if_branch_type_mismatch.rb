@@ -10,7 +10,7 @@ module Jade
 
           def message
             "The #{@branch} branch of this if statement is expected to return" +
-              " #{@expected} but got #{@actual}"
+              " #{naming[@expected]} but got #{naming[@actual]}"
           end
         end
       end

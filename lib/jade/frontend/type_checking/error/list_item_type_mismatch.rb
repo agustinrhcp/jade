@@ -10,7 +10,7 @@ module Jade
 
           def message
             "The #{ordinal(@actual_index)} item does not match the previous items in the list, " +
-              "expected #{@expected} but found #{@actual}"
+              "expected #{naming[@expected]} but found #{naming[@actual]}"
           end
         end
       end
