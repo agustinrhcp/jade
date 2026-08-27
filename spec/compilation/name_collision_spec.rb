@@ -68,8 +68,6 @@ module Jade
       end
     end
 
-    # An unrooted sibling reference becomes `Plan::Plan::Building` and
-    # dies at load, after compiling clean.
     context 'when a sibling type is referenced from inside it' do
       before { test_compiler.require(source) }
 
