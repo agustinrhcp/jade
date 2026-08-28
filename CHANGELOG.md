@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **The LSP indents while you type.** It advertised `documentFormattingProvider`
+  and nothing else, so an editor without the tree-sitter grammar left the cursor
+  at column 0 after every Enter. `documentOnTypeFormatting` now indents the line
+  Enter opened, and puts `end` back where its opener sits, from the text above
+  the cursor rather than a parse, which a half-written file will not give.
+
 ### Fixed
 
 - **A mismatch spanning a mismatch already reported is dropped.** Cascade

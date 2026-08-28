@@ -104,6 +104,21 @@ module Jade
         end
       end
 
+      # Enter and `end` are the two moments an editor can indent from what
+      # is already written, without the parse it will not get mid-typing.
+      def on_type_edits(text, line, character, typed)
+        text
+          .lines
+          .map(&:chomp)
+          .then do |lines|
+            case typed
+            in "\n" then indent_edit(lines, line, indent_after(lines, line))
+            in "d" then closing_edit(lines, line, character)
+            else []
+            end
+          end
+      end
+
       def whole_document_edit(source, new_text)
         last_line = source.line_starts.size - 1
         {
@@ -516,6 +531,47 @@ module Jade
 
       def interface_fn_symbol(fn, source)
         document_symbol(fn.name, :function, source, fn.range)
+      end
+
+      INDENT = 2
+
+      # A block opens on a header, on a keyword that ends one, or on an
+      # unclosed bracket. `in` is a branch head: it sits with its `case`.
+      OPENS = /(\A(def|case|implements|interface|uses|if)\b)|((\bthen|\bwith|\belse|[({\[])\z)/
+
+      def indent_after(lines, line)
+        previous(lines, line)
+          .then { it ? indent_of(it) + (OPENS.match?(it.strip) ? INDENT : 0) : 0 }
+      end
+
+      # `end` closes the block its opener began, so it lands where the
+      # opener sits: one level out from the body above it.
+      def closing_edit(lines, line, character)
+        return [] unless lines[line].to_s[0...character].strip == 'end'
+
+        previous(lines, line)
+          .then { it ? [indent_of(it) - INDENT, 0].max : 0 }
+          .then { indent_edit(lines, line, it) }
+      end
+
+      def previous(lines, line)
+        lines[0...line].reverse.find { !it.strip.empty? }
+      end
+
+      def indent_edit(lines, line, width)
+        return [] if indent_of(lines[line].to_s) == width
+
+        [{
+          range: {
+            start: { line:, character: 0 },
+            end: { line:, character: indent_of(lines[line].to_s) },
+          },
+          newText: ' ' * width,
+        }]
+      end
+
+      def indent_of(line)
+        line[/\A */].length
       end
 
       def diagnostic_message(diagnostic)

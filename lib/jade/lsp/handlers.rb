@@ -24,6 +24,7 @@ module Jade
         when 'textDocument/rename' then on_rename(state, message)
         when 'textDocument/inlayHint' then on_inlay_hint(state, message)
         when 'textDocument/formatting' then on_formatting(state, message)
+        when 'textDocument/onTypeFormatting' then on_type_formatting(state, message)
         else on_unknown(state, message)
         end
       end
@@ -59,6 +60,10 @@ module Jade
             renameProvider: { prepareProvider: true },
             inlayHintProvider: true,
             documentFormattingProvider: true,
+            documentOnTypeFormattingProvider: {
+              firstTriggerCharacter: "\n",
+              moreTriggerCharacter: ['d'],
+            },
           },
           serverInfo: { name: 'jade-lsp', version: '0.1.0' },
         }
@@ -161,6 +166,23 @@ module Jade
         uri = message.dig('params', 'textDocument', 'uri')
         edits = formatting_edits_for(state, uri)
         [state, [respond(message['id'], edits)]]
+      end
+
+      def on_type_formatting(state, message)
+        params = message['params']
+        state
+          .buffers[params.dig('textDocument', 'uri')]
+          .then { it ? on_type_edits(it, params) : [] }
+          .then { [state, [respond(message['id'], it)]] }
+      end
+
+      def on_type_edits(text, params)
+        Converters.on_type_edits(
+          text,
+          params.dig('position', 'line'),
+          params.dig('position', 'character'),
+          params['ch'],
+        )
       end
 
       def formatting_edits_for(state, uri)
