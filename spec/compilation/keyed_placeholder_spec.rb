@@ -78,15 +78,15 @@ module Jade
 
     # The variant lowers to a record literal, and those take holes now, so
     # the call is a function of the hole. Returning it where a `Shape` is
-    # wanted is the only complaint left, reported at the call and again at
-    # the body around it.
+    # wanted is the only complaint left.
+    it { is_expected.to have(1).item }
+
     its([0]) do
       is_expected.to be_a(Frontend::TypeChecking::Error::TypeMismatch)
     end
 
     it 'reports the shape it built, not a rule about placeholders' do
-      expect(subject.map(&:message))
-        .to all(match(/\(Int\) -> Shape|\(a\) -> b/))
+      expect(subject[0].message).to match(/\(a\) -> b/)
     end
 
     context 'a variant whose arguments are positional' do
