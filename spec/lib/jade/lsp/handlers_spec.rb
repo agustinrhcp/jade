@@ -84,6 +84,12 @@ module Jade
           expect(outbound.first[:result][:capabilities][:inlayHintProvider]).to eq true
         end
 
+        it 'advertises documentOnTypeFormattingProvider on newline and `d`' do
+          _, outbound = subject
+          provider = outbound.first[:result][:capabilities][:documentOnTypeFormattingProvider]
+          expect(provider).to eq(firstTriggerCharacter: "\n", moreTriggerCharacter: ['d'])
+        end
+
         it 'advertises documentFormattingProvider' do
           _, outbound = subject
           expect(outbound.first[:result][:capabilities][:documentFormattingProvider]).to eq true
@@ -1026,6 +1032,42 @@ module Jade
 
           expect(out.first[:result].find { it[:label] == 'module' }[:insertText])
             .to eq 'module Leaf exposing (${0})'
+        end
+      end
+
+      describe 'on-type formatting' do
+        it 'indents the line Enter opened' do
+          text = "module Leaf exposing (n)\n\ndef n -> Int\n\nend\n"
+          state, = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/didOpen',
+            'params' => { 'textDocument' => { 'uri' => uri, 'text' => text } },
+          })
+
+          _, out = Handlers.dispatch(state, {
+            'method' => 'textDocument/onTypeFormatting',
+            'id' => 41,
+            'params' => {
+              'textDocument' => { 'uri' => uri },
+              'position' => { 'line' => 3, 'character' => 0 },
+              'ch' => "\n",
+            },
+          })
+
+          expect(out.first[:result].first[:newText]).to eq '  '
+        end
+
+        it 'has nothing to say about a file it has not got' do
+          _, out = Handlers.dispatch(initialized_state, {
+            'method' => 'textDocument/onTypeFormatting',
+            'id' => 42,
+            'params' => {
+              'textDocument' => { 'uri' => "file://#{src}/gone.jd" },
+              'position' => { 'line' => 0, 'character' => 0 },
+              'ch' => "\n",
+            },
+          })
+
+          expect(out.first[:result]).to be_empty
         end
       end
 

@@ -73,6 +73,57 @@ module Jade
             .to eq 'file:///tmp/My%20Project/sub/foo.jd'
         end
       end
+
+      describe '.on_type_edits' do
+        def indent_after(text, line)
+          Converters
+            .on_type_edits(text, line, 0, "\n")
+            .then { it.empty? ? nil : it.first[:newText].length }
+        end
+
+        it 'opens a level inside a def' do
+          expect(indent_after("def f -> Int\n\nend\n", 1)).to be 2
+        end
+
+        it 'keeps the level of the line above' do
+          expect(indent_after("def f -> Int\n  1\n\nend\n", 2)).to be 2
+        end
+
+        it 'opens a level after a case' do
+          expect(indent_after("def f -> Int\n  case x\n\n", 2)).to be 4
+        end
+
+        it 'opens a level after a branch head' do
+          expect(indent_after("def f -> Int\n  case x\n  in A then\n\n", 3)).to be 4
+        end
+
+        it 'opens a level after an unclosed bracket' do
+          expect(indent_after("def f -> List(Int)\n  [\n\n", 2)).to be 4
+        end
+
+        it 'skips a blank line to find the level' do
+          expect(indent_after("def f -> Int\n  1\n\n\n", 3)).to be 2
+        end
+
+        it 'dedents `end` to its opener' do
+          expect(Converters.on_type_edits("def f -> Int\n  1\n  end\n", 2, 5, 'd'))
+            .to eql [{
+              range: {
+                start: { line: 2, character: 0 },
+                end: { line: 2, character: 2 },
+              },
+              newText: '',
+            }]
+        end
+
+        it 'leaves `end` alone when it already sits right' do
+          expect(Converters.on_type_edits("def f -> Int\n  1\nend\n", 2, 3, 'd')).to be_empty
+        end
+
+        it 'ignores a `d` that is not closing a block' do
+          expect(Converters.on_type_edits("def f -> Int\n  add\n", 1, 5, 'd')).to be_empty
+        end
+      end
     end
   end
 end
