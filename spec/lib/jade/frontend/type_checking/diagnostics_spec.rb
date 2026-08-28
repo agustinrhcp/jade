@@ -103,6 +103,24 @@ module Jade
         end
       end
 
+      context 'a mistake reported by the node above it' do
+        let(:text) do
+          <<~JADE
+            type Shape = Rect(w: Int, h: Int)
+            def make -> Shape
+              Rect(w: _, h: 2)
+            end
+          JADE
+        end
+
+        # The call is a function of the hole where a `Shape` was wanted:
+        # the call says so, and the body around it says so again, in
+        # concrete types that share no variable with the first.
+        it { is_expected.to have(1).item }
+
+        its([0]) { is_expected.to be_a(TypeChecking::Error::TypeMismatch) }
+      end
+
       context 'two mistakes that share nothing' do
         let(:text) do
           <<~JADE

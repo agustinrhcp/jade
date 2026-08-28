@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A mismatch spanning a mismatch already reported is dropped.** Cascade
+  suppression caught the case where both errors mention the same inference
+  variable; where the outer one had resolved to concrete types it named no
+  variable, and the same fault was still reported twice, at the call and at the
+  body around it.
+
 ### Added
 
 - **`_` works in a tuple or record literal.** `5 |> (_, "five")` and

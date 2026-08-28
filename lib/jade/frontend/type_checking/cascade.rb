@@ -11,6 +11,7 @@ module Jade
         def prune(errors)
           errors
             .then { one_view_per_span(it) }
+            .then { drop_enclosing(it) }
             .then { drop_downstream(it) }
         end
 
@@ -37,6 +38,24 @@ module Jade
 
         def depth(klass)
           klass.ancestors.take_while { it != Jade::Error }.size
+        end
+
+        # A mismatch spanning a mismatch already reported is the node above
+        # it complaining about what the one below produced.
+        def drop_enclosing(errors)
+          errors.reject do |error|
+            error.is_a?(Error::TypeMismatch) &&
+              errors.any? { encloses?(error, it) }
+          end
+        end
+
+        def encloses?(outer, inner)
+          return false unless inner.is_a?(Error::TypeMismatch)
+          return false if outer.equal?(inner) || outer.span.nil? || inner.span.nil?
+
+          outer.span.begin <= inner.span.begin &&
+            inner.span.end <= outer.span.end &&
+            outer.span != inner.span
         end
 
         # That variable is the hole the first failure left, so anything
