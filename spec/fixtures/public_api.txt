@@ -1,0 +1,374 @@
+Basics.(!=) : Eq a => (a, a) -> Bool
+Basics.(&&) : (Bool, Bool) -> Bool
+Basics.(*) : Numeric a => (a, a) -> a
+Basics.(+) : Numeric a => (a, a) -> a
+Basics.(++) : Appendable a => (a, a) -> a
+Basics.(-) : Numeric a => (a, a) -> a
+Basics.(/) : Numeric a => (a, a) -> a
+Basics.(<) : Comparable a => (a, a) -> Bool
+Basics.(<=) : Comparable a => (a, a) -> Bool
+Basics.(==) : Eq a => (a, a) -> Bool
+Basics.(>) : Comparable a => (a, a) -> Bool
+Basics.(>=) : Comparable a => (a, a) -> Bool
+Basics.(||) : (Bool, Bool) -> Bool
+Basics.Appendable members: (++)
+Basics.Chainable members: and_then
+Basics.Comparable members: compare
+Basics.EQ : Ordering
+Basics.Eq members: (==)
+Basics.GT : Ordering
+Basics.LT : Ordering
+Basics.Mappable members: map
+Basics.Numeric members: (*), (+), (-), (/), from_int
+Basics.always : (a) -> (b) -> a
+Basics.and_then : Chainable f => (f(a), (a) -> f(b)) -> f(b)
+Basics.bool_eq : (Bool, Bool) -> Bool
+Basics.ceiling : (Float) -> Int
+Basics.compare : Comparable a => (a, a) -> Ordering
+Basics.float_add : (Float, Float) -> Float
+Basics.float_compare : (Float, Float) -> Ordering
+Basics.float_div : (Float, Float) -> Float
+Basics.float_eq : (Float, Float) -> Bool
+Basics.float_mul : (Float, Float) -> Float
+Basics.float_sub : (Float, Float) -> Float
+Basics.floor : (Float) -> Int
+Basics.from_int : Numeric a => (Int) -> a
+Basics.identity : (a) -> a
+Basics.int_add : (Int, Int) -> Int
+Basics.int_compare : (Int, Int) -> Ordering
+Basics.int_div : (Int, Int) -> Int
+Basics.int_eq : (Int, Int) -> Bool
+Basics.int_mul : (Int, Int) -> Int
+Basics.int_sub : (Int, Int) -> Int
+Basics.map : Mappable f => (f(a), (a) -> b) -> f(b)
+Basics.max : Comparable a => (a, a) -> a
+Basics.min : Comparable a => (a, a) -> a
+Basics.mod : (Int, Int) -> Int
+Basics.not : (Bool) -> Bool
+Basics.round : (Float) -> Int
+Basics.to_float : (Int) -> Float
+Basics.truncate : (Float) -> Int
+Bytes.bytes_append : (Bytes, Bytes) -> Bytes
+Bytes.bytes_eq : (Bytes, Bytes) -> Bool
+Bytes.empty : Bytes
+Bytes.from_base64_url : (String) -> Maybe(Bytes)
+Bytes.from_hex : (String) -> Maybe(Bytes)
+Bytes.from_list : (List(Int)) -> Maybe(Bytes)
+Bytes.from_string : (String) -> Bytes
+Bytes.to_base64_url : (Bytes) -> String
+Bytes.to_hex : (Bytes) -> String
+Bytes.to_list : (Bytes) -> List(Int)
+Bytes.to_string : (Bytes) -> Maybe(String)
+Bytes.width : (Bytes) -> Int
+Calendar.Apr : Month
+Calendar.Aug : Month
+Calendar.Days : Unit
+Calendar.Dec : Month
+Calendar.Feb : Month
+Calendar.Fri : Weekday
+Calendar.Jan : Month
+Calendar.Jul : Month
+Calendar.Jun : Month
+Calendar.Mar : Month
+Calendar.May : Month
+Calendar.Mon : Weekday
+Calendar.Months : Unit
+Calendar.Nov : Month
+Calendar.Oct : Month
+Calendar.Sat : Weekday
+Calendar.Sep : Month
+Calendar.Sun : Weekday
+Calendar.Thu : Weekday
+Calendar.Tue : Weekday
+Calendar.Wed : Weekday
+Calendar.Weeks : Unit
+Calendar.Years : Unit
+Calendar.add : (Date, Unit, Int) -> Date
+Calendar.day : (Date) -> Int
+Calendar.diff : (Date, Date, Unit) -> Int
+Calendar.from_calendar_date : (Int, Month, Int) -> Date
+Calendar.from_iso_string : (String) -> Result(Date, String)
+Calendar.from_rata_die : (Int) -> Date
+Calendar.month : (Date) -> Month
+Calendar.month_from_int : (Int) -> Month
+Calendar.month_to_int : (Month) -> Int
+Calendar.to_iso_string : (Date) -> String
+Calendar.to_rata_die : (Date) -> Int
+Calendar.today : Task(Date, Never)
+Calendar.weekday : (Date) -> Weekday
+Calendar.weekday_from_int : (Int) -> Weekday
+Calendar.weekday_to_int : (Weekday) -> Int
+Calendar.year : (Date) -> Int
+Char.alpha? : (Char) -> Bool
+Char.alpha_numeric? : (Char) -> Bool
+Char.char_eq : (Char, Char) -> Bool
+Char.digit? : (Char) -> Bool
+Char.from_code : (Int) -> Maybe(Char)
+Char.lower? : (Char) -> Bool
+Char.to_code : (Char) -> Int
+Char.upper? : (Char) -> Bool
+Clock.add : (Instant, Duration) -> Instant
+Clock.at_time : (Instant) -> { hour : Int, minute : Int, second : Int, millisecond : Int }
+Clock.days : (Int) -> Duration
+Clock.diff : (Instant, Instant) -> Duration
+Clock.epoch : Instant
+Clock.from_iso : (String) -> Result(Instant, String)
+Clock.hours : (Int) -> Duration
+Clock.in_days : (Duration) -> Int
+Clock.in_hours : (Duration) -> Int
+Clock.in_millis : (Duration) -> Int
+Clock.in_minutes : (Duration) -> Int
+Clock.in_seconds : (Duration) -> Int
+Clock.millis : (Int) -> Duration
+Clock.minutes : (Int) -> Duration
+Clock.now : Task(Instant, Never)
+Clock.on_date : (Instant) -> Date
+Clock.parts : (Duration) -> { days : Int, hours : Int, minutes : Int, seconds : Int, millis : Int }
+Clock.seconds : (Int) -> Duration
+Clock.to_iso : (Instant) -> String
+Debug.log : (String, a) -> a
+Decimal.coefficient : (Decimal) -> Int
+Decimal.div : (Decimal, Decimal, Int) -> Decimal
+Decimal.exponent : (Decimal) -> Int
+Decimal.of : (Int, Int) -> Decimal
+Decimal.parse : (String) -> Maybe(Decimal)
+Decimal.round : (Decimal, Int) -> Decimal
+Decimal.scaled : (Int, Int) -> Decimal
+Decimal.to_float : (Decimal) -> Float
+Decimal.to_i : (Decimal) -> Int
+Decode.AtField : (String, DecodeError) -> DecodeError
+Decode.AtIndex : (Int, DecodeError) -> DecodeError
+Decode.Custom : (String) -> DecodeError
+Decode.Decodable members: decoder
+Decode.MissingField : (String) -> DecodeError
+Decode.Multiple : (List(DecodeError)) -> DecodeError
+Decode.Params.Params : (List((String, Decoder(a))), List((String, a))) -> Params(a)
+Decode.Params.accept : (Params(a), String, Decoder(a)) -> Params(a)
+Decode.Params.bool : (Params(a), String, (Bool) -> a) -> Params(a)
+Decode.Params.collect : (Params(a)) -> Decoder(List(a))
+Decode.Params.default : (Params(a), String, a) -> Params(a)
+Decode.Params.empty : Params(a)
+Decode.Params.float : (Params(a), String, (Float) -> a) -> Params(a)
+Decode.Params.int : (Params(a), String, (Int) -> a) -> Params(a)
+Decode.Params.nested : (Params(a), String, (List(b)) -> a, Params(b)) -> Params(a)
+Decode.Params.string : (Params(a), String, (String) -> a) -> Params(a)
+Decode.WrongType : (String, String) -> DecodeError
+Decode.and_map : (Decoder((a) -> b), Decoder(a)) -> Decoder(b)
+Decode.and_then : (Decoder(a), (a) -> Decoder(b)) -> Decoder(b)
+Decode.bool : Decoder(Bool)
+Decode.decode : (Decoder(a), Value) -> Result(a, DecodeError)
+Decode.decode_string : (Decoder(a), String) -> Result(a, DecodeError)
+Decode.decoder : Decodable a => Decoder(a)
+Decode.dict : (Decoder(k), Decoder(v)) -> Decoder(Dict(k, v))
+Decode.fail : (String) -> Decoder(a)
+Decode.field : (String, Decoder(a)) -> Decoder(a)
+Decode.float : Decoder(Float)
+Decode.from_json : Decodable a => (String) -> Result(a, DecodeError)
+Decode.from_result : (Result(a, String)) -> Decoder(a)
+Decode.from_value : Decodable a => (Value) -> Result(a, DecodeError)
+Decode.index : (Int, Decoder(a)) -> Decoder(a)
+Decode.int : Decoder(Int)
+Decode.list : (Decoder(a)) -> Decoder(List(a))
+Decode.map : (Decoder(a), (a) -> b) -> Decoder(b)
+Decode.nullable : (Decoder(a)) -> Decoder(Maybe(a))
+Decode.one_of : (List(Decoder(a))) -> Decoder(a)
+Decode.optional : (Decoder((a) -> b), String, Decoder(a), a) -> Decoder(b)
+Decode.optional_field : (String, Decoder(a)) -> Decoder(Maybe(a))
+Decode.required : (Decoder((a) -> b), String, Decoder(a)) -> Decoder(b)
+Decode.sequence : (List(Decoder(a))) -> Decoder(List(a))
+Decode.set : (Decoder(a)) -> Decoder(Set(a))
+Decode.string : Decoder(String)
+Decode.string_enum : (List(String), List(a)) -> Decoder(a)
+Decode.succeed : (a) -> Decoder(a)
+Decode.tuple : (Decoder(a), Decoder(b)) -> Decoder((a, b))
+Decode.tuple3 : (Decoder(a), Decoder(b), Decoder(c)) -> Decoder((a, b, c))
+Decode.tuple4 : (Decoder(a), Decoder(b), Decoder(c), Decoder(d)) -> Decoder((a, b, c, d))
+Decode.type_ : Decoder(a)
+Decode.value : Decoder(Value)
+Decode.variant : (Decoder(a), String, Decoder(a)) -> Decoder(a)
+Dict.dict_eq : (Dict(k, v), Dict(k, v)) -> Bool
+Dict.empty : Dict(k, v)
+Dict.empty? : (Dict(k, v)) -> Bool
+Dict.filter : (Dict(k, v), (k, v) -> Bool) -> Dict(k, v)
+Dict.fold : (Dict(k, v), b, (k, v, b) -> b) -> b
+Dict.from_list : Eq k => (List((k, v))) -> Dict(k, v)
+Dict.get : Eq k => (Dict(k, v), k) -> Maybe(v)
+Dict.insert : Eq k => (Dict(k, v), k, v) -> Dict(k, v)
+Dict.keys : (Dict(k, v)) -> List(k)
+Dict.map : (Dict(k, v), (k, v) -> v2) -> Dict(k, v2)
+Dict.member? : Eq k => (Dict(k, v), k) -> Bool
+Dict.merge : Eq k => (Dict(k, v), Dict(k, v), (v, v) -> v) -> Dict(k, v)
+Dict.remove : Eq k => (Dict(k, v), k) -> Dict(k, v)
+Dict.singleton : Eq k => (k, v) -> Dict(k, v)
+Dict.size : (Dict(k, v)) -> Int
+Dict.to_list : (Dict(k, v)) -> List((k, v))
+Dict.union : Eq k => (Dict(k, v), Dict(k, v)) -> Dict(k, v)
+Dict.update : Eq k => (Dict(k, v), k, (Maybe(v)) -> Maybe(v)) -> Dict(k, v)
+Dict.values : (Dict(k, v)) -> List(v)
+Encode.Encodable members: encoder
+Encode.bool : (Bool) -> Value
+Encode.dict : ((k) -> Value, (v) -> Value, Dict(k, v)) -> Value
+Encode.encode : Encodable a => (a) -> Value
+Encode.encode_to_string : (Value) -> String
+Encode.encoder : Encodable a => (a) -> Value
+Encode.field : (String, (a) -> Value, a) -> (String, Value)
+Encode.float : (Float) -> Value
+Encode.int : (Int) -> Value
+Encode.list : ((a) -> Value, List(a)) -> Value
+Encode.null : Value
+Encode.nullable : ((a) -> Value, Maybe(a)) -> Value
+Encode.object : (List((String, Value))) -> Value
+Encode.set : ((a) -> Value, Set(a)) -> Value
+Encode.string : (String) -> Value
+Encode.tuple : ((a) -> Value, (b) -> Value, (a, b)) -> Value
+Encode.tuple3 : ((a) -> Value, (b) -> Value, (c) -> Value, (a, b, c)) -> Value
+Encode.tuple4 : ((a) -> Value, (b) -> Value, (c) -> Value, (d) -> Value, (a, b, c, d)) -> Value
+Encode.value : (Value) -> Value
+Encode.variant : (String, List(Value)) -> Value
+List.all? : (List(a), (a) -> Bool) -> Bool
+List.and_then : (List(a), (a) -> List(b)) -> List(b)
+List.any? : (List(a), (a) -> Bool) -> Bool
+List.concat : (List(List(a))) -> List(a)
+List.drop : (List(a), Int) -> List(a)
+List.empty? : (List(a)) -> Bool
+List.filter : (List(a), (a) -> Bool) -> List(a)
+List.filter_map : (List(a), (a) -> Maybe(b)) -> List(b)
+List.find : (List(a), (a) -> Bool) -> Maybe(a)
+List.fold : (List(a), b, (b, a) -> b) -> b
+List.head : (List(a)) -> Maybe(a)
+List.indexed_map : (List(a), (Int, a) -> b) -> List(b)
+List.length : (List(a)) -> Int
+List.list_append : (List(a), List(a)) -> List(a)
+List.map : (List(a), (a) -> b) -> List(b)
+List.maximum : Comparable a => (List(a)) -> Maybe(a)
+List.member? : Eq a => (List(a), a) -> Bool
+List.minimum : Comparable a => (List(a)) -> Maybe(a)
+List.partition : (List(a), (a) -> Bool) -> (List(a), List(a))
+List.product : Numeric a => (List(a)) -> a
+List.range : (Int, Int) -> List(Int)
+List.repeat : (a, Int) -> List(a)
+List.reverse : (List(a)) -> List(a)
+List.singleton : (a) -> List(a)
+List.sort : Comparable a => (List(a)) -> List(a)
+List.sort_by : Comparable b => (List(a), (a) -> b) -> List(a)
+List.sum : Numeric a => (List(a)) -> a
+List.tail : (List(a)) -> List(a)
+List.take : (List(a), Int) -> List(a)
+List.unzip : (List((a, b))) -> (List(a), List(b))
+List.zip : (List(a), List(b)) -> List((a, b))
+Maybe.Just : (a) -> Maybe(a)
+Maybe.Nothing : Maybe(a)
+Maybe.and_then : (Maybe(a), (a) -> Maybe(b)) -> Maybe(b)
+Maybe.map : (Maybe(a), (a) -> b) -> Maybe(b)
+Maybe.with_default : (Maybe(a), a) -> a
+Result.Err : (error) -> Result(value, error)
+Result.Ok : (value) -> Result(value, error)
+Result.and_then : (Result(a, e), (a) -> Result(b, e)) -> Result(b, e)
+Result.from_maybe : (Maybe(a), e) -> Result(a, e)
+Result.map : (Result(a, e), (a) -> b) -> Result(b, e)
+Result.map_error : (Result(a, e), (e) -> x) -> Result(a, x)
+Result.on_error : (Result(a, e), (e) -> Result(a, f)) -> Result(a, f)
+Result.sequence : (List(Result(a, e))) -> Result(List(a), e)
+Result.to_maybe : (Result(a, e)) -> Maybe(a)
+Result.with_default : (Result(a, e), a) -> a
+Set.diff : Eq a => (Set(a), Set(a)) -> Set(a)
+Set.empty : Set(a)
+Set.empty? : (Set(a)) -> Bool
+Set.filter : (Set(a), (a) -> Bool) -> Set(a)
+Set.fold : (Set(a), b, (a, b) -> b) -> b
+Set.from_list : Eq a => (List(a)) -> Set(a)
+Set.insert : Eq a => (Set(a), a) -> Set(a)
+Set.intersect : Eq a => (Set(a), Set(a)) -> Set(a)
+Set.map : Eq b => (Set(a), (a) -> b) -> Set(b)
+Set.member? : Eq a => (Set(a), a) -> Bool
+Set.remove : Eq a => (Set(a), a) -> Set(a)
+Set.set_eq : (Set(a), Set(a)) -> Bool
+Set.singleton : Eq a => (a) -> Set(a)
+Set.size : (Set(a)) -> Int
+Set.to_list : (Set(a)) -> List(a)
+Set.union : Eq a => (Set(a), Set(a)) -> Set(a)
+Show.Show members: show
+Show.bool_show : (Bool) -> String
+Show.char_show : (Char) -> String
+Show.float_show : (Float) -> String
+Show.int_show : (Int) -> String
+Show.never_show : (Never) -> String
+Show.show : Show a => (a) -> String
+Show.str_show : (String) -> String
+String.concat : (List(String)) -> String
+String.cons : (Char, String) -> String
+String.contains? : (String, String) -> Bool
+String.empty? : (String) -> Bool
+String.ends_with? : (String, String) -> Bool
+String.from_char : (Char) -> String
+String.from_int : (Int) -> String
+String.from_list : (List(Char)) -> String
+String.indexes : (String, String) -> List(Int)
+String.join : (List(String), String) -> String
+String.length : (String) -> Int
+String.lines : (String) -> List(String)
+String.map : (String, (Char) -> Char) -> String
+String.repeat : (String, Int) -> String
+String.replace : (String, String, String) -> String
+String.reverse : (String) -> String
+String.slice : (String, Int, Int) -> String
+String.split : (String, String) -> List(String)
+String.starts_with? : (String, String) -> Bool
+String.str_append : (String, String) -> String
+String.str_compare : (String, String) -> Ordering
+String.str_eq : (String, String) -> Bool
+String.to_int : (String) -> Maybe(Int)
+String.to_list : (String) -> List(Char)
+String.to_lower : (String) -> String
+String.to_upper : (String) -> String
+String.trim : (String) -> String
+String.trim_left : (String) -> String
+String.trim_right : (String) -> String
+String.uncons : (String) -> Maybe((Char, String))
+String.words : (String) -> List(String)
+Task.and_then : (Task(a, e), (a) -> Task(b, e)) -> Task(b, e)
+Task.fail : (e) -> Task(a, e)
+Task.from_result : (Result(a, e)) -> Task(a, e)
+Task.map : (Task(a, e), (a) -> b) -> Task(b, e)
+Task.map_error : (Task(a, e), (e) -> f) -> Task(a, f)
+Task.on_error : (Task(a, e), (e) -> Task(a, f)) -> Task(a, f)
+Task.run : (Task(a, e)) -> Result(a, e)
+Task.sequence : (List(Task(a, e))) -> Task(List(a), e)
+Task.succeed : (a) -> Task(a, e)
+Tuple.first : ((a, b)) -> a
+Tuple.pair : (a, b) -> (a, b)
+Tuple.second : ((a, b)) -> b
+interface Appendable(a)
+interface Chainable(f)
+interface Comparable(a)
+interface Decodable(a)
+interface Encodable(a)
+interface Eq(a)
+interface Mappable(f)
+interface Numeric(a)
+interface Show(a)
+struct Date = { year : Int, month : Month, day : Int }
+type Bool
+type Bytes
+type Char
+type Decimal
+type DecodeError
+type Decoder(a)
+type Dict(k, v)
+type Duration
+type Float
+type Instant
+type Int
+type List(a)
+type Maybe(a)
+type Month
+type Never
+type Ordering
+type Params(a)
+type Result(value, error)
+type Set(a)
+type String
+type Task(a, e)
+type Unit
+type Value
+type Weekday

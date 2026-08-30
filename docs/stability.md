@@ -33,6 +33,17 @@ changed.
 Not breaks: a new function, a new module, a better error message, faster or
 tidier generated Ruby that keeps the same public shape.
 
+## How we notice
+
+Every public name and its shape are in `spec/fixtures/public_api.txt`, and a
+spec fails when the two disagree. A change to the surface has to be committed
+alongside the changelog entry that explains it, so "we broke it and forgot to
+say" is not a thing that can happen quietly.
+
+That catches names and shapes. It does not catch a function that keeps its
+signature and changes its answer; the compilation suite and the ejected
+examples are what stand behind that.
+
 ## How a break is announced
 
 Every one appears in [CHANGELOG.md](../CHANGELOG.md) under the release that

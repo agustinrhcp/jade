@@ -8,7 +8,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **[docs/stability.md](docs/stability.md)** — what a version change is allowed
+- **[docs/stability.md](docs/stability.md)**, and a snapshot of the public API
+  that fails the suite when it moves — what a version change is allowed
   to do to your code. A minor may break you and a patch may not; what counts as
   a break, including the one that is easy to miss, a new member on an interface;
   how a break is announced; and when a deprecation cycle is possible at all.
