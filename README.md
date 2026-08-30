@@ -43,9 +43,10 @@ module Greeter
 end
 ```
 
-There's no runtime VM and no FFI. The pure logic lives in `Internal`; the public
-`Greeter.greet` decodes the untrusted Ruby argument (`nil`-or-`String`) into a
-`Maybe` before handing it to the typed core. Calling it from Ruby:
+There's no runtime VM and no FFI. The pure logic lives in `Internal`, which is
+the compiler's own facade and not yours to call; the public `Greeter.greet`
+decodes the untrusted Ruby argument (`nil`-or-`String`) into a `Maybe` before
+handing it to the typed core. Calling it from Ruby:
 
 ```ruby
 Greeter.greet("Ada")   # => "Hello, Ada"
@@ -214,16 +215,17 @@ def render(user: User) -> String
 end
 ```
 
+`parse` is for Jade to consume — `Result` has no `Encodable`, so a function
+returning one is not callable from Ruby. `render` takes and returns encodable
+types, so it is:
+
 ```ruby
-Api::Internal.parse('{"name":"Ada","age":40}')
-# => Ok(User(name: "Ada", age: 40))
-
-Api::Internal.parse('{"name":"Ada"}')
-# => Err(MissingField("age"))
-
-Api::Internal.render(Api::User.new(name: "Ada", age: 40))
+Api.render({"name" => "Ada", "age" => 40})
 # => "{\"name\":\"Ada\",\"age\":40}"
 ```
+
+To hand a decode outcome to Ruby, return a `Task` — its arms encode to
+`["ok", …]` / `["err", …]`.
 
 When you need them, the pieces are explicit too: `Decode.field`,
 `Decode.list`, and `Decode.succeed(User(_, _)) |> Decode.required(...)` build
@@ -273,22 +275,25 @@ RSpec.describe 'Signup' do
   it 'sends a welcome mail to the new address' do
     all_calls_to(Mailer.deliver) { |t, _email| t.ok(true) }
 
-    expect(Signup::Internal.run('ada@example.com').run).to be_ok(true)
+    expect(Signup.run('ada@example.com')).to be_ok(true)
     expect(Mailer.deliver).to have_been_called.with('ada@example.com')
   end
 
   it 'surfaces a delivery failure as Err' do
     all_calls_to(Mailer.deliver) { |t, _email| t.err("smtp down") }
 
-    expect(Signup::Internal.run('ada@example.com').run).to be_err("smtp down")
+    expect(Signup.run('ada@example.com')).to be_err("smtp down")
   end
 end
 ```
 
 `all_calls_to` sets a persistent stub; `next_call_to` queues one-shot answers.
-`have_been_called` chains `.with(...)`, `.once`, `.times(n)`. Matchers include
-`be_ok`, `be_err`, `be_just`, and `be_nothing`. Because effects only happen
-through `Task`, a function's return type tells you whether it performs IO.
+`have_been_called` chains `.with(...)`, `.once`, `.times(n)`, and `be_ok` /
+`be_err` match the `["ok", …]` pair a `Task` function answers with. Everything
+else is an ordinary RSpec assertion over wire data. Drive the
+public function, never `Signup::Internal` — that facade holds values that
+never went through a decoder. Because effects only happen through `Task`, a
+function's return type tells you whether it performs IO.
 
 ## Using Jade from Ruby
 

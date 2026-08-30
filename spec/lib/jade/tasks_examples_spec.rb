@@ -172,6 +172,29 @@ describe 'look_like matcher' do
   end
 end
 
+# A Task-returning function called across the boundary answers the encoded
+# pair, not a Result. Same assertion to whoever wrote the test.
+describe 'be_ok / be_err against an encoded outcome' do
+  it 'matches the ok pair, with or without a value' do
+    expect(['ok', 42]).to be_ok
+    expect(['ok', 42]).to be_ok(42)
+    expect(['ok', 42]).not_to be_ok(43)
+    expect(['err', 'oops']).not_to be_ok
+  end
+
+  it 'matches the err pair' do
+    expect(['err', 'smtp down']).to be_err
+    expect(['err', 'smtp down']).to be_err('smtp down')
+    expect(['err', 'smtp down']).not_to be_err('other')
+    expect(['ok', 1]).not_to be_err
+  end
+
+  it 'composes with ordinary matchers' do
+    expect(['ok', 42]).to be_ok(kind_of(Integer))
+    expect(['ok', { 'name' => 'Ada' }]).to be_ok(include('name' => 'Ada'))
+  end
+end
+
 describe 'be_ok / be_err convenience matchers' do
   it 'be_ok with no args matches any Ok' do
     expect(Jade::Result::Ok[42]).to be_ok

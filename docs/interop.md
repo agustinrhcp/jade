@@ -96,14 +96,14 @@ element with each one left alone.
 An exposed function gets two callable forms:
 
 ```ruby
-# Boundary form — args decoded, return encoded, Task runs eagerly
 Store.page("recent")     # => ["ok", ["a", "b"]]
 Store.page!("recent")    # => ["a", "b"]   (bang form unwraps, raises on err)
-
-# Internal form — keeps the Task as a value you can compose
-task = Store::Internal.page("recent")
-task.run                 # => Jade::Result::Ok[["a", "b"]]
 ```
+
+Those two are the whole Ruby surface. The compiled module also holds a
+`Store::Internal`, and it is **not yours to call** — it is where the pure
+logic lives, taking and returning Jade's own values, which never went through
+a decoder. Compose `Task`s in Jade, where the type checker is watching.
 
 At the boundary, Ruby values are **decoded into Jade values** on the way in and
 **encoded back to Ruby** on the way out. For `Task` functions the ok-arm decoder
@@ -116,8 +116,8 @@ through every call.
 The unit here is the **function**, not the type. A function is exposed to Ruby
 only when **all of its parameters are `Decodable` and its return type is
 `Encodable`**. If any parameter can't be decoded, or the return can't be
-encoded, that whole function isn't exposed — it compiles fine and its `Internal`
-form still works, but calling the public `Module.fn` from plain Ruby raises
+encoded, that whole function isn't exposed — it compiles fine and Jade can
+still call it, but calling `Module.fn` from plain Ruby raises
 `Jade::Interop::NotExposed`. The error names the part that disqualified it
 (e.g. `argument 1 of type Shape has no Decodable instance`).
 
@@ -202,7 +202,7 @@ module Sample
 end
 ```
 
-Two surface methods — `Internal.absolute` (pure) and `self.absolute` (the
-boundary). `Int` has a specialized fast-path coercion; richer types decode
+Two methods — `Internal.absolute`, the pure one Jade calls, and
+`self.absolute`, the boundary and the only one Ruby should. `Int` has a specialized fast-path coercion; richer types decode
 through cached `Decode` constants instead. Either way the boundary work is
 visible in the file, not hidden inside a runtime hook.

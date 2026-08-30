@@ -50,16 +50,22 @@ def user(json: String) -> Result(User, DecodeError)
 end
 ```
 
-```ruby
-DecodeJson::Internal.age('{"age":40}')             # => Ok(40)
-DecodeJson::Internal.tags('["a","b"]')             # => Ok(["a", "b"])
-DecodeJson::Internal.coords('null')                # => Ok(Nothing)
-DecodeJson::Internal.coords('7')                   # => Ok(Just(7))
-DecodeJson::Internal.user('{"name":"Ada","age":40}')
-# => Ok(User(name: "Ada", age: 40))
-DecodeJson::Internal.user('{"name":"Ada"}')
-# => Err(MissingField("age"))
+Every one of these returns a `Result`, which has no `Encodable` — so they are
+for Jade to consume, not Ruby. Written in Jade, the outcomes are:
+
+```jade
+age('{"age":40}')                 -- Ok(40)
+tags('["a","b"]')                 -- Ok(["a", "b"])
+coords('null')                    -- Ok(Nothing)
+coords('7')                       -- Ok(Just(7))
+user('{"name":"Ada","age":40}')   -- Ok(User(name: "Ada", age: 40))
+user('{"name":"Ada"}')            -- Err(MissingField("age"))
 ```
+
+To hand one of these to Ruby, return a `Task` instead — its arms encode, and
+the caller gets `["ok", …]` or `["err", …]`. Reaching into `Module::Internal`
+to call the `Result` form is not an option: that facade holds values that
+never went through an encoder.
 
 The struct decoder is `Decode.succeed(User(_, _))` piped through one
 `Decode.required` per field — the `_` placeholders are the constructor's holes,
@@ -110,9 +116,11 @@ end
 EncodeJson.n                  # => "42"
 EncodeJson.xs                 # => "[1,2,3]"
 EncodeJson.point              # => '{"x":1,"y":2}'
-EncodeJson::Internal.user(user)
+EncodeJson.user({"name" => "Ada", "age" => 40})
 # => '{"name":"Ada","age":40}'
 ```
+
+A struct argument crosses as the object it encodes to, keyed by strings.
 
 ## Auto-derivation
 

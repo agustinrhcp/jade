@@ -6,6 +6,36 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed
+
+- `be_just`, `be_nothing` and `look_like`. They matched Jade's own values — a
+  `Jade::Maybe`, a union variant — which nothing crossing the boundary has:
+  a `Maybe` arrives as the value or `nil`, a variant-only union as its name.
+  Reaching a value they could match meant calling `Module::Internal`. `be_ok`
+  and `be_err` remain, for the encoded outcome of a `Task`.
+
+### Changed
+
+- `be_ok` and `be_err` also match the encoded outcome a `Task`-returning
+  function answers with across the boundary — `["ok", value]` — not only a
+  `Jade::Result`. Specs drive the public function, so that is the shape they
+  see.
+- Docs no longer teach calling `Module::Internal` from Ruby. It holds values
+  that never went through a decoder; `docs/testing.md`, `docs/json.md`,
+  `docs/interop.md` and the README now drive the public boundary throughout.
+  Where an example was not reachable that way — `Result` has no `Encodable`,
+  so a function returning one is never callable from Ruby — the docs say so
+  rather than reaching past the boundary.
+- Generated files now open with `# typed: false`. They were already at that
+  level by default, absent a sigil; saying it makes the ceiling explicit.
+  Note that `srb tc --typed=true` disregards sigils — a project forcing a
+  floor needs `--typed-override` to exempt the build directory.
+- A `uses Foo` port's generated `require` is guarded with
+  `unless defined?(Foo)`, so an app that already owns the constant keeps it
+  under its own loader. Previously the require ran unconditionally, which
+  could execute an app file a second time — benign in plain Ruby, fatal under
+  `sorbet-runtime`, where redefining a `T::Struct` prop or a `T::Enum` raises.
+
 ## [0.8.0]
 
 ### Added

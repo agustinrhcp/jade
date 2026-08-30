@@ -226,28 +226,38 @@ end
   end
 end
 
-::RSpec::Matchers.define :look_like do |name, *positional, **named|
-  match do |actual|
-    @actual = actual
-    Jade::Tasks::Matcher.match?(actual, name, positional, named)
-  end
+# A `Task`-returning function called across the boundary answers the encoded
+# pair, `["ok", value]`, not a `Jade::Result`. Both shapes are the same
+# assertion to whoever wrote the test, so both matchers take either.
+module Jade
+  module Tasks
+    module EncodedOutcome
+      extend self
 
-  failure_message do
-    args = (positional.map(&:inspect) + named.map { |k, v| "#{k}: #{v.inspect}" }).join(', ')
-    "expected #{@actual.inspect} to look like #{name}(#{args})"
+      TAGS = { ok: 'ok', err: 'err' }.freeze
+
+      def pair?(actual, kind)
+        TAGS.key?(kind) && (actual in [^(TAGS.fetch(kind)), *])
+      end
+
+      def unwrap(actual)
+        actual.last
+      end
+    end
   end
 end
 
 {
-  ok:      'Jade::Result::Ok',
-  err:     'Jade::Result::Err',
-  just:    'Jade::Maybe::Just',
-  nothing: 'Jade::Maybe::Nothing',
+  ok:  'Jade::Result::Ok',
+  err: 'Jade::Result::Err',
 }.each do |kind, full_name|
   ::RSpec::Matchers.define :"be_#{kind}" do |*args, **named|
     match do |actual|
       @actual = actual
-      if args.empty? && named.empty?
+      if Jade::Tasks::EncodedOutcome.pair?(actual, kind)
+        args.empty? && named.empty? ||
+          Jade::Tasks::Matcher.arg_match?(Jade::Tasks::EncodedOutcome.unwrap(actual), args.first)
+      elsif args.empty? && named.empty?
         actual.respond_to?(:"#{kind}?") && actual.public_send(:"#{kind}?")
       else
         Jade::Tasks::Matcher.match?(actual, full_name, args, named)
