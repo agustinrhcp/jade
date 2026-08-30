@@ -8,6 +8,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **A guard on what the runtime loads.** Compiled code requires
+  `jade/runtime` and nothing else, so whatever that pulls in ships in every
+  production image and has to be vendored by an eject. A spec now pins the
+  set to seven files and fails if the parser, the AST, the frontend, the
+  formatter, the LSP or the CLI appear. Booting the intrinsics still does
+  pull the compiler in, and that example is pending rather than passing.
+
+### Added
+
 - **The LSP indents while you type.** It advertised `documentFormattingProvider`
   and nothing else, so an editor without the tree-sitter grammar left the cursor
   at column 0 after every Enter. `documentOnTypeFormatting` now indents the line
