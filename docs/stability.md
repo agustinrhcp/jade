@@ -44,9 +44,15 @@ jade api --out jade-api.json    # commit the result
 jade api --check                # exits 1 when the surface moved
 ```
 
-Jade's own surface is snapshotted that way in `spec/fixtures/public_api.json`,
-and a spec fails when the two disagree, so a change has to be committed
-alongside the changelog entry that explains it.
+Jade's own surface is snapshotted that way in `spec/fixtures/public_api.json`.
+Two things then hold, both in CI:
+
+- a spec fails when the snapshot and the compiler disagree, so the surface
+  cannot move without someone updating the file
+- a pull request that updates the file without touching `CHANGELOG.md` fails,
+  so it cannot move without someone saying what changed
+
+Neither stops a break. They stop a *silent* one.
 
 The same command works in a project or in an extension gem: `--origin
 extension` narrows it to the modules that gem ships, which is the surface its
