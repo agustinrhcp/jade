@@ -73,6 +73,7 @@ module Jade
     def generate_entry(entry, registry)
       generate(entry.ast, registry)
         .then { entry.entry ? "#{load_path}\n#{it}" : it }
+        .then { "#{sorbet_sigil}\n#{it}" }
         .then { entry.with(generated: it) }
     end
 
@@ -138,7 +139,11 @@ module Jade
         end
 
       in AST::InteropImportDeclaration(module: mod)
-        Pretty.block("begin", "require '#{mod.name.gsub('::', '/').downcase}'\nrescue LoadError")
+        mod.name
+          .gsub('::', '/')
+          .downcase
+          .then { "require '#{it}' unless defined?(#{mod.name})" }
+          .then { Pretty.block("begin", "#{it}\nrescue LoadError") }
 
       in AST::Implementation
         Implementation.generate(node, registry)
@@ -400,6 +405,14 @@ module Jade
     # shadow the real gems for the whole process.
     def load_path
       '$LOAD_PATH.push(File.expand_path("lib")).uniq!'
+    end
+
+    # Sorbet cannot model rightward pattern binds or `Kernel#Integer` under
+    # `extend self`, so these files never pass above `false`. A project
+    # forcing `--typed=true` needs `--typed-override`; that flag ignores
+    # sigils.
+    def sorbet_sigil
+      '# typed: false'
     end
   end
 end
