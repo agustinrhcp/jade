@@ -35,10 +35,23 @@ tidier generated Ruby that keeps the same public shape.
 
 ## How we notice
 
-Every public name and its shape are in `spec/fixtures/public_api.txt`, and a
-spec fails when the two disagree. A change to the surface has to be committed
-alongside the changelog entry that explains it, so "we broke it and forgot to
-say" is not a thing that can happen quietly.
+`jade api` prints every name a program can depend on, with its shape, as JSON.
+Interface members are listed on their own, because adding one breaks every
+implementation without changing a single signature.
+
+```
+jade api --out jade-api.json    # commit the result
+jade api --check                # exits 1 when the surface moved
+```
+
+Jade's own surface is snapshotted that way in `spec/fixtures/public_api.json`,
+and a spec fails when the two disagree, so a change has to be committed
+alongside the changelog entry that explains it.
+
+The same command works in a project or in an extension gem: `--origin
+extension` narrows it to the modules that gem ships, which is the surface its
+users depend on. An extension that runs `jade api --check` in CI gets the same
+guarantee this repo gives.
 
 That catches names and shapes. It does not catch a function that keeps its
 signature and changes its answer; the compilation suite and the ejected

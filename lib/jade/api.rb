@@ -94,6 +94,19 @@ module Jade
         end
     end
 
+    # Every name a program can depend on, with the shape it depends on, as
+    # data rather than prose: a snapshot to diff, and something a docs page
+    # or an editor can read. Interface members are listed on their own
+    # because adding one breaks every implementation without changing any
+    # signature.
+    def surface(origins: nil)
+      modules
+        .select { origins.nil? || origins.include?(it[:origin]) }
+        .to_h { [it[:name], module_surface(it)] }
+        .sort
+        .to_h
+    end
+
     def lookup(qualified_name)
       *module_parts, name = qualified_name.split('.')
       module_parts
@@ -113,6 +126,52 @@ module Jade
     private
 
     # `Source#root` is nil for the stdlib, which never comes off disk.
+    def module_surface(mod)
+      describe(mod[:name])[:symbols].then do |symbols|
+        {
+          'origin' => mod[:origin],
+          'symbols' => by_name(symbols),
+          'interfaces' => interface_members(symbols),
+        }
+      end
+    end
+
+    # A struct is two names in one: the type and the constructor that
+    # builds it, both `Shop.Item`. Keyed by kind so neither hides the
+    # other.
+    def by_name(symbols)
+      symbols
+        .group_by { it[:qualified_name] }
+        .transform_values { |group| group.to_h { [it[:kind], strip_name(it)] }.sort.to_h }
+        .sort
+        .to_h
+    end
+
+    # The key already carries the name.
+    def strip_name(symbol)
+      symbol[:signature].delete_prefix("#{symbol[:qualified_name]} : ")
+    end
+
+    def interface_members(symbols)
+      symbols
+        .select { it[:kind] == 'interface' }
+        .to_h { [it[:qualified_name], members_of(it[:qualified_name])] }
+        .sort
+        .to_h
+    end
+
+    def members_of(qualified_name)
+      *module_parts, name = qualified_name.split('.')
+
+      registry
+        .modules
+        .fetch(module_parts.join('.'))
+        .defined_types[name]
+        .functions
+        .map(&:name)
+        .sort
+    end
+
     def origin(entry)
       case entry.source&.root
       in nil then 'stdlib'
