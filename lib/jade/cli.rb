@@ -4,6 +4,7 @@ module Jade
   module CLI
     SUBCOMMANDS = {
       'check' => 'Check',
+      'eject' => 'Eject',
       'fmt' => 'Fmt',
       'lsp' => 'Lsp',
       'q' => 'Q',
@@ -37,6 +38,7 @@ module Jade
         Usage: jade COMMAND [ARGS]
 
           check  Type-check the project (or the given files).
+          eject  Write the project as Ruby that runs without the gem.
           fmt    Format .jd source (stdin or file).
           lsp    Run the language server (stdio JSON-RPC).
           q      Headless query interface (hover/symbols/defn/refs/api).
