@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`jade eject`.** Writes the project as Ruby that runs without the gem: every
+  compiled module, the runtime they call, and requires pointing at each other
+  rather than at a load path. What it vendors is whatever a booted runtime
+  loads, asked at eject time rather than kept as a list, so it cannot drift.
+  The exit was a promise before this; now it is a command with a spec that
+  runs the ejected tree in a process that has no jade on its load path.
+
 ### Fixed
 
 - **A running app no longer loads the compiler.** `Runtime.boot!` read the

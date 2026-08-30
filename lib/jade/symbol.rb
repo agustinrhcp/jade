@@ -155,7 +155,7 @@ module Jade
     # The parser is the compiler's, and a running app never reads a type
     # annotation, so it loads here rather than with the symbol classes.
     def parse(annotation)
-      require 'jade/symbol/parser'
+      require_relative 'symbol/parser'
 
       Lexer
         .tokenize(Source.new(uri: nil, text: annotation))

@@ -90,7 +90,7 @@ module Jade
       require 'jade/stdlib/intrinsics'
       Stdlib::Intrinsics.runtime_only! unless defined?(Jade::Frontend)
 
-      STDLIB.each { require "jade/stdlib/#{it}" }
+      STDLIB.each { require_relative "stdlib/#{it}" }
     end
 
     def intr(name)
