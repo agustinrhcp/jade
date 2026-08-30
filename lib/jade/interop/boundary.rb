@@ -11,6 +11,79 @@ module Jade
     # Result wrap/unwrap that user-level Decode.from_value uses is dead
     # weight at the boundary because failure always raises anyway. Skipping
     # it removes one allocation per arg per Ruby→Jade call.
+      # Crossing the boundary costs 10x to 30x what the same call costs
+      # inside Jade, so a loop that crosses per row is the usual reason a
+      # project decides Jade is slow. Counting is off until asked:
+      # `JADE_BOUNDARY_WARN=1000`, or `Boundary.watch`.
+      WARN_AFTER = 1_000
+
+      # A loop crosses a thousand times in a moment. A busy endpoint
+      # crosses once per request all afternoon and is fine, so the count
+      # that means anything is the one inside a short window.
+      WINDOW = 1.0
+
+      def watch_from_env
+        ENV['JADE_BOUNDARY_WARN']&.then { watch(after: Integer(it, exception: false) || WARN_AFTER) }
+      end
+
+      def watch(after: WARN_AFTER, window: WINDOW)
+        @after = after
+        @window = window
+        @counts = Hash.new(0)
+        @batches = {}
+        @warned = {}
+      end
+
+      def unwatch
+        @counts = nil
+        @batches = nil
+        @warned = nil
+      end
+
+      def watching?
+        !@counts.nil?
+      end
+
+      def stats
+        (@counts || {}).sort_by { -it.last }.to_h
+      end
+
+      def crossing(name)
+        return unless @counts
+
+        count = @counts[name] += 1
+        @batches[name] = clock if count == 1
+        batch(name, count) if (count % @after).zero?
+      end
+
+      # Reading the clock on every crossing would cost more than the
+      # crossing it is measuring, so read it once per batch of `after` and
+      # ask how long the batch took.
+      def batch(name, count)
+        now = clock
+        started = @batches[name]
+        @batches[name] = now
+        warn_once(name, count, now - started) if now - started <= @window
+      end
+
+      def clock
+        Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      end
+
+      def warn_once(name, count, seconds)
+        return if @warned[name]
+
+        @warned[name] = true
+        Kernel.warn(
+          "[jade] #{name} crossed the Ruby boundary #{count} times in " \
+            "#{format('%.1f', seconds)}s. A crossing decodes what you hand " \
+            'it, so the cost follows the data rather than the call count: ' \
+            'handing the same values across on every pass is what hurts. ' \
+            'Lift anything unchanging out of the loop, or take a list and ' \
+            'cross once.',
+        )
+      end
+
       # Names the argument a failure came from. Costs nothing until one
       # does: Ruby only pays for a rescue that fires.
       def arg(where)
@@ -110,3 +183,5 @@ module Jade
     end
   end
 end
+
+Jade::Interop::Boundary.watch_from_env

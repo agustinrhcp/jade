@@ -180,6 +180,77 @@ Shop.total(items)[0].cents: missing field `cents`
 something of the wrong type. Only the failing call pays for any of this: the
 path segments are constants in the generated code, and the index of a bad
 element is searched for only once an element has failed.
+## What a crossing costs
+
+**About 0.8 us per value**, for a two-field struct, measured on Ruby 3.4. A
+crossing decodes what you hand it and encodes what comes back, so the bill
+follows the data, not the number of calls.
+
+That last part is the one people get wrong, this document included until it
+was measured. Turning 1500 per-row calls into one call taking a list saves
+about 13%, because the same 1500 rows are decoded either way:
+
+```
+1500 crossings, one row each      1.10 ms
+1 crossing, the whole list        0.96 ms
+```
+
+What costs an order of magnitude is handing the same data across again and
+again. A 200-row table passed on every one of 1500 calls is decoded 1500
+times:
+
+```
+table re-crossed on every row   176.28 ms
+table crossed once                0.97 ms
+```
+
+So the rule is: **do not make a value cross twice.** Lift anything unchanging
+out of the loop, keep it inside Jade, and pass what varies.
+
+```ruby
+# The table crosses 1500 times.
+rows.map { |row| Pricing.quote(table, row) }
+
+# It crosses once, and stays inside Jade for the rest.
+Pricing.quote_all(rows)
+```
+
+```jade
+def quote_all(rows: List(Row)) -> List(Int)
+  List.map(rows, quote)
+end
+```
+
+Against plain Ruby doing the same work, the ratio depends entirely on how much
+work there is. One multiply per row is 31x, because there is nothing there but
+the crossing. Real work per row is around 3x. If what you do with a value
+costs more than a microsecond, the crossing is noise.
+
+### Finding the crossings you did not mean to make
+
+Set `JADE_BOUNDARY_WARN` and Jade watches for bursts, warning once when a
+function crosses that many times inside a second. A handler crossing once per
+request never trips it, however busy the afternoon; a loop trips it at once:
+
+```
+$ JADE_BOUNDARY_WARN=1000 bin/rails server
+[jade] Pricing.quote crossed the Ruby boundary 1000 times in 0.4s. A crossing
+decodes what you hand it, so the cost follows the data rather than the call
+count: handing the same values across on every pass is what hurts. Lift
+anything unchanging out of the loop, or take a list and cross once.
+```
+
+`Jade::Interop::Boundary.stats` returns the counts, so a test can assert one:
+
+```ruby
+Jade::Interop::Boundary.watch(after: 10**9)
+render_the_report
+expect(Jade::Interop::Boundary.stats['Pricing.quote']).to be <= 1
+```
+
+Counting is off unless asked for, and adds about 80ns to a crossing when on,
+against the 800ns the crossing itself costs. The clock is read once per batch
+rather than per crossing, which is what keeps it there.
 
 ## What the compiled boundary looks like
 
