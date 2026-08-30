@@ -1,4 +1,9 @@
 require 'set'
+require 'jade/stdlib/intrinsics'
+
+# A runtime-only load skipped the declarations; the compiler needs them.
+Jade::Stdlib::Intrinsics.reload_for_declarations(Jade::Runtime::STDLIB)
+
 require 'jade/stdlib/basics'
 require 'jade/stdlib/maybe'
 require 'jade/stdlib/tuple'
