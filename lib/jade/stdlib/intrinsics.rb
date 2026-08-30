@@ -5,12 +5,45 @@ require 'jade/codegen/inlines'
 module Jade
   module Stdlib
     module Intrinsics
+      # A running app wants the implementations these files carry and not
+      # the declarations, which are what read type annotations.
+      def self.runtime_only!
+        @runtime_only = true
+      end
+
+      def self.declaring!
+        @runtime_only = false
+      end
+
+      def self.runtime_only?
+        @runtime_only ||= false
+      end
+
+      # A second load of the same file would otherwise store every symbol
+      # twice.
+      def self.extended(base)
+        base.instance_variable_set(:@symbols, nil)
+      end
+
+      def self.reload_for_declarations(files)
+        return unless runtime_only?
+
+        declaring!
+        files.each { load "#{__dir__}/#{it}.rb" }
+      end
+
+      def runtime_only?
+        Intrinsics.runtime_only?
+      end
+
       def generate_entry(registry)
         @entry = entry
           .then { load_env(it, registry) }
       end
 
       def variant(name, of:, args: [])
+        return if runtime_only?
+
         parent = @symbols
           &.find { it.is_a?(Symbol::Union) && it.name == of.to_s }
 
@@ -44,6 +77,8 @@ module Jade
       end
 
       def union(name, *type_params, constructor: false)
+        return if runtime_only?
+
         union_symbol = Symbol
           .union(name.to_s, type_params.map { Symbol.var(it, nil) }, [], nil)
           .with(module_name:)
@@ -66,6 +101,8 @@ module Jade
 
         codegen = body || "Jade::Runtime.intr('#{qualified_fn_name}')"
         impl = runtime_impl(qualified_fn_name, params.size, block, body)
+
+        return Runtime.register(qualified_fn_name, &impl) if runtime_only?
 
         Symbol
           .stdlib_function(
@@ -118,6 +155,8 @@ module Jade
       end
 
       def interface(name, type_param, functions, default: {})
+        return if runtime_only?
+
         functions
           .map { |k, v| Symbol.parse(v).then { to_interface_function(name, k, it) }.with(module_name:) }
           .then { Symbol.interface(name, Symbol.parse(type_param), it, default, nil) }
@@ -144,6 +183,8 @@ module Jade
       end
 
       def implementation(interface_name, type, functions)
+        return register_native_impls(interface_name, type, functions) if runtime_only?
+
         interface = imports
           .map(&:symbols)
           .then { [symbols, *it] }
@@ -168,11 +209,17 @@ module Jade
           )
           .then { store(it) }
 
-        if (ruby_classes = @native_types&.[](type))
-          qualified_iface = "#{interface_to_ref(interface_name).module_name}.#{interface_name}"
-          qualified_fns   = functions.transform_values { "#{module_name}.#{it}" }
-          ruby_classes.each { Runtime.register_impl(qualified_iface, it, qualified_fns) }
-        end
+        register_native_impls(interface_name, type, functions)
+      end
+
+      # Dispatch on a native Ruby class is the only part of an
+      # implementation a running app can use.
+      def register_native_impls(interface_name, type, functions)
+        return unless (ruby_classes = @native_types&.[](type))
+
+        qualified_iface = "#{interface_to_ref(interface_name).module_name}.#{interface_name}"
+        qualified_fns = functions.transform_values { "#{module_name}.#{it}" }
+        ruby_classes.each { Runtime.register_impl(qualified_iface, it, qualified_fns) }
       end
 
       # Accepts both bare/qualified names ('Int', 'Basics.Int') and full type
@@ -198,6 +245,8 @@ module Jade
       end
 
       def import(module_name)
+        return if runtime_only?
+
         @imports = imports + [module_name]
       end
 
@@ -206,6 +255,8 @@ module Jade
       end
 
       def default_importing(imports)
+        return if runtime_only?
+
         @default_imports = if imports == :*
           exposes
         else
@@ -243,6 +294,8 @@ module Jade
         @symbols ||= []
         @symbols.concat << symbol
       end
+
+
 
       def module_name
         "#{self.name.split('::').last}"

@@ -1,6 +1,7 @@
 require 'spec_helper'
 
 require 'rbconfig'
+require 'tmpdir'
 
 module Jade
   # Compiled code requires `jade/runtime` and nothing else, so whatever the
@@ -22,12 +23,14 @@ module Jade
     # A fresh process: the suite has the whole compiler loaded, which is the
     # thing being measured.
     def loaded_under_lib(script)
-      root = File.expand_path('../../../lib', __dir__)
-
-      run([RbConfig.ruby, '-I', root, '-e', "#{script}; puts $LOADED_FEATURES"])
+      run([RbConfig.ruby, '-I', lib_root, '-e', "#{script}; puts $LOADED_FEATURES"])
         .lines(chomp: true)
-        .select { |f| f.start_with?("#{root}/") }
-        .map { |f| f.delete_prefix("#{root}/") }
+        .select { |f| f.start_with?("#{lib_root}/") }
+        .map { |f| f.delete_prefix("#{lib_root}/") }
+    end
+
+    def lib_root
+      File.expand_path('../../../lib', __dir__)
     end
 
     def run(command)
@@ -44,16 +47,32 @@ module Jade
       expect(loaded_under_lib("require 'jade/runtime'").grep(COMPILER)).to be_empty
     end
 
-    # Pending until 075. `boot!` requires the stdlib DSL, whose types are
-    # strings that `Symbol.parse` has to read, so booting the intrinsics
-    # pulls in the parser and the AST. It does not even get that far from a
-    # bare runtime: loading those files without the compiler already
-    # present raises. Delete the `pending` when it stops.
     it 'boots the intrinsics without the compiler' do
-      pending 'ticket 075: the intrinsics are declared in the compiler'
-
       expect(loaded_under_lib("require 'jade/runtime'; Jade::Runtime.boot!").grep(COMPILER))
         .to be_empty
+    end
+
+    # An app boots the runtime, then a rake task in the same process wants
+    # the compiler.
+    it 'still compiles when the compiler arrives after a runtime boot' do
+      Dir.mktmpdir do |src|
+        File.write(File.join(src, 'probe.jd'), <<~JADE)
+          module Probe exposing (go)
+
+          def go -> Int
+            List.sum([1, 2, 3])
+          end
+        JADE
+
+        expect(run([RbConfig.ruby, '-I', lib_root, '-e', <<~RUBY]))
+          require 'jade/runtime'
+          Jade::Runtime.boot!
+          require 'jade'
+          require 'jade/module_loader'
+          print Jade::ModuleLoader.load(#{src.inspect}, 'probe.jd').get('Probe').generated.include?('def go')
+        RUBY
+          .to eq 'true'
+      end
     end
   end
 end

@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A running app no longer loads the compiler.** `Runtime.boot!` read the
+  stdlib files for their implementations and got their declarations too, so
+  every production image carried the parser, the AST and the type checker:
+  301 files, 22k LOC, 171 ms. Those files are now read in a mode that
+  registers the intrinsics and skips the declarations, which is 53 files and
+  23 ms, and the compiler reads them again in full when it arrives. It also
+  fixes a latent break: `require 'jade/runtime'` followed by `boot!`, with no
+  `require 'jade'` first, used to raise.
+
 ### Added
 
 - **A guard on what the runtime loads.** Compiled code requires

@@ -77,20 +77,20 @@ module Jade
     RECORD_CLASSES = {}
     @booted = false
 
+    # In dependency order: a module's `import` names the constant of another.
+    STDLIB = %w[
+      basics maybe tuple list char string result task dict set
+      decode decode/params encode bytes show debug
+    ].freeze
+
     def boot!
       return if @booted
       @booted = true
 
-      require "jade/stdlib/basics"
-      require "jade/stdlib/string"
-      require "jade/stdlib/list"
-      require "jade/stdlib/tuple"
-      require "jade/stdlib/task"
-      require "jade/stdlib/decode"
-      require "jade/stdlib/encode"
-      require "jade/stdlib/bytes"
-      require "jade/stdlib/dict"
-      require "jade/stdlib/set"
+      require 'jade/stdlib/intrinsics'
+      Stdlib::Intrinsics.runtime_only! unless defined?(Jade::Frontend)
+
+      STDLIB.each { require "jade/stdlib/#{it}" }
     end
 
     def intr(name)
