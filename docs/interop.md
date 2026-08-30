@@ -166,6 +166,21 @@ Users.fetch(1)
 The Jade caller never sees a malformed `User` — the bug is caught at the entry
 point, and the error arm (here `String`) stays meaningful for real failures.
 
+## Reading a rejection
+
+A value that does not cross is reported at the path where it went wrong,
+starting from the call the Ruby caller made:
+
+```
+Shop.price(item).cents: expected Int, got String ("lots")
+Shop.total(items)[0].cents: missing field `cents`
+```
+
+`missing field` means the key was absent, as opposed to present and holding
+something of the wrong type. Only the failing call pays for any of this: the
+path segments are constants in the generated code, and the index of a bad
+element is searched for only once an element has failed.
+
 ## What the compiled boundary looks like
 
 For a function with a primitive argument:
@@ -197,7 +212,9 @@ module Sample
   end
 
   def self.absolute(n)
-    Internal.absolute(Jade::Interop::Boundary.integer("Int", n))
+    Internal.absolute(
+      Jade::Interop::Boundary.arg("Sample.absolute(n)") { Jade::Interop::Boundary.integer("Int", n) },
+    )
   end
 end
 ```

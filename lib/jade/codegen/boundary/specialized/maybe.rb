@@ -9,9 +9,9 @@ module Jade
         module Maybe
           extend self
 
-          def decode(type, input, registry)
+          def decode(type, input, registry, where = nil)
             inner = inner_of(type) or return nil
-            elem = Specialized.decode_expr(inner, 'it', registry) or return nil
+            elem = Specialized.decode_expr(inner, 'it', registry, where) or return nil
 
             "#{input}.then { it.nil? ? Jade::Maybe::Nothing[] : Jade::Maybe::Just[#{elem}] }"
           end

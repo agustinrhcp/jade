@@ -21,11 +21,13 @@ module Jade
 
         # Ruby expression that validates `input` and yields the decoded
         # value, or `nil` if `type` isn't specializable.
-        def decode_expr(type, input, registry)
-          Scalar.decode(type, input) ||
-            List.decode(type, input, registry) ||
-            Maybe.decode(type, input, registry) ||
-            Record.decode(type, input, registry)
+        # `where` is the path segment this value sits at, `".cents"`,
+        # baked into the emitted call so a failure can name it.
+        def decode_expr(type, input, registry, where = nil)
+          Scalar.decode(type, input, where) ||
+            List.decode(type, input, registry, where) ||
+            Maybe.decode(type, input, registry, where) ||
+            Record.decode(type, input, registry, where)
         end
 
         # How to encode `value_expr` to the wire form:
@@ -64,6 +66,12 @@ module Jade
 
         def emit_helpers(structs, registry)
           Record.emit_helpers(structs, registry)
+        end
+
+        # Trailing argument for the runtime helpers, which all take the
+        # path segment last and default it to nil.
+        def where_arg(where)
+          where ? ", #{where.inspect}" : ''
         end
 
         # --- type-shape helpers shared across shape modules ---

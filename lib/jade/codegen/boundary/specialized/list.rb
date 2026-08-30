@@ -11,11 +11,11 @@ module Jade
         module List
           extend self
 
-          def decode(type, input, registry)
+          def decode(type, input, registry, where = nil)
             inner = inner_of(type) or return nil
 
-            scalar_optimized(inner, input) ||
-              generic_decode(type, inner, input, registry)
+            scalar_optimized(inner, input, where) ||
+              generic_decode(type, inner, input, registry, where)
           end
 
           def encode(type, value_expr, registry)
@@ -51,17 +51,21 @@ module Jade
 
           # `List(scalar)` fast path: validate elements with a single
           # C-loop `all?` check, no per-element decoder call.
-          def scalar_optimized(inner, input)
+          def scalar_optimized(inner, input, where)
             qname = Scalar.qname_for(inner) or return nil
             klass = Scalar::LIST_ELEM_CLASS[qname]
             label = "List(#{Scalar::LABEL[qname]})".inspect
-            "Jade::Interop::Boundary.list_of(#{klass}, #{label}, #{input})"
+            "Jade::Interop::Boundary.list_of(#{klass}, #{label}, #{input}#{Specialized.where_arg(where)})"
           end
 
-          def generic_decode(type, inner, input, registry)
+          # The index comes from `elements`, so the element decoder itself
+          # carries no path of its own.
+          def generic_decode(type, inner, input, registry, where)
             elem = Specialized.decode_expr(inner, '_1', registry) or return nil
             label = "List(#{Specialized.type_label(inner)})".inspect
-            "Jade::Interop::Boundary.array(#{label}, #{input}).map { #{elem} }"
+            at = Specialized.where_arg(where)
+            array = "Jade::Interop::Boundary.array(#{label}, #{input}#{at})"
+            "Jade::Interop::Boundary.elements(#{array}#{at}) { #{elem} }"
           end
         end
       end

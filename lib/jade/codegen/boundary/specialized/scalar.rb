@@ -31,10 +31,10 @@ module Jade
             'String.String' => '::String',
           }.freeze
 
-          def decode(type, input)
+          def decode(type, input, where = nil)
             qname = qname_for(type) or return nil
             label = LABEL[qname].inspect
-            "Jade::Interop::Boundary.#{HELPER[qname]}(#{label}, #{input})"
+            "Jade::Interop::Boundary.#{HELPER[qname]}(#{label}, #{input}#{Specialized.where_arg(where)})"
           end
 
           # Scalar encoders are identity (Ruby int IS the JSON int, etc.),

@@ -11,11 +11,18 @@ module Jade
 
     before do
       test_compiler.require(<<~JADE.strip)
-        module Shop exposing (Item(..), price, total)
+        module Shop exposing (Item(..), Order(..), price, ship, total)
 
         struct Item = {
           sku: String,
           cents: Int
+        }
+
+
+        struct Order = {
+          buyer: String,
+          items: List(Item),
+          note: Maybe(String)
         }
 
 
@@ -26,6 +33,11 @@ module Jade
 
         def total(items: List(Item)) -> Int
           List.sum(List.map(items, price))
+        end
+
+
+        def ship(order: Order) -> Int
+          total(order.items)
         end
       JADE
     end
@@ -46,14 +58,34 @@ module Jade
       expect(message { Shop.price(nil) }).to eq 'Shop.price(item): expected Item, got nil'
     end
 
-    it 'reports a field that did not decode' do
+    it 'names the field that did not decode' do
       expect(message { Shop.price('sku' => 'a', 'cents' => 'lots') })
-        .to eq 'Shop.price(item): expected Int, got String ("lots")'
+        .to eq 'Shop.price(item).cents: expected Int, got String ("lots")'
     end
 
-    it 'names the argument a list came in as' do
+    it 'says a field is missing rather than blaming its type' do
+      expect(message { Shop.price('sku' => 'a') })
+        .to eq 'Shop.price(item).cents: missing field `cents`'
+    end
+
+    it 'points at the element that did not decode' do
       expect(message { Shop.total([{ 'sku' => 'a', 'cents' => 1 }, 'nope']) })
-        .to eq 'Shop.total(items): expected Item, got String ("nope")'
+        .to eq 'Shop.total(items)[1]: expected Item, got String ("nope")'
+    end
+
+    it 'points inside an element' do
+      expect(message { Shop.total([{ 'sku' => 'a', 'cents' => 'lots' }]) })
+        .to eq 'Shop.total(items)[0].cents: expected Int, got String ("lots")'
+    end
+
+    it 'walks into a nested struct' do
+      expect(message { Shop.ship('buyer' => 'ann', 'items' => [{ 'sku' => 'a' }]) })
+        .to eq 'Shop.ship(order).items[0].cents: missing field `cents`'
+    end
+
+    it 'leaves an absent optional field alone' do
+      expect(message { Shop.ship('buyer' => 'ann', 'items' => 'nope') })
+        .to eq 'Shop.ship(order).items: expected List(Item), got String ("nope")'
     end
 
     it 'keeps the symbol-keys message, which already says what to do' do
