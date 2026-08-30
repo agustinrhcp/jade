@@ -27,9 +27,8 @@ differently:
 - a check that starts rejecting a program it used to accept
 - generated Ruby whose public shape changes, when a Ruby caller was using it
 
-The third one is the least obvious and has already happened: `Numeric` gained
-`from_int` in `0.10.0`, and a type implementing `Numeric` in a `0.9` project
-stops compiling until it adds one.
+The third is the one to watch: it breaks code that never named the thing that
+changed.
 
 Not breaks: a new function, a new module, a better error message, faster or
 tidier generated Ruby that keeps the same public shape.
