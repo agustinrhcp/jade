@@ -8,6 +8,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **A rejected value says where in the value the problem is.** A field that
+  did not decode reads `Shop.total(items)[0].cents: expected Int, got String
+  ("lots")` rather than blaming the argument as a whole, and a field the hash
+  never had reads `missing field \`cents\`` rather than `expected Int, got
+  nil`. Paths cost nothing on the way in: the segments are constants in the
+  generated code, and the index of a bad element is found only when one is.
+
+- **A build left by another version of the compiler is rebuilt.** Generated
+  Ruby calls the runtime by name, so a build made by a different version can
+  call a helper this one no longer has. `.jade/build` now carries the
+  fingerprint that `.jade/cache` already used, and is dropped when it does not
+  match. No source changes in that case, so mtimes could not see it.
+
 - **A value Ruby cannot pass says which call and which argument rejected it.**
   `Ruby passed a value that failed to decode at value: expected Int, got null
   (nil)` is now `Shop.price(item): expected Int, got nil`. The caller may not

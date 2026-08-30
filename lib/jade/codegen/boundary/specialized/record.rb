@@ -16,9 +16,13 @@ module Jade
           extend self
           extend Helpers
 
-          def decode(type, input, registry)
+          # The helper is shared across call sites, so its fields can only
+          # know where they sit inside the struct: the segment that leads
+          # to the struct itself goes on at the call site.
+          def decode(type, input, registry, where = nil)
             struct = struct_for(type, registry) or return nil
-            "#{decode_helper_name(struct)}(#{input})"
+            call = "#{decode_helper_name(struct)}(#{input})"
+            where ? "Jade::Interop::Boundary.at(#{where.inspect}) { #{call} }" : call
           end
 
           def encode(type, value_expr, registry)
@@ -132,7 +136,7 @@ module Jade
             struct.record_type.fields
               .map { |k, t| field_decode(k, t, registry) }
               .then { Pretty.call(ctor, it, open: '[', close: ']') }
-              .then { Pretty.block("#{hash_call}.then do |h|", it) }
+              .then { Pretty.block("#{hash_call}.then do |h|", it, blaming_the_key) }
               .then { Pretty.block("def self.#{decode_helper_name(struct)}(value)", it) }
           end
 
@@ -144,7 +148,7 @@ module Jade
           end
 
           def field_decode(key, type, registry)
-            Specialized.decode_expr(type, "h[#{key.to_s.inspect}]", registry) ||
+            Specialized.decode_expr(type, "h[#{key.to_s.inspect}]", registry, ".#{key}") ||
               fail("non-specializable field type for #{key}: #{type}")
           end
 
@@ -154,6 +158,16 @@ module Jade
             in ::String => expr then expr
             in nil then fail("non-encodable field type for #{key}: #{type}")
             end
+          end
+
+          # A field the hash never had reads as nil to its decoder, which
+          # blames the type. The key it sat under is right here.
+          def blaming_the_key
+            [
+              'rescue Jade::Interop::DecodeError => e',
+              '  raise Jade::Interop::Boundary.missing_field(e, h)',
+              'end',
+            ].join("\n")
           end
 
           def snake(name)

@@ -16,7 +16,34 @@ module Jade
       def arg(where)
         yield
       rescue DecodeError => e
-        raise e.at(where)
+        raise e.under(where)
+      end
+      alias at arg
+
+      # Finding the element costs a second pass, which only a failure pays
+      # for: the map stays a map.
+      def elements(array, where = nil)
+        array.map { yield(it) }
+      rescue DecodeError => e
+        raise e.under("#{where}[#{failing_index(array) { yield(it) }}]")
+      end
+
+      def failing_index(array)
+        array.each_with_index do |element, index|
+          yield(element)
+        rescue DecodeError
+          return index
+        end
+      end
+
+      # An absent key reads as nil to the field decoder, which then blames
+      # the type it wanted. The path says which key that was, so a struct
+      # can check whether it was ever there.
+      def missing_field(error, hash)
+        key = error.where.to_s[/\A\.([^.\[]+)/, 1]
+        return error if key.nil? || hash.key?(key)
+
+        error.as(Jade::Decode::MissingField[key])
       end
 
       def decode_or_raise(decoder, value)
@@ -29,38 +56,38 @@ module Jade
       # argument types in place of the generic `decode_or_raise` path —
       # avoids constructing a Decoder descriptor and walking the
       # interpreter for primitives.
-      def integer(label, v)
-        ::Integer === v ? v : type_error!(label, v)
+      def integer(label, v, where = nil)
+        ::Integer === v ? v : type_error!(label, v, where)
       end
 
-      def string(label, v)
-        ::String === v ? v.dup : type_error!(label, v)
+      def string(label, v, where = nil)
+        ::String === v ? v.dup : type_error!(label, v, where)
       end
 
-      def bool(label, v)
-        v == true || v == false ? v : type_error!(label, v)
+      def bool(label, v, where = nil)
+        v == true || v == false ? v : type_error!(label, v, where)
       end
 
-      def float(label, v)
-        ::Numeric === v ? v.to_f : type_error!(label, v)
+      def float(label, v, where = nil)
+        ::Numeric === v ? v.to_f : type_error!(label, v, where)
       end
 
-      def list_of(klass, label, v)
-        v.is_a?(::Array) && v.all? { klass === _1 } ? v : type_error!(label, v)
+      def list_of(klass, label, v, where = nil)
+        v.is_a?(::Array) && v.all? { klass === _1 } ? v : type_error!(label, v, where)
       end
 
       # Validates that v is an Array but doesn't check element types — used
       # when the per-element decoder isn't a simple `is_a?` (e.g. nested
       # structs). The caller maps a decoder over the result.
-      def array(label, v)
-        v.is_a?(::Array) ? v : type_error!(label, v)
+      def array(label, v, where = nil)
+        v.is_a?(::Array) ? v : type_error!(label, v, where)
       end
 
       def hash(label, v)
         case v
         when ::Hash then string_keyed!(label, v)
         when ::Data then v.to_h.transform_keys(&:to_s)
-        else type_error!(label, v)
+        else type_error!(label, v, nil)
         end
       end
 
@@ -73,10 +100,11 @@ module Jade
           .then { it.empty? ? v : raise(Jade::Interop::SymbolKeys.new(label, it)) }
       end
 
-      def type_error!(label, v)
+      def type_error!(label, v, where)
         raise Jade::Interop::DecodeError.new(
           Jade::Decode::WrongType[label, Jade::Decode.type_name(v)],
           v,
+          where:,
         )
       end
     end

@@ -7,6 +7,7 @@ module Jade
     end
 
     def require(path)
+      ModuleLoader::Build.discard_foreign(build_root)
       target = File.expand_path("#{build_root}/#{path}.rb", config.project_root)
 
       if needs_rebuild?(target)
@@ -14,6 +15,7 @@ module Jade
           .load(config.source_root, path + '.jd', cache_dir: cache_root)
           .tap { render_diagnostics(it) }
           .then { ModuleLoader.emit(it, path: build_root) }
+          .then { ModuleLoader::Build.stamp(build_root) }
       end
 
       Kernel.require(File.realpath(target))

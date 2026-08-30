@@ -187,8 +187,8 @@ module Jade
       it 'emits a decode_<name> helper that builds the struct from a hash' do
         is_expected.to include("def self.decode_person(value)")
         is_expected.to include('Jade::Interop::Boundary.hash("Person", value)')
-        is_expected.to include('Jade::Interop::Boundary.string("String", h["name"])')
-        is_expected.to include('Jade::Interop::Boundary.integer("Int", h["age"])')
+        is_expected.to include('Jade::Interop::Boundary.string("String", h["name"], ".name")')
+        is_expected.to include('Jade::Interop::Boundary.integer("Int", h["age"], ".age")')
       end
 
       it 'emits an encode_<name> helper that returns a hash literal' do
@@ -272,7 +272,8 @@ module Jade
 
       it 'maps decode_todo over the input array' do
         is_expected.to include(
-          'Jade::Interop::Boundary.array("List(Todo)", todos).map { decode_todo(_1) }'
+          'Jade::Interop::Boundary.elements(' \
+            'Jade::Interop::Boundary.array("List(Todo)", todos)) { decode_todo(_1) }'
         )
       end
 

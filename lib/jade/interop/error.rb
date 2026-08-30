@@ -72,8 +72,14 @@ module Jade
         super(format(decode_error, value))
       end
 
-      def at(where)
-        self.class.new(decode_error, value, source:, where:)
+      # Frames unwind innermost first, so each one puts itself in front of
+      # the path the frames below it built.
+      def under(segment)
+        self.class.new(decode_error, value, source:, where: "#{segment}#{where}")
+      end
+
+      def as(error)
+        self.class.new(error, value, source:, where:)
       end
 
       private
