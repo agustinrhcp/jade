@@ -23,9 +23,9 @@ module Jade
         param_names       = params.map(&:name)
 
         if task_return?(return_type)
-          task_wrapper_pair(name, args, param_names, return_type, registry)
+          task_wrapper_pair(name, args, param_names, return_type, registry, symbol)
         else
-          eligible_wrapper(name, args, param_names, return_type, registry)
+          eligible_wrapper(name, args, param_names, return_type, registry, symbol)
         end
       end
 
@@ -58,8 +58,8 @@ module Jade
         end
       end
 
-      def eligible_wrapper(name, args, param_names, return_type, registry)
-        decoded_args(args, param_names, registry)
+      def eligible_wrapper(name, args, param_names, return_type, registry, symbol)
+        decoded_args(args, param_names, registry, name, symbol)
           .then { Pretty.call("Internal.#{name}", it) }
           .then { encode_return(return_type, it, registry) }
           .then { Pretty.block(boundary_def_header(name, param_names), it) }
@@ -69,8 +69,16 @@ module Jade
         "def self.#{name}(#{param_names.join(', ')})"
       end
 
-      def decoded_args(args, param_names, registry)
-        args.zip(param_names).map { |t, pname| decode_call(t, pname, registry) }
+      def decoded_args(args, param_names, registry, name, symbol)
+        args
+          .zip(param_names)
+          .map { |t, pname| decode_call(t, pname, registry) }
+          .zip(param_names)
+          .map { |expr, pname| named(expr, "#{to_qualified(symbol.module_name)}.#{name}(#{pname})") }
+      end
+
+      def named(expr, where)
+        "Jade::Interop::Boundary.arg(#{where.inspect}) { #{expr} }"
       end
 
       def decode_call(arg_type, pname, registry)
@@ -92,17 +100,17 @@ module Jade
         end
       end
 
-      def task_wrapper_pair(name, args, param_names, task_return, registry)
+      def task_wrapper_pair(name, args, param_names, task_return, registry, symbol)
         ok_enc, err_enc = Codegen::Boundary::Cache.task_arms(task_return, registry)
 
         [
-          task_run_def(name, args, param_names, ok_enc, err_enc, registry),
+          task_run_def(name, args, param_names, ok_enc, err_enc, registry, symbol),
           task_bang_def(name, param_names),
         ].join(Pretty.newline(2))
       end
 
-      def task_run_def(name, args, param_names, ok_enc, err_enc, registry)
-        decoded_args(args, param_names, registry)
+      def task_run_def(name, args, param_names, ok_enc, err_enc, registry, symbol)
+        decoded_args(args, param_names, registry, name, symbol)
           .then { Pretty.call("Internal.#{name}", it) }
           .then { task_run_body(it, ok_enc, err_enc) }
           .then { Pretty.block(boundary_def_header(name, param_names), it) }

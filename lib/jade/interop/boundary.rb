@@ -11,6 +11,14 @@ module Jade
     # Result wrap/unwrap that user-level Decode.from_value uses is dead
     # weight at the boundary because failure always raises anyway. Skipping
     # it removes one allocation per arg per Ruby→Jade call.
+      # Names the argument a failure came from. Costs nothing until one
+      # does: Ruby only pays for a rescue that fires.
+      def arg(where)
+        yield
+      rescue DecodeError => e
+        raise e.at(where)
+      end
+
       def decode_or_raise(decoder, value)
         Jade::Decode::Runner.run!(decoder, value) do |error|
           raise Jade::Interop::DecodeError.new(error, value)

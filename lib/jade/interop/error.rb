@@ -54,42 +54,64 @@ module Jade
     end
 
     class DecodeError < Error
-      attr_reader :decode_error, :value, :source
+      attr_reader :decode_error, :value, :source, :where
 
       SUBJECTS = {
         argument: 'Ruby passed a value that failed to decode',
         port_return: 'Port returned a value that failed to decode',
       }.freeze
 
-      def initialize(decode_error, value, source: :argument)
+      # Ruby has no null.
+      TYPE_NAMES = { 'null' => 'nil' }.freeze
+
+      def initialize(decode_error, value, source: :argument, where: nil)
         @decode_error = decode_error
         @value = value
         @source = source
+        @where = where
         super(format(decode_error, value))
+      end
+
+      def at(where)
+        self.class.new(decode_error, value, source:, where:)
       end
 
       private
 
       def format(error, value)
         path, leaf = unwind(error)
-        location = path.empty? ? "value" : path.join
-        subject = SUBJECTS.fetch(@source)
 
         case leaf
         in Jade::Decode::WrongType[expected, got]
-          "#{subject} at #{location}: expected #{expected}, got #{got} (#{value.inspect})"
+          "#{subject(path)}: expected #{expected}, got #{type_name(got)}#{seen(value)}"
 
         in Jade::Decode::MissingField[key]
-          "#{subject} at #{location}: missing field `#{key}` (#{value.inspect})"
+          "#{subject(path)}: missing field `#{key}`#{seen(value)}"
 
         in Jade::Decode::Custom[msg]
-          "#{subject} at #{location}: #{msg} (#{value.inspect})"
+          "#{subject(path)}: #{msg}#{seen(value)}"
 
         in Jade::Decode::Multiple[errors]
           errors
             .map { format(it, value) }
             .join("; ")
         end
+      end
+
+      # `Shop.price(item).cents` when the caller said where it was, and the
+      # old sentence when it did not.
+      def subject(path)
+        return "#{SUBJECTS.fetch(@source)} at #{path.empty? ? 'value' : path.join}" unless @where
+
+        "#{@where}#{path.join}"
+      end
+
+      def type_name(got)
+        TYPE_NAMES.fetch(got.to_s, got)
+      end
+
+      def seen(value)
+        value.nil? ? '' : " (#{value.inspect})"
       end
 
       def unwind(error, path = [])
