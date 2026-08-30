@@ -22,10 +22,5 @@ end
 
 
 def update_email(person: Person, new_email: String) -> Person
-  { name:, age: } = person
-  {
-    name: name,
-    age: age,
-    email: new_email,
-  }
+  { person | email: new_email }
 end

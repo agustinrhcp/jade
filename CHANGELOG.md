@@ -41,6 +41,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`examples/records.jd` compiles.** `update_email` built an anonymous record
+  where a `Person` was wanted, and nothing compiled the file: the examples
+  suite skipped it. It now uses a record update, and the suite covers it.
 - **A running app no longer loads the compiler.** `Runtime.boot!` read the
   stdlib files for their implementations and got their declarations too, so
   every production image carried the parser, the AST and the type checker:

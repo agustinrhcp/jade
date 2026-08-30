@@ -93,9 +93,23 @@ module Jade
     end
 
     describe 'interfaces.jd' do
-      # Polymorphic helpers — no public boundary; just confirm it compiles.
+      # Polymorphic helpers, no public boundary; just confirm it compiles.
       it 'compiles' do
         expect { compile('interfaces.jd') }.not_to raise_error
+      end
+    end
+
+    describe 'records.jd' do
+      before { compile('records.jd') }
+
+      it 'updates one field' do
+        ::Records::Person['Ada', 36, 'ada@example.com']
+          .then { expect(::Records::Internal.update_email(it, 'new@example.com').email) }
+          .to eq 'new@example.com'
+      end
+
+      it 'returns an anonymous record' do
+        expect(::Records::Internal.full_name('Ada', 'Lovelace').full).to eq 'Ada Lovelace'
       end
     end
   end
