@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **A value Ruby cannot pass says which call and which argument rejected it.**
+  `Ruby passed a value that failed to decode at value: expected Int, got null
+  (nil)` is now `Shop.price(item): expected Int, got nil`. The caller may not
+  know Jade, so the message names the function, the argument it came in as, and
+  types in Ruby's vocabulary rather than the wire's.
+
+### Changed
+
 - **`jade fmt` hugs a trailing block argument.** A call whose last argument is
   a lambda, list or record literal keeps its head on one line and lets that
   argument grow a body, the way a Ruby block reads:

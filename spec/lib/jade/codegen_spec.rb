@@ -197,8 +197,11 @@ module Jade
         is_expected.to include('"age" => p.age')
       end
 
-      it 'routes the public wrapper through the helpers' do
-        is_expected.to include("encode_person(Internal.identity(decode_person(person)))")
+      it 'routes the public wrapper through the helpers, naming the argument' do
+        is_expected.to include('encode_person(Internal.identity(')
+        is_expected.to include(
+          'Jade::Interop::Boundary.arg("Test.identity(person)") { decode_person(person) }',
+        )
       end
 
       it 'skips the descriptor cache for the specialized type' do
