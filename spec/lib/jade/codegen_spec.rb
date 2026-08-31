@@ -105,7 +105,7 @@ module Jade
         expect(subject).to include "Just = Data.define(:_1) do\n"
         expect(subject).to include "def just?; true; end"
         expect(subject).to include "def nothing?; false; end"
-        expect(subject).to include "Nothing = Data.define do\n"
+        expect(subject).to include "Nothing = Jade.nullary do\n"
       end
 
       context 'and reference' do
