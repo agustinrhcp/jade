@@ -15,15 +15,15 @@ module Jade
           return Matrix.wildcard(matrix.types) if matrix.empty?
           return expanded(matrix, env) if Signature.expandable?(type, env)
 
-          split = Signature.of(type, env)
-          named = matrix.head_names
+          heads = matrix.heads
+          split = Signature.of(type, heads, env)
 
-          return unmatched_column(matrix, env) unless split.touched_by?(named)
+          return unmatched_column(matrix, env) unless split.touched_by?(heads)
 
           split
             .cases
             .reduce(Matrix.empty(matrix.types)) do |acc, kase|
-              witnesses(matrix, kase, env, named.include?(kase.name))
+              witnesses(matrix, kase, env, heads.any? { kase.matches?(it) })
                 .then { acc.concat(it) }
             end
         end

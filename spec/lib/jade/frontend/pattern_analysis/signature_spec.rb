@@ -14,7 +14,9 @@ module Jade
         let(:env) { TypeChecking::Env.empty }
 
         describe '.of' do
-          subject { described_class.of(type, env) }
+          let(:heads) { [] }
+
+          subject { described_class.of(type, heads, env) }
 
           def self.cases(*expected)
             its(:cases) { is_expected.to eql(expected) }

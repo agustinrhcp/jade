@@ -62,12 +62,14 @@ module Jade
             end
           end
 
+          # An Int column is split at every bound its patterns mention, so
+          # what is missing is named rather than left as `_`.
           context 'with a non exhaustive literal' do
             let(:matrix) do
               Matrix[[[Literal[1]]], [Type.int]]
             end
 
-            missing [Wildcard[]]
+            missing [Interval[nil, 0]], [Interval[2, nil]]
           end
 
           context 'with a constructor Maybe(Int)' do
@@ -92,7 +94,8 @@ module Jade
               ]
             end
 
-            missing [Constructor['Maybe.Just', [Wildcard[]]]],
+            missing [Constructor['Maybe.Just', [Interval[nil, 0]]]],
+                    [Constructor['Maybe.Just', [Interval[2, nil]]]],
                     [Constructor['Maybe.Nothing', []]]
 
             context 'exhaustive on constructor but not on inner' do
@@ -107,7 +110,8 @@ module Jade
               end
 
               it { is_expected.to be_a Matrix }
-              missing [Constructor['Maybe.Just', [Wildcard[]]]]
+              missing [Constructor['Maybe.Just', [Interval[nil, 0]]]],
+                      [Constructor['Maybe.Just', [Interval[2, nil]]]]
             end
 
             context 'exhaustive on constructor and inner' do

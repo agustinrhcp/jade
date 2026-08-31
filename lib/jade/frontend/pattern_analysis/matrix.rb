@@ -26,14 +26,8 @@ module Jade
           with(rows: rows + other.rows)
         end
 
-        def head_names
-          rows.filter_map do |row|
-            case row.first
-            in Constructor(constructor: name) then name
-            in Literal(value:) then value
-            in Record | Wildcard then nil
-            end
-          end
+        def heads
+          rows.map(&:first)
         end
 
         # Rows the case can match, each opened up into the columns the case
