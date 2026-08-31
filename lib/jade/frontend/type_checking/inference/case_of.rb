@@ -75,8 +75,13 @@ module Jade
             )
           end
 
+          # Coverage is a claim about the patterns as written. When one of them
+          # failed to type there is nothing coherent to claim, and saying it
+          # anyway buries the real error under an invented one.
           def check_exhaustiveness(node, state, result)
             node => AST::CaseOf(branches:)
+
+            return state if mistyped_patterns?(node, state)
 
             patterns = branches.map(&:pattern)
             type     = result.apply(state.env.substitution).type
@@ -84,6 +89,15 @@ module Jade
             PatternAnalysis::Exhaustiveness
               .assert(patterns, node.range, state.env, type)
               .then { state.add_errors(it) }
+          end
+
+          def mistyped_patterns?(node, state)
+            state
+              .errors
+              .any? do |error|
+                error.is_a?(Error::PatternTypeMismatch) &&
+                  node.range.cover?(error.span.begin)
+              end
           end
 
           def infer_branch(node, registry, env, expected, expression_result)
