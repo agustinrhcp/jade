@@ -323,9 +323,15 @@ It's plain Ruby on disk, so it sits inside a Rails app like any other file.
 
 ## If it doesn't work out
 
-Run the compiler one last time, commit the generated `.rb`, and drop the `.jd`
-files. The output is already plain Ruby — no rewrite, no migration. The
-`jade-eject` skill automates removing the gem dependency, but it isn't required.
+```bash
+$ jade eject
+Ejected to ejected/ (119 files).
+```
+
+That writes the project as Ruby that does not require the gem: your compiled
+modules, the runtime they call, and requires pointing at each other rather than
+at a load path. Point the app at it, run your suite, drop `jade-lang` from the
+Gemfile and delete the `.jd` files. No rewrite, no migration.
 
 Worst case: you wrote Ruby with a nicer authoring layer for a while.
 
@@ -373,6 +379,7 @@ dispatch layer.
 - [docs/testing.md](docs/testing.md) — stubbing Tasks, the RSpec matchers
 - [docs/stdlib.md](docs/stdlib.md) — module-by-module map
 - [docs/lsp.md](docs/lsp.md) — language server and `jade q` setup
+- [docs/stability.md](docs/stability.md) — what a version change may do to your code
 - [examples/](examples/) — runnable `.jd` files
 
 ## Status

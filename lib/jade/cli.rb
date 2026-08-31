@@ -3,6 +3,7 @@ require 'jade'
 module Jade
   module CLI
     SUBCOMMANDS = {
+      'api' => 'Api',
       'check' => 'Check',
       'eject' => 'Eject',
       'fmt' => 'Fmt',
@@ -37,6 +38,7 @@ module Jade
       io.puts <<~TXT
         Usage: jade COMMAND [ARGS]
 
+          api    Print the public surface as JSON, or check it has not moved.
           check  Type-check the project (or the given files).
           eject  Write the project as Ruby that runs without the gem.
           fmt    Format .jd source (stdin or file).
