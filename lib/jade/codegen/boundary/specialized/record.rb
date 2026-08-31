@@ -136,7 +136,7 @@ module Jade
             struct.record_type.fields
               .map { |k, t| field_decode(k, t, registry) }
               .then { Pretty.call(ctor, it, open: '[', close: ']') }
-              .then { Pretty.block("#{hash_call}.then do |h|", it, blaming_the_key) }
+              .then { Pretty.block("#{hash_call}.then do |h|", it, blaming_the_key(struct)) }
               .then { Pretty.block("def self.#{decode_helper_name(struct)}(value)", it) }
           end
 
@@ -161,11 +161,12 @@ module Jade
           end
 
           # A field the hash never had reads as nil to its decoder, which
-          # blames the type. The key it sat under is right here.
-          def blaming_the_key
+          # blames the type. The key it sat under is right here, and so is
+          # the hash that was supposed to hold it.
+          def blaming_the_key(struct)
             [
               'rescue Jade::Interop::DecodeError => e',
-              '  raise Jade::Interop::Boundary.missing_field(e, h)',
+              "  raise Jade::Interop::Boundary.blame(e, h, #{struct.name.inspect})",
               'end',
             ].join("\n")
           end

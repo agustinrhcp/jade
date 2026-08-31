@@ -72,19 +72,23 @@ module Jade
       def decoded_args(args, param_names, registry, name, symbol)
         args
           .zip(param_names)
-          .map { |t, pname| decode_call(t, pname, registry) }
-          .zip(param_names)
-          .map { |expr, pname| named(expr, "#{to_qualified(symbol.module_name)}.#{name}(#{pname})") }
+          .map do |t, pname|
+            decode_call(t, pname, registry, "#{to_qualified(symbol.module_name)}.#{name}(#{pname})")
+          end
       end
 
       def named(expr, where)
         "Jade::Interop::Boundary.arg(#{where.inspect}) { #{expr} }"
       end
 
-      def decode_call(arg_type, pname, registry)
-        Codegen::Boundary::Specialized.decode_expr(arg_type, pname, registry) ||
+      # A specialized decoder carries the argument name itself, in a
+      # constant it was going to pass anyway. Only the generic path needs a
+      # frame around it to say where the value came from.
+      def decode_call(arg_type, pname, registry, where)
+        Codegen::Boundary::Specialized.decode_expr(arg_type, pname, registry, where) ||
           Codegen::Boundary::Cache.decoder_for(arg_type, registry)
             .then { "Jade::Interop::Boundary.decode_or_raise(#{it}, #{pname})" }
+            .then { named(it, where) }
       end
 
       def encode_return(return_type, call_expr, registry)

@@ -200,7 +200,7 @@ module Jade
       it 'routes the public wrapper through the helpers, naming the argument' do
         is_expected.to include('encode_person(Internal.identity(')
         is_expected.to include(
-          'Jade::Interop::Boundary.arg("Test.identity(person)") { decode_person(person) }',
+          'Jade::Interop::Boundary.at("Test.identity(person)") { decode_person(person) }',
         )
       end
 
@@ -273,7 +273,8 @@ module Jade
       it 'maps decode_todo over the input array' do
         is_expected.to include(
           'Jade::Interop::Boundary.elements(' \
-            'Jade::Interop::Boundary.array("List(Todo)", todos)) { decode_todo(_1) }'
+            'Jade::Interop::Boundary.array("List(Todo)", todos, "Test.list_todos(todos)"), ' \
+            '"Test.list_todos(todos)") { decode_todo(_1) }'
         )
       end
 

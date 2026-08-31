@@ -8,6 +8,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **A crossing does less on the way in.** An argument with a specialized
+  decoder now carries its own name, in a string constant it was passing
+  anyway, so the wrapper no longer opens a block per argument just to label a
+  failure. And a hash is no longer scanned for symbol keys before its fields
+  are read: symbol keys make every field missing at once, which the rescue
+  around the fields already notices, so the message is unchanged and the check
+  is gone from the success path. A struct argument goes from 772ns to 724ns, a
+  scalar argument from 158ns to 127ns, and decoding a list of 1500 structs
+  from 940us to 820us.
+
 - **A dictionary built from concrete implementations is built once.** Calling
   a function with an interface constraint at a known type emitted the whole
   dictionary as a literal at the point of use, so `List.sum(xs)` on a

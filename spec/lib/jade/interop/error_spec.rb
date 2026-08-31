@@ -48,9 +48,17 @@ module Jade
         it { is_expected.to eq({}) }
       end
 
+      # The keys are not checked on the way in: with symbol keys every
+      # field is missing, and the rescue around the fields sees that.
       context 'symbol keys' do
         def decode
-          described_class.hash('Person', { name: 'Ada', age: 40 })
+          described_class.blame(missing_name, { name: 'Ada', age: 40 }, 'Person')
+        end
+
+        let(:missing_name) do
+          Interop::DecodeError.new(
+            Jade::Decode::WrongType['String', 'null'], nil, where: '.name'
+          )
         end
 
         it 'names the mistake' do
@@ -72,6 +80,22 @@ module Jade
         subject { described_class.hash('Person', { 'name' => 'Ada', age: 40 }) }
 
         it { is_expected.to eq({ 'name' => 'Ada', age: 40 }) }
+      end
+
+      context 'a hash that simply lacks the field' do
+        subject do
+          described_class
+            .blame(
+              Interop::DecodeError.new(
+                Jade::Decode::WrongType['String', 'null'], nil, where: '.name'
+              ),
+              { 'age' => 40 },
+              'Person',
+            )
+            .message
+        end
+
+        it { is_expected.to eq '.name: missing field `name`' }
       end
 
       context 'not a hash at all' do
