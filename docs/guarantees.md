@@ -12,7 +12,8 @@ compiler's real output, not a paraphrase.
    that names the field.
 6. A function Ruby cannot call safely is not callable from Ruby.
 7. If a function reaches the outside world, its type says so.
-8. You can leave. `jade eject` writes the Ruby and the gem stops mattering.
+8. Nothing divides by zero.
+9. You can leave. `jade eject` writes the Ruby and the gem stops mattering.
 
 ## 1. Every case is handled
 
@@ -266,7 +267,64 @@ end
 What is not yet distinguished is *which* outside world: a `Task` that reads the
 clock and a `Task` that calls a payment provider have the same shape.
 
-## 8. You can leave
+## 8. Nothing divides by zero
+
+`/` takes a divisor known not to be zero. A literal is known, so ordinary
+arithmetic is written the ordinary way:
+
+```jade compiles
+module Rates exposing (to_euros)
+
+def to_euros(cents: Int) -> Int
+  cents / 100
+end
+```
+
+A literal zero is the one case the compiler can see is wrong, and it says that
+rather than reporting a type it could not match:
+
+```jade fails
+module ZeroDiv exposing (bad)
+
+def bad(n: Int) -> Int
+  n / 0
+end
+```
+
+```text expected
+error: Cannot divide by zero.
+```
+
+A divisor that is a value has to be checked, and `non_zero` is where that
+happens. It hands back a `Maybe`, so the caller decides what an absent answer
+means:
+
+```jade compiles
+module Shares exposing (each)
+
+def each(total: Int, people: Int) -> Maybe(Int)
+  Maybe.map(non_zero(people), (d) -> { total / d })
+end
+```
+
+Skipping the check does not compile:
+
+```jade fails
+module ValueDiv exposing (bad)
+
+def bad(n: Int, d: Int) -> Int
+  n / d
+end
+```
+
+```text expected
+error: Right side of (/) expects NonZero(Int) but found Int
+```
+
+`NonZero` has no constructor, so `non_zero` is the only way to hold one, and it
+is erased at runtime: dividing costs what dividing costs in Ruby.
+
+## 9. You can leave
 
 `jade eject` writes every module as plain Ruby, vendors the runtime those files
 call, and rewrites their requires to point at each other. The result runs with
@@ -280,9 +338,6 @@ what you would be left with is Ruby you can read.
 
 Claims Jade does not make today, so nobody has to discover them later:
 
-- **Division by zero is a Ruby exception, not a value.** `a / b` with `b` zero
-  raises `ZeroDivisionError` through Jade, so an `Int -> Int -> Int` is not as
-  total as it looks.
 - **A list handed over from Ruby is the same object.** Jade values do not
   change, but a caller that keeps its array and pushes to it afterwards is
   writing into a value Jade already took.
