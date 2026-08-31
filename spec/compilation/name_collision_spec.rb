@@ -135,6 +135,81 @@ module Jade
       end
     end
 
+    context 'when two types share a constructor' do
+      it 'reports it, rather than shadowing one and failing to resolve it' do
+        source = <<~JADE
+          module DupCtor exposing (Card(..), Invoice(..))
+
+          type Invoice
+            = Pending
+            | Paid
+
+
+          type Card
+            = Pending
+            | Active
+        JADE
+
+        expect { test_compiler.require(source) }
+          .to raise_error(CompilationError, /`Pending` is already a constructor of `Invoice`/)
+      end
+
+      it 'reports a variant clashing with a struct, which declares one too' do
+        source = <<~JADE
+          module CtorStructFirst exposing (Invoice(..), Pending(..))
+
+          struct Pending = { at: Int }
+
+
+          type Invoice
+            = Pending
+            | Paid
+        JADE
+
+        expect { test_compiler.require(source) }
+          .to raise_error(CompilationError, /`Pending` is already a struct in this module/)
+      end
+
+      it 'reports a struct clashing with a variant declared before it' do
+        source = <<~JADE
+          module CtorVariantFirst exposing (Invoice(..), Pending(..))
+
+          type Invoice
+            = Pending
+            | Paid
+
+
+          struct Pending = { at: Int }
+        JADE
+
+        expect { test_compiler.require(source) }
+          .to raise_error(CompilationError, /`Pending` is already a constructor of `Invoice`/)
+      end
+
+      it 'still declares the type, so a signature naming it reads normally' do
+        source = <<~JADE
+          module DupCtorSig exposing (Card(..), Invoice(..), latest)
+
+          type Invoice
+            = Pending
+            | Paid
+
+
+          type Card
+            = Pending
+            | Active
+
+
+          def latest -> Card
+            Active
+          end
+        JADE
+
+        expect { test_compiler.require(source) }
+          .to raise_error(CompilationError) { |e| expect(e.message).not_to match(/Card.*not found/) }
+      end
+    end
+
     context 'when two declarations share a name' do
       def expect_collision(source, message)
         expect { test_compiler.require(source) }
