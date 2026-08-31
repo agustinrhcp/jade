@@ -110,6 +110,9 @@ module Jade
                 Constructor['List.Cons', [head, acc]]
               end
 
+          in AST::Pattern::Range(from:, to:)
+            Interval[from&.value, to&.value]
+
           in AST::Pattern::Binding | AST::Pattern::Wildcard
             Wildcard[]
 

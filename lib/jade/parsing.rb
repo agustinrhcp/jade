@@ -273,9 +273,36 @@ module Jade
     end
 
     parser(:pattern) {
-      wildcard_pattern | list_pattern | literal_pattern | binding_pattern |
-        constructor_pattern | tuple_pattern | record_pattern
+      wildcard_pattern | list_pattern | range_pattern | literal_pattern |
+        binding_pattern | constructor_pattern | tuple_pattern | record_pattern
     }
+
+    # Tried ahead of `literal_pattern`, which would otherwise take the lower
+    # bound and leave the `..` stranded.
+    parser(:range_pattern) {
+      ((range_bound >> type(:dotdot) >> upper_bound).map(&AST.range_pattern)) |
+        ((type(:dotdot) >> range_bound).map(&AST.unbounded_below_pattern))
+    }
+
+    parser(:range_bound, private: true) {
+      negative_literal | int | float | char | string
+    }
+
+    # A branch whose body is on the next line has no `then` to stop at, so an
+    # open range would otherwise take the first line of the body as its upper
+    # bound.
+    parser(:upper_bound, private: true) {
+      P.new do |state|
+        next Ok[[nil, state]] if state.eof?
+        next Ok[[nil, state]] unless state.same_line?(
+          state.tokens[state.position - 1].range.begin,
+          state.current.range.begin,
+        )
+
+        optional(range_bound).call(state)
+      end
+    }
+
 
     parser(:tuple_pattern) {
       (

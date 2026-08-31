@@ -12,6 +12,9 @@ module Jade
         in AST::Pattern::Literal(literal:)
           format_node(literal, source:)
 
+        in AST::Pattern::Range(from:, to:)
+          "#{from&.value}..#{to&.value}"
+
         in AST::Pattern::Binding(name:)
           name
 

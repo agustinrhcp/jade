@@ -159,6 +159,170 @@ module Jade
       end
     end
 
+    context 'range patterns' do
+      subject { frontend => Err(errors); errors }
+
+      context 'covering Int' do
+        let(:text) do
+          <<~JADE
+            def band(age: Int) -> String
+              case age
+              in ..-1 then "unborn"
+              in 0..2 then "infant"
+              in 3..12 then "child"
+              in 13.. then "adult"
+              end
+            end
+          JADE
+        end
+
+        subject { frontend }
+
+        it { is_expected.to be_a(Ok) }
+      end
+
+      context 'leaving a gap' do
+        let(:text) do
+          <<~JADE
+            def band(n: Int) -> Int
+              case n
+              in ..-1 then 0
+              in 0..2 then 1
+              in 5..12 then 2
+              in 13.. then 3
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
+
+        describe 'its message' do
+          subject { super().first.message }
+
+          it 'names the interval, coalesced' do
+            is_expected
+              .to eql "Pattern match is not exhaustive. Missing cases:\n  3..4"
+          end
+        end
+      end
+
+      context 'fully covered by an earlier range' do
+        let(:text) do
+          <<~JADE
+            def band(n: Int) -> Int
+              case n
+              in ..12 then 0
+              in 3..7 then 1
+              in 13.. then 2
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::UnreachableBranch) }
+      end
+
+      # `5..20` overlaps `0..10` but is still live on 11..20, so reporting it
+      # would be a false positive on correct code.
+      context 'partly covered by an earlier range' do
+        let(:text) do
+          <<~JADE
+            def band(n: Int) -> Int
+              case n
+              in ..-1 then 0
+              in 0..10 then 1
+              in 5..20 then 2
+              in 21.. then 3
+              end
+            end
+          JADE
+        end
+
+        subject { frontend }
+
+        it { is_expected.to be_a(Ok) }
+      end
+
+      # Literals and ranges cut the same line, so `in 0` and `in ..-1` narrow
+      # the column together.
+      context 'mixed with bare literals' do
+        let(:text) do
+          <<~JADE
+            def pick(n: Int) -> Int
+              case n
+              in 0 then 10
+              in ..-1 then 20
+              in 1 then 30
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+
+        describe 'its message' do
+          subject { super().first.message }
+
+          it 'names what the literals and the range leave over' do
+            is_expected
+              .to eql "Pattern match is not exhaustive. Missing cases:\n  2.."
+          end
+        end
+      end
+
+      context 'with a wildcard the ranges already cover' do
+        let(:text) do
+          <<~JADE
+            def pick(n: Int) -> Int
+              case n
+              in ..0 then 10
+              in 1.. then 20
+              else 30
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::UnreachableBranch) }
+      end
+
+      context 'with the bounds the wrong way round' do
+        let(:text) do
+          <<~JADE
+            def band(n: Int) -> Int
+              case n
+              in 5..3 then 0
+              in _ then 1
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::UnreachableBranch) }
+      end
+
+      context 'over a type that is not Int' do
+        let(:text) do
+          <<~JADE
+            def band(c: Char) -> Int
+              case c
+              in 'a'..'z' then 0
+              in _ then 1
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::PatternTypeMismatch) }
+      end
+    end
+
     context 'unreachable branches' do
       subject { frontend => Err(errors); errors }
 

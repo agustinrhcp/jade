@@ -184,6 +184,33 @@ def area(shape: Shape) -> Float
 end
 ```
 
+**Ranges** match a span of `Int`, with `..` including both bounds. Either
+bound may be left off to run to infinity:
+
+```jade
+module Bands exposing (band)
+
+def band(age: Int) -> String
+  case age
+  in ..-1 then "unborn"
+  in 0..2 then "infant"
+  in 3..12 then "child"
+  in 13.. then "adult"
+  end
+end
+```
+
+Those four arms partition `Int`, so the `case` needs no `else`. A range that
+leaves a gap is reported with the gap named — omitting `in 3..12` above gives
+*Missing cases: `3..12`* — and one already covered by an earlier arm is
+reported as unreachable.
+
+There is no exclusive form. Over `Int` every half-open range has an exact
+inclusive spelling (`3...12` is `3..11`), so a second operator would buy
+nothing and cost a lifetime of remembering which is which. Ranges are `Int`
+only for the same reason: `0..2` and `3..12` sit next to each other with
+nothing in between them to be missed, which is not true of `Float`.
+
 **Lists** match with `[]` and `[head | tail]`; the rest after `|` must be a
 name or wildcard:
 

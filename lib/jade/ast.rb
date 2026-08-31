@@ -84,6 +84,7 @@ module Jade
 
       define(:Wildcard)
       define(:Literal, :literal)
+      define(:Range, :from, :to)
       define(:Binding, :name)
       define(:Constructor, :constructor, :patterns)
       define(:Record, :fields)
@@ -445,6 +446,22 @@ module Jade
     def literal_pattern
       ->(literal) do
         Pattern::Literal[literal, literal.range]
+      end
+    end
+
+    def range_pattern
+      ->((from, dotdot, to)) do
+        Pattern::Range[
+          from,
+          to,
+          from.range.begin...(to&.range&.end || dotdot.range.end),
+        ]
+      end
+    end
+
+    def unbounded_below_pattern
+      ->((dotdot, to)) do
+        Pattern::Range[nil, to, dotdot.range.begin...to.range.end]
       end
     end
 

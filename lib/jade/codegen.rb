@@ -260,6 +260,9 @@ module Jade
       in AST::Pattern::Literal(literal:)
         generate(literal, registry)
 
+      in AST::Pattern::Range(from:, to:)
+        "#{from&.value}..#{to&.value}"
+
       in AST::Pattern::Wildcard
         "_"
 
