@@ -28,6 +28,46 @@ module Jade
           end
         end
 
+        # A constructor is named without its type, so one module cannot hold
+        # two of a name — a union's variant and a struct both define one, and
+        # the second shadows the first. `introduced` is what this declaration
+        # is about to define, each with the span to point at.
+        def duplicate_constructor_errors(entry, name, introduced, declaring:)
+          declared_constructors(entry).then do |seen|
+            introduced.filter_map { duplicate_constructor_error(entry, name, it, seen, declaring) }
+          end
+        end
+
+        def declared_constructors(entry)
+          entry
+            .defined_types
+            .values
+            .flat_map do |symbol|
+              case symbol
+              in Symbol::Union then symbol.variants.map { [it.name, symbol] }
+              in Symbol::Struct then [[symbol.name, symbol]]
+              else []
+              end
+            end
+            .to_h
+        end
+
+        def duplicate_constructor_error(entry, name, (constructor, span), seen, declaring)
+          seen[constructor].then do |owner|
+            next nil if owner.nil? || owner.name == name
+
+            Error::DuplicateConstructorName.new(
+              entry.name,
+              span,
+              constructor,
+              declaring:,
+              type: name,
+              owner:,
+              first_span: owner.decl_span,
+            )
+          end
+        end
+
         def figure_out_type(entry, node)
           case node
           in AST::TypeVar(type:)

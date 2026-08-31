@@ -11,11 +11,15 @@ module Jade
           duplicate_type_error(entry, name, node.range, declaring: 'a struct')
             .then { return Result[entry, [it]] if it }
 
+          # The struct is still declared, so a signature naming it does not
+          # report a second, misleading error.
+          errors = duplicate_constructor_errors(entry, name, [[name, node.range]], declaring: :struct)
+
           type_params
             .map { Symbol.var(it.name, it.range) }
             .then { Symbol.predeclared_struct(name, it, node.range) }
             .then { entry.define(it) }
-            .then { Result[it, []] }
+            .then { Result[it, errors] }
         end
 
         def deep(node, entry, _)
