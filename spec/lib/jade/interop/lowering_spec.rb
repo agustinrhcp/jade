@@ -47,5 +47,33 @@ module Jade
 
       it { is_expected.to include('Function (inline function type) cannot be lowered for interop') }
     end
+
+    context 'an alias over a permitted type is permitted' do
+      let(:symbol) { Symbol.alias('Cents', [], type_sym('Basics', 'Int'), nil) }
+
+      it { is_expected.to be_empty }
+    end
+
+    # The walk used to end at the alias, so the guard never saw the body.
+    context 'an alias over a function is rejected' do
+      let(:symbol) do
+        Symbol
+          .function_type([type_sym('Basics', 'Int')], type_sym('Basics', 'Int'))
+          .then { Symbol.alias('Handler', [], it, nil) }
+      end
+
+      it { is_expected.to include('Function (inline function type) cannot be lowered for interop') }
+    end
+
+    context 'an alias reached through a List argument is rejected' do
+      let(:symbol) do
+        Symbol
+          .function_type([type_sym('Basics', 'Int')], type_sym('Basics', 'Int'))
+          .then { Symbol.alias('Handler', [], it, nil) }
+          .then { type_sym('List', 'List').with(args: [it]) }
+      end
+
+      it { is_expected.to include('Function (inline function type) cannot be lowered for interop') }
+    end
   end
 end

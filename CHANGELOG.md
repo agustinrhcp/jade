@@ -192,6 +192,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   directly after `type` — so a record field or argument may still be called
   `alias`.
 
+  Expansion reaches the edges too: an alias over a `Task` is a port return
+  type and cannot hide a nested one, a function type behind an alias is still
+  refused for interop, an alias cannot stand between a type and itself and
+  hide that there is no way to build one, `implements` on an *imported* alias
+  is reported rather than reaching codegen, and `exposing (UserId(..))` says
+  an alias has no constructors instead of accepting it silently.
+
 - **`jade eject`.** Writes the project as Ruby that runs without the gem: every
   compiled module, the runtime they call, and requires pointing at each other
   rather than at a load path. What it vendors is whatever a booted runtime

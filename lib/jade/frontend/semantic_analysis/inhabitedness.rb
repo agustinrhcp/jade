@@ -7,6 +7,8 @@ module Jade
       module Inhabitedness
         extend self
 
+        DECLARATIONS = [Symbol::Union, Symbol::Struct, Symbol::Alias].freeze
+
         def inhabited?(symbol, registry)
           reachable?(symbol, registry, ::Set[], {})
         end
@@ -29,7 +31,7 @@ module Jade
               .map { reachable?(it, registry, visiting, subst) }
               .then { declaration(resolve(constructor, registry), it, registry, visiting) }
 
-          in Symbol::Union | Symbol::Struct
+          in Symbol::Union | Symbol::Struct | Symbol::Alias
             declaration(sym, [], registry, visiting)
 
           else
@@ -42,7 +44,7 @@ module Jade
         end
 
         def declaration(head, arg_values, registry, visiting)
-          return true unless head.is_a?(Symbol::Union) || head.is_a?(Symbol::Struct)
+          return true unless DECLARATIONS.any? { head.is_a?(it) }
 
           # A declaration asked about on its own has no arguments to speak of,
           # and a parameter stands for whatever a caller supplies, so it
@@ -55,6 +57,9 @@ module Jade
           subst = head.type_params.map(&:name).zip(values).to_h
 
           case head
+          in Symbol::Alias(body:)
+            body.nil? || reachable?(body, registry, seen, subst)
+
           in Symbol::Struct(record_type:)
             record_type.nil? || reachable?(record_type, registry, seen, subst)
 

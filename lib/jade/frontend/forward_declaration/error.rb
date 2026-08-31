@@ -1,6 +1,7 @@
 require 'jade/error'
 
 require 'jade/frontend/forward_declaration/error/bad_import'
+require 'jade/frontend/forward_declaration/error/alias_expansion'
 require 'jade/frontend/forward_declaration/error/duplicate_constructor_name'
 require 'jade/frontend/forward_declaration/error/duplicate_type_name'
 require 'jade/frontend/forward_declaration/error/exposed_type_not_found'

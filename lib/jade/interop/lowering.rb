@@ -21,8 +21,9 @@ module Jade
         in Symbol::FunctionType
           [FunctionError.new('inline function type')]
 
-        in Symbol::TypeApplication(args:)
-          args.flat_map { validate(it, registry, entry) }
+        in Symbol::TypeApplication(constructor:, args:)
+          validate(constructor, registry, entry) +
+            args.flat_map { validate(it, registry, entry) }
 
         in Symbol::RecordType(fields:)
           fields.values.flat_map { validate(it, registry, entry) }
@@ -33,6 +34,11 @@ module Jade
         in Symbol::TypeRef
           lookup_type(symbol, registry, entry)
             &.then { validate(it, registry, entry) } || []
+
+        # An alias is its body here as everywhere else, so a function type
+        # behind one is still a function type that cannot be lowered.
+        in Symbol::Alias(body:)
+          body ? validate(body, registry, entry) : []
 
         else
           []
