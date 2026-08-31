@@ -62,7 +62,16 @@ module Jade
         decoded_args(args, param_names, registry, name, symbol)
           .then { Pretty.call("Internal.#{name}", it) }
           .then { encode_return(return_type, it, registry) }
+          .then { counted(it, qualified(name, symbol)) }
           .then { Pretty.block(boundary_def_header(name, param_names), it) }
+      end
+
+      def counted(body, where)
+        "Jade::Interop::Boundary.crossing(#{where.inspect})\n#{body}"
+      end
+
+      def qualified(name, symbol)
+        "#{to_qualified(symbol.module_name)}.#{name}"
       end
 
       def boundary_def_header(name, param_names)
@@ -74,7 +83,7 @@ module Jade
           .zip(param_names)
           .map { |t, pname| decode_call(t, pname, registry) }
           .zip(param_names)
-          .map { |expr, pname| named(expr, "#{to_qualified(symbol.module_name)}.#{name}(#{pname})") }
+          .map { |expr, pname| named(expr, "#{qualified(name, symbol)}(#{pname})") }
       end
 
       def named(expr, where)

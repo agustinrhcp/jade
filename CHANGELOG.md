@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **A warning when the same values keep crossing the Ruby boundary.** A
+  crossing decodes what it is handed, so the cost follows the data rather than
+  the call count: about 0.8us for a two-field struct. Batching 1500 per-row
+  calls into one call taking a list saves 13%, because the same rows are
+  decoded either way, but a 200-row table handed across on every one of those
+  calls costs 176ms against 0.97ms. `JADE_BOUNDARY_WARN=1000` watches for that
+  shape, warning once when a function crosses that many times inside a second.
+  A handler crossing once per request never trips it. `Boundary.stats` returns
+  the counts for a test to assert on. Off unless asked, and about 80ns per
+  crossing when on. The numbers and the two shapes are in
+  [docs/interop.md](docs/interop.md).
+
 ### Changed
 
 - **A dictionary built from concrete implementations is built once.** Calling
@@ -46,8 +60,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (nil)` is now `Shop.price(item): expected Int, got nil`. The caller may not
   know Jade, so the message names the function, the argument it came in as, and
   types in Ruby's vocabulary rather than the wire's.
-
-### Changed
 
 - **`jade fmt` hugs a trailing block argument.** A call whose last argument is
   a lambda, list or record literal keeps its head on one line and lets that
