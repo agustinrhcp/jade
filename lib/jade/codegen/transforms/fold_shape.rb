@@ -69,7 +69,7 @@ module Jade
             .then { generate_node(it, registry) }
 
           "#{list_arg}.reverse.reduce(#{base_code}) " \
-            "{ |#{ACC_NAME}, #{head_name}| #{combine_code} }"
+            "{ |#{ACC_NAME}, #{Names.local(head_name)}| #{combine_code} }"
         end
 
         private

@@ -20,7 +20,7 @@ module Jade
         end
 
         args, return_type = Type.signature(fn_type)
-        param_names       = params.map(&:name)
+        param_names       = params.map { Names.local(it.name) }
 
         if task_return?(return_type)
           task_wrapper_pair(name, args, param_names, return_type, registry, symbol)

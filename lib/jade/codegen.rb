@@ -3,6 +3,7 @@ require 'jade/codegen/context'
 require 'jade/codegen/helpers'
 require 'jade/codegen/pretty'
 require 'jade/codegen/method_names'
+require 'jade/codegen/names'
 require 'jade/codegen/inlines'
 require 'jade/codegen/inline'
 require 'jade/codegen/boundary'
@@ -169,14 +170,14 @@ module Jade
             "#{internal(fn.module_name)}.method(:#{fn.name})"
 
           else
-            name
+            Names.local(name)
           end
         end
 
       in AST::Assign(pattern:, expression:)
         case pattern
         in AST::Pattern::Binding(name:)
-          "#{name} = #{generate(expression, registry)}"
+          "#{Names.local(name)} = #{generate(expression, registry)}"
         in AST::Pattern::Wildcard
           generate(expression, registry)
         else
@@ -193,7 +194,7 @@ module Jade
         FunctionDeclaration.generate(node, registry)
 
       in AST::FunctionDeclarationParam(name:)
-        name
+        Names.local(name)
 
       in AST::FunctionCall
         FunctionCall.generate(node, registry)
@@ -258,7 +259,7 @@ module Jade
         "_"
 
       in AST::Pattern::Binding(name:)
-        name
+        Names.local(name)
 
       in AST::Pattern::Record(fields:)
         generate_many(fields, registry)
@@ -270,7 +271,7 @@ module Jade
       in AST::Pattern::List(patterns:, rest:)
         rest_part =
           case rest
-          in AST::Pattern::Binding(name:) then ["*#{name}"]
+          in AST::Pattern::Binding(name:) then ["*#{Names.local(name)}"]
           in AST::Pattern::Wildcard then ["*"]
           in nil then []
           end
@@ -325,7 +326,7 @@ module Jade
 
     def param_name(pattern, index = 0)
       case pattern
-      in AST::Pattern::Binding(name:) then name
+      in AST::Pattern::Binding(name:) then Names.local(name)
       in AST::Pattern::Wildcard then '_'
       else
          param_synthetic_name(index)

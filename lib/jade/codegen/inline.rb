@@ -80,7 +80,7 @@ module Jade
 
       def lambda_param_name(pattern)
         case pattern
-        in AST::Pattern::Binding(name:) then name
+        in AST::Pattern::Binding(name:) then Names.local(name)
         in AST::Pattern::Wildcard then '_'
         end
       end
