@@ -367,6 +367,7 @@ dispatch layer.
 
 ## Docs
 
+- [docs/guarantees.md](docs/guarantees.md) — what the compiler promises, with the code that proves each line
 - [docs/syntax.md](docs/syntax.md) — the full language tour
 - [docs/interop.md](docs/interop.md) — the Ruby boundary: ports, decoding, what crosses
 - [docs/json.md](docs/json.md) — `Decode` / `Encode`, by hand and auto-derived
