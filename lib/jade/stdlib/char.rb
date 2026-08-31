@@ -10,6 +10,7 @@ module Jade
       union :Char
 
       implementation('Eq', 'Char', '(==)' => 'char_eq')
+      implementation('Comparable', 'Char', 'compare' => 'char_compare')
 
       function(:to_code, { char: 'Char' }, 'Int')
       function(:from_code, { code: 'Int' }, 'Maybe(Char)')
@@ -22,6 +23,7 @@ module Jade
       default_importing('Char')
 
       function('char_eq', { one: 'Char', other: 'Char' }, 'Bool')
+      function('char_compare', { one: 'Char', other: 'Char' }, 'Ordering')
     end
   end
 end
