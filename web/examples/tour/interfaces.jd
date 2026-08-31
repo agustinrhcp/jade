@@ -1,0 +1,28 @@
+module Interfaces exposing (describe, larger)
+
+struct Money = {
+  cents: Int
+}
+
+
+interface Show(a) with
+  show : a -> String
+end
+
+
+implements Show(Money) with
+  show: (m) -> { String.from_int(m.cents) ++ "c" }
+end
+
+
+def describe(m: Money) -> String
+  show(m)
+end
+
+
+def larger(a: a, b: a) -> a
+  case compare(a, b)
+  in GT then a
+  else b
+  end
+end

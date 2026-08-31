@@ -7,7 +7,7 @@
 const VENDOR = 'vendor';
 
 // Ruby double-quoted strings interpolate #{...}, and both the compiler source
-// and user input are full of it — escape before embedding in evaluated Ruby.
+// and user input are full of it. Escape before embedding in evaluated Ruby.
 
 // Embeds text as a Ruby string literal.
 const rubyLiteral = (text) => JSON.stringify(text).replace(/#/g, '\\#');
@@ -103,7 +103,7 @@ export function compile(vm, source) {
         })
       rescue Jade::CompilationError => e
         # Parse failures raise rather than land in a module's diagnostics, but
-        # the exception carries the same list — render it the same way so a
+        # the exception carries the same list, so render it the same way and a
         # syntax error still points at the offending span.
         JSON.dump({
           'ruby' => nil,
@@ -121,22 +121,27 @@ export function compile(vm, source) {
 
 const PREAMBLE = /^(?:\$LOAD_PATH.*|require .*|require_relative .*)\n/gm;
 
-export function attach({ editors, onResult, onStatus }) {
+export async function ready(onProgress) {
+  if (!booting) booting = boot(onProgress);
+  return booting;
+}
+
+export function attach(panels) {
   let vm = null;
   let timer = null;
 
-  async function ensureVm() {
+  async function ensureVm(panel) {
     if (vm) return vm;
-    if (!booting) booting = boot(onStatus);
+    if (!booting) booting = boot((text, kind) => panel.status(text, kind));
     vm = await booting;
     return vm;
   }
 
-  async function run(editor) {
+  async function run(panel) {
     try {
-      await ensureVm();
+      await ensureVm(panel);
     } catch (error) {
-      onStatus(`could not start the compiler — ${error.message}`, 'error');
+      panel.status(`could not start the compiler: ${error.message}`, 'error');
       return;
     }
 
@@ -144,39 +149,89 @@ export function attach({ editors, onResult, onStatus }) {
     let result;
 
     try {
-      result = compile(vm, editor.value);
+      result = compile(vm, panel.editor.value);
     } catch (error) {
-      onStatus(`compiler crashed — ${error.message}`, 'error');
+      panel.status(`compiler crashed: ${error.message}`, 'error');
       return;
     }
 
     const elapsed = Math.round(performance.now() - started);
     const errors = result.severities.filter((s) => s === 'error').length;
 
-    onResult(editor, {
+    panel.render({
       ruby: result.ruby ? result.ruby.replace(PREAMBLE, '').trim() : null,
       rendered: result.rendered,
       failed: errors > 0,
     });
 
     if (errors) {
-      onStatus(`${errors} error${errors > 1 ? 's' : ''}`, 'error');
+      panel.status(`${errors} error${errors > 1 ? 's' : ''}`, 'error');
     } else {
       const warnings = result.severities.length;
-      onStatus(
+      panel.status(
         `compiled in ${elapsed}ms` + (warnings ? ` · ${warnings} warning${warnings > 1 ? 's' : ''}` : ''),
         'ok',
       );
     }
   }
 
-  editors.forEach((editor) => {
+  panels.forEach((panel) => {
     const schedule = () => {
       clearTimeout(timer);
-      timer = setTimeout(() => run(editor), 150);
+      timer = setTimeout(() => run(panel), 150);
     };
 
-    editor.addEventListener('input', schedule);
-    editor.addEventListener('focus', () => { if (!vm) schedule(); }, { once: true });
+    panel.editor.addEventListener('input', schedule);
+    panel.editor.addEventListener('focus', () => { if (!vm) schedule(); }, { once: true });
+    if (panel.eager) schedule();
   });
+}
+
+// `load` rather than `require`, constant dropped first, so an edit really does
+// replace what the console is talking to.
+export function loadModule(vm, source) {
+  return JSON.parse(vm.eval(`
+    source = JSON.parse(${rubyString(source)})
+    name = source[/\\Amodule\\s+([A-Z][A-Za-z0-9_]*)/, 1]
+
+    begin
+      raise 'no module declaration' if name.nil?
+
+      uri = name.gsub(/([a-z0-9])([A-Z])/, '\\\\1_\\\\2').downcase + '.jd'
+      registry = Jade::ModuleLoader.load('/src', uri, overlays: { uri => source }, tolerant: true)
+      mod = registry.modules.values.reject { Jade::Stdlib.is_stdlib?(it) }.last
+
+      if mod.nil? || mod.generated.nil? || mod.diagnostics.items.any? { it.severity == :error }
+        JSON.dump({ 'loaded' => false })
+      else
+        FileUtils.rm_rf('/build')
+        Jade::ModuleLoader.emit(registry, path: '/build')
+        $LOAD_PATH.unshift('/build') unless $LOAD_PATH.include?('/build')
+        Object.send(:remove_const, name) if Object.const_defined?(name, false)
+        load File.join('/build', uri.sub(/\\.jd\\z/, '') + '.rb')
+        JSON.dump({ 'loaded' => true, 'module' => name })
+      end
+    rescue Exception => e
+      JSON.dump({ 'loaded' => false })
+    end
+  `).toString());
+}
+
+export function evaluate(vm, expression) {
+  return JSON.parse(vm.eval(`
+    begin
+      JSON.dump({ 'ok' => eval(${rubyLiteral(expression)}).inspect })
+    rescue Jade::Interop::NotExposed => e
+      message = e.message.lines.first.to_s.strip
+      found = message.match(/\\A(\\S+)\\.(\\w+) is not exposed/)
+
+      JSON.dump({
+        'cls' => e.class.name,
+        'msg' => message,
+        'hint' => found && "try #{found[1]}::Internal.#{found[2]}",
+      })
+    rescue Exception => e
+      JSON.dump({ 'cls' => e.class.name, 'msg' => e.message.lines.first.to_s.strip })
+    end
+  `).toString());
 }

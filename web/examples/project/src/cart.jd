@@ -1,0 +1,19 @@
+module Cart exposing (receipt, subtotal)
+
+struct Line = {
+  name: String,
+  cents: Int,
+  qty: Int
+}
+
+
+def subtotal(lines: List(Line)) -> Int
+  lines
+    |> List.map((l) -> { l.cents * l.qty })
+    |> List.fold(0, (acc, c) -> { acc + c })
+end
+
+
+def receipt(lines: List(Line)) -> List(String)
+  List.map(lines, (l) -> { l.name ++ " x" ++ String.from_int(l.qty) })
+end

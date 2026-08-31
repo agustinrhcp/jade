@@ -1,0 +1,21 @@
+module Structs exposing (birthday, label, rename)
+
+struct Person = {
+  name: String,
+  age: Int
+}
+
+
+def birthday(p: Person) -> Person
+  { p | age: p.age + 1 }
+end
+
+
+def rename(p: Person, name: String) -> Person
+  { p | name: name }
+end
+
+
+def label(p: Person) -> String
+  p.name ++ " (" ++ String.from_int(p.age) ++ ")"
+end

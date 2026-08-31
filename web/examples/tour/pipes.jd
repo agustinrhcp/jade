@@ -1,0 +1,17 @@
+module Pipes exposing (add, increments, loud_names)
+
+def loud_names(names: List(String)) -> String
+  names
+    |> List.map(String.to_upper)
+    |> String.join(", ")
+end
+
+
+def add(a: Int, b: Int) -> Int
+  a + b
+end
+
+
+def increments(xs: List(Int)) -> List(Int)
+  List.map(xs, add(_, 1))
+end

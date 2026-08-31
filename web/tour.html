@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tour: Jade</title>
+<meta name="description" content="A tour of Jade, from primitives to the Ruby boundary. Every example compiles and runs in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="tour">
+
+<div class="shell">
+
+  <div class="railbar">
+    <button type="button" class="railtoggle" aria-expanded="false">
+      <span data-current>Values and primitives</span>
+      <span class="glyph">sections</span>
+    </button>
+    <nav class="raillist" hidden>
+      <a href="#values">Values and primitives</a>
+      <a href="#functions">Functions</a>
+      <a href="#unions">Union types</a>
+      <a href="#structs">Structs and records</a>
+      <a href="#matching">Pattern matching</a>
+      <a href="#conditionals">Conditionals</a>
+      <a href="#pipes">Pipes and lambdas</a>
+      <a href="#maybes">Maybe and Result</a>
+      <a href="#interfaces">Interfaces</a>
+      <a href="#imports">Modules and imports</a>
+      <a href="#ports">Reaching Ruby</a>
+    </nav>
+  </div>
+
+  <aside class="rail">
+    <a class="mark" href="index.html">jade<span class="dot">.</span></a>
+    <nav>
+      <a href="#values">Values and primitives</a>
+      <a href="#functions">Functions</a>
+      <a href="#unions">Union types</a>
+      <a href="#structs">Structs and records</a>
+      <a href="#matching">Pattern matching</a>
+      <a href="#conditionals">Conditionals</a>
+      <a href="#pipes">Pipes and lambdas</a>
+      <a href="#maybes">Maybe and Result</a>
+      <a href="#interfaces">Interfaces</a>
+      <a href="#imports">Modules and imports</a>
+      <a href="#ports">Reaching Ruby</a>
+    </nav>
+    <div class="railfoot"><a href="index.html">← jade home</a></div>
+  </aside>
+
+  <main id="top">
+    <div class="column">
+      <header class="tourhead">
+        <h1>Tour</h1>
+        <p class="lede">Eleven sections, each with an example you can run. The compiler and a
+          Ruby runtime load into this page the first time you press <code>try it</code>.</p>
+      </header>
+
+      <section id="values" data-section data-file="values.jd"
+        data-example="tour/values" data-seed='Values.total'>
+        <div class="num">01</div>
+        <h2>Values and primitives</h2>
+        <p class="muted"><code>Int</code>, <code>Float</code>, <code>String</code>, <code>Char</code> and <code>Bool</code>. Annotations go on the signature; inside a function the compiler works the rest out. A zero-argument function is a value where you reference it: <code>total</code>, not <code>total()</code>, though the parentheses stay at the definition so it is greppable.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>values.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/values">module Values exposing (greeting, initial, pi, ready, total)
+
+def total() -&gt; Int
+  6 * 7
+end
+
+
+def pi() -&gt; Float
+  3.14159
+end
+
+
+def greeting() -&gt; String
+  "hello" ++ ", " ++ "world"
+end
+
+
+def initial() -&gt; Char
+  'J'
+end
+
+
+def ready() -&gt; Bool
+  total &gt; 0
+end</pre></div>
+          </div>
+        </div>
+      </section>
+      <section id="functions" data-section data-file="functions.jd"
+        data-example="tour/functions" data-seed='Functions.shout("hey", "there")'>
+        <div class="num">02</div>
+        <h2>Functions</h2>
+        <p class="muted">Arguments and returns are annotated; the body is one expression, so there is no <code>return</code>. <code>++</code> joins strings and arrays alike.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>functions.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/functions">module Functions exposing (full_name, shout)
+
+def full_name(first: String, last: String) -&gt; String
+  first ++ " " ++ last
+end
+
+
+def shout(first: String, last: String) -&gt; String
+  full_name(first, last)
+    |&gt; String.to_upper
+end</pre></div>
+          </div>
+        </div>
+      </section>
+      <section id="unions" data-section data-file="unions.jd"
+        data-example="tour/unions" data-seed='Unions::Internal.describe(Unions::Circle[2.0])'>
+        <div class="num">03</div>
+        <h2>Union types</h2>
+        <p class="muted">One type, a fixed set of shapes, each carrying its own data. Where Ruby would reach for a status string or a subclass per case, this is checked. Add a shape and the compiler walks you round every place that has to handle it.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>unions.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/unions">module Unions exposing (describe, radius_of)
+
+type Shape
+  = Circle(Float)
+  | Rectangle(Float, Float)
+  | Point
+
+
+def describe(shape: Shape) -&gt; String
+  case shape
+  in Circle(_) then "circle"
+  in Rectangle(_, _) then "rectangle"
+  in Point then "point"
+  end
+end
+
+
+def radius_of(shape: Shape) -&gt; Maybe(Float)
+  case shape
+  in Circle(r) then Just(r)
+  in Rectangle(_, _) then Nothing
+  in Point then Nothing
+  end
+end</pre></div>
+          </div>
+        </div>
+      </section>
+      <section id="structs" data-section data-file="structs.jd"
+        data-example="tour/structs" data-seed='Structs.label({ "name" => "Ada", "age" => 40 })'>
+        <div class="num">04</div>
+        <h2>Structs and records</h2>
+        <p class="muted">A typed <code>Struct</code>, near enough. <code>{ p | age: … }</code> is <code>#with</code>, a copy with one field replaced. Nothing mutates, so nothing changes underneath a caller holding the old one.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>structs.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/structs">module Structs exposing (birthday, label, rename)
+
+struct Person = {
+  name: String,
+  age: Int
+}
+
+
+def birthday(p: Person) -&gt; Person
+  { p | age: p.age + 1 }
+end
+
+
+def rename(p: Person, name: String) -&gt; Person
+  { p | name: name }
+end
+
+
+def label(p: Person) -&gt; String
+  p.name ++ " (" ++ String.from_int(p.age) ++ ")"
+end</pre></div>
+          </div>
+        </div>
+      </section>
+      <section id="matching" data-section data-file="matching.jd"
+        data-example="tour/matching" data-seed='Matching.sum([1, 2, 3])'>
+        <div class="num">05</div>
+        <h2>Pattern matching</h2>
+        <p class="muted">Ruby's <code>case/in</code>, with the compiler counting. It pulls values out as it branches and refuses to build if you have missed a shape. No <code>else</code> that quietly swallows the case you forgot.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>matching.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/matching">module Matching exposing (first_word, sum, total_of)
+
+type Payment
+  = Cash(Int)
+  | Card(last4: String, cents: Int)
+
+
+def total_of(p: Payment) -&gt; Int
+  case p
+  in Cash(c) then c
+  in Card(d) then d.cents
+  end
+end
+
+
+def sum(xs: List(Int)) -&gt; Int
+  case xs
+  in [] then 0
+  in [x | rest] then x + sum(rest)
+  end
+end
+
+
+def first_word(words: List(String)) -&gt; Maybe(String)
+  List.head(words)
+end</pre></div>
+          </div>
+        </div>
+      </section>
+      <section id="conditionals" data-section data-file="conditionals.jd"
+        data-example="tour/conditionals" data-seed='Conditionals.abs(-7)'>
+        <div class="num">06</div>
+        <h2>Conditionals</h2>
+        <p class="muted"><code>if</code> returns a value, like Ruby's, so it always needs the <code>else</code>, because there is no implicit nil branch. <code>case</code> is for shapes, <code>if</code> is for booleans.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>conditionals.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/conditionals">module Conditionals exposing (abs, sign)
+
+def abs(n: Int) -&gt; Int
+  if n &lt; 0 then 0 - n else n end
+end
+
+
+def sign(n: Int) -&gt; Int
+  if n &lt; 0 then
+    -1
+  else
+    if n &gt; 0 then 1 else 0 end
+  end
+end</pre></div>
+          </div>
+        </div>
+      </section>
+      <section id="pipes" data-section data-file="pipes.jd"
+        data-example="tour/pipes" data-seed='Pipes.loud_names(["ada", "grace"])'>
+        <div class="num">07</div>
+        <h2>Pipes and lambdas</h2>
+        <p class="muted"><code>|&gt;</code> feeds a value into the next call, the way you would chain <code>.map.join</code> in Ruby. A lambda is <code>(x) -&gt; { … }</code>. Leave a <code>_</code> where an argument goes and you get back a function still waiting for it. <code>add(_, 1)</code> is Ruby's <code>method(:add).curry[1]</code>, without the ceremony.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>pipes.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/pipes">module Pipes exposing (add, increments, loud_names)
+
+def loud_names(names: List(String)) -&gt; String
+  names
+    |&gt; List.map(String.to_upper)
+    |&gt; String.join(", ")
+end
+
+
+def add(a: Int, b: Int) -&gt; Int
+  a + b
+end
+
+
+def increments(xs: List(Int)) -&gt; List(Int)
+  List.map(xs, add(_, 1))
+end</pre></div>
+          </div>
+        </div>
+      </section>
+      <section id="maybes" data-section data-file="maybes.jd"
+        data-example="tour/maybes" data-seed='Maybes.label(4)'>
+        <div class="num">08</div>
+        <h2>Maybe and Result</h2>
+        <p class="muted">There is no <code>nil</code>. A value that might be missing says so in its type, and you cannot read it without handling the empty case, so <code>NoMethodError</code> on nil has nowhere to come from. <code>Result</code> is the same trick for something that can fail, carrying the reason.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>maybes.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/maybes">module Maybes exposing (halve, label, safe_divide)
+
+def safe_divide(a: Int, b: Int) -&gt; Maybe(Int)
+  if b == 0 then Nothing else Just(a / b) end
+end
+
+
+def halve(n: Int) -&gt; Maybe(Int)
+  safe_divide(n, 2)
+end
+
+
+def label(n: Int) -&gt; String
+  safe_divide(100, n)
+    |&gt; Maybe.map(String.from_int)
+    |&gt; Maybe.with_default("undefined")
+end</pre></div>
+          </div>
+        </div>
+      </section>
+      <section id="interfaces" data-section data-file="interfaces.jd"
+        data-example="tour/interfaces" data-seed='Interfaces.describe({ "cents" => 250 })'>
+        <div class="num">09</div>
+        <h2>Interfaces</h2>
+        <p class="muted">Closest thing to a Ruby module you <code>include</code>, except you never wire it up. Declare what a type can do, implement it, and every call site resolves to the right implementation while it compiles. <code>==</code>, <code>compare</code> and <code>++</code> work this way already.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>interfaces.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/interfaces">module Interfaces exposing (describe, larger)
+
+struct Money = {
+  cents: Int
+}
+
+
+interface Show(a) with
+  show : a -&gt; String
+end
+
+
+implements Show(Money) with
+  show: (m) -&gt; { String.from_int(m.cents) ++ "c" }
+end
+
+
+def describe(m: Money) -&gt; String
+  show(m)
+end
+
+
+def larger(a: a, b: a) -&gt; a
+  case compare(a, b)
+  in GT then a
+  else b
+  end
+end</pre></div>
+          </div>
+        </div>
+      </section>
+      <section id="imports" data-section data-file="imports.jd"
+        data-example="tour/imports" data-seed='Imports.tally(["a", "b", "a"])'>
+        <div class="num">10</div>
+        <h2>Modules and imports</h2>
+        <p class="muted">One module per file, and the path has to match the name. <code>Shop.Cart</code> lives in <code>shop/cart.jd</code>, the way Zeitwerk expects. <code>exposing</code> is the public surface; everything else stays private.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>imports.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/imports">module Imports exposing (lookup, tally)
+
+import Dict exposing (Dict)
+
+
+def tally(words: List(String)) -&gt; Dict(String, Int)
+  List.fold(words, Dict.empty, (acc, w) -&gt; {
+    Dict.insert(acc, w, 1)
+  })
+end
+
+
+def lookup(counts: Dict(String, Int), word: String) -&gt; Int
+  counts
+    |&gt; Dict.get(word)
+    |&gt; Maybe.with_default(0)
+end</pre></div>
+          </div>
+        </div>
+      </section>
+      <section id="ports" data-section data-file="ports.jd"
+        data-example="tour/ports" data-seed='Ports.welcome("ada@example.com")'
+        data-setup='module Mailer; extend Jade::Port; task(:deliver) { |t, email| t.ok(true) }; end'
+        data-note='Mailer is the Ruby side of the port. Without it the call raises NameError. Try deleting it and calling welcome again.'>
+        <div class="num">11</div>
+        <h2>Reaching Ruby</h2>
+        <p class="muted">Nothing in Jade touches the outside world on its own. A <code>uses</code> block declares what you want from Ruby, you write that bit in Ruby, and the call hands back a <code>Task</code> that has not run yet, so a signature tells you whether a function does IO. Nothing implements this port here; the console will say so, and you can write one into it.</p>
+        <div class="block">
+          <div class="pane">
+            <div class="chrome">
+              <span>ports.jd</span>
+              <button type="button" class="tryit">try it</button>
+            </div>
+            <div class="scroll x"><pre class="code sm" data-hl="code" data-src="tour/ports">module Ports exposing (welcome)
+
+uses Mailer with
+  deliver : String -&gt; Task(Bool, String)
+end
+
+
+def welcome(email: String) -&gt; Task(Bool, String)
+  deliver(email)
+end</pre></div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="foot">
+        <span>Jade, MIT licensed</span>
+        <span class="pip"></span>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="tour.js"></script>
+
+</body>
+</html>

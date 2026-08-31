@@ -1,0 +1,26 @@
+module Matching exposing (first_word, sum, total_of)
+
+type Payment
+  = Cash(Int)
+  | Card(last4: String, cents: Int)
+
+
+def total_of(p: Payment) -> Int
+  case p
+  in Cash(c) then c
+  in Card(d) then d.cents
+  end
+end
+
+
+def sum(xs: List(Int)) -> Int
+  case xs
+  in [] then 0
+  in [x | rest] then x + sum(rest)
+  end
+end
+
+
+def first_word(words: List(String)) -> Maybe(String)
+  List.head(words)
+end
