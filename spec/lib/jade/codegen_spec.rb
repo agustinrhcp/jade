@@ -464,6 +464,62 @@ module Jade
       it { is_expected.to eql "Jade::Runtime.record(:a, :b)[\"hello\", 42].a" }
     end
 
+    # A dictionary built from concrete implementations is the same object
+    # on every call, so building it per call was pure allocation.
+    describe 'a constant dictionary' do
+      let(:text) do
+        <<~JADE
+          module Totals exposing (one, two)
+
+          def one(xs: List(Int)) -> Int
+            List.sum(xs)
+          end
+
+
+          def two(xs: List(Int)) -> Int
+            List.sum(xs) + 1
+          end
+        JADE
+      end
+
+      it 'is built once and shared by both call sites' do
+        expect(subject).to include 'DICT_0 = [{ "(+)" =>'
+        expect(subject.scan('.call(DICT_0)').size).to eq 2
+      end
+
+      it 'is frozen, since two call sites now hold the same object' do
+        expect(subject).to match(/DICT_0 = .*\.freeze/)
+      end
+    end
+
+    describe 'a dictionary the caller supplies' do
+      let(:text) do
+        <<~JADE
+          module Totals exposing (largest)
+
+          def larger(a: a, b: a) -> a
+            case compare(a, b)
+            in GT then a
+            else b
+            end
+          end
+
+
+          def largest(xs: List(Int), seed: Int) -> Int
+            List.fold(xs, seed, larger)
+          end
+        JADE
+      end
+
+      it 'stays a constant where the type is known' do
+        expect(subject).to include 'DICT_0 = { "compare" =>'
+      end
+
+      it 'keeps the parameter where it is not' do
+        expect(subject).to include '__dict0__'
+      end
+    end
+
     describe 'using an interop import' do
       let(:text) do
         <<~JADE

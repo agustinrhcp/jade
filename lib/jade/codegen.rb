@@ -100,11 +100,15 @@ module Jade
         boundary_helpers = Boundary::Specialized.collect_helpers(body, registry)
           .then { Boundary::Specialized.emit_helpers(it, registry) }
 
+        dict_consts = {}
+
         outer, inner, wrappers =
-          with_boundary_cache(boundary_cache) do
-            with_dispatched_methods(collect_dispatched_methods(body, registry)) do
-              with_hoisted_records do
-                partition_module_body(body.expressions, registry, name.count('.'))
+          with_dict_consts(dict_consts) do
+            with_boundary_cache(boundary_cache) do
+              with_dispatched_methods(collect_dispatched_methods(body, registry)) do
+                with_hoisted_records do
+                  partition_module_body(body.expressions, registry, name.count('.'))
+                end
               end
             end
           end
@@ -118,6 +122,7 @@ module Jade
           *shape_consts,
           *outer,
           inner_module,
+          *referenced_dicts(dict_consts, [*outer, *inner, *wrappers]),
           *boundary_consts,
           *boundary_helpers,
           *wrappers,
@@ -338,6 +343,27 @@ module Jade
 
     def relative_require(import_path, current_depth)
       "#{'../' * current_depth}#{import_path}"
+    end
+
+    # Emission generates some expressions only to discard them (a decoder
+    # weighed against its specialized form, say), and a discarded one can
+    # still have claimed a constant. Keep the ones that survived, and the
+    # ones those refer to.
+    def referenced_dicts(table, body)
+      reachable_dicts(table, body.join(Pretty.newline))
+        .map { |source, const| "#{const} = #{source}.freeze" }
+    end
+
+    # A kept dictionary can name another one, so widen the search text
+    # with what was kept until nothing new turns up.
+    def reachable_dicts(table, code, kept = {})
+      table
+        .select { |_, const| code.match?(/\b#{const}\b/) }
+        .then do |found|
+          next found if found.size == kept.size
+
+          reachable_dicts(table, [code, *found.keys].join(Pretty.newline), found)
+        end
     end
 
     def namespace_setup_lines(name)

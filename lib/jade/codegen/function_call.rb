@@ -102,8 +102,23 @@ module Jade
           Codegen.dict_env[[interface, id]]
 
         in Symbol::Implementation
-          Pretty.hash(generate_impl_dispatch(entry, registry))
+          hoisted(Pretty.hash(generate_impl_dispatch(entry, registry)))
         end
+      end
+
+      # A dictionary built only from concrete implementations is the same
+      # object on every call, so it is worth building once. One that names
+      # a dict parameter is not: that slot is the caller's, and differs per
+      # call. Outside a module there is nowhere to put a constant, so the
+      # literal stands.
+      #
+      # Keyed by source, which dedupes the same dictionary across every
+      # call site in the module.
+      def hoisted(source)
+        table = Codegen.dict_consts or return source
+        return source if Codegen.dict_env.values.any? { source.include?(it) }
+
+        table[source] ||= "DICT_#{table.size}"
       end
 
       # Polymorphic fn referenced as a value (not called). Wraps the fn with
@@ -131,9 +146,9 @@ module Jade
             .then { Pretty.lambda(param_names.join(', '), it) }
 
         in Symbol::InterfaceFunction => fn
-          dispatch_value(dictionaries.first, registry)
-            &.then { "#{it}[#{fn.name.inspect}]" } ||
+          dispatch_lookup(dictionaries.first, fn.name, registry) {
             fail("no dict in scope to reference interface method `#{fn.qualified_name}` as a value")
+          }
 
         else
           nil
@@ -334,6 +349,7 @@ module Jade
         dep_dispatches
           .map { it.is_a?(String) ? it : Pretty.hash(it) }
           .then { Pretty.array(it) }
+          .then { hoisted(it) }
       end
 
       # Stdlib intrinsics implementation language.
