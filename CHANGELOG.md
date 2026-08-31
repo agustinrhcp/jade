@@ -83,6 +83,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **An anonymous record crosses to Ruby.** `def origin -> { x: Int, y: Int }`
+  returned `NotExposed`: `Encodable` derived for a `struct` but not for the
+  same shape written inline, so a function returning one was unreachable from
+  Ruby though every field was encodable. It now derives structurally, the way
+  `Decodable` already did, and a record with a field that has no instance
+  still refuses.
+
 - **`jade eject`.** Writes the project as Ruby that runs without the gem: every
   compiled module, the runtime they call, and requires pointing at each other
   rather than at a load path. What it vendors is whatever a booted runtime
