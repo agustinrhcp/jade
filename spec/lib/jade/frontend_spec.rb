@@ -159,6 +159,87 @@ module Jade
       end
     end
 
+    context 'unreachable branches' do
+      subject { frontend => Err(errors); errors }
+
+      context 'with a constructor repeated' do
+        let(:text) do
+          <<~JADE
+            type Shape
+              = Circle(Float)
+              | Square(Float)
+
+            def area(s: Shape) -> Float
+              case s
+              in Circle(r) then r
+              in Circle(r) then r
+              in Square(w) then w
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::UnreachableBranch) }
+      end
+
+      context 'with a branch behind a wildcard' do
+        let(:text) do
+          <<~JADE
+            def pick(n: Int) -> Int
+              case n
+              in _ then 0
+              in 5 then 1
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::UnreachableBranch) }
+      end
+
+      context 'with a literal repeated' do
+        let(:text) do
+          <<~JADE
+            def pick(n: Int) -> Int
+              case n
+              in 1 then 10
+              in 2 then 20
+              in 1 then 30
+              in _ then 0
+              end
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::UnreachableBranch) }
+      end
+
+      context 'with a widening branch that is still reachable' do
+        let(:text) do
+          <<~JADE
+            type Maybe(a)
+              = Just(a)
+              | Nothing
+
+            def pick(m: Maybe(Int)) -> Int
+              case m
+              in Just(1) then 1
+              in Just(n) then n
+              in Nothing then 0
+              end
+            end
+          JADE
+        end
+
+        subject { frontend }
+
+        it { is_expected.to be_a(Ok) }
+      end
+    end
+
     context 'pattern bind (<-)' do
       context 'with a constructor pattern (single constructor, exhaustive)' do
         let(:text) do
