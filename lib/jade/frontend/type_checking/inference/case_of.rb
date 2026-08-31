@@ -46,7 +46,7 @@ module Jade
                   expr_result,
                 )
               end
-              .then { |st, cs| [check_exhaustiveness(node, st, registry, expr_result), cs] }
+              .then { |st, cs| [check_exhaustiveness(node, st, expr_result), cs] }
               .then do |st, cs|
                 first_result
                   .with(constraints: cs)
@@ -75,14 +75,14 @@ module Jade
             )
           end
 
-          def check_exhaustiveness(node, state, registry, result)
+          def check_exhaustiveness(node, state, result)
             node => AST::CaseOf(branches:)
 
             patterns = branches.map(&:pattern)
             type     = result.apply(state.env.substitution).type
 
             PatternAnalysis::Exhaustiveness
-              .assert(patterns, node.range, state.env, registry, type)
+              .assert(patterns, node.range, state.env, type)
               .then { state.add_errors(it) }
           end
 
