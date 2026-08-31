@@ -112,6 +112,9 @@ module Jade
 
         in Symbol::Interface
           []
+
+        in other
+          raise "no runtime representation for #{qname} (#{other.class})"
         end
       end
 

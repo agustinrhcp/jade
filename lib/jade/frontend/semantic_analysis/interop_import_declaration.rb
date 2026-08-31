@@ -18,7 +18,7 @@ module Jade
             .flat_map { validate_type_symbol(it.symbol, registry, entry) }
 
           task_errors = functions_with_symbols
-            .flat_map { |fn| task_shape_errors(fn, entry) }
+            .flat_map { |fn| task_shape_errors(fn, registry, entry) }
 
           Result
             .init(node.with(functions: functions_with_symbols), scope)
@@ -27,37 +27,50 @@ module Jade
 
         private
 
-        def task_shape_errors(fn, entry)
-          unless task_type?(fn.symbol.return_type)
+        TASK = 'Task.Task'
+
+        # Asked of the expanded type rather than the written symbol, so an
+        # alias over a `Task` is a port return type and cannot smuggle a
+        # nested one past the guard.
+        def task_shape_errors(fn, registry, entry)
+          return_type = expand(fn.symbol.return_type, registry)
+
+          unless task_type?(return_type)
             Error::NonTaskPort
               .new(entry.name, fn.range, fn_name: fn.name)
               .then { return [it] }
           end
 
-          fn.symbol.return_type => Symbol::TypeApplication(args: [ok_arm, err_arm])
+          return_type => Type::Application(args: [ok_arm, err_arm])
 
           [ok_arm, err_arm]
             .any? { contains_task?(it) }
             .then { it ? [Error::NestedTaskPort.new(entry.name, fn.range, fn_name: fn.name)] : [] }
         end
 
-        def task_type?(symbol)
-          case symbol
-          in Symbol::TypeApplication(constructor: Symbol::TypeRef['Task', 'Task'])
-            true
-
-          else
-            false
-          end
+        def expand(symbol, registry)
+          Type
+            .from_symbol(symbol, registry, TypeChecking::VarGen.new)
+            .first
         end
 
-        def contains_task?(symbol)
-          case symbol
-          in Symbol::TypeApplication(constructor: Symbol::TypeRef['Task', 'Task'])
-             true
+        def task_type?(type)
+          type in Type::Application(constructor: Type::Constructor(name: TASK))
+        end
 
-          in Symbol::TypeApplication(args:)
+        def contains_task?(type)
+          case type
+          in Type::Application(constructor: Type::Constructor(name: TASK))
+            true
+
+          in Type::Application(args:)
             args.any? { contains_task?(it) }
+
+          in Type::Function(args:, return_type:)
+            (args + [return_type]).any? { contains_task?(it) }
+
+          in Type::AnonymousRecord(fields:)
+            fields.values.any? { contains_task?(it) }
 
           else
             false

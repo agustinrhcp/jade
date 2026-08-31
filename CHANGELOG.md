@@ -32,6 +32,37 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`type alias Name = T`.** A structural name for a type that already exists:
+  `type alias UserId = Int`, `type alias Point = (Float, Float)`,
+  `type alias User = { name: String, age: Int }`. The alias and its body are
+  the same type, so a record literal satisfies a record alias directly and no
+  constructor is introduced. Aliases take parameters
+  (`type alias Pair(a) = (a, a)`) and are expanded before type checking, which
+  is what makes `UserId` and `Int` interchangeable everywhere.
+
+  An alias has no identity of its own, so it carries no implementations:
+  `implements Show(UserId)` is rejected rather than silently attaching to
+  `Int`, where it would collide with every other alias over `Int`. What an
+  alias *inherits* needs no declaring — `Encode.encode` on a `UserId` is
+  `Encode.encode` on an `Int`. A recursive alias is rejected too. Reach for
+  `struct` when you want a distinct type, or a single-variant `type` for a
+  newtype around an inner shape.
+
+  `alias` is a contextual keyword, read as one only directly after `type`, so
+  a record field or argument may still be called `alias`.
+
+  Diagnostics say what the source said: a mismatch against a `UserId` reads
+  `should be UserId (= Int)` rather than `should be Int`, and `jade fmt`
+  breaks a record alias past one field the way it breaks the `struct` beside
+  it. `jade api` reports an alias as an alias, and hovering one in an editor
+  gives `type alias UserId = Int` — the only place the name survives, since
+  expansion removes it before anything else looks.
+
+- **A single-variant union peels at the Ruby boundary.** `type UserId =
+  UserId(Int)` — the nominal alternative an alias points you at — now crosses
+  as `42` rather than raising `NotExposed`, and decodes back through the
+  wrapper. Additive: nothing that crossed before crosses differently.
+
 - **`jade eject`.** Writes the project as Ruby that runs without the gem: every
   compiled module, the runtime they call, and requires pointing at each other
   rather than at a load path. What it vendors is whatever a booted runtime

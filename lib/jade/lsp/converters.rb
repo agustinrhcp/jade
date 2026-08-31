@@ -33,6 +33,7 @@ module Jade
         enum_member: 22,
         struct: 23,
         interface: 11,
+        type_parameter: 26,
       }.freeze
 
       HOVERABLE_SYMBOLS = [
@@ -44,6 +45,7 @@ module Jade
         Jade::Symbol::Variant,
         Jade::Symbol::Union,
         Jade::Symbol::Struct,
+        Jade::Symbol::Alias,
       ].freeze
 
       # LSP CompletionItemKind values we use.
@@ -176,6 +178,9 @@ module Jade
 
         in AST::StructDeclaration(name:, range:)
           document_symbol(name, :struct, source, range)
+
+        in AST::TypeAliasDeclaration(name:, range:)
+          document_symbol(name, :type_parameter, source, range)
 
         in AST::InterfaceDeclaration(name:, range:, functions:)
           document_symbol(
@@ -389,8 +394,12 @@ module Jade
 
       def hover_body(symbol, registry)
         case symbol
+        in Jade::Symbol::Alias
+          render_alias(symbol, registry)
+
         in Jade::Symbol::Union | Jade::Symbol::Struct
           render_type(symbol, registry)
+
         else
           render_value(symbol, registry)
         end
@@ -417,6 +426,21 @@ module Jade
         Jade::Type.from_symbol(
           symbol, registry, Frontend::TypeChecking::VarGen.new
         )
+      end
+
+      # Expansion erases the name everywhere else, so this is the only place
+      # left that says what an alias stands for.
+      def render_alias(symbol, registry)
+        Jade::Type
+          .from_symbol(symbol.body, registry, Frontend::TypeChecking::VarGen.new)
+          .first
+          .then { "type alias #{symbol.name}#{alias_params(symbol)} = #{it}" }
+      end
+
+      def alias_params(symbol)
+        symbol.type_params.empty? ?
+          '' :
+          "(#{symbol.type_params.map(&:name).join(', ')})"
       end
 
       def render_type(symbol, registry)
@@ -486,6 +510,7 @@ module Jade
         in AST::VariableReference | AST::ConstructorReference |
            AST::QualifiedAccess | AST::FunctionDeclaration |
            AST::TypeDeclaration | AST::StructDeclaration |
+           AST::TypeAliasDeclaration |
            AST::InterfaceDeclaration | AST::VariantDeclaration
           node.symbol.then { resolve_ref(it, registry) }
 

@@ -146,8 +146,8 @@ module Jade
 
         in AST::VariableReference | AST::ConstructorReference | AST::TypeDeclaration |
           AST::ImportDeclaration | AST::Literal | AST::CharLiteral | AST::RecordAccessSugar | AST::InteropImportDeclaration |
-          AST::StructDeclaration | AST::QualifiedAccess | AST::Placeholder | AST::InterfaceDeclaration |
-          AST::CurriedConstructor |
+          AST::StructDeclaration | AST::TypeAliasDeclaration | AST::QualifiedAccess |
+          AST::Placeholder | AST::InterfaceDeclaration | AST::CurriedConstructor |
           AST::RecordUpdateSugar
 
           node

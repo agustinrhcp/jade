@@ -124,11 +124,17 @@ module Jade
         FileUtils.mkdir_p(File.join(root, 'lib/ledger'))
         File.write(File.join(root, 'jade.json'), JSON.generate(source_roots: ['lib']))
         File.write(File.join(root, 'lib/ledger/entry.jd'), <<~JADE)
-          module Ledger.Entry exposing (Entry, Kind(..), post)
+          module Ledger.Entry exposing (Cents, Entry, Kind(..), Tagged, post)
+
+          type alias Cents = Int
+
+
+          type alias Tagged(a) = { tag: String, value: a }
+
 
           struct Entry = {
             id: Int,
-            cents: Int
+            cents: Cents
           }
 
 
@@ -162,9 +168,19 @@ module Jade
           .to eql 'Ledger.Entry.post : (Entry, Kind) -> Result(Entry, String)'
       end
 
-      it 'spells out a project struct' do
+      it 'spells out a project struct, naming a field by the alias it was written with' do
         expect(signature('Ledger.Entry.Entry'))
-          .to eql 'struct Entry = { id : Int, cents : Int }'
+          .to eql 'struct Entry = { id : Int, cents : Cents }'
+      end
+
+      it 'spells out a type alias rather than reading it as a function' do
+        expect(api.lookup('Ledger.Entry.Cents')[:kind]).to eql 'alias'
+        expect(signature('Ledger.Entry.Cents')).to eql 'type alias Cents = Int'
+      end
+
+      it 'keeps the parameters of a parameterised alias' do
+        expect(signature('Ledger.Entry.Tagged'))
+          .to eql 'type alias Tagged(a) = { tag : String, value : a }'
       end
 
       it 'searches the project surface, not just the stdlib' do

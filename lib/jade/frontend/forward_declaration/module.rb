@@ -71,6 +71,10 @@ module Jade
             ]
           end
 
+          if symbol.is_a?(Symbol::Alias)
+            return Result[entry, [Error::AliasExpansion.new(entry.name, span, name:)]]
+          end
+
           symbol
             .constructor_refs
             .reduce(entry) { |acc, ctor| acc.expose(ctor.to_ref) }

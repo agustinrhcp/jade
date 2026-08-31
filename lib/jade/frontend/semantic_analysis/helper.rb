@@ -49,6 +49,14 @@ module Jade
           Result[results.map(&:node), results.flat_map(&:errors), scope]
         end
 
+        # An imported type arrives as a `TypeRef`, so a guard that only checks
+        # for `Symbol::Alias` misses every alias that crossed a module.
+        def resolved_alias(symbol, registry)
+          symbol
+            .then { it.is_a?(Symbol::TypeRef) ? registry.lookup(it) : it }
+            .then { it if it.is_a?(Symbol::Alias) }
+        end
+
         private def lookup_applied_type(applied_type, entry)
           case applied_type.constructor
           in AST::TypeName(type:)
@@ -97,6 +105,11 @@ module Jade
 
           in Symbol::RecordType(row_var:)
             row_var.nil? ? [] : [row_var]
+
+          in Symbol::Alias(body:)
+            # Aliases are transparent — vars are whatever the body has.
+            # Skip if body unresolved (cycle / pre-deep-decl).
+            body ? collect_vars(body, registry) : []
           end
         end
 
@@ -153,6 +166,10 @@ module Jade
 
           in Symbol::Struct(type_params:, record_type:)
             validate_type_symbol(record_type, registry, entry) +
+              type_params.flat_map { validate_type_symbol(it, registry, entry) }
+
+          in Symbol::Alias(type_params:, body:)
+            (body ? validate_type_symbol(body, registry, entry) : []) +
               type_params.flat_map { validate_type_symbol(it, registry, entry) }
           end
         end

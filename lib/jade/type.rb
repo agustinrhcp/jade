@@ -60,8 +60,8 @@ module Jade
       [args, return_type]
     end
 
-    def anonymous_record(fields, row_var)
-      AnonymousRecord[fields, row_var]
+    def anonymous_record(fields, row_var, display = nil)
+      AnonymousRecord[fields, row_var, display]
     end
 
     def constraint(interface_id, type, origin, index: :unindex)
@@ -246,17 +246,43 @@ module Jade
         [Type::Application[constructor_type, arg_types], union_cs + args_cs, args_map]
 
       in Symbol::TypeApplication(constructor:, args:)
-        constructor_type, union_cs, union_vars =
-          from_symbol_r(constructor, registry, var_gen, var_map)
+        resolved_head = constructor.is_a?(Symbol::TypeRef) ? registry.lookup(constructor) : constructor
 
-        arg_types, args_cs, args_map = args
-          .reduce([[], [], union_vars]) do |(types, cs, local_map), sym|
-            from_symbol_r(sym, registry, var_gen, local_map)
-              .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
-          end
+        if resolved_head.is_a?(Symbol::Alias)
+          arg_types, args_cs, args_map = args
+            .reduce([[], [], var_map]) do |(types, cs, local_map), sym|
+              from_symbol_r(sym, registry, var_gen, local_map)
+                .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
+            end
 
-        [Type.constructor(constructor.qualified_name).apply(arg_types), union_cs + args_cs, args_map]
+          alias_var_map = resolved_head.type_params.map(&:name).zip(arg_types).to_h
+
+          body_type, body_cs, _ = from_symbol_r(resolved_head.body, registry, var_gen, alias_var_map)
+          display = arg_types.empty? ?
+            resolved_head.name :
+            "#{resolved_head.name}(#{arg_types.join(', ')})"
+          [display_as(body_type, display), args_cs + body_cs, args_map]
+        else
+          constructor_type, union_cs, union_vars =
+            from_symbol_r(constructor, registry, var_gen, var_map)
+
+          arg_types, args_cs, args_map = args
+            .reduce([[], [], union_vars]) do |(types, cs, local_map), sym|
+              from_symbol_r(sym, registry, var_gen, local_map)
+                .then { |(t, c, new_map)| [types + [t], cs + c, new_map] }
+            end
+
+          [Type.constructor(constructor.qualified_name).apply(arg_types), union_cs + args_cs, args_map]
+        end
+
+      in Symbol::Alias(body:)
+        from_symbol_r(body, registry, var_gen, var_map)
+          .then { |(type, cs, map)| [display_as(type, symbol.name), cs, map] }
       end
+    end
+
+    def display_as(type, name)
+      type.is_a?(Displayable) ? type.display_as(name) : type
     end
   end
 end

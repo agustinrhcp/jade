@@ -38,7 +38,7 @@ module Jade
 
         def resolve_value(sym, entry, registry)
           case sym
-          in Symbol::InteropFunction(return_type: Symbol::TypeApplication)
+          in Symbol::InteropFunction
             resolve_port(sym, entry, registry)
 
           else
@@ -47,7 +47,7 @@ module Jade
         end
 
         def resolve_port(interop_fn, entry, registry)
-          interop_fn.return_type => Symbol::TypeApplication(args: [ok_sym, err_sym])
+          ok_sym, err_sym = arm_symbols(interop_fn.return_type)
 
           # Single Type.from_symbol over the whole port so a var appearing in
           # more than one position gets the same Type::Var id. PortCodec relies
@@ -64,6 +64,19 @@ module Jade
             interop_fn.with(decoders: { ok:, err: }, encoders:),
             ok_errors + err_errors + param_errors,
           ]
+        end
+
+        # The arms are only wanted for their spans. An alias over a `Task`
+        # keeps its arms in another declaration, so there is no span here to
+        # point at and the port's own return type is the best there is.
+        def arm_symbols(return_type)
+          case return_type
+          in Symbol::TypeApplication(constructor: Symbol::TypeRef['Task', 'Task'], args: [ok, err])
+            [ok, err]
+
+          else
+            [nil, nil]
+          end
         end
 
         # Without the constraints the shared VarGen would still hand every
@@ -83,7 +96,7 @@ module Jade
         end
 
         def resolve_param(type_sym, type, interop_fn, index, entry, registry)
-          return [Symbol::InteropFunction::PASS, []] if pass_through?(type_sym)
+          return [Symbol::InteropFunction::PASS, []] if pass_through?(type)
 
           case type
           in Type::Var(name:)
@@ -99,7 +112,7 @@ module Jade
         end
 
         def resolve_arm(type_sym, type, interop_fn, arm, entry, registry)
-          return [Symbol::InteropFunction::PASS, []] if pass_through?(type_sym)
+          return [Symbol::InteropFunction::PASS, []] if pass_through?(type)
 
           case type
           in Type::Var(name:)
@@ -156,10 +169,12 @@ module Jade
           end
         end
 
-        def pass_through?(type_sym)
-          case type_sym
-          in Symbol::TypeApplication(constructor: Symbol::TypeRef(module_name:, name:))
-            [module_name, name] in ['Basics', 'Never'] | ['Decode', 'Value']
+        # Asked of the expanded type, so an alias over `Never` or
+        # `Decode.Value` passes through the same as the type it names.
+        def pass_through?(type)
+          case type
+          in Type::Application(constructor: Type::Constructor(name: 'Basics.Never' | 'Decode.Value'))
+            true
 
           else
             false

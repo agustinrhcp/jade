@@ -1,9 +1,18 @@
 module Jade
   module Type
-    Function = Data.define(:args, :return_type) do
+    Function = Data.define(:args, :return_type, :display) do
       include Base
+      include Displayable
 
-      def to_s
+      def initialize(args:, return_type:, display: nil)
+        super
+      end
+
+      def identity
+        [args, return_type]
+      end
+
+      def render
         args
           .map(&:to_s).join(', ')
           .then { "(#{it})"} + " -> " + return_type.to_s

@@ -507,7 +507,7 @@ jade q hover FILE:L:C     # headless JSON queries — hover/defn/refs/symbols</p
 <script type="module">
 import { attach } from './playground.js';
 
-const KW = new Set(['module','def','type','struct','exposing','case','in','then','end',
+const KW = new Set(['module','def','type','alias','struct','exposing','case','in','then','end',
   'uses','with','extend','self','do','true','false','nil','if','else','return']);
 const TOKEN = /(--[^\n]*|#[^\n]*)|("(?:[^"\\]|\\.)*")|(\b\d+(?:\.\d+)?\b)|(\b[A-Z][A-Za-z0-9_]*\b)|(\b[a-z_][A-Za-z0-9_?!]*\b)/g;
 
