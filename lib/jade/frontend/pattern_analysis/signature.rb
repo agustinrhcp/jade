@@ -42,21 +42,46 @@ module Jade
         end
       end
 
+      # A stretch of the integer line no pattern in the column divides any
+      # further, so it is either wholly matched or wholly missed.
+      IntervalCase = Data.define(:from, :to) do
+        def arity
+          0
+        end
+
+        def arg_types
+          []
+        end
+
+        def matches?(pattern)
+          case pattern
+          in Interval then pattern.covers?(self)
+          in Literal(value: Integer => n) then n == from && n == to
+          else false
+          end
+        end
+
+        def witness(_args)
+          Interval[from, to]
+        end
+      end
+
       # The cases a column of a given type can be split into, and whether they
       # account for every value of that type. When they don't, a row headed by
       # a wildcard covers ground no case names, so the column cannot be
       # decided by splitting alone.
       Split = Data.define(:cases, :total) do
-        def find(name)
-          cases.find { it.name == name }
+        def covering(head)
+          cases.select { it.matches?(head) }
         end
 
-        def touched_by?(names)
-          cases.any? { names.include?(it.name) }
+        def touched_by?(heads)
+          cases.any? { |kase| heads.any? { kase.matches?(it) } }
         end
 
-        def covered_by?(names)
-          total && cases.any? && cases.all? { names.include?(it.name) }
+        def covered_by?(heads)
+          total && cases.any? &&
+            cases.all? { |kase| heads.any? { kase.matches?(it) } }
         end
       end
 
@@ -66,10 +91,10 @@ module Jade
         UNIT = Split[[], true]
         OPEN = Split[[], false]
 
-        def of(type, env)
+        def of(type, heads, env)
           case type
           in Type::Application(constructor: Type::Constructor(name:), args:)
-            named(type, name, args, env)
+            named(type, name, args, heads, env)
 
           else
             OPEN
@@ -106,7 +131,7 @@ module Jade
           end
         end
 
-        def named(type, name, args, env)
+        def named(type, name, args, heads, env)
           case name
           in 'Basics.Bool'
             Split[
@@ -128,11 +153,39 @@ module Jade
               true,
             ]
 
-          in 'Basics.Int' | 'Basics.Float' | 'String.String'
+          in 'Basics.Int'
+            integers(heads)
+
+          in 'Basics.Float' | 'String.String'
             OPEN
 
           else
             union(type, name, env)
+          end
+        end
+
+        # Every bound in the column cuts the line in two, and the pieces
+        # between consecutive cuts are the coarsest split that still lets each
+        # pattern be answered whole. The pieces partition Int, so the result is
+        # total even though Int cannot be enumerated: a stretch no pattern
+        # names comes back as a gap rather than as an open column.
+        def integers(heads)
+          cuts = heads.flat_map { cuts_of(it) }.compact.uniq.sort
+
+          return OPEN if cuts.empty?
+
+          [nil, *cuts]
+            .zip([*cuts.map { it - 1 }, nil])
+            .map { |(from, to)| IntervalCase[from, to] }
+            .then { Split[it, true] }
+        end
+
+        def cuts_of(head)
+          case head
+          in Interval(from: Integer | nil => from, to: Integer | nil => to)
+            [from, to && to + 1]
+          in Literal(value: Integer => n) then [n, n + 1]
+          else []
           end
         end
 

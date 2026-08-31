@@ -61,6 +61,30 @@ module Jade
         end
       end
 
+      # An inclusive span of integers. A nil bound is unbounded on that side.
+      Interval = Data.define(:from, :to) do
+        def wildcard?
+          false
+        end
+
+        def args
+          []
+        end
+
+        def covers?(other)
+          (from.nil? || (other.from && other.from >= from)) &&
+            (to.nil? || (other.to && other.to <= to))
+        end
+
+        def to_s
+          case [from, to]
+          in [nil, nil] then '_'
+          in [n, ^n] then n.to_s
+          else "#{from}..#{to}"
+          end
+        end
+      end
+
       module Pattern
         extend self
 

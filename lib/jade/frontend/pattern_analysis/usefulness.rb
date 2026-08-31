@@ -14,21 +14,29 @@ module Jade
           return false if Signature.uninhabited?(type)
           return expanded(matrix, row, env) if Signature.expandable?(type, env)
 
-          split = Signature.of(type, env)
+          # The row under test cuts the column too, so its own bounds have to
+          # be in the split or it will not line up with the cases.
+          split = Signature.of(type, matrix.heads + [row.first], env)
 
           case row.first
           in Wildcard
             open_column(matrix, row, split, env)
 
+          in Interval
+            split.covering(row.first).any? { narrowed(matrix, row, it, env) }
+
           in Literal(value:)
-            narrowed(matrix, row, ValueCase[value], env)
+            split
+              .covering(row.first)
+              .then { it.empty? ? [ValueCase[value]] : it }
+              .any? { narrowed(matrix, row, it, env) }
 
           # Deadness is a proof. A constructor this column's type does not have
           # yields none, so the branch stands.
-          in Constructor(constructor: name)
+          in Constructor
             split
-              .find(name)
-              .then { it.nil? || narrowed(matrix, row, it, env) }
+              .covering(row.first)
+              .then { it.empty? || it.any? { narrowed(matrix, row, it, env) } }
           end
         end
 
@@ -38,7 +46,7 @@ module Jade
         # every case of the type there is no such ground, and the question
         # moves inside the cases instead.
         def open_column(matrix, row, split, env)
-          if split.covered_by?(matrix.head_names)
+          if split.covered_by?(matrix.heads)
             split.cases.any? { narrowed(matrix, row, it, env) }
           else
             useful?(matrix.default, row.drop(1), env)
