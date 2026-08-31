@@ -28,7 +28,7 @@ module Jade
       end
 
       def data_define(fields)
-        return "Data.define" if fields.empty?
+        return "Jade.nullary" if fields.empty?
 
         "Data.define(#{fields.map { ":#{it}" }.join(', ')})"
       end

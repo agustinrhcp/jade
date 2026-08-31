@@ -3,6 +3,39 @@ require 'spec_helper'
 require 'jade/runtime'
 
 module Jade
+  # A variant with no fields carries nothing to tell two instances apart,
+  # so `compare` allocating a fresh `GT` per call was pure waste.
+  describe '.nullary' do
+    let(:kind) do
+      Jade.nullary do
+        def tagged?
+          true
+        end
+      end
+    end
+
+    it 'hands back the same object every time' do
+      expect(kind[]).to be kind.new
+    end
+
+    it 'keeps the methods defined on it' do
+      expect(kind[].tagged?).to be true
+    end
+
+    it 'still matches its class' do
+      klass = kind
+      matched = case kind[]
+                in ^klass then true
+                end
+
+      expect(matched).to be true
+    end
+
+    it 'covers the variants the runtime defines itself' do
+      expect(Basics::GT[]).to be Basics::GT[]
+    end
+  end
+
   module Runtime
     describe '.curry' do
       let(:ctor) { Struct.new(:a, :b, :c) }

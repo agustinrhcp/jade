@@ -8,6 +8,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **A variant with no fields is one object, not a new one per construction.**
+  `compare` allocated a fresh `GT` on every call, which cost more than the
+  comparison: 214ns against Ruby's 23ns for `<=>`. Nullary variants carry no
+  state, so nothing can tell two instances apart, and every construction now
+  hands back the same object. `compare` drops to 87ns, and a function
+  returning a three-arm enum over 5000 values goes from 5.7x the equivalent
+  Ruby to 2.7x. Applies to `Maybe.Nothing`, `Result` arms, `Order` and every
+  user enum.
+
 - **A rejected value says where in the value the problem is.** A field that
   did not decode reads `Shop.total(items)[0].cents: expected Int, got String
   ("lots")` rather than blaming the argument as a whole, and a field the hash

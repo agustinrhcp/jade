@@ -8,6 +8,25 @@ require 'jade/interop/boundary'
 module Jade
   module Records; end
 
+  # A variant with no fields carries no state, so every construction can
+  # hand back the same object. Prepended to the class's singleton so
+  # `super` still reaches the real constructor the first time.
+  module Nullary
+    def new
+      @instance ||= super
+    end
+
+    def []
+      @instance ||= super
+    end
+  end
+
+  def self.nullary(&block)
+    Data.define
+      .tap { it.class_eval(&block) if block }
+      .tap { it.singleton_class.prepend(Nullary) }
+  end
+
   module Tuple
     Tuple2 = Data.define(:_1, :_2) do
       def to_s = "(#{[_1, _2].map(&:to_s).join(', ')})"
@@ -23,9 +42,9 @@ module Jade
   end
 
   module Basics
-    GT = Data.define()
-    EQ = Data.define()
-    LT = Data.define()
+    GT = Jade.nullary
+    EQ = Jade.nullary
+    LT = Jade.nullary
   end
 
   # Compiled code calls `a.compare(b)`; natives ship `<=>` not `compare`.
