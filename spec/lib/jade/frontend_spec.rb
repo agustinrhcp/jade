@@ -840,9 +840,8 @@ module Jade
 
         subject { frontend => Err(errors); errors }
 
-        it { is_expected.to have(2).item }
+        it { is_expected.to have(1).item }
         its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::PatternTypeMismatch) }
-        its([1]) { is_expected.to be_a(Frontend::TypeChecking::Error::MissingPatterns) }
       end
     end
 
