@@ -11,7 +11,8 @@ compiler's real output, not a paraphrase.
 5. Data from Ruby is validated at the boundary, or rejected with a message
    that names the field.
 6. A function Ruby cannot call safely is not callable from Ruby.
-7. You can leave. `jade eject` writes the Ruby and the gem stops mattering.
+7. If a function reaches the outside world, its type says so.
+8. You can leave. `jade eject` writes the Ruby and the gem stops mattering.
 
 ## 1. Every case is handled
 
@@ -206,7 +207,66 @@ Filters.pick is not exposed to Ruby. argument 2 of type (Line) -> Bool has no De
 The alternative, a boundary that quietly accepts a Ruby proc and hopes, is how
 a type system stops being load-bearing at the edge where it matters most.
 
-## 7. You can leave
+## 7. IO is in the type
+
+Everything outside the process reaches Jade through a port, and a port has to
+return a `Task`:
+
+```jade fails
+module Sneaky exposing (now)
+
+uses Jade::Clock with
+  now : Int
+end
+```
+
+```text expected
+error: Port `now` must return a Task type, e.g. `now: Task(Ok, Err)`
+```
+
+A `Task` is a description of work, not the result of it, so a function cannot
+quietly perform IO and hand back a plain value. Trying makes the mismatch the
+whole error:
+
+```jade fails
+module Leaky exposing (stamp)
+
+uses Jade::Clock with
+  now : Task(Int, Never)
+end
+
+
+def stamp -> String
+  String.from_int(now())
+end
+```
+
+```text expected
+error: Function call mismatch, expected (Int) -> String but found (Task(Int, Never)) -> String
+```
+
+So the guarantee reads off the signature, with nothing to audit: **a function
+whose return type is not a `Task` did no IO**, and neither did anything it
+called.
+
+```jade compiles
+module Pricing exposing (Line(..), subtotal)
+
+struct Line = {
+  sku: String,
+  cents: Int
+}
+
+
+def subtotal(lines: List(Line)) -> Int
+  List.sum(List.map(lines, (l) -> { l.cents }))
+end
+```
+
+What is not yet distinguished is *which* outside world: a `Task` that reads the
+clock and a `Task` that calls a payment provider have the same shape.
+
+## 8. You can leave
 
 `jade eject` writes every module as plain Ruby, vendors the runtime those files
 call, and rewrites their requires to point at each other. The result runs with
@@ -220,10 +280,11 @@ what you would be left with is Ruby you can read.
 
 Claims Jade does not make today, so nobody has to discover them later:
 
-- **Reaching the network, or a database, is not tracked in the type system.**
-  A module cannot yet declare that it does no IO.
-- **Exhaustiveness does not extend to numbers.** `case n in 0..3` is not
-  a pattern Jade has, so a rule table over integers still needs a fallback
-  branch.
-- **A struct can still hold combinations that mean nothing.** Two fields that
-  should move together are two fields, and nothing checks that they do.
+- **Division by zero is a Ruby exception, not a value.** `a / b` with `b` zero
+  raises `ZeroDivisionError` through Jade, so an `Int -> Int -> Int` is not as
+  total as it looks.
+- **A list handed over from Ruby is the same object.** Jade values do not
+  change, but a caller that keeps its array and pushes to it afterwards is
+  writing into a value Jade already took.
+- **Nothing checks that a function ends.** A recursion with no base case type
+  checks and runs until the stack does not.
