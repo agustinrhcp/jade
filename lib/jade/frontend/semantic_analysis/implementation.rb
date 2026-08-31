@@ -21,14 +21,16 @@ module Jade
 
           make_error = ->(klass, **kw) { klass.new(entry.name, node.range, **kw) }
 
-          if type_sym.is_a?(Symbol::Alias)
-            return make_error
-              .(
-                Error::ImplementationOnAlias,
-                interface: entry.lookup_type(interface).qname,
-                alias_name: type_sym.qname,
-              )
-              .then { Result[node, [it], scope] }
+          resolved_alias(type_sym, registry).then do |alias_sym|
+            if alias_sym
+              return make_error
+                .(
+                  Error::ImplementationOnAlias,
+                  interface: entry.lookup_type(interface).qname,
+                  alias_name: alias_sym.qname,
+                )
+                .then { Result[node, [it], scope] }
+            end
           end
 
           type_is_local = entry.defined_types.key?(local_type_name(applied_type))

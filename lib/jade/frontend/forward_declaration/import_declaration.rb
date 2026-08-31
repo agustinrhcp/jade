@@ -83,6 +83,10 @@ module Jade
         end
 
         def handling_exposing_type_expansion(type, name, span, current_entry, importing_module)
+          if importing_module.types[name].is_a?(Symbol::Alias)
+            return Err[Error::AliasExpansion.new(current_entry.name, span, name:)]
+          end
+
           importing_module
             .exposed_type_variants(name)
             .then  do |variants|

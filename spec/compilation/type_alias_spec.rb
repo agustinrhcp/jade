@@ -675,6 +675,191 @@ module Jade
       end
     end
 
+    describe 'an alias has no constructors to expose' do
+      it 'rejects `(..)` on the declaring side' do
+        expect {
+          test_compiler.require(<<~JADE)
+            module ExposeDots exposing (UserId(..), x)
+
+            type alias UserId = Int
+
+
+            def x -> UserId
+              1
+            end
+          JADE
+        }.to raise_error(/`UserId` is a type alias, so `\(\.\.\)` has nothing to expose/)
+      end
+
+      it 'rejects `(..)` on the importing side' do
+        test_compiler.write(<<~JADE)
+          module PlainAlias exposing (UserId)
+
+          type alias UserId = Int
+        JADE
+
+        expect {
+          test_compiler.require(<<~JADE)
+            module ImportsDots exposing (x)
+
+            import PlainAlias exposing (UserId(..))
+
+
+            def x -> Int
+              1
+            end
+          JADE
+        }.to raise_error(/`UserId` is a type alias, so `\(\.\.\)` has nothing to expose/)
+      end
+    end
+
+    describe 'implements on an imported alias is rejected' do
+      before do
+        test_compiler.write(<<~JADE)
+          module SharedIds exposing (UserId)
+
+          type alias UserId = Int
+        JADE
+      end
+
+      let(:source) do
+        <<~JADE
+          module UsesIds exposing (Show, show)
+
+          import SharedIds exposing (UserId)
+
+
+          interface Show(a) with
+            show : a -> String
+          end
+
+
+          implements Show(UserId) with
+            show: id_show
+          end
+
+
+          def id_show(n: UserId) -> String
+            "id"
+          end
+        JADE
+      end
+
+      it 'reports rather than reaching codegen' do
+        expect { test_compiler.require(source) }
+          .to raise_error(/Cannot implement `UsesIds.Show` for type alias `SharedIds.UserId`/)
+      end
+    end
+
+    describe 'aliases in port signatures' do
+      it 'accepts an alias over a Task' do
+        expect {
+          test_compiler.require(<<~JADE)
+            module PortAlias exposing (go)
+
+            type alias Job = Task(Int, Never)
+
+
+            uses Jade::TestBetterDate with
+              internal_today : Job
+            end
+
+
+            def go -> Job
+              internal_today()
+            end
+          JADE
+        }.not_to raise_error
+      end
+
+      it 'still sees a nested Task hidden behind one' do
+        expect {
+          test_compiler.require(<<~JADE)
+            module PortNested exposing (go)
+
+            type alias Inner = Task(Int, Never)
+
+
+            type alias Outer = Task(Inner, Never)
+
+
+            uses Jade::TestBetterDate with
+              internal_today : Outer
+            end
+
+
+            def go -> Outer
+              internal_today()
+            end
+          JADE
+        }.to raise_error(/tasks must not return tasks/)
+      end
+
+      it 'still sees one passed as an alias argument' do
+        expect {
+          test_compiler.require(<<~JADE)
+            module PortParamNested exposing (go)
+
+            type alias Job(a) = Task(a, Never)
+
+
+            uses Jade::TestBetterDate with
+              internal_today : Job(Task(Int, Never))
+            end
+
+
+            def go -> Job(Task(Int, Never))
+              internal_today()
+            end
+          JADE
+        }.to raise_error(/tasks must not return tasks/)
+      end
+    end
+
+    # An alias is its body here as everywhere else, so it cannot stand
+    # between a type and itself and hide that there is no way to build one.
+    describe 'an alias does not hide a type with no base case' do
+      def compiling(body)
+        -> {
+          test_compiler.require(<<~JADE)
+            module AliasBase exposing (go)
+
+            #{body}
+
+
+            def go -> Int
+              1
+            end
+          JADE
+        }
+      end
+
+      it 'sees through an alias standing between a struct and itself' do
+        expect(&compiling("type alias A = S\n\n\nstruct S = { a: A }"))
+          .to raise_error(/`S` can never be built/)
+      end
+
+      it 'sees through an alias standing between a union and itself' do
+        expect(&compiling("type alias A = T\n\n\ntype T = Mk(A)"))
+          .to raise_error(/`T` can never be built/)
+      end
+
+      it 'substitutes the arguments of a parameterised alias first' do
+        expect(&compiling("type alias Pair(a) = (a, a)\n\n\nstruct S = { p: Pair(S) }"))
+          .to raise_error(/`S` can never be built/)
+      end
+
+      it 'leaves an alias that gives the type a way out alone' do
+        expect(&compiling("type alias A = Maybe(S)\n\n\nstruct S = { a: A }"))
+          .not_to raise_error
+      end
+
+      it 'leaves a parameterised alias over something else alone' do
+        expect(&compiling("type alias Pair(a) = (a, a)\n\n\nstruct S = { p: Pair(Int) }"))
+          .not_to raise_error
+      end
+    end
+
     describe 'too few arguments for a parameterised alias' do
       let(:source) do
         <<~JADE

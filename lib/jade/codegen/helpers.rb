@@ -119,6 +119,11 @@ module Jade
 
         in Symbol::Interface
           []
+
+        in other
+          raise(UnrepresentableType, "`#{qname}` has no runtime form " \
+                                     "(#{other.class}); this is a jade bug, " \
+                                     'please report it')
         end
       end
 

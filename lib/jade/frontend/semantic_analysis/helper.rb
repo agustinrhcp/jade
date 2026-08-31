@@ -49,6 +49,14 @@ module Jade
           Result[results.map(&:node), results.flat_map(&:errors), scope]
         end
 
+        # A local alias is a `Symbol::Alias`; one that crossed a module arrives
+        # as a `TypeRef`, so both spellings have to be resolved before asking.
+        def resolved_alias(symbol, registry)
+          symbol
+            .then { it.is_a?(Symbol::TypeRef) ? registry.lookup(it) : it }
+            .then { it if it.is_a?(Symbol::Alias) }
+        end
+
         private def lookup_applied_type(applied_type, entry)
           case applied_type.constructor
           in AST::TypeName(type:)
