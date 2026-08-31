@@ -10,37 +10,35 @@ using Jade::TypeFactory
 module Jade
   module Frontend
     module PatternAnalysis
-      describe Matrix do
-        describe '#missing_patterns' do
+      describe Witnesses do
+        describe '.missing' do
           let(:env) { TypeChecking::Env.empty }
-          subject { matrix.missing_patterns(env) }
+          subject { described_class.missing(matrix, env) }
 
-          # Matrix answers include?/any? itself, so RSpec's collection matchers
-          # read those instead of the rows and pass on anything. Assert on rows.
           def self.missing(*expected)
             its(:rows) { is_expected.to contain_exactly(*expected) }
           end
 
           context 'when empty' do
-            let(:matrix) { described_class[[], [Type.int]] }
+            let(:matrix) { Matrix[[], [Type.int]] }
 
             it { is_expected.to be_a Matrix }
             missing [Wildcard[]]
           end
 
           context 'when has a wildcard' do
-            let(:matrix) { described_class[[[Wildcard[]]], [Type.int]] }
+            let(:matrix) { Matrix[[[Wildcard[]]], [Type.int]] }
 
             it { is_expected.to be_a Matrix }
             it { is_expected.to be_empty }
           end
 
-          context 'with a finite literal' do
+          context 'with a bool column' do
             let(:matrix) do
-              described_class[
+              Matrix[
                 [
-                  [Literal[false, Type.bool]],
-                  [Literal[true, Type.bool]],
+                  [Constructor['Basics.False', []]],
+                  [Constructor['Basics.True', []]],
                 ],
                 [Type.bool],
               ]
@@ -51,9 +49,9 @@ module Jade
 
             context 'with missing values' do
               let(:matrix) do
-                described_class[
+                Matrix[
                   [
-                    [Literal[false, Type.bool]],
+                    [Constructor['Basics.False', []]],
                   ],
                   [Type.bool],
                 ]
@@ -66,7 +64,7 @@ module Jade
 
           context 'with a non exhaustive literal' do
             let(:matrix) do
-              described_class[[[Literal[1, Type.int]]], [Type.int]]
+              Matrix[[[Literal[1]]], [Type.int]]
             end
 
             missing [Wildcard[]]
@@ -86,9 +84,9 @@ module Jade
             end
 
             let(:matrix) do
-              described_class[
+              Matrix[
                 [[
-                  Constructor['Maybe.Just', [Literal[1, Type.int]]]
+                  Constructor['Maybe.Just', [Literal[1]]]
                 ]],
                 [Type.parse("Maybe(Int)")],
               ]
@@ -99,9 +97,9 @@ module Jade
 
             context 'exhaustive on constructor but not on inner' do
               let(:matrix) do
-                described_class[
+                Matrix[
                   [
-                    [Constructor['Maybe.Just', [Literal[1, Type.int]]]],
+                    [Constructor['Maybe.Just', [Literal[1]]]],
                     [Constructor['Maybe.Nothing', []]],
                   ],
                   [Type.parse("Maybe(Int)")],
@@ -114,10 +112,10 @@ module Jade
 
             context 'exhaustive on constructor and inner' do
               let(:matrix) do
-                described_class[
+                Matrix[
                   [
-                    [Constructor['Maybe.Just', [Literal[1, Type.int]]]],
-                    [Constructor['Maybe.Just', [Literal[2, Type.int]]]],
+                    [Constructor['Maybe.Just', [Literal[1]]]],
+                    [Constructor['Maybe.Just', [Literal[2]]]],
                     [Constructor['Maybe.Just', [Wildcard[]]]],
                     [Constructor['Maybe.Nothing', []]],
                   ],
@@ -144,7 +142,7 @@ module Jade
               end
 
               let(:matrix) do
-                described_class[
+                Matrix[
                   [[Constructor['Result.Ok', [Wildcard[]]]]],
                   [Type.constructor('Result.Result').apply([Type.int, Type.never])],
                 ]
@@ -157,7 +155,7 @@ module Jade
 
             context 'with a type var' do
               let(:matrix) do
-                described_class[
+                Matrix[
                   [[
                     Constructor['Maybe.Just', [Wildcard[]]]
                   ]],
@@ -186,7 +184,7 @@ module Jade
 
               context 'covering all four combinations' do
                 let(:matrix) do
-                  described_class[
+                  Matrix[
                     [
                       [Constructor['Tuple.Tuple2', [just, just]]],
                       [Constructor['Tuple.Tuple2', [just, nothing]]],
@@ -202,7 +200,7 @@ module Jade
 
               context 'missing one combination' do
                 let(:matrix) do
-                  described_class[
+                  Matrix[
                     [
                       [Constructor['Tuple.Tuple2', [just, just]]],
                       [Constructor['Tuple.Tuple2', [just, nothing]]],
@@ -224,7 +222,7 @@ module Jade
 
               context 'wildcard in the second element' do
                 let(:matrix) do
-                  described_class[
+                  Matrix[
                     [
                       [Constructor['Tuple.Tuple2', [just, Wildcard[]]]],
                       [Constructor['Tuple.Tuple2', [nothing, just]]],
@@ -264,7 +262,7 @@ module Jade
             end
 
             let(:matrix) do
-              described_class[
+              Matrix[
                 [[Constructor['Tree.Leaf', []]]],
                 [tree],
               ]

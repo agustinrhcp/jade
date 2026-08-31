@@ -56,7 +56,7 @@ module Jade
                 else
                   concrete_t = body_state.env.substitution.apply(t)
                   PatternAnalysis::Exhaustiveness
-                    .assert([p], p.range, acc.env, registry, concrete_t)
+                    .assert([p], p.range, acc.env, concrete_t)
                     .then { acc.add_errors(it) }
                 end
               end
