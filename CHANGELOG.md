@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A list from Ruby is copied, not borrowed.** A `List(Int)` argument came
+  through as the caller's own Array, so pushing to it after the call changed a
+  value Jade had already taken. Lists of structs were copied already, by the
+  decoder that builds them; only the scalar fast path handed the object
+  straight through. The copy costs 0.3us for 1500 elements against the 46us
+  the element check already spends, so under 1% of a crossing that was already
+  paying to look at every element.
+
 ### Changed
 
 - **Division cannot divide by zero.** `a / b` used to raise Ruby's
