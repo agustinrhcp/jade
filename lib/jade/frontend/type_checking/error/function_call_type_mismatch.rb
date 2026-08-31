@@ -24,6 +24,7 @@ module Jade
           end
 
           def notes
+            return non_zero_note if wanted_non_zero?
             return placeholder_note if one_too_many_for_the_placeholder?
             return arity_note if wrong_arity?
             return under_applied_note if under_applied
@@ -32,6 +33,21 @@ module Jade
           end
 
           private
+
+          # The only type nobody can construct directly, so saying what was
+          # expected is not enough to act on.
+          def wanted_non_zero?
+            @expected in Type::Function(
+              args: [*, Type::Application(constructor: Type::Constructor(name: 'Basics.NonZero'))]
+            )
+          end
+
+          def non_zero_note
+            help(
+              'a divisor has to be known not to be zero. A literal other than ' \
+                'zero is; for a value, `non_zero(n)` gives a `Maybe(NonZero(a))`',
+            )
+          end
 
           def placeholder_note
             ('a `_` makes this a function waiting for that argument, and the ' \

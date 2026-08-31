@@ -11,7 +11,7 @@ module Jade
       end
 
       def imports
-        [Basics, Maybe, Result, Task, String, Tuple, Decode, Encode, Calendar]
+        [Basics, Maybe, Number, Result, Task, String, Tuple, Decode, Encode, Calendar]
       end
 
       def default_imports
@@ -46,6 +46,7 @@ module Jade
 
           import Decode exposing (Decodable, Decoder, Value)
           import Encode exposing (Encodable)
+          import Number exposing (non_zero)
 
 
           type Instant = Instant(Int)
@@ -259,7 +260,10 @@ module Jade
 
 
           def frac_to_millis(n: Int, digits: Int) -> Int
-            digits == 3 ? n : digits < 3 ? n * pow10(3 - digits) : n / pow10(digits - 3)
+            case non_zero(pow10(digits - 3))
+            in Just(d) then digits == 3 ? n : digits < 3 ? n * pow10(3 - digits) : n / d
+            in Nothing then n
+            end
           end
 
 

@@ -28,10 +28,12 @@ module Jade
                 .then { |(new_state, result)| [new_state, acc.add(result)] }
               end
 
+            args_state = args_state.add_errors(Division.by_zero(node, args_state.env.entry_name))
+
             after_callee_state, result_type = unify_callee(
               args_state,
               callee_result,
-              args_acc,
+              Division.lift(node, args_acc),
               node,
               state,
             )
