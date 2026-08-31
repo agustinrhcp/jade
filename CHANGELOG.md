@@ -83,6 +83,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **A single-variant union peels at the Ruby boundary.** `type UserId =
+  UserId(Int)` — the nominal way to give a value a distinct type — crossed as
+  `NotExposed` because deriving stopped at the wrapper. It now encodes as the
+  value it wraps (`42`, not `["UserId", 42]`) and decodes back through the
+  constructor, so the newtype costs nothing at the edge. Unions with more than
+  one variant, or a variant taking more than one argument, are unaffected.
+
 - **An anonymous record crosses to Ruby.** `def origin -> { x: Int, y: Int }`
   returned `NotExposed`: `Encodable` derived for a `struct` but not for the
   same shape written inline, so a function returning one was unreachable from

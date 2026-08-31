@@ -41,6 +41,9 @@ module Jade
                 in Symbol::Union if nullary?(resolved_sym, registry)
                   derive_nullary_union(constraint, resolved_sym, registry)
 
+                in Symbol::Union if wrapping_variant(resolved_sym, registry)
+                  derive_wrapper_peel(constraint, resolved_sym, args, registry, lookup, entry_name)
+
                 else
                   failed(constraint, entry_name)
                 end
@@ -91,6 +94,30 @@ module Jade
 
               [:anon_record_class, keys]
                 .then { derive_record(constraint, fields.to_a, it, lookup, entry_name) }
+            end
+
+            # Single-variant wrapping union — decode the inner value, then wrap.
+            def derive_wrapper_peel(constraint, union_sym, type_args, registry, lookup, entry_name)
+              variant = registry.lookup(union_sym.variants.first)
+              inner_type = instantiate(
+                variant.args.first,
+                union_sym.type_params.map(&:name).zip(type_args).to_h,
+                registry,
+              )
+
+              dep = Type.constraint(INTERFACE, inner_type, nil)
+
+              resolve_dep(dep, lookup).and_then do |dep_impl|
+                body = [:call,
+                  [:stdlib_fn, 'Decode.map'],
+                  [
+                    [:impl_arg, 0, 'decoder'],
+                    [:struct_constructor, variant.qualified_name, 1],
+                  ],
+                ]
+
+                Ok[implementation(constraint, body, [dep_impl])]
+              end
             end
 
             def derive_record(constraint, fields, constructor_ref, lookup, entry_name)
