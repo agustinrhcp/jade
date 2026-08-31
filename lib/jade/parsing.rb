@@ -281,7 +281,19 @@ module Jade
     # bound and leave the `..` stranded.
     parser(:range_pattern) {
       ((range_bound >> type(:dotdot) >> upper_bound).map(&AST.range_pattern)) |
-        ((type(:dotdot) >> range_bound).map(&AST.unbounded_below_pattern))
+        ((type(:dotdot) >> range_bound).map(&AST.unbounded_below_pattern)) |
+        non_literal_lower_bound
+    }
+
+    parser(:non_literal_lower_bound, private: true) {
+      P.new do |state|
+        bound = state.current
+
+        next not_a_range(state) unless bound&.type == :identifier
+        next not_a_range(state) unless state.advance.current&.type == :dotdot
+
+        Err[[non_literal_bound(state, bound), state]]
+      end
     }
 
     parser(:range_bound, private: true) {
@@ -299,10 +311,33 @@ module Jade
           state.current.range.begin,
         )
 
+        bound = state.current
+        next Err[[non_literal_bound(state, bound), state]] if bound.type == :identifier
+
         optional(range_bound).call(state)
       end
     }
 
+    def not_a_range(state)
+      UnexpectedTokenError
+        .new(
+          entry: state.entry,
+          span: state.current&.range || (0...0),
+          actual: state.current,
+          expected: :int,
+        )
+        .then { Err[[it, state]] }
+    end
+
+    def non_literal_bound(state, token)
+      NonLiteralRangeBoundError.new(
+        entry: state.entry,
+        span: token.range,
+        actual: token,
+        expected: :int,
+        committed: true,
+      )
+    end
 
     parser(:tuple_pattern) {
       (
