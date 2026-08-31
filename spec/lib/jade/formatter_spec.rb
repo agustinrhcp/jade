@@ -496,6 +496,68 @@ module Jade
       end
     end
 
+    context 'type alias declaration' do
+      context 'a record body breaks like the struct beside it' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            type alias User = { name: String, age: Int }
+          JADE
+        end
+
+        it { is_expected.to include "type alias User = {\n  name: String,\n  age: Int\n}" }
+      end
+
+      context 'a single-field record stays on one line' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            type alias Wrapper = { value: Int }
+          JADE
+        end
+
+        it { is_expected.to include "type alias Wrapper = { value: Int }" }
+      end
+
+      context 'a body that is not a record stays on one line' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            type alias Point = (Int, Int)
+          JADE
+        end
+
+        it { is_expected.to include "type alias Point = (Int, Int)" }
+      end
+
+      context 'with type params' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            type alias Pair(a) = (a, a)
+          JADE
+        end
+
+        it { is_expected.to include "type alias Pair(a) = (a, a)" }
+      end
+
+      context 'an open record body keeps its row variable' do
+        let(:text) do
+          <<~JADE.strip
+            module Foo exposing (..)
+
+            type alias Named(r) = { r | name: String, age: Int }
+          JADE
+        end
+
+        it { is_expected.to include "type alias Named(r) = { r |\n  name: String,\n  age: Int\n}" }
+      end
+    end
+
     context 'import declaration' do
       context 'simple' do
         let(:text) do

@@ -139,6 +139,9 @@ module Jade
         in AST::StructDeclaration(record_type:, symbol:)
           walk_type(record_type, entry, ReferenceIndex.key_for(symbol))
 
+        in AST::TypeAliasDeclaration(body_type:, symbol:)
+          walk_type(body_type, entry, ReferenceIndex.key_for(symbol))
+
         in AST::InterfaceDeclaration(functions:, symbol:)
           ReferenceIndex.key_for(symbol).then do |declared|
             functions.flat_map { walk_type(it.type, entry, declared) }

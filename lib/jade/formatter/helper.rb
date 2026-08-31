@@ -30,6 +30,7 @@ module Jade
         in AST::TypeDeclaration              then TypeDeclaration
         in AST::VariantDeclaration           then VariantDeclaration
         in AST::StructDeclaration            then StructDeclaration
+        in AST::TypeAliasDeclaration         then TypeAliasDeclaration
         in AST::ImportDeclaration            then ImportDeclaration
         in AST::InteropImportDeclaration     then InteropImportDeclaration
         in AST::InteropFunction              then InteropFunction
@@ -111,6 +112,25 @@ module Jade
 
       def format_pattern(node, source: nil)
         Pattern.format(node, source:)
+      end
+
+      # A record body past one field goes multi-line, so a `type alias` over a
+      # record breaks the same way as the `struct` beside it.
+      def format_record_declaration(header, body, indent)
+        case body
+        in AST::TypeRecord(fields:, row_var:) if fields.size > 1
+          open_brace = row_var ? "{ #{row_var.name} |" : "{"
+          fields_str = fields
+            .map { |k, v| "#{k}: #{format_type(v)}".then(&and_indent(indent + 1)) }
+            .join(",\n")
+
+          and_indent(indent)
+            .call("#{header} #{open_brace}")
+            .then { "#{it}\n#{fields_str}\n#{INDENT * indent}}" }
+
+        else
+          "#{header} #{format_type(body)}".then(&and_indent(indent))
+        end
       end
 
       def format_type(node)

@@ -89,7 +89,7 @@ module Jade
 
     def define(symbol)
       case symbol
-      in Symbol::Union | Symbol::Struct | Symbol::Interface
+      in Symbol::Union | Symbol::Struct | Symbol::Alias | Symbol::Interface
         add_defined_type(symbol)
 
       in Symbol::Implementation

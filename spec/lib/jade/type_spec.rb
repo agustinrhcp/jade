@@ -275,6 +275,33 @@ module Jade
         end
         its(:unbound_vars) { is_expected.to have(1).items }
       end
+
+      # Nothing in the compiler hands `from_symbol` a bare alias today —
+      # every written type reaches it as a `TypeApplication`, so it is the
+      # branch below that expands. This is the contract for a caller holding
+      # a type symbol looked up by name, such as the LSP or `jade api`.
+      describe 'an alias handed over directly' do
+        let(:symbol) { Symbol.alias('UserId', [], type_sym('Basics', 'Int'), nil) }
+        let(:entry) { Registry.entry('__Test__').define(symbol) }
+
+        it { is_expected.to eql Type.int }
+      end
+
+      describe 'an alias reached as an applied type' do
+        let(:alias_symbol) { Symbol.alias('UserId', [], type_sym('Basics', 'Int'), nil) }
+
+        let(:symbol) do
+          Symbol::TypeApplication.new(
+            constructor: Symbol::TypeRef['__Test__', 'UserId'],
+            args: [],
+            span: nil,
+          )
+        end
+
+        let(:entry) { Registry.entry('__Test__').define(alias_symbol) }
+
+        it { is_expected.to eql Type.int }
+      end
     end
 
     describe '.var' do
