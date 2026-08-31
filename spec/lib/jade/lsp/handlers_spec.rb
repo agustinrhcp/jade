@@ -369,6 +369,44 @@ module Jade
           expect(result[:contents][:kind]).to eq 'markdown'
         end
 
+        context 'a type alias' do
+          let(:alias_text) do
+            <<~JADE
+              module Leaf exposing (inc)
+
+              type alias UserId = Int
+
+
+              type alias Pair(a) = (a, a)
+
+
+              def inc(id: UserId) -> UserId
+                id + 1
+              end
+            JADE
+          end
+
+          # Expansion erases the name from every diagnostic, so hover is the
+          # only place left that says what an alias stands for.
+          it 'says what the alias stands for, on the declaration' do
+            _, outbound = open_and_hover(text: alias_text, at: 'UserId = Int')
+            expect(outbound.first[:result][:contents][:value])
+              .to include('type alias UserId = Int')
+          end
+
+          it 'resolves a use in a signature to the alias, not the enclosing function' do
+            _, outbound = open_and_hover(text: alias_text, at: 'UserId) -> UserId')
+            expect(outbound.first[:result][:contents][:value])
+              .to include('type alias UserId = Int')
+          end
+
+          it 'keeps the parameters of a parameterised alias' do
+            _, outbound = open_and_hover(text: alias_text, at: 'Pair(a) = (a, a)')
+            expect(outbound.first[:result][:contents][:value])
+              .to include('type alias Pair(a) = (a, a)')
+          end
+        end
+
         it 'returns nil when the cursor is not on a hoverable node' do
           _, outbound = open_and_hover(text: hover_text, at: 'module Leaf')
           expect(outbound.first[:result]).to be_nil
