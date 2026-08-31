@@ -46,7 +46,7 @@ module Jade
                   expr_result,
                 )
               end
-              .then { |st, cs| [check_exhaustiveness(node, st, expr_result), cs] }
+              .then { |st, cs| [check_patterns(node, st, expr_result), cs] }
               .then do |st, cs|
                 first_result
                   .with(constraints: cs)
@@ -77,8 +77,8 @@ module Jade
 
           # Coverage is a claim about the patterns as written. When one of them
           # failed to type there is nothing coherent to claim, and saying it
-          # anyway buries the real error under an invented one.
-          def check_exhaustiveness(node, state, result)
+          # anyway buries the real error under invented ones.
+          def check_patterns(node, state, result)
             node => AST::CaseOf(branches:)
 
             return state if mistyped_patterns?(node, state)
@@ -86,8 +86,11 @@ module Jade
             patterns = branches.map(&:pattern)
             type     = result.apply(state.env.substitution).type
 
-            PatternAnalysis::Exhaustiveness
-              .assert(patterns, node.range, state.env, type)
+            [
+              PatternAnalysis::Exhaustiveness.assert(patterns, node.range, state.env, type),
+              PatternAnalysis::Redundancy.assert(patterns, state.env, type),
+            ]
+              .flatten
               .then { state.add_errors(it) }
           end
 
