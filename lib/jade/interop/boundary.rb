@@ -81,8 +81,10 @@ module Jade
         ::Numeric === v ? v.to_f : type_error!(label, v, where)
       end
 
+      # Copied, because the caller keeps its array and Jade values do not
+      # change. The copy is under 1% of the check that precedes it.
       def list_of(klass, label, v, where = nil)
-        v.is_a?(::Array) && v.all? { klass === _1 } ? v : type_error!(label, v, where)
+        v.is_a?(::Array) && v.all? { klass === _1 } ? v.dup : type_error!(label, v, where)
       end
 
       # Validates that v is an Array but doesn't check element types — used
