@@ -28,6 +28,7 @@ require 'jade/frontend/semantic_analysis/case_of'
 require 'jade/frontend/semantic_analysis/case_of_branch'
 require 'jade/frontend/semantic_analysis/pattern_wildcard'
 require 'jade/frontend/semantic_analysis/pattern_literal'
+require 'jade/frontend/semantic_analysis/pattern_range'
 require 'jade/frontend/semantic_analysis/pattern_binding'
 require 'jade/frontend/semantic_analysis/pattern_constructor'
 require 'jade/frontend/semantic_analysis/pattern_record'
@@ -95,6 +96,7 @@ module Jade
         in AST::CaseOfBranch then CaseOfBranch
         in AST::Pattern::Wildcard then PatternWildcard
         in AST::Pattern::Literal then PatternLiteral
+        in AST::Pattern::Range then PatternRange
         in AST::Pattern::Binding then PatternBinding
         in AST::Pattern::Constructor then PatternConstructor
         in AST::Pattern::Record then PatternRecord

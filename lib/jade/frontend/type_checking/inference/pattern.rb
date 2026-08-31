@@ -34,6 +34,13 @@ module Jade
                     .unify_result(it, expected.type, &type_error(state, pattern))
                 end
 
+            in AST::Pattern::Range
+              state.unify_result(
+                Result.init(Type.int),
+                expected.type,
+                &type_error(state, pattern)
+              )
+
             in AST::Pattern::Literal(literal:)
               new_state, literal_result = check(literal, registry, state, expected)
               new_state.unify_result(literal_result, expected.type, &type_error(state, pattern))

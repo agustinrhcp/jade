@@ -97,7 +97,8 @@ module Jade
         in AST::Pattern::Record(fields:)
           fields.flat_map { walk(it.pattern, :as_value, entry, owner) }
 
-        in AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard
+        in AST::Pattern::Literal | AST::Pattern::Binding | AST::Pattern::Wildcard |
+          AST::Pattern::Range
           []
 
         in AST::Grouping(expression:)
