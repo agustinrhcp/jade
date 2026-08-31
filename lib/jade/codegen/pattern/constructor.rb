@@ -39,7 +39,7 @@ module Jade
         def generate_keyed(qualified, pattern, registry)
           case pattern
           in AST::Pattern::Binding(name:)
-            "#{qualified} => #{name}"
+            "#{qualified} => #{Names.local(name)}"
 
           in AST::Pattern::Wildcard
             qualified

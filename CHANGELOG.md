@@ -92,6 +92,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A Jade name that is a Ruby keyword compiles.** `begin`, `next`, `class`,
+  `self`, `return` and 20-odd others are ordinary Jade identifiers, and
+  emitting them verbatim produced Ruby that would not parse — a local or
+  parameter called `next` was a syntax error in the generated file, not a
+  message from the compiler. Bindings now carry a trailing underscore
+  (`next_`), and a name that already ends in one gains another so `next` and
+  `next_` stay distinct.
+
+  Only bindings are rewritten. Ruby accepts its keywords as method names and
+  as `Data` members, so a function called `next` is still `Mod.next` from Ruby
+  and a field called `class` is still `class` on the wire.
+
 - **`examples/records.jd` compiles.** `update_email` built an anonymous record
   where a `Person` was wanted, and nothing compiled the file: the examples
   suite skipped it. It now uses a record update, and the suite covers it.
