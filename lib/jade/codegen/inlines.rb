@@ -5,7 +5,9 @@ module Jade
 
       # Ruby's native ordering on these types matches LT/EQ/GT semantics, so
       # the derived comparison ops can collapse to plain operators.
-      RUBY_NATIVE_COMPARES = %w[Basics.int_compare Basics.float_compare String.str_compare].to_set.freeze
+      RUBY_NATIVE_COMPARES = %w[
+        Basics.int_compare Basics.float_compare String.str_compare Char.char_compare
+      ].to_set.freeze
       RUBY_NATIVE_EQS = %w[Basics.int_eq Basics.float_eq Basics.bool_eq String.str_eq].to_set.freeze
 
       DERIVED_COMPARISONS = {
@@ -114,6 +116,7 @@ module Jade
         'Char.upper?'       => ->(c)           { "#{c}.match?(/[A-Z]/)" },
         'Char.lower?'       => ->(c)           { "#{c}.match?(/[a-z]/)" },
         'Char.char_eq'      => ->(a, b)        { "(#{a} == #{b})" },
+        'Char.char_compare' => ->(a, b)        { "#{a}.compare(#{b})" },
 
         'Tuple.pair'        => ->(a, b)        { "Jade::Tuple::Tuple2[#{a}, #{b}]" },
         'Tuple.first'       => ->(t)           { "#{t}._1" },
