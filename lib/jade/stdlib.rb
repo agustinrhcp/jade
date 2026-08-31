@@ -9,6 +9,7 @@ require 'jade/stdlib/maybe'
 require 'jade/stdlib/tuple'
 require 'jade/stdlib/list'
 require 'jade/stdlib/char'
+require 'jade/stdlib/number'
 require 'jade/stdlib/string'
 require 'jade/stdlib/result'
 require 'jade/stdlib/task'
@@ -29,7 +30,7 @@ module Jade
     extend self
 
     INTRINSICS = %w[
-      Basics String List Tuple Char Task
+      Basics Number String List Tuple Char Task
       Decode Encode
       Bytes
       Dict Set
@@ -38,7 +39,7 @@ module Jade
     COMPILED = %w[Maybe Result Decode.Params Calendar Clock Decimal].freeze
     TOPLEVELS = (INTRINSICS + COMPILED).map { it.split('.', 2).first }.to_set.freeze
     STDLIBS = [
-      Stdlib::Basics, Stdlib::Maybe, Stdlib::Tuple, Stdlib::List, Stdlib::Char,
+      Stdlib::Basics, Stdlib::Maybe, Stdlib::Number, Stdlib::Tuple, Stdlib::List, Stdlib::Char,
       Stdlib::String, Stdlib::Result, Stdlib::Task,
       Stdlib::Dict, Stdlib::Set,
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,

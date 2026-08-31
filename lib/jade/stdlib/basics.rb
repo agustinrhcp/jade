@@ -14,6 +14,10 @@ module Jade
       native_type :Float, ::Float
       native_type :Bool,  TrueClass, FalseClass
 
+      # No variants, so the only way to hold one is `non_zero`. Erased at
+      # runtime: a NonZero(Int) is the Int.
+      union :NonZero, 'a'
+
       union :Ordering
       variant :GT, of: :Ordering
       variant :EQ, of: :Ordering
@@ -45,7 +49,7 @@ module Jade
           '(+)' => 'a, a -> a',
           '(-)' => 'a, a -> a',
           '(*)' => 'a, a -> a',
-          '(/)' => 'a, a -> a',
+          '(/)' => 'a, NonZero(a) -> a',
           'from_int' => 'Int -> a',
         }
       )
@@ -95,6 +99,7 @@ module Jade
       function('int_mul', { a: 'Int', b: 'Int' }, 'Int')
       function('int_div', { a: 'Int', b: 'Int' }, 'Int')
       function('mod', { a: 'Int', b: 'Int' }, 'Int')
+
 
       function('float_add', { a: 'Float', b: 'Float' }, 'Float')
       function('float_sub', { a: 'Float', b: 'Float' }, 'Float')

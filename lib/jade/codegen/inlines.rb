@@ -32,6 +32,7 @@ module Jade
         'Basics.int_mul'    => ->(a, b) { "(#{a} * #{b})" },
         'Basics.int_div'    => ->(a, b) { "(#{a} / #{b})" },
         'Basics.mod'        => ->(a, b) { "(#{a} % #{b})" },
+        'Number.unwrap'      => ->(n)    { n },
         'Basics.float_add'  => ->(a, b) { "(#{a} + #{b})" },
         'Basics.float_sub'  => ->(a, b) { "(#{a} - #{b})" },
         'Basics.float_mul'  => ->(a, b) { "(#{a} * #{b})" },
@@ -173,6 +174,7 @@ module Jade
 
       # Bodies that don't fit a single Ruby expression.
       NO_INLINE = %w[
+        Number.checked
         List.sort_with
         List.sort_by_with
         List.filter_map

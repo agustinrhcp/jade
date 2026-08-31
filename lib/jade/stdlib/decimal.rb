@@ -36,6 +36,7 @@ module Jade
           import Maybe
           import Decode exposing (Decodable, Decoder)
           import Encode exposing (Encodable)
+          import Number exposing (non_zero)
 
 
           # An exact base-10 decimal: value = coefficient * 10 ^ exponent.
@@ -81,24 +82,45 @@ module Jade
 
 
           # Integer division, rounding ties half away from zero (Java HALF_UP /
-          # Ruby BigDecimal default: 2.5 -> 3, -2.5 -> -3). A zero `den` raises
-          # through Int `/`.
+          # Ruby BigDecimal default: 2.5 -> 3, -2.5 -> -3).
           def round_div(num: Int, den: Int) -> Int
             negative = not ((num < 0) == (den < 0))
-            n = abs(num)
-            d = abs(den)
-            q = n / d
-            r = n - q * d
-            rounded = (2 * r) >= d ? q + 1 : q
+            magnitude = round_div_abs(abs(num), abs(den))
 
-            negative ? 0 - rounded : rounded
+            negative ? 0 - magnitude : magnitude
+          end
+
+
+          # Every caller divides by a scale or by a checked divisor, so the
+          # Nothing arm is unreachable rather than a rounding decision.
+          def round_div_abs(n: Int, d: Int) -> Int
+            case non_zero(d)
+            in Just(nz) then rounded_quotient(n, nz, d)
+            in Nothing then 0
+            end
+          end
+
+
+          def rounded_quotient(n: Int, nz: NonZero(Int), d: Int) -> Int
+            q = n / nz
+            r = n - q * d
+
+            (2 * r) >= d ? q + 1 : q
           end
 
 
           def trunc_div(num: Int, den: Int) -> Int
-            q = abs(num) / abs(den)
+            magnitude = trunc_div_abs(abs(num), abs(den))
 
-            num < 0 ? 0 - q : q
+            num < 0 ? 0 - magnitude : magnitude
+          end
+
+
+          def trunc_div_abs(n: Int, d: Int) -> Int
+            case non_zero(d)
+            in Just(nz) then n / nz
+            in Nothing then 0
+            end
           end
 
 
@@ -132,9 +154,9 @@ module Jade
 
           # a / b rounded half-up to `scale` decimal places, like Java's
           # BigDecimal.divide(divisor, scale, HALF_UP). Division by zero raises.
-          def div(a: Decimal, b: Decimal, scale: Int) -> Decimal
+          def div(a: Decimal, b: NonZero(Decimal), scale: Int) -> Decimal
             Decimal(ma, ea) = a
-            Decimal(mb, eb) = b
+            Decimal(mb, eb) = Number.unwrap(b)
             k = (ea - eb) + scale
             num = k >= 0 ? ma * pow10(k) : ma
             den = k >= 0 ? mb : mb * pow10(0 - k)
@@ -145,7 +167,7 @@ module Jade
 
           # The Numeric `/`: like Ruby's BigDecimal `/`, it can't be exact for a
           # repeating quotient (1/3), so it rounds half-up to a generous scale.
-          def divide(a: Decimal, b: Decimal) -> Decimal
+          def divide(a: Decimal, b: NonZero(Decimal)) -> Decimal
             div(a, b, 32)
           end
 
@@ -187,7 +209,16 @@ module Jade
 
             e >= 0
               ? Basics.to_float(m * pow10(e))
-              : Basics.to_float(m) / Basics.to_float(pow10(0 - e))
+              : scaled_down(Basics.to_float(m), Basics.to_float(pow10(0 - e)))
+          end
+
+
+          # `pow10` is never zero, so the Nothing arm cannot be reached.
+          def scaled_down(m: Float, scale: Float) -> Float
+            case non_zero(scale)
+            in Just(nz) then m / nz
+            in Nothing then m
+            end
           end
 
 

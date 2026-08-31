@@ -8,6 +8,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Division cannot divide by zero.** `a / b` used to raise Ruby's
+  `ZeroDivisionError` straight through Jade, so `Int -> Int -> Int` was not as
+  total as it read. `/` now takes a `NonZero`, which only `non_zero(n)`
+  produces, and it hands back a `Maybe` so the caller decides what an absent
+  answer means. A literal divisor is already known: `cents / 100` is unchanged,
+  and `n / 0` is a compile error rather than an expression that type checks.
+  `NonZero` has no constructor and is erased at runtime, so division costs what
+  it costs in Ruby.
+
+  ```jade
+  def each(total: Int, people: Int) -> Maybe(Int)
+    Maybe.map(non_zero(people), (d) -> { total / d })
+  end
+  ```
+
+  Implementing `Numeric` for your own type means `(/): a -> NonZero(a) -> a`,
+  with `Number.unwrap` to unwrap the divisor. `Decimal.div` takes a `NonZero`
+  for the same reason.
+
+### Changed
+
 - **A crossing does less on the way in.** An argument with a specialized
   decoder now carries its own name, in a string constant it was passing
   anyway, so the wrapper no longer opens a block per argument just to label a

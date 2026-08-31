@@ -44,7 +44,7 @@ module Jade
 
       def qualify(type)
         case type
-        in 'Int' | 'Float' | 'Bool' | 'Ordering' | 'Never'
+        in 'Int' | 'Float' | 'Bool' | 'Ordering' | 'Never' | 'NonZero'
           'Basics'
 
         in 'String' | 'Maybe' | 'List' | 'Result' | 'Task' | 'Char'

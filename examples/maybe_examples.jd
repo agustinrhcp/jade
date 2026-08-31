@@ -1,10 +1,7 @@
 module MaybeExamples exposing (find_first, pipeline, safe_divide)
 
 def safe_divide(a: Int, b: Int) -> Maybe(Int)
-  case b == 0
-  in True then Nothing
-  in False then Just(a / b)
-  end
+  Maybe.map(non_zero(b), (d) -> { a / d })
 end
 
 

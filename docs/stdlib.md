@@ -47,6 +47,7 @@ readable Ruby. This is a map of the territory; `jade q api` is the atlas.
 |--------|--------------|
 | `Basics` | The built-in interfaces — `Eq`, `Comparable`, `Appendable`, `Mappable`, `Chainable` — plus the `Ordering` type (`LT` / `EQ` / `GT`) and `Never`. `++` works on `String`, `List`, and `Bytes` via `Appendable`. |
 | `Maybe` | Optional values without `nil`: `Just(a)` / `Nothing`, with `map`, `and_then`, `with_default`. |
+| `Number` | `non_zero(n)`, the only way to hold the `NonZero` that `/` asks for. A literal divisor other than zero is one already, so `cents / 100` needs nothing; a divisor that is a value goes through `non_zero` and comes back a `Maybe`. `unwrap` gives back the plain number, for anyone implementing `Numeric` themselves. |
 | `Result` | Errors as values, no exceptions: `Ok(a)` / `Err(e)`, with `map`, `and_then`, `map_error`, `on_error`, `sequence`. |
 | `List` | Immutable lists: `map`, `filter`, `fold`, `zip`, `sort`, `length`, `range`, `head`, `tail`, `take`, `drop`, … |
 | `String` | Text: `length`, `reverse`, `split`, `trim`, `to_int`, `contains?`, `uncons`, `cons`, `from_char`, `map`. |
@@ -63,7 +64,7 @@ readable Ruby. This is a map of the territory; `jade q api` is the atlas.
 | `Clock` | Timestamps and monotonic timing: `Instant`, `now`. Sub-second precision; the bridge to wall-clock time. |
 | `Show` | Renders a value the way Jade writes it: `show(Just(7))` is `"Just(7)"`, `show(Point(3, 4))` is `"Point { x: 3, y: 4 }"`. Instances for the primitives; derives for unions, structs, records and lists. A function shows as `<function>`, and `Never` raises — it has no values. |
 | `Debug` | `log(label, value)` prints `label: value` to stderr and returns the value untouched, so it drops into a pipeline. Unconstrained, unlike `Show`. |
-| `Decimal` | Exact base-10 decimals (`coefficient * 10 ^ exponent`) — money and rates without `Float` rounding. Opaque; build with `of` / `scaled` / `parse`. Arithmetic via `Numeric` (`+` `-` `*` `/`), plus `div` (scaled, half-up), `round`, `to_i`, `to_float`. JSON-encodes to a `<mantissa>e<exponent>` string. |
+| `Decimal` | Exact base-10 decimals (`coefficient * 10 ^ exponent`) — money and rates without `Float` rounding. Opaque; build with `of` / `scaled` / `parse`. Arithmetic via `Numeric` (`+` `-` `*` `/`), plus `div` (scaled, half-up, taking a `NonZero`), `round`, `to_i`, `to_float`. JSON-encodes to a `<mantissa>e<exponent>` string. |
 
 Stdlib operations compile inline rather than through a runtime dispatch layer,
 so the generated Ruby calls the underlying operation directly.

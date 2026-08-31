@@ -52,8 +52,11 @@ module Jade
         end
 
 
-        def divided(an: Int, ae: Int, bn: Int, be: Int, scale: Int) -> Float
-          Decimal.to_float(Decimal.div(Decimal.of(an, ae), Decimal.of(bn, be), scale))
+        def divided(an: Int, ae: Int, bn: Int, be: Int, scale: Int) -> Maybe(Float)
+          Maybe.map(
+            non_zero(Decimal.of(bn, be)),
+            (d) -> { Decimal.to_float(Decimal.div(Decimal.of(an, ae), d, scale)) },
+          )
         end
 
 

@@ -98,7 +98,7 @@ module Jade
 
     # In dependency order: a module's `import` names the constant of another.
     STDLIB = %w[
-      basics maybe tuple list char string result task dict set
+      basics maybe number tuple list char string result task dict set
       decode decode/params encode bytes show debug
     ].freeze
 
