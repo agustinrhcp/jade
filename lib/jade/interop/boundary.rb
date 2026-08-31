@@ -39,11 +39,20 @@ module Jade
       # An absent key reads as nil to the field decoder, which then blames
       # the type it wanted. The path says which key that was, so a struct
       # can check whether it was ever there.
-      def missing_field(error, hash)
+      def blame(error, hash, label)
         key = error.where.to_s[/\A\.([^.\[]+)/, 1]
         return error if key.nil? || hash.key?(key)
 
+        symbol_keys!(label, hash)
         error.as(Jade::Decode::MissingField[key])
+      end
+
+      # Mixed keys are a real shape mismatch; the per-field errors say more
+      # than a guess about intent would.
+      def symbol_keys!(label, hash)
+        return if hash.empty? || hash.keys.any?(::String)
+
+        hash.keys.grep(::Symbol).then { raise SymbolKeys.new(label, it) unless it.empty? }
       end
 
       def decode_or_raise(decoder, value)
@@ -83,21 +92,14 @@ module Jade
         v.is_a?(::Array) ? v : type_error!(label, v, where)
       end
 
+      # Symbol keys are not checked here: every field would then be
+      # missing, and the rescue around the fields catches that for free.
       def hash(label, v)
         case v
-        when ::Hash then string_keyed!(label, v)
+        when ::Hash then v
         when ::Data then v.to_h.transform_keys(&:to_s)
         else type_error!(label, v, nil)
         end
-      end
-
-      # Mixed keys are a real shape mismatch; the per-field errors say more
-      # than a guess about intent would.
-      def string_keyed!(label, v)
-        return v if v.empty? || v.keys.any?(::String)
-
-        v.keys.grep(::Symbol)
-          .then { it.empty? ? v : raise(Jade::Interop::SymbolKeys.new(label, it)) }
       end
 
       def type_error!(label, v, where)
