@@ -47,7 +47,7 @@ module Jade
           in Type::Application(args:)
             case apply(type.constructor)
             in Type::PartialApplication(constructor:, args: tail_args)
-              Type::Application[constructor, args.map { apply(it) } + tail_args]
+              Type::Application[constructor, args.map { apply(it) } + tail_args, type.display]
 
             in constructor
               type.with(constructor:, args: args.map { apply(it) })
@@ -60,7 +60,7 @@ module Jade
 
             case apply(row_var)
             in Type::AnonymousRecord(fields: extra_fields, row_var: new_row_var)
-              Type.anonymous_record(applied_fields.merge(extra_fields), new_row_var)
+              Type.anonymous_record(applied_fields.merge(extra_fields), new_row_var, type.display)
 
             in Type::Var => applied_row_var
               type.with(fields: applied_fields, row_var: applied_row_var)

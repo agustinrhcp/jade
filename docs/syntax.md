@@ -137,6 +137,10 @@ reported once, against the first alias in it that was declared.
 `alias` is only a keyword directly after `type`, so a field or argument may
 still be called `alias`.
 
+The name survives into messages — a mismatch against a `UserId` reads
+`should be UserId (= Int)` — and hovering one in an editor gives its
+declaration.
+
 ## Anonymous records and tuples
 
 ```jade

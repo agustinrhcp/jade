@@ -101,6 +101,7 @@ module Jade
             in Type::Application(constructor:) then constructor.name
             in Type::PartialApplication(constructor:) then constructor.name
             in Type::Constructor(name:) then name
+            in Type::Displayable => t then t.render
             else constraint.type.to_s
             end
 

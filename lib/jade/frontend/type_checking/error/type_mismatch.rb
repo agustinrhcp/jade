@@ -10,7 +10,7 @@ module Jade
           end
 
           def message
-            "Expected #{naming[@expected]} but got #{naming[@actual]}"
+            "Expected #{naming.annotated(@expected)} but got #{naming.annotated(@actual)}"
           end
 
           def label

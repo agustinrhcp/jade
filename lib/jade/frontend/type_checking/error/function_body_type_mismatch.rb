@@ -10,7 +10,8 @@ module Jade
 
           def message
             "There\u0027s a problem with the body of `#{@function_name}` definition: " \
-              "it returns #{naming[@actual]} but its signature says it should be #{naming[@expected]}"
+              "it returns #{naming.annotated(@actual)} but its signature says it should be " \
+              "#{naming.annotated(@expected)}"
           end
 
           def label

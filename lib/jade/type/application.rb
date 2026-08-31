@@ -1,9 +1,18 @@
 module Jade
   module Type
-    Application = Data.define(:constructor, :args) do
+    Application = Data.define(:constructor, :args, :display) do
       include Base
+      include Displayable
 
-      def to_s
+      def initialize(constructor:, args:, display: nil)
+        super
+      end
+
+      def identity
+        [constructor, args]
+      end
+
+      def render
         return constructor.to_s if args.empty?
 
         if constructor.name.start_with?('Tuple.Tuple')

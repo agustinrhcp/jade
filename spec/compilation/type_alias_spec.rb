@@ -880,6 +880,44 @@ module Jade
       end
     end
 
+    describe 'the alias name survives into diagnostics' do
+      def mismatch_for(declaration, signature)
+        test_compiler.require(<<~JADE)
+          module Named#{signature.gsub(/\W/, '')} exposing (go)
+
+          #{declaration}
+
+
+          def go(x: #{signature}) -> #{signature}
+            "nope"
+          end
+        JADE
+        nil
+      rescue CompilationError => e
+        e.message
+      end
+
+      it 'names the alias and spells out its body' do
+        expect(mismatch_for('type alias UserId = Int', 'UserId'))
+          .to include('should be UserId (= Int)')
+      end
+
+      it 'keeps the short name in a nested position' do
+        expect(mismatch_for('type alias UserId = Int', 'List(UserId)'))
+          .to include('should be List(UserId)')
+      end
+
+      it 'carries the arguments of a parameterised alias' do
+        expect(mismatch_for('type alias Pair(a) = (a, a)', 'Pair(Int)'))
+          .to include('should be Pair(Int) (= (Int, Int))')
+      end
+
+      it 'leaves a type nobody aliased alone' do
+        expect(mismatch_for('type alias Unused = Int', 'Int'))
+          .to include('should be Int')
+      end
+    end
+
     # An alias over a private struct hands out a value you can hold but
     # cannot read or build — the opaque-type idiom, and worth pinning so a
     # later change to expansion does not quietly open it.

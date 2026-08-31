@@ -199,6 +199,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   is reported rather than reaching codegen, and `exposing (UserId(..))` says
   an alias has no constructors instead of accepting it silently.
 
+  The name survives expansion for the sake of reading: a mismatch against a
+  `UserId` says `should be UserId (= Int)` rather than `should be Int`, and
+  keeps the short name in a nested position (`List(UserId)`). `jade api`
+  reports an alias as an alias rather than as a function, and hovering one in
+  an editor gives its declaration — on the declaration itself and on every use
+  in a signature.
+
 - **`jade eject`.** Writes the project as Ruby that runs without the gem: every
   compiled module, the runtime they call, and requires pointing at each other
   rather than at a load path. What it vendors is whatever a booted runtime

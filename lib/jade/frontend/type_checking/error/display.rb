@@ -15,6 +15,14 @@ module Jade
             def [](type)
               substitution.apply(type).to_s
             end
+
+            # Spells out the body of an alias, for the one type a message is
+            # about. Nested positions keep the short name.
+            def annotated(type)
+              substitution.apply(type).then do |applied|
+                applied.is_a?(Type::Displayable) ? applied.annotated : applied.to_s
+              end
+            end
           end
 
           # Every type in one message at once, so a variable is the same

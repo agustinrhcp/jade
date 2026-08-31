@@ -70,6 +70,7 @@ module Jade
     KIND_ORDER = {
       'type' => 0,
       'struct' => 0,
+      'alias' => 0,
       'interface' => 1,
       'constructor' => 2,
       'function' => 3,
@@ -153,6 +154,7 @@ module Jade
       case symbol
       in Symbol::Union then 'type'
       in Symbol::Struct then 'struct'
+      in Symbol::Alias then 'alias'
       in Symbol::Interface then 'interface'
       in Symbol::Constructor | Symbol::Variant then 'constructor'
       else 'function'
@@ -166,6 +168,9 @@ module Jade
 
       in Symbol::Struct
         "struct #{symbol.name}#{type_params(symbol.type_params)}#{fields(symbol)}"
+
+      in Symbol::Alias
+        "type alias #{symbol.name}#{type_params(symbol.type_params)} = #{body(symbol)}"
 
       in Symbol::Interface
         "interface #{symbol.name}(#{symbol.type_param.name})"
@@ -190,6 +195,10 @@ module Jade
       in Type::Function(args: [], return_type:) then return_type
       else type
       end
+    end
+
+    def body(symbol)
+      declared(symbol.body).then { |(type, _)| type }
     end
 
     def fields(symbol)

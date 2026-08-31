@@ -1,9 +1,18 @@
 module Jade
   module Type
-    AnonymousRecord = Data.define(:fields, :row_var) do
+    AnonymousRecord = Data.define(:fields, :row_var, :display) do
       include Base
+      include Displayable
 
-      def to_s
+      def initialize(fields:, row_var:, display: nil)
+        super
+      end
+
+      def identity
+        [fields, row_var]
+      end
+
+      def render
         row = row_var ? "#{row_var} | " : ""
 
         fields
