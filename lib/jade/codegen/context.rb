@@ -22,6 +22,23 @@ module Jade
         @dict_env = prev
       end
 
+      # Dictionary source => constant name, filled while a module emits.
+      # A dictionary built entirely from concrete implementations depends
+      # on nothing at the call site, so it is built once at load instead
+      # of on every call. Nil outside a module: bare expressions have no
+      # constants to reference.
+      def dict_consts
+        @dict_consts
+      end
+
+      def with_dict_consts(table)
+        prev = @dict_consts
+        @dict_consts = table
+        yield
+      ensure
+        @dict_consts = prev
+      end
+
       # When set, references with this name emit as `self` (and field accesses
       # on them as bare method calls). Used to rewrite operator-impl lambda
       # bodies — `(a, b) -> { a.amount == b.amount }` becomes

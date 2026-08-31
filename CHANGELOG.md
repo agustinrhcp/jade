@@ -8,6 +8,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **A dictionary built from concrete implementations is built once.** Calling
+  a function with an interface constraint at a known type emitted the whole
+  dictionary as a literal at the point of use, so `List.sum(xs)` on a
+  `List(Int)` allocated a 5-entry Hash, an Array and two lambdas on every
+  call, 522ns before any adding happened. Inside a fold the literal landed in
+  the block and was rebuilt per element. Dictionaries that name no dict
+  parameter now become frozen module constants, shared by every call site
+  that wants the same one, and referencing an interface method as a value no
+  longer builds a Hash to index it once. A fold over 5000 values goes from
+  7.3x the equivalent Ruby to 3.3x, a per-row `List.sum` from 2.8x to 2.0x.
+
 - **A variant with no fields is one object, not a new one per construction.**
   `compare` allocated a fresh `GT` on every call, which cost more than the
   comparison: 214ns against Ruby's 23ns for `<=>`. Nullary variants carry no
