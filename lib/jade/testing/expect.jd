@@ -1,0 +1,168 @@
+module Expect exposing (
+  Expectation(..),
+  Reason,
+  all,
+  and,
+  equal,
+  err,
+  failure,
+  false,
+  field,
+  just,
+  not_equal,
+  nothing,
+  ok,
+  true,
+)
+
+import Show exposing (show)
+
+
+struct Reason = {
+  description: String,
+  actual: String,
+  expected: String
+}
+
+
+type Expectation
+  = Pass
+  | Fail(List(Reason))
+
+
+def equal(actual: a, expected: a) -> Expectation
+  if actual == expected then
+    Pass
+  else
+    failure("values to be equal", show(actual), show(expected))
+  end
+end
+
+
+def not_equal(actual: a, expected: a) -> Expectation
+  if actual == expected then
+    failure("values to differ", show(actual), "not " ++ show(expected))
+  else
+    Pass
+  end
+end
+
+
+# Compares two values and names the field in the failure, so a combined
+# assertion says which one moved:
+#
+#   Expect.field("name", user.name, "Agustin")
+def field(name: String, actual: a, expected: a) -> Expectation
+  if actual == expected then
+    Pass
+  else
+    failure(wrapped_field(name), show(actual), show(expected))
+  end
+end
+
+
+def wrapped_field(name: String) -> String
+  "field `" ++ name ++ "` to be equal"
+end
+
+
+# Passes on `Ok`, and reports the `Err` payload when it fails.
+#
+# The payload is rendered rather than the whole Result: `show(result)` here
+# would derive an instance over this function's own type variables, which
+# emits an unbound `impl_arg`.
+def ok(result: Result(a, e)) -> Expectation
+  case result
+  in Ok(_) then Pass
+  in Err(error) then failure("an Ok", wrapped("Err", show(error)), "Ok(_)")
+  end
+end
+
+
+# Passes on `Err`, and reports the `Ok` payload when it fails.
+def err(result: Result(a, e)) -> Expectation
+  case result
+  in Err(_) then Pass
+  in Ok(value) then failure("an Err", wrapped("Ok", show(value)), "Err(_)")
+  end
+end
+
+
+def just(maybe: Maybe(a)) -> Expectation
+  case maybe
+  in Just(_) then Pass
+  in Nothing then failure("a Just", "Nothing", "Just(_)")
+  end
+end
+
+
+def nothing(maybe: Maybe(a)) -> Expectation
+  case maybe
+  in Nothing then Pass
+  in Just(value)
+    failure("Nothing", wrapped("Just", show(value)), "Nothing")
+  end
+end
+
+
+def true(actual: Bool) -> Expectation
+  actual ? Pass : failure("value to be True", "False", "True")
+end
+
+
+def false(actual: Bool) -> Expectation
+  actual ? failure("value to be False", "True", "False") : Pass
+end
+
+
+# Combines expectations, keeping every reason rather than the first, so one
+# test reports all the assertions that failed.
+def all(expectations: List(Expectation)) -> Expectation
+  expectations
+    |> List.and_then(reasons)
+    |> from_reasons
+end
+
+
+# `all` for a pair, so it reads down a pipe:
+#
+#   Expect.equal(user.name, "ada") |> Expect.and(Expect.true(user.active))
+def and(first: Expectation, second: Expectation) -> Expectation
+  all([first, second])
+end
+
+
+# Builds a failed expectation, which is what a custom matcher returns when it
+# does not hold. A matcher is any function returning an `Expectation`, so it
+# composes with `all` and `and` like the built-in ones:
+#
+#   def be_balanced(t: Transaction) -> Expectation
+#     lines_sum(t) == t.amount_cents
+#       ? Expect.Pass
+#       : Expect.failure("a balanced transaction", show(t), "lines to sum")
+#   end
+def failure(
+  description: String,
+  actual: String,
+  expected: String,
+) -> Expectation
+  Fail([Reason(description, actual, expected)])
+end
+
+
+def from_reasons(rs: List(Reason)) -> Expectation
+  List.empty?(rs) ? Pass : Fail(rs)
+end
+
+
+def reasons(expectation: Expectation) -> List(Reason)
+  case expectation
+  in Pass then []
+  in Fail(rs) then rs
+  end
+end
+
+
+def wrapped(constructor: String, inner: String) -> String
+  constructor ++ "(" ++ inner ++ ")"
+end
