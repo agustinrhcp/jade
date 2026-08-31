@@ -32,7 +32,7 @@ module Jade
         def join(left, right)
           return if left.size != right.size
 
-          differing = left.zip(right).each_index.reject { left[it] == right[it] }
+          differing = left.each_index.reject { left[it] == right[it] }
 
           return if differing.size != 1
 

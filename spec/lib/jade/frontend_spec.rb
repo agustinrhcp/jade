@@ -290,6 +290,88 @@ module Jade
         its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::UnreachableBranch) }
       end
 
+      # A parse failure comes back as one error, not a list.
+      context 'with a bound that is not a literal' do
+        subject { frontend => Err(error); error.message }
+
+        context 'as the upper bound' do
+          let(:text) do
+            <<~JADE
+              def pick(n: Int, limit: Int) -> Int
+                case n
+                in 0..limit then 1
+                else 0
+                end
+              end
+            JADE
+          end
+
+          it 'says the bound is the problem, not the `then`' do
+            is_expected.to include 'bounds have to be literals'
+          end
+
+          it { is_expected.not_to include 'then' }
+        end
+
+        context 'as the lower bound' do
+          let(:text) do
+            <<~JADE
+              def pick(n: Int, limit: Int) -> Int
+                case n
+                in limit..9 then 1
+                else 0
+                end
+              end
+            JADE
+          end
+
+          it { is_expected.to include 'bounds have to be literals' }
+        end
+
+        # `limit` on its own is still an ordinary binding pattern.
+        context 'without a range at all' do
+          let(:text) do
+            <<~JADE
+              def pick(n: Int) -> Int
+                case n
+                in limit then limit
+                end
+              end
+            JADE
+          end
+
+          subject { frontend }
+
+          it { is_expected.to be_a(Ok) }
+        end
+      end
+
+      context 'with more holes than are worth printing' do
+        let(:arms) do
+          (0..30)
+            .map { "  in #{it * 2} then #{it}" }
+            .join("\n")
+        end
+
+        let(:text) do
+          <<~JADE
+            def pick(n: Int) -> Int
+              case n
+            #{arms}
+              end
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors.first.message }
+
+        it { is_expected.to include '… and' }
+
+        it 'lists ten and counts the rest' do
+          expect(subject.lines.count { it.start_with?('  ') }).to eql 11
+        end
+      end
+
       context 'with the bounds the wrong way round' do
         let(:text) do
           <<~JADE
@@ -303,7 +385,7 @@ module Jade
         end
 
         it { is_expected.to have(1).item }
-        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::UnreachableBranch) }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::EmptyRangePattern) }
       end
 
       context 'over a type that is not Int' do
@@ -319,7 +401,7 @@ module Jade
         end
 
         it { is_expected.to have(1).item }
-        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::PatternTypeMismatch) }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::RangePatternType) }
       end
     end
 

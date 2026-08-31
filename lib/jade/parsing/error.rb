@@ -153,6 +153,32 @@ module Jade
       end
     end
 
+    # `in 0..limit`. Rejecting it is right — coverage is decided before
+    # `limit` exists — but the reader needs to be told that, not sent to
+    # look at their `then`.
+    class NonLiteralRangeBoundError < Error
+      def message
+        "#{context_prefix}A range pattern's bounds have to be literals, and " \
+          "#{@actual.value.inspect} is a value. Which integers a branch " \
+          "covers is settled when the code is compiled, so a bound the " \
+          "compiler cannot see cannot be checked."
+      end
+
+      def label
+        'range bound is not a literal'
+      end
+
+      def notes
+        [
+          Jade::Diagnostics::Annotation[
+            :help,
+            'match `_` and compare in the body, or use `if` — either way the ' \
+              'branch is no longer something exhaustiveness can account for',
+          ],
+        ]
+      end
+    end
+
     class MissingBodyError < UnexpectedTokenError
       def hint
         '(a body has to produce a value)'

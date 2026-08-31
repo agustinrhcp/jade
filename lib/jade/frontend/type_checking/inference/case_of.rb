@@ -98,7 +98,7 @@ module Jade
             state
               .errors
               .any? do |error|
-                error.is_a?(Error::PatternTypeMismatch) &&
+                error.is_a?(Error::PatternProblem) &&
                   node.range.cover?(error.span.begin)
               end
           end

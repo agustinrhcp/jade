@@ -11,6 +11,32 @@ module Jade
               .then { |s, r| [s.with(env: s.env.pin_type(pattern.id, r.type)), r] }
           end
 
+          def range_type_error(state, pattern)
+            ->(error) do
+              Error::RangePatternType.new(
+                state.env.entry_name, pattern.range,
+                expected: error.expected, actual: error.actual,
+              )
+            end
+          end
+
+          def empty_range(pattern, state, result)
+            pattern => AST::Pattern::Range(from:, to:)
+
+            return [] unless state.env.substitution.apply(result.type) in Type::Application(
+              constructor: Type::Constructor(name: 'Basics.Int'),
+            )
+
+            return [] unless from && to && from.value > to.value
+
+            [Error::EmptyRangePattern.new(
+              state.env.entry_name,
+              pattern.range,
+              from: from.value,
+              to: to.value,
+            )]
+          end
+
           def infer_(pattern, registry, state, expected)
             case pattern
             in AST::Pattern::Record(fields:, symbol:)
@@ -35,11 +61,13 @@ module Jade
                 end
 
             in AST::Pattern::Range
-              state.unify_result(
-                Result.init(Type.int),
-                expected.type,
-                &type_error(state, pattern)
-              )
+              state
+                .unify_result(
+                  Result.init(Type.int),
+                  expected.type,
+                  &range_type_error(state, pattern)
+                )
+                .then { |(st, r)| [st.add_errors(empty_range(pattern, st, r)), r] }
 
             in AST::Pattern::Literal(literal:)
               new_state, literal_result = check(literal, registry, state, expected)
