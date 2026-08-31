@@ -68,24 +68,22 @@ module Jade
           "(#{type_params.map(&:name).join(', ')})"
         header = "struct #{name}#{params_str} ="
 
-        record_type => AST::TypeRecord(fields:, row_var:)
-
-        if fields.size > 1
-          format_multiline(header, fields, row_var, indent)
-        else
-          "#{header} #{format_type(record_type)}".then(&and_indent(indent))
-        end
+        format_record_declaration(header, record_type, indent)
       end
+    end
 
-      def format_multiline(header, fields, row_var, indent)
-        open_brace = row_var ? "{ #{row_var.name} |" : "{"
-        fields_str = fields
-          .map { |k, v| "#{k}: #{format_type(v)}".then(&and_indent(indent + 1)) }
-          .join(",\n")
+    module TypeAliasDeclaration
+      extend self
+      extend Helper
 
-        and_indent(indent)
-          .call("#{header} #{open_brace}")
-          .then { "#{it}\n#{fields_str}\n#{INDENT * indent}}" }
+      def format(node, indent:, source:)
+        node => AST::TypeAliasDeclaration(name:, type_params:, body_type:)
+
+        params_str = type_params.empty? ?
+          "" :
+          "(#{type_params.map(&:name).join(', ')})"
+
+        format_record_declaration("type alias #{name}#{params_str} =", body_type, indent)
       end
     end
 

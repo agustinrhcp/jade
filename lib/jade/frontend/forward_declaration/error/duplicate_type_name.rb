@@ -7,6 +7,7 @@ module Jade
             Symbol::Interface => 'an interface',
             Symbol::Union => 'a type',
             Symbol::Struct => 'a struct',
+            Symbol::Alias => 'a type alias',
           }.freeze
 
           def self.kind_of(symbol)

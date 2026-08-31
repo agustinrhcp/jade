@@ -20,6 +20,17 @@ module Jade
           functions_r = analyze_in_parallel(functions, registry, scope, entry)
 
           make_error = ->(klass, **kw) { klass.new(entry.name, node.range, **kw) }
+
+          if type_sym.is_a?(Symbol::Alias)
+            return make_error
+              .(
+                Error::ImplementationOnAlias,
+                interface: entry.lookup_type(interface).qname,
+                alias_name: type_sym.qname,
+              )
+              .then { Result[node, [it], scope] }
+          end
+
           type_is_local = entry.defined_types.key?(local_type_name(applied_type))
 
           unless entry.defined_types.key?(interface) || type_is_local

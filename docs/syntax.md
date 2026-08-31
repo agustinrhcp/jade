@@ -90,6 +90,53 @@ Anonymous records do not coerce into nominal structs: passing
 
 → [`examples/records.jd`](../examples/records.jd)
 
+## Type aliases
+
+A name for another type, with no runtime identity of its own:
+
+```jade
+type alias UserId = Int
+type alias Point = (Float, Float)
+type alias Handler = Int -> Int
+type alias Pair(a) = (a, a)
+
+type alias User = {
+  name: String,
+  age: Int
+}
+```
+
+`UserId` and `Int` are the same type, and a record literal satisfies `User`
+directly:
+
+```jade
+u1 = { name: "Paul", age: 55 }
+u2 = { u1 | age: 56 }
+name = u1.name
+```
+
+An alias never has its own constructors or interface implementations, so
+`implements Show(UserId)` is a compile error — two aliases over the same body
+are the same type, so the implementation would land on `Int` and collide with
+every other one. Reach for `struct` when you want a distinct type, or a
+single-variant `type` when you want a newtype around an inner shape.
+
+Interfaces an alias *inherits* work as you would expect, because the alias is
+gone by the time they are resolved: `Encode.encode` on a `UserId` is
+`Encode.encode` on an `Int`, and on a `User` it encodes the record.
+
+| | identity | construct with |
+| --- | --- | --- |
+| `struct User = { … }` | nominal, distinct from a same-shaped record | `User("Paul", 55)` |
+| `type User = User({ … })` | nominal newtype wrapping an inner shape | `User({ … })` |
+| `type alias User = { … }` | structural, a readability name | `{ … }` |
+
+Recursive aliases are rejected: use a `type` for a recursive shape. A cycle is
+reported once, against the first alias in it that was declared.
+
+`alias` is only a keyword directly after `type`, so a field or argument may
+still be called `alias`.
+
 ## Anonymous records and tuples
 
 ```jade

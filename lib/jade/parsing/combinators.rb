@@ -166,6 +166,26 @@ module Jade
         end
       end
 
+      # A word that only reads as a keyword in one position, so it stays
+      # usable as an ordinary name everywhere else.
+      def contextual(word)
+        (@contextuals ||= {})[word] ||= P.new do |state|
+          type(:identifier).call(state).and_then do |(token, next_state)|
+            next Ok[[token, next_state]] if token.value == word
+
+            Err[[
+              Parsing::UnexpectedTokenError.new(
+                entry:    state.entry,
+                span:     token.range,
+                actual:   token,
+                expected: word,
+              ),
+              state,
+            ]]
+          end
+        end
+      end
+
       def lazy(&block)
         P.new do |input|
           block.call.call(input)

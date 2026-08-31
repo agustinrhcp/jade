@@ -218,6 +218,9 @@ module Jade
       in AST::StructDeclaration(name:, record_type:, symbol:)
         data_define_with_methods(name, record_type.fields.keys, "::#{to_qualified(symbol.qualified_name)}")
 
+      in AST::TypeAliasDeclaration
+        ""
+
       in AST::InterfaceDeclaration
         ""
 

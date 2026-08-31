@@ -170,6 +170,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Ruby though every field was encodable. It now derives structurally, the way
   `Decodable` already did, and a record with a field that has no instance
   still refuses.
+- **`type alias Name = T`.** A structural name for a type that already exists:
+  `type alias UserId = Int`, `type alias Point = (Float, Float)`,
+  `type alias User = { name: String, age: Int }`. The alias and its body are
+  the same type, so a record literal satisfies a record alias directly and no
+  constructor is introduced. Aliases take parameters
+  (`type alias Pair(a) = (a, a)`). An alias without parameters is expanded
+  during forward declaration and a parameterised one when its arguments are
+  known, which is what makes `UserId` and `Int` interchangeable everywhere.
+
+  An alias has no identity of its own, so it carries no implementations:
+  `implements Show(UserId)` is rejected rather than silently attaching to
+  `Int`, where it would collide with every other alias over `Int`. What an
+  alias *inherits* needs no declaring — `Encode.encode` on a `UserId` is
+  `Encode.encode` on an `Int`. A recursive alias is rejected too. Reach for
+  `struct` when you want a distinct type, or a single-variant `type` for a
+  newtype around an inner shape.
+
+  `jade fmt` breaks a record alias past one field the way it breaks the
+  `struct` beside it, and `alias` is a contextual keyword — read as one only
+  directly after `type` — so a record field or argument may still be called
+  `alias`.
 
 - **`jade eject`.** Writes the project as Ruby that runs without the gem: every
   compiled module, the runtime they call, and requires pointing at each other
