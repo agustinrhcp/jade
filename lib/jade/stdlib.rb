@@ -22,6 +22,7 @@ require 'jade/stdlib/bytes'
 require 'jade/stdlib/calendar'
 require 'jade/stdlib/clock'
 require 'jade/stdlib/decimal'
+require 'jade/stdlib/range'
 require 'jade/stdlib/show'
 require 'jade/stdlib/debug'
 
@@ -36,7 +37,7 @@ module Jade
       Dict Set
       Show Debug
     ].freeze
-    COMPILED = %w[Maybe Result Decode.Params Calendar Clock Decimal].freeze
+    COMPILED = %w[Maybe Result Decode.Params Calendar Clock Decimal Range].freeze
     TOPLEVELS = (INTRINSICS + COMPILED).map { it.split('.', 2).first }.to_set.freeze
     STDLIBS = [
       Stdlib::Basics, Stdlib::Maybe, Stdlib::Number, Stdlib::Tuple, Stdlib::List, Stdlib::Char,
@@ -44,13 +45,13 @@ module Jade
       Stdlib::Dict, Stdlib::Set,
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
       Stdlib::Bytes,
-      Stdlib::Calendar, Stdlib::Clock, Stdlib::Decimal, Stdlib::Show, Stdlib::Debug,
+      Stdlib::Calendar, Stdlib::Clock, Stdlib::Decimal, Stdlib::Range, Stdlib::Show, Stdlib::Debug,
     ]
     # Loaded into the registry but not auto-imported into user modules.
     EXTENSIONS = [
       Stdlib::Dict, Stdlib::Set,
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
-      Stdlib::Calendar, Stdlib::Clock, Stdlib::Decimal, Stdlib::Show, Stdlib::Debug,
+      Stdlib::Calendar, Stdlib::Clock, Stdlib::Decimal, Stdlib::Range, Stdlib::Show, Stdlib::Debug,
     ]
 
     def load(registry)
