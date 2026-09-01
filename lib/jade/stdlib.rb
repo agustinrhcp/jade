@@ -51,7 +51,7 @@ module Jade
     EXTENSIONS = [
       Stdlib::Dict, Stdlib::Set,
       Stdlib::Decode, Stdlib::Decode::Params, Stdlib::Encode,
-      Stdlib::Calendar, Stdlib::Clock, Stdlib::Decimal, Stdlib::Range, Stdlib::Show, Stdlib::Debug,
+      Stdlib::Calendar, Stdlib::Clock, Stdlib::Decimal, Stdlib::Show, Stdlib::Debug,
     ]
 
     def load(registry)
