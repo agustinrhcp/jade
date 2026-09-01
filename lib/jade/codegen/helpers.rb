@@ -55,8 +55,14 @@ module Jade
       end
 
       def impl_synthetic_name(interface, type_name, fn_name)
-        sanitized = fn_name.gsub(/[^a-zA-Z0-9_]/) { |c| "x#{c.ord.to_s(16)}" }
-        "__impl_#{interface}_#{type_name}_#{sanitized}__"
+        sanitized_name(fn_name)
+          .then { "__impl_#{interface}_#{type_name}_#{it}__" }
+      end
+
+      # `contains?` is a fine Jade name and not a fine Ruby one anywhere but
+      # the end of a method name, which is not where these put it.
+      def sanitized_name(name)
+        name.gsub(/[^a-zA-Z0-9_]/) { |c| "x#{c.ord.to_s(16)}" }
       end
 
       def dict_synthetic_name(index)
@@ -64,7 +70,8 @@ module Jade
       end
 
       def fn_impl_synthetic_name(name)
-        "__#{name}__impl__"
+        sanitized_name(name)
+          .then { "__#{it}__impl__" }
       end
 
       def fn_constraints(fn_symbol, registry)
