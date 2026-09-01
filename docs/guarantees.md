@@ -338,8 +338,5 @@ what you would be left with is Ruby you can read.
 
 Claims Jade does not make today, so nobody has to discover them later:
 
-- **A list handed over from Ruby is the same object.** Jade values do not
-  change, but a caller that keeps its array and pushes to it afterwards is
-  writing into a value Jade already took.
 - **Nothing checks that a function ends.** A recursion with no base case type
   checks and runs until the stack does not.
