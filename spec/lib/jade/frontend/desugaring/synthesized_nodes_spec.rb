@@ -26,7 +26,7 @@ module Jade
       let(:text) { "a + b\n" }
 
       it { is_expected.to be_a(AST::FunctionCall) }
-      its(:range) { is_expected.to be_a(Range) }
+      its(:range) { is_expected.to be_a(::Range) }
       its(:symbol) { is_expected.to be_nil }
       its(:dictionaries) { is_expected.to eq([]) }
     end
@@ -35,7 +35,7 @@ module Jade
       let(:text) { "(a, b)\n" }
 
       it { is_expected.to be_a(AST::FunctionCall) }
-      its(:range) { is_expected.to be_a(Range) }
+      its(:range) { is_expected.to be_a(::Range) }
       its(:symbol) { is_expected.to be_nil }
       its(:dictionaries) { is_expected.to eq([]) }
     end
