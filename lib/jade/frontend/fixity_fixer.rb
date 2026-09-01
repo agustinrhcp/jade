@@ -97,8 +97,9 @@ module Jade
             .then { node.with(target: it) }
 
         in AST::CaseOf(expression:, branches:)
-          branches.map { fix(it) }
-            .then { node.with(branches:, expression: fix(expression)) }
+          branches
+            .map { fix(it) }
+            .then { node.with(branches: it, expression: fix(expression)) }
 
         in AST::CaseOfBranch(body:)
           node.with(body: fix(body))

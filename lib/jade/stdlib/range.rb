@@ -77,7 +77,7 @@ module Jade
           def contains?(range: Range(a), value: a) -> Bool
             case range
             in Empty then False
-            in Between(low, high) then (low <= value) && (value <= high)
+            in Between(low, high) then low <= value && value <= high
             in From(low) then low <= value
             in To(high) then value <= high
             in All then True
