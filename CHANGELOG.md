@@ -16,6 +16,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the element check already spends, so under 1% of a crossing that was already
   paying to look at every element.
 
+### Added
+
+- **[docs/guarantees.md](docs/guarantees.md), the list to paste into a design
+  doc.** Seven lines a staff engineer can hold Jade to, each with the code
+  that proves it and the compiler's real output when it is broken, plus what
+  Jade does not promise today. The suite compiles every example on the page
+  and runs the calls Ruby is shown making, so a change that makes one of them
+  false fails the build rather than the reader.
+
 ### Changed
 
 - **Division cannot divide by zero.** `a / b` used to raise Ruby's
