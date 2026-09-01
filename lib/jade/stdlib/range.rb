@@ -14,8 +14,10 @@ module Jade
         [Basics, Maybe, Tuple]
       end
 
+      # `..` desugars to `Range.between`, so the module has to be in scope
+      # wherever the operator is legal, which is everywhere.
       def default_imports
-        []
+        [Symbol.type_ref('Range', 'Range')]
       end
 
       def code

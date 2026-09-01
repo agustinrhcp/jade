@@ -211,6 +211,24 @@ nothing and cost a lifetime of remembering which is which. Ranges are `Int`
 only for the same reason: `0..2` and `3..12` sit next to each other with
 nothing in between them to be missed, which is not true of `Float`.
 
+The same spelling builds a `Range` value in expression position, where the
+bounds are ordinary expressions rather than literals:
+
+```jade
+module Bookings exposing (clashes?)
+
+def clashes?(check_in: Date, check_out: Date, other: Range(Date)) -> Bool
+  Range.overlaps?(check_in..check_out, other)
+end
+```
+
+`..` binds looser than `+` and `-`, so `0..n - 1` is `0..(n - 1)`. It is
+non-associative — `a..b..c` is an error, not a nesting — and it is infix
+only: the endless forms are `Range.from(a)` and `Range.to(b)`, because a
+token that is prefix, infix and postfix by turns costs more to read than two
+names do. A descending pair is `Range.empty` rather than an error, since
+`0..(n - 1)` with `n = 0` is the ordinary way an empty range arises.
+
 **Lists** match with `[]` and `[head | tail]`; the rest after `|` must be a
 name or wildcard:
 

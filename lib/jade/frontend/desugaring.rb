@@ -38,6 +38,20 @@ module Jade
             end
               .then { desugar(it) }
 
+          # There is no `Basics.(..)` to resolve to: the operator's result
+          # type lives in Range, and Basics is loaded before it.
+          in AST::InfixOperator(value: '..')
+            AST::FunctionCall.new(
+              callee: AST::MemberAccess[
+                AST::ConstructorReference['Range', operator.range],
+                AST::VariableReference['between', operator.range],
+                operator.range,
+              ],
+              args: [desugar(left), desugar(right)],
+              infix: operator,
+              range: node.range,
+            )
+
           else
             AST::FunctionCall.new(
               callee: AST::VariableReference["(#{operator.value})", operator.range],

@@ -12,6 +12,11 @@ module Jade
           format_pipe_chain(node, indent, source:)
         when '++'
           format_concat_chain(node, indent, source:)
+        # Spelled tight, the way it is in a pattern. `0 .. n` is nobody's
+        # idea of a range.
+        when '..'
+          "#{format_node(left, source:)}..#{format_node(right, source:)}"
+            .then(&and_indent(indent))
         else
           "#{format_node(left, source:)} #{operator.value} #{format_node(right, source:)}"
             .then(&and_indent(indent))

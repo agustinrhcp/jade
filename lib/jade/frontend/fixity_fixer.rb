@@ -51,6 +51,7 @@ module Jade
         '>=' => Fixity[4, :none],
         '>' => Fixity[4, :none],
         '<' => Fixity[4, :none],
+        '..' => Fixity[5, :none],
         '&&' => Fixity[3, :right],
         '||' => Fixity[2, :right],
       }.freeze
