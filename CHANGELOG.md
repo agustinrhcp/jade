@@ -8,6 +8,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A type that contains itself no longer exhausts the stack at compile
+  time.** `type Tree = Leaf | Node(Tree, Tree)` compared with `==` raised
+  `SystemStackError` from the compiler, naming a Ruby frame rather than
+  anything you wrote: deriving an instance asks for its components'
+  instances, and `Tree`'s component is `Tree`. So did a struct that reaches
+  itself, `struct Pepe = { pepe: Maybe(Pepe) }`, on `==` or at the Ruby
+  boundary.
+
+  Equality now works on both: a derived `Eq` is structural, and Ruby's `==`
+  computes exactly that, dispatching to whatever each component defines — so a
+  component with a hand-written `implements Eq` is still asked. `Encodable`
+  and `Decodable` say `cannot be derived for Pepe because it contains itself`
+  and point at writing the implementation by hand, which was always the answer
+  and used to arrive as a crash.
+
 - **A list from Ruby is copied, not borrowed.** A `List(Int)` argument came
   through as the caller's own Array, so pushing to it after the call changed a
   value Jade had already taken. Lists of structs were copied already, by the

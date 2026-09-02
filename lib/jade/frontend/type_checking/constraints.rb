@@ -6,7 +6,19 @@ module Jade
       module Constraints
         extend self
 
-        def resolve(constraint, registry, entry_name)
+        # A derived instance is built by asking for its components' instances,
+        # so a type that contains itself asks for the one being built. Nothing
+        # ties that knot yet, so the walk is cut here rather than left to run
+        # out of stack.
+        def resolve(constraint, registry, entry_name, in_progress = ::Set[])
+          key = [constraint.interface, constraint.type.to_s]
+
+          if in_progress.include?(key)
+            Error::RecursiveDerivation
+              .new(entry_name, constraint.origin&.range, constraint:)
+              .then { return Err[it] }
+          end
+
           if constraint.type in Type::Var
             Error::UnresolvedConstraint
               .new(entry_name, constraint.origin&.range, constraint:)
@@ -23,7 +35,7 @@ module Jade
                     constraint.type,
                     constraint.origin,
                   )
-                .then { resolve(it, registry, entry_name) } => Ok[resolved]
+                .then { resolve(it, registry, entry_name, in_progress) } => Ok[resolved]
 
                 resolved
               end
@@ -34,7 +46,9 @@ module Jade
 
           if Deriving.derivable?(constraint.interface)
             Deriving
-              .derive(constraint, registry, entry_name) { resolve(it, registry, entry_name) }
+              .derive(constraint, registry, entry_name) do
+                resolve(it, registry, entry_name, in_progress + [key])
+              end
               .then { return it }
           end
 

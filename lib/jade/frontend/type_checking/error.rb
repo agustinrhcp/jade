@@ -5,6 +5,7 @@ require 'jade/frontend/type_checking/error/type_mismatch'
 
 require 'jade/frontend/type_checking/error/case_of_branches_type_mismatch'
 require 'jade/frontend/type_checking/error/derivation_failed'
+require 'jade/frontend/type_checking/error/recursive_derivation'
 require 'jade/frontend/type_checking/error/function_body_type_mismatch'
 require 'jade/frontend/type_checking/error/function_call_type_mismatch'
 require 'jade/frontend/type_checking/error/if_branch_type_mismatch'
