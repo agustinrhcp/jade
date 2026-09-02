@@ -1,5 +1,3 @@
-require 'jade/tasks'
-
 module Jade
   module Task
     # Every node is a value describing work, and `run` drives them from one

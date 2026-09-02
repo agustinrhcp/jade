@@ -37,6 +37,18 @@ module Jade
         .then { capture(it) }
     end
 
+    # A process with nothing else loaded, so anything Ruby says about these
+    # files is about the files, not about a constant an earlier example in
+    # this process happened to define.
+    def complaints(verbose: false)
+      files
+        .sort
+        .map { "require #{it.inspect}" }
+        .join('; ')
+        .then { [RbConfig.ruby, *(verbose ? ['-w'] : []), '-e', it] }
+        .then { capture(it) }
+    end
+
     def files
       Dir.glob(File.join(@root, 'ejected', '**', '*.rb'))
     end
