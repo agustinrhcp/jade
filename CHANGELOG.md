@@ -23,6 +23,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and point at writing the implementation by hand, which was always the answer
   and used to arrive as a crash.
 
+- **A module may be named after a type in its parent.** `module Sql.Expr`
+  beside `type Expr` in `Sql` compiled without complaint and then emitted two
+  definitions of one Ruby constant, so whichever file loaded second silently
+  took the name and calls into the other failed with a `NoMethodError` and a
+  Ruby warning. The module now reopens the type's class rather than defining a
+  module beside it, which is what Ruby wants and what Elixir does with the
+  same pair. Constructing, pattern matching and the module's own functions all
+  work together.
+
 - **A list from Ruby is copied, not borrowed.** A `List(Int)` argument came
   through as the caller's own Array, so pushing to it after the call changed a
   value Jade had already taken. Lists of structs were copied already, by the
