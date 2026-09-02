@@ -84,10 +84,13 @@ module Jade
     def generate(node, registry, depth: 0)
       case node
       in AST::Module(name:, body:)
+        reopened = reopened_type(name, registry)
+
         preamble = [
           "require 'jade/runtime'",
           *Stdlib.requires(name),
           *namespace_setup_lines(name),
+          *reopening_require(reopened, name),
         ].reject(&:empty?).join(Pretty.newline)
 
         shape_consts = collect_record_shapes(body)
@@ -119,7 +122,7 @@ module Jade
           .then { Pretty.block("module Internal", it) }
 
         [
-          "extend self",
+          (reopened ? "" : "extend self"),
           *shape_consts,
           *outer,
           inner_module,
@@ -130,7 +133,7 @@ module Jade
         ]
           .reject(&:empty?)
           .join(Pretty.newline(2))
-          .then { Pretty.block("module #{to_qualified(name)}", it) }
+          .then { Pretty.block("#{reopened ? 'class' : 'module'} #{to_qualified(name)}", it) }
           .then { [preamble, it].reject(&:empty?).join(Pretty.newline(2)) }
 
       in AST::ImportDeclaration(module_name:)
@@ -368,6 +371,27 @@ module Jade
 
           reachable_dicts(table, [code, *found.keys].join(Pretty.newline), found)
         end
+    end
+
+    # A module whose name is already a type in its parent shares one Ruby
+    # constant with it, so it reopens that class rather than defining a
+    # module beside it and clobbering whichever loads second.
+    def reopened_type(name, registry)
+      *parent, last = name.split('.')
+      return nil if parent.empty?
+
+      registry
+        .get(parent.join('.'))
+        &.then { it.defined_types.key?(last) ? it : nil }
+    end
+
+    # Before the class body, not inside it: an import writes its require
+    # within the body, by which point `class` has already made a plain
+    # class for the constant and the type will clobber it on load.
+    def reopening_require(entry, name)
+      return [] if entry.nil? || Stdlib.is_stdlib?(entry)
+
+      ["require_relative '#{relative_require(entry.path, name.count('.'))}'"]
     end
 
     def namespace_setup_lines(name)
