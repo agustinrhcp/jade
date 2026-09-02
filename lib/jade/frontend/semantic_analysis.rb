@@ -1,5 +1,6 @@
 require 'jade/frontend/semantic_analysis/error'
 
+require 'jade/frontend/semantic_analysis/inhabitedness'
 require 'jade/frontend/semantic_analysis/helper'
 require 'jade/frontend/semantic_analysis/module_node'
 require 'jade/frontend/semantic_analysis/import_declaration'

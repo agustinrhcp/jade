@@ -22,6 +22,32 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and `Decodable` say `cannot be derived for Pepe because it contains itself`
   and point at writing the implementation by hand, which was always the answer
   and used to arrive as a crash.
+- **A recursive type with nothing to stop it is reported where it is written.**
+  `struct Pepe = { pepe: Pepe }` declared fine and read fine; you found out at
+  the use site, in a message about the argument you passed rather than about
+  the declaration that can never be satisfied. It now says so at the
+  declaration, along with the way out:
+
+  ```
+  error: `Pepe` can never be built: every `Pepe` needs a `Pepe` inside it first
+    --> src/pepe.jd:3:1
+    |
+  3 | struct Pepe = { pepe: Pepe }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ nothing here stops the recursion
+    |
+    = note: a type may refer to itself; `Pepe` just has no case that stops,
+            so there is no smallest `Pepe` to start from
+    = help: wrap the field in something that has an empty case:
+            `Maybe(Pepe)` can be `Nothing`, `List(Pepe)` can be empty
+  ```
+
+  A type referring to itself is the point of a union, so what is checked is
+  whether there is a way out: `Maybe` has `Nothing`, `List` has `[]`, `Result`
+  has its `Err` arm, a union has any variant that does not lead back. All of
+  those still compile, `struct Pepe = { pepe: Maybe(Pepe) }` included, and so
+  does a field holding a function that returns the type, since the function
+  itself can be written. `type T = A(T)`, two declarations that need each
+  other, and a struct reaching itself through a tuple do not.
 
 - **A list from Ruby is copied, not borrowed.** A `List(Int)` argument came
   through as the caller's own Array, so pushing to it after the call changed a

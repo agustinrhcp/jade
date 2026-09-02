@@ -100,6 +100,20 @@ module Jade
           end
         end
 
+        def validate_inhabited(symbol_ref, registry, entry, kind:)
+          symbol = registry.lookup(symbol_ref)
+          return [] if Inhabitedness.inhabited?(symbol, registry)
+
+          [
+            Error::NoBaseCase.new(
+              entry.name,
+              symbol.decl_span,
+              name: symbol_ref.name,
+              kind:,
+            ),
+          ]
+        end
+
         def validate_type_symbol(symbol, registry, entry)
           case symbol
           in Symbol::Union(variants:, type_params:)
