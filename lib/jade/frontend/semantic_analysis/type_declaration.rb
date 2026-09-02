@@ -15,6 +15,7 @@ module Jade
             .map_node { it.with(symbol: symbol_ref) }
             .add_errors(validate_no_unbound_vars(symbol_ref, registry, entry))
             .add_errors(validate_type_symbol(symbol_ref, registry, entry))
+            .add_errors(validate_inhabited(symbol_ref, registry, entry, kind: 'type'))
         end
 
         private

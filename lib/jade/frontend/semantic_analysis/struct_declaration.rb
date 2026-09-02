@@ -14,6 +14,7 @@ module Jade
             .init(node.with(symbol: symbol_ref), scope)
             .add_errors(validate_no_unbound_vars(symbol_ref, registry, entry))
             .add_errors(validate_type_symbol(symbol_ref, registry, entry))
+            .add_errors(validate_inhabited(symbol_ref, registry, entry, kind: 'struct'))
         end
 
         private
