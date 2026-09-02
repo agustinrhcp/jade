@@ -147,7 +147,11 @@ module Jade
         end
 
       in AST::InteropImportDeclaration(module: mod)
-        Pretty.block("begin", "require '#{mod.name.gsub('::', '/').downcase}'\nrescue LoadError")
+        Pretty.block(
+          "begin",
+          "require '#{mod.name.gsub('::', '/').downcase}'",
+          "rescue LoadError\nend",
+        )
 
       in AST::Implementation
         Implementation.generate(node, registry)

@@ -84,7 +84,7 @@ module Jade
           .with(module_name:)
           .tap { store(it) }
 
-        constructor_symbol = if constructor
+        if constructor
           Symbol.constructor(
             name.to_s,
             type_params.map { Symbol.var(it, nil) },

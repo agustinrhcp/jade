@@ -8,6 +8,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Generated Ruby no longer makes Ruby complain.** An interop import emitted
+  its `rescue LoadError` indented as though it were part of the `begin` body,
+  which Ruby warns about under `-w`, and the runtime had a circular require
+  between `jade/task` and `jade/tasks` that neither file needed at load time.
+  The ejected examples are now loaded in a fresh process under `-w` and the
+  suite fails if Ruby says anything at all, which is the check that would have
+  caught a module and a type sharing a constant on its own.
+
+### Fixed
+
 - **A type that contains itself no longer exhausts the stack at compile
   time.** `type Tree = Leaf | Node(Tree, Tree)` compared with `==` raised
   `SystemStackError` from the compiler, naming a Ruby frame rather than

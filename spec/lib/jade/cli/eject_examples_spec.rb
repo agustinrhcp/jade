@@ -24,6 +24,14 @@ module Jade
                        pattern_matching records],
                     'uses' => USES
 
+    # A warning about this code is a compiler bug, since the compiler wrote
+    # it, and a fresh process is the only place the question can be asked:
+    # in the suite, the same module names load from a dozen temp projects
+    # and Ruby rightly complains about every one.
+    it 'loads without Ruby having anything to say about it' do
+      expect(ejected.complaints(verbose: true)).to eq ''
+    end
+
     it 'runs a function over the stdlib' do
       expect(ejected.run('basics_examples', 'BasicsExamples.clamp(1, 10, 42)')).to eq '10'
     end
