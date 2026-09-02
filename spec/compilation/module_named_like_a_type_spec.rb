@@ -25,7 +25,7 @@ module Jade
 
     let(:child) do
       <<~JADE
-        module Q.Expr exposing (blank, eq)
+        module Q.Expr exposing (blank, eq, members, new)
 
         import Q exposing (Expr(..), sql)
 
@@ -37,6 +37,16 @@ module Jade
 
         def blank -> String
           sql(Expr(""))
+        end
+
+
+        def members(n: Int) -> Int
+          n + 1
+        end
+
+
+        def new(s: String) -> String
+          s ++ "!"
         end
       JADE
     end
@@ -56,6 +66,16 @@ module Jade
 
     it 'lets the module build and read the type it is named after' do
       expect(Q::Expr.blank).to eq ''
+    end
+
+    # Jade constructs with `Data.[]`, which does not route through `new`,
+    # and nothing reads `members` off a class.
+    it 'takes the names the class already has for itself' do
+      expect([Q::Expr.new('a'), Q::Expr.members(1)]).to eq ['a!', 2]
+    end
+
+    it 'still constructs when it has taken those names' do
+      expect(Q::Expr['x']).to have_attributes(sql: 'x')
     end
 
     it 'still pattern matches' do
