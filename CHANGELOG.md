@@ -4,79 +4,9 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.0] - 2026-09-02
 
-### Fixed
-
-- **Generated Ruby no longer makes Ruby complain.** An interop import emitted
-  its `rescue LoadError` indented as though it were part of the `begin` body,
-  which Ruby warns about under `-w`, and the runtime had a circular require
-  between `jade/task` and `jade/tasks` that neither file needed at load time.
-  The ejected examples are now loaded in a fresh process under `-w` and the
-  suite fails if Ruby says anything at all, which is the check that would have
-  caught a module and a type sharing a constant on its own.
-
-### Fixed
-
-- **A type that contains itself no longer exhausts the stack at compile
-  time.** `type Tree = Leaf | Node(Tree, Tree)` compared with `==` raised
-  `SystemStackError` from the compiler, naming a Ruby frame rather than
-  anything you wrote: deriving an instance asks for its components'
-  instances, and `Tree`'s component is `Tree`. So did a struct that reaches
-  itself, `struct Pepe = { pepe: Maybe(Pepe) }`, on `==` or at the Ruby
-  boundary.
-
-  Equality now works on both: a derived `Eq` is structural, and Ruby's `==`
-  computes exactly that, dispatching to whatever each component defines — so a
-  component with a hand-written `implements Eq` is still asked. `Encodable`
-  and `Decodable` say `cannot be derived for Pepe because it contains itself`
-  and point at writing the implementation by hand, which was always the answer
-  and used to arrive as a crash.
-- **A recursive type with nothing to stop it is reported where it is written.**
-  `struct Pepe = { pepe: Pepe }` declared fine and read fine; you found out at
-  the use site, in a message about the argument you passed rather than about
-  the declaration that can never be satisfied. It now says so at the
-  declaration, along with the way out:
-
-  ```
-  error: `Pepe` can never be built: every `Pepe` needs a `Pepe` inside it first
-    --> src/pepe.jd:3:1
-    |
-  3 | struct Pepe = { pepe: Pepe }
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ nothing here stops the recursion
-    |
-    = note: a type may refer to itself; `Pepe` just has no case that stops,
-            so there is no smallest `Pepe` to start from
-    = help: wrap the field in something that has an empty case:
-            `Maybe(Pepe)` can be `Nothing`, `List(Pepe)` can be empty
-  ```
-
-  A type referring to itself is the point of a union, so what is checked is
-  whether there is a way out: `Maybe` has `Nothing`, `List` has `[]`, `Result`
-  has its `Err` arm, a union has any variant that does not lead back. All of
-  those still compile, `struct Pepe = { pepe: Maybe(Pepe) }` included, and so
-  does a field holding a function that returns the type, since the function
-  itself can be written. `type T = A(T)`, two declarations that need each
-  other, and a struct reaching itself through a tuple do not.
-
-- **A module may be named after a type in its parent.** `module Sql.Expr`
-  beside `type Expr` in `Sql` compiled without complaint and then emitted two
-  definitions of one Ruby constant, so whichever file loaded second silently
-  took the name and calls into the other failed with a `NoMethodError` and a
-  Ruby warning. The module now reopens the type's class rather than defining a
-  module beside it, which is what Ruby wants and what Elixir does with the
-  same pair. Constructing, pattern matching and the module's own functions all
-  work together.
-
-- **A list from Ruby is copied, not borrowed.** A `List(Int)` argument came
-  through as the caller's own Array, so pushing to it after the call changed a
-  value Jade had already taken. Lists of structs were copied already, by the
-  decoder that builds them; only the scalar fast path handed the object
-  straight through. The copy costs 0.3us for 1500 elements against the 46us
-  the element check already spends, so under 1% of a crossing that was already
-  paying to look at every element.
-
-### Changed
+### Breaking
 
 - **Division cannot divide by zero.** `a / b` used to raise Ruby's
   `ZeroDivisionError` straight through Jade, so `Int -> Int -> Int` was not as
@@ -96,6 +26,116 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Implementing `Numeric` for your own type means `(/): a -> NonZero(a) -> a`,
   with `Number.unwrap` to unwrap the divisor. `Decimal.div` takes a `NonZero`
   for the same reason.
+
+### Added
+
+- **An anonymous record crosses to Ruby.** `def origin -> { x: Int, y: Int }`
+  returned `NotExposed`: `Encodable` derived for a `struct` but not for the
+  same shape written inline, so a function returning one was unreachable from
+  Ruby though every field was encodable. It now derives structurally, the way
+  `Decodable` already did, and a record with a field that has no instance
+  still refuses.
+
+- **`type alias Name = T`.** A structural name for a type that already exists:
+  `type alias UserId = Int`, `type alias Point = (Float, Float)`,
+  `type alias User = { name: String, age: Int }`. The alias and its body are
+  the same type, so a record literal satisfies a record alias directly and no
+  constructor is introduced. Aliases take parameters
+  (`type alias Pair(a) = (a, a)`). An alias without parameters is expanded
+  during forward declaration and a parameterised one when its arguments are
+  known, which is what makes `UserId` and `Int` interchangeable everywhere.
+
+  An alias has no identity of its own, so it carries no implementations:
+  `implements Show(UserId)` is rejected rather than silently attaching to
+  `Int`, where it would collide with every other alias over `Int`. What an
+  alias *inherits* needs no declaring — `Encode.encode` on a `UserId` is
+  `Encode.encode` on an `Int`. A recursive alias is rejected too. Reach for
+  `struct` when you want a distinct type, or a single-variant `type` for a
+  newtype around an inner shape.
+
+  `jade fmt` breaks a record alias past one field the way it breaks the
+  `struct` beside it, and `alias` is a contextual keyword — read as one only
+  directly after `type` — so a record field or argument may still be called
+  `alias`.
+
+  Expansion reaches the edges too: an alias over a `Task` is a port return
+  type and cannot hide a nested one, a function type behind an alias is still
+  refused for interop, an alias cannot stand between a type and itself and
+  hide that there is no way to build one, `implements` on an *imported* alias
+  is reported rather than reaching codegen, and `exposing (UserId(..))` says
+  an alias has no constructors instead of accepting it silently.
+
+  The name survives expansion for the sake of reading: a mismatch against a
+  `UserId` says `should be UserId (= Int)` rather than `should be Int`, and
+  keeps the short name in a nested position (`List(UserId)`). `jade api`
+  reports an alias as an alias rather than as a function, and hovering one in
+  an editor gives its declaration — on the declaration itself and on every use
+  in a signature.
+
+- **`jade eject`.** Writes the project as Ruby that runs without the gem: every
+  compiled module, the runtime they call, and requires pointing at each other
+  rather than at a load path. What it vendors is whatever a booted runtime
+  loads, asked at eject time rather than kept as a list, so it cannot drift.
+  The exit was a promise before this; now it is a command with a spec that
+  runs the ejected tree in a process that has no jade on its load path.
+
+- **A guard on what the runtime loads.** Compiled code requires
+  `jade/runtime` and nothing else, so whatever that pulls in ships in every
+  production image and has to be vendored by an eject. A spec now pins the
+  set to seven files and fails if the parser, the AST, the frontend, the
+  formatter, the LSP or the CLI appear. Booting the intrinsics still does
+  pull the compiler in, and that example is pending rather than passing.
+
+- **The LSP indents while you type.** It advertised `documentFormattingProvider`
+  and nothing else, so an editor without the tree-sitter grammar left the cursor
+  at column 0 after every Enter. `documentOnTypeFormatting` now indents the line
+  Enter opened, and puts `end` back where its opener sits, from the text above
+  the cursor rather than a parse, which a half-written file will not give.
+
+- **`_` works in a tuple or record literal.** `5 |> (_, "five")` and
+  `{ w: _, h: 2 }` make a function of the hole, the way `f(_, y)` already did.
+  A variant carrying a record gets it too, since that is what a keyed call
+  lowers to: `Rect(w: _, h: 4)` was the one shape with no way to express it
+  short of writing the lambda out.
+
+- **`(x, y) = p` destructures a tuple.** A tuple's arity is fixed by its type,
+  so the binding is irrefutable exactly as `T(x, y) = t` already was; the
+  workaround was a three-line `case` for a destructure that cannot fail. The
+  pattern was accepted all along, but a `(` opening a line was read as a call
+  on whatever the line above ended with, so the binding never got the chance.
+
+- **`List.sum` and `List.product`.** Both fold over `Numeric`, which gained
+  `from_int : Int -> a` so the seed can come from the interface rather than the
+  list: `sum([])` is `0`, not "nothing", so a `Maybe` return would have modelled
+  a non-problem as a failure. `Int` implements it with `identity`, `Float` with
+  `to_float`, `Decimal` by scaling. A type of your own that implements `Numeric`
+  needs the new member.
+
+- **A call short of its arguments says so.** `Rec(id: 1, status: Issued)`,
+  where `Issued` carries an `Int`, reported `expected (Int, Status) -> Rec but
+  found (Int, (Int) -> Status) -> Rec` and left the reader to notice which slot
+  had become a function. It now adds ``help: `Issued` needs 1 argument``, and a
+  call with the wrong number of arguments outright reads ``help: `add` takes 2
+  arguments, 1 given``.
+
+- **A call with a hole and one argument too many says so.** `xs |> f(_, y)`
+  reads as though the `_` marks where the piped value goes, but `|>` has
+  already put it in front. The message now names the shape and the fix
+  instead of leaving a unification failure to be decoded.
+
+- **The `module` snippet fills in the name.** A module's name is fixed by its
+  path, so the placeholder was offering a decision with one right answer;
+  completion now derives it from the document URI, turning `sql/mutation.jd`
+  into `module Sql.Mutation exposing (...)`.
+
+- **`Jade::Extensions`, where a gem hooks into compilation.** Two kinds, both
+  read-only: a *deriver* builds an implementation for an interface it owns,
+  and a *check* reads a call site and returns errors. Checks register against
+  a named phase — `:call` today — and receive the call's AST node alongside
+  its resolved argument types, because types alone cannot see a raw SQL
+  string's placeholders or a constant predicate. Only gems named in
+  `Extensions::ALLOWED` may register, so the compiler knows who extends it and
+  nothing about what they do.
 
 ### Changed
 
@@ -148,8 +188,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   know Jade, so the message names the function, the argument it came in as, and
   types in Ruby's vocabulary rather than the wire's.
 
-### Changed
-
 - **`jade fmt` hugs a trailing block argument.** A call whose last argument is
   a lambda, list or record literal keeps its head on one line and lets that
   argument grow a body, the way a Ruby block reads:
@@ -172,58 +210,89 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   first run after upgrading. Over 65 real modules, 25 reformat; formatting is
   idempotent on all of them.
 
-### Added
+- **A `(` that opens a line starts a statement rather than continuing the one
+  above.** `foo` on one line and `(1, 2)` on the next is now two statements, not
+  a call. The same rule applies to a type's arguments, so a return type no
+  longer reaches across a newline to swallow the body's first line.
 
-- **An anonymous record crosses to Ruby.** `def origin -> { x: Int, y: Int }`
-  returned `NotExposed`: `Encodable` derived for a `struct` but not for the
-  same shape written inline, so a function returning one was unreachable from
-  Ruby though every field was encodable. It now derives structurally, the way
-  `Decodable` already did, and a record with a field that has no instance
-  still refuses.
-- **`type alias Name = T`.** A structural name for a type that already exists:
-  `type alias UserId = Int`, `type alias Point = (Float, Float)`,
-  `type alias User = { name: String, age: Int }`. The alias and its body are
-  the same type, so a record literal satisfies a record alias directly and no
-  constructor is introduced. Aliases take parameters
-  (`type alias Pair(a) = (a, a)`). An alias without parameters is expanded
-  during forward declaration and a parameterised one when its arguments are
-  known, which is what makes `UserId` and `Int` interchangeable everywhere.
+- **The `Sql.Assignable` deriver moves to jade-sql.** The deriver list named
+  jade-sql's interface outright, with a comment apologising for it; it now
+  holds only the built-ins and whatever an allowed gem registers.
 
-  An alias has no identity of its own, so it carries no implementations:
-  `implements Show(UserId)` is rejected rather than silently attaching to
-  `Int`, where it would collide with every other alias over `Int`. What an
-  alias *inherits* needs no declaring — `Encode.encode` on a `UserId` is
-  `Encode.encode` on an `Int`. A recursive alias is rejected too. Reach for
-  `struct` when you want a distinct type, or a single-variant `type` for a
-  newtype around an inner shape.
+### Removed
 
-  `jade fmt` breaks a record alias past one field the way it breaks the
-  `struct` beside it, and `alias` is a contextual keyword — read as one only
-  directly after `type` — so a record field or argument may still be called
-  `alias`.
-
-  Expansion reaches the edges too: an alias over a `Task` is a port return
-  type and cannot hide a nested one, a function type behind an alias is still
-  refused for interop, an alias cannot stand between a type and itself and
-  hide that there is no way to build one, `implements` on an *imported* alias
-  is reported rather than reaching codegen, and `exposing (UserId(..))` says
-  an alias has no constructors instead of accepting it silently.
-
-  The name survives expansion for the sake of reading: a mismatch against a
-  `UserId` says `should be UserId (= Int)` rather than `should be Int`, and
-  keeps the short name in a nested position (`List(UserId)`). `jade api`
-  reports an alias as an alias rather than as a function, and hovering one in
-  an editor gives its declaration — on the declaration itself and on every use
-  in a signature.
-
-- **`jade eject`.** Writes the project as Ruby that runs without the gem: every
-  compiled module, the runtime they call, and requires pointing at each other
-  rather than at a load path. What it vendors is whatever a booted runtime
-  loads, asked at eject time rather than kept as a list, so it cannot drift.
-  The exit was a promise before this; now it is a command with a spec that
-  runs the ejected tree in a process that has no jade on its load path.
+- The error saying a record literal has no placeholder, which is no longer
+  true. `Name(field: _)` on a *positional* variant still reports: there are no
+  field names there to refer to.
 
 ### Fixed
+
+- **Generated Ruby no longer makes Ruby complain.** An interop import emitted
+  its `rescue LoadError` indented as though it were part of the `begin` body,
+  which Ruby warns about under `-w`, and the runtime had a circular require
+  between `jade/task` and `jade/tasks` that neither file needed at load time.
+  The ejected examples are now loaded in a fresh process under `-w` and the
+  suite fails if Ruby says anything at all, which is the check that would have
+  caught a module and a type sharing a constant on its own.
+
+- **A type that contains itself no longer exhausts the stack at compile
+  time.** `type Tree = Leaf | Node(Tree, Tree)` compared with `==` raised
+  `SystemStackError` from the compiler, naming a Ruby frame rather than
+  anything you wrote: deriving an instance asks for its components'
+  instances, and `Tree`'s component is `Tree`. So did a struct that reaches
+  itself, `struct Pepe = { pepe: Maybe(Pepe) }`, on `==` or at the Ruby
+  boundary.
+
+  Equality now works on both: a derived `Eq` is structural, and Ruby's `==`
+  computes exactly that, dispatching to whatever each component defines — so a
+  component with a hand-written `implements Eq` is still asked. `Encodable`
+  and `Decodable` say `cannot be derived for Pepe because it contains itself`
+  and point at writing the implementation by hand, which was always the answer
+  and used to arrive as a crash.
+
+- **A recursive type with nothing to stop it is reported where it is written.**
+  `struct Pepe = { pepe: Pepe }` declared fine and read fine; you found out at
+  the use site, in a message about the argument you passed rather than about
+  the declaration that can never be satisfied. It now says so at the
+  declaration, along with the way out:
+
+  ```
+  error: `Pepe` can never be built: every `Pepe` needs a `Pepe` inside it first
+    --> src/pepe.jd:3:1
+    |
+  3 | struct Pepe = { pepe: Pepe }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ nothing here stops the recursion
+    |
+    = note: a type may refer to itself; `Pepe` just has no case that stops,
+            so there is no smallest `Pepe` to start from
+    = help: wrap the field in something that has an empty case:
+            `Maybe(Pepe)` can be `Nothing`, `List(Pepe)` can be empty
+  ```
+
+  A type referring to itself is the point of a union, so what is checked is
+  whether there is a way out: `Maybe` has `Nothing`, `List` has `[]`, `Result`
+  has its `Err` arm, a union has any variant that does not lead back. All of
+  those still compile, `struct Pepe = { pepe: Maybe(Pepe) }` included, and so
+  does a field holding a function that returns the type, since the function
+  itself can be written. `type T = A(T)`, two declarations that need each
+  other, and a struct reaching itself through a tuple do not.
+
+- **A module may be named after a type in its parent.** `module Sql.Expr`
+  beside `type Expr` in `Sql` compiled without complaint and then emitted two
+  definitions of one Ruby constant, so whichever file loaded second silently
+  took the name and calls into the other failed with a `NoMethodError` and a
+  Ruby warning. The module now reopens the type's class rather than defining a
+  module beside it, which is what Ruby wants and what Elixir does with the
+  same pair. Constructing, pattern matching and the module's own functions all
+  work together.
+
+- **A list from Ruby is copied, not borrowed.** A `List(Int)` argument came
+  through as the caller's own Array, so pushing to it after the call changed a
+  value Jade had already taken. Lists of structs were copied already, by the
+  decoder that builds them; only the scalar fast path handed the object
+  straight through. The copy costs 0.3us for 1500 elements against the 46us
+  the element check already spends, so under 1% of a crossing that was already
+  paying to look at every element.
 
 - **A Jade name that is a Ruby keyword compiles.** `begin`, `next`, `class`,
   `self`, `return` and 20-odd others are ordinary Jade identifiers, and
@@ -240,6 +309,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`examples/records.jd` compiles.** `update_email` built an anonymous record
   where a `Person` was wanted, and nothing compiled the file: the examples
   suite skipped it. It now uses a record update, and the suite covers it.
+
 - **A running app no longer loads the compiler.** `Runtime.boot!` read the
   stdlib files for their implementations and got their declarations too, so
   every production image carried the parser, the AST and the type checker:
@@ -249,61 +319,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   fixes a latent break: `require 'jade/runtime'` followed by `boot!`, with no
   `require 'jade'` first, used to raise.
 
-### Added
-
-- **A guard on what the runtime loads.** Compiled code requires
-  `jade/runtime` and nothing else, so whatever that pulls in ships in every
-  production image and has to be vendored by an eject. A spec now pins the
-  set to seven files and fails if the parser, the AST, the frontend, the
-  formatter, the LSP or the CLI appear. Booting the intrinsics still does
-  pull the compiler in, and that example is pending rather than passing.
-
-### Added
-
-- **The LSP indents while you type.** It advertised `documentFormattingProvider`
-  and nothing else, so an editor without the tree-sitter grammar left the cursor
-  at column 0 after every Enter. `documentOnTypeFormatting` now indents the line
-  Enter opened, and puts `end` back where its opener sits, from the text above
-  the cursor rather than a parse, which a half-written file will not give.
-
-### Fixed
-
 - **A mismatch spanning a mismatch already reported is dropped.** Cascade
   suppression caught the case where both errors mention the same inference
   variable; where the outer one had resolved to concrete types it named no
   variable, and the same fault was still reported twice, at the call and at the
   body around it.
-
-### Added
-
-- **`_` works in a tuple or record literal.** `5 |> (_, "five")` and
-  `{ w: _, h: 2 }` make a function of the hole, the way `f(_, y)` already did.
-  A variant carrying a record gets it too, since that is what a keyed call
-  lowers to: `Rect(w: _, h: 4)` was the one shape with no way to express it
-  short of writing the lambda out.
-
-### Removed
-
-- The error saying a record literal has no placeholder, which is no longer
-  true. `Name(field: _)` on a *positional* variant still reports: there are no
-  field names there to refer to.
-
-### Added
-
-- **`(x, y) = p` destructures a tuple.** A tuple's arity is fixed by its type,
-  so the binding is irrefutable exactly as `T(x, y) = t` already was; the
-  workaround was a three-line `case` for a destructure that cannot fail. The
-  pattern was accepted all along, but a `(` opening a line was read as a call
-  on whatever the line above ended with, so the binding never got the chance.
-
-### Changed
-
-- **A `(` that opens a line starts a statement rather than continuing the one
-  above.** `foo` on one line and `(1, 2)` on the next is now two statements, not
-  a call. The same rule applies to a type's arguments, so a return type no
-  longer reaches across a newline to swallow the body's first line.
-
-### Fixed
 
 - **A module whose only declaration is half-written no longer crashes the
   tolerant parser.** Recovery drops a declaration it cannot parse, and the
@@ -311,17 +331,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   raised `undefined method 'range' for nil` inside the parser. In the editor
   that surfaced as a crash notice on a file you were part-way through typing,
   which is the state it exists to cope with.
-
-### Added
-
-- **`List.sum` and `List.product`.** Both fold over `Numeric`, which gained
-  `from_int : Int -> a` so the seed can come from the interface rather than the
-  list: `sum([])` is `0`, not "nothing", so a `Maybe` return would have modelled
-  a non-problem as a failure. `Int` implements it with `identity`, `Float` with
-  `to_float`, `Decimal` by scaling. A type of your own that implements `Numeric`
-  needs the new member.
-
-### Fixed
 
 - **The LSP reports errors in files you do not have open.** It compiled from
   each open buffer, so a module nobody had opened was only ever reached as
@@ -332,22 +341,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   if it was never open. Typing still recompiles only what is open, and the LSP
   now reads and writes the project's compile cache the way the CLI does.
 
-### Added
-
-- **A call short of its arguments says so.** `Rec(id: 1, status: Issued)`,
-  where `Issued` carries an `Int`, reported `expected (Int, Status) -> Rec but
-  found (Int, (Int) -> Status) -> Rec` and left the reader to notice which slot
-  had become a function. It now adds ``help: `Issued` needs 1 argument``, and a
-  call with the wrong number of arguments outright reads ``help: `add` takes 2
-  arguments, 1 given``.
-
-### Fixed
-
 - **`List.range` returns `List(Int)`.** Its signature said `List(a)`, with the
   `a` free and bound by nothing, so `List.range(1, 3)` type-checked as a list
   of anything the caller happened to want.
-
-### Fixed
 
 - **Parse errors no longer name `lbrace` where a `{` could never go.** An
   alternation reported whichever branch it tried last, and a record literal is
@@ -357,24 +353,29 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   type, a declaration), while a failure further in, which got somewhere, is
   still the one reported. `exposing` also commits on its keyword, so a header
   stopped after it asks for `(` rather than blaming the body.
+
 - **An empty body says so.** `def f -> Int end` reported `expected lbrace` and
   underlined the `end`, the one token there that was certainly right. It now
   reads `expected an expression (a body has to produce a value)` and underlines
   the construct the body belongs to. Every function passes through that state
   while it is being typed.
+
 - **`Name(field: _)` on a variant explains which variant you have.** The
   message stated the rule; it now says whether the arguments have no names at
   all (offering the `|>` form, which needs no placeholder) or carry a record
   (offering the lambda). A positional variant no longer also reports every key as an
   unknown field.
+
 - **The LSP reads `jade.json`.** `on_initialize` took the editor's root as the
   source root, so in a project with `"source_roots": ["lib"]` every module was
   named from the project root: the editor demanded `Lib.Test` while the
   compiler compiled `Test`. Reading the manifest also loads the extension gems
   whose modules a project imports.
+
 - **A crashed compile publishes a diagnostic instead of silence.** Zero
   diagnostics is indistinguishable from a clean file, so an LSP bug looked
   exactly like working code.
+
 - **One mistake, one message.** `t |> Plan(_, 150)` reported four errors: the
   call that failed to unify, the expression around it, and the body that
   returned it, each wearing the type the one below left behind. Mismatches on a
@@ -382,11 +383,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   since a subclass exists for no other reason. A later error naming an
   inference variable an earlier one already named is downstream of it, so it
   goes too. Errors that share nothing still both appear.
+
 - **Inference ids no longer leak into messages.** `t8894` is a counter: it
   means nothing to a reader, it changes between compiles, and two occurrences
   of one variable look unrelated unless you notice the digits match. Within a
   message they render as `a`, `b`, `c`, the letters the signature syntax
   already uses. The ids stay internal.
+
 - **A module named after its principal type loads.** `module Plan` holding
   `type Plan` emitted `Plan::Building` and `Plan::Internal`, which Ruby resolves
   lexically: inside `module Plan` the constant `Plan` is the *type*, so those
@@ -395,6 +398,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   constructor calls already were, patterns and `Internal` calls were not.
   Naming a module after its type (`Plan`, `Member`, `Money`) is ordinary, so
   this would have kept happening.
+
 - **The same type declared twice is an error.** Two `type AgeTiers` blocks in
   one module compiled, emitted both, and left the *Ruby interpreter* to mention
   it with `warning: already initialized constant`, naming the generated file
@@ -402,33 +406,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `type`); it now fires within a kind too, and moved to the pass that can still
   see both declarations, so the error lands on the second and points at the
   first.
-
-### Added
-
-- **A call with a hole and one argument too many says so.** `xs |> f(_, y)`
-  reads as though the `_` marks where the piped value goes, but `|>` has
-  already put it in front. The message now names the shape and the fix
-  instead of leaving a unification failure to be decoded.
-- **The `module` snippet fills in the name.** A module's name is fixed by its
-  path, so the placeholder was offering a decision with one right answer;
-  completion now derives it from the document URI, turning `sql/mutation.jd`
-  into `module Sql.Mutation exposing (...)`.
-- **`Jade::Extensions`, where a gem hooks into compilation.** Two kinds, both
-  read-only: a *deriver* builds an implementation for an interface it owns,
-  and a *check* reads a call site and returns errors. Checks register against
-  a named phase — `:call` today — and receive the call's AST node alongside
-  its resolved argument types, because types alone cannot see a raw SQL
-  string's placeholders or a constant predicate. Only gems named in
-  `Extensions::ALLOWED` may register, so the compiler knows who extends it and
-  nothing about what they do.
-
-### Changed
-
-- **The `Sql.Assignable` deriver moves to jade-sql.** The deriver list named
-  jade-sql's interface outright, with a comment apologising for it; it now
-  holds only the built-ins and whatever an allowed gem registers.
-
-### Fixed
 
 - **A long chain of `Task.and_then` no longer exhausts the Ruby stack.** Each
   `and_then` ran the next task from inside the previous one's `run`, so depth
