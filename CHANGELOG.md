@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.0] - 2026-09-02
+## [0.10.0] - 2026-09-02
 
 ### Breaking
 
@@ -128,15 +128,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   completion now derives it from the document URI, turning `sql/mutation.jd`
   into `module Sql.Mutation exposing (...)`.
 
-- **`Jade::Extensions`, where a gem hooks into compilation.** Two kinds, both
-  read-only: a *deriver* builds an implementation for an interface it owns,
-  and a *check* reads a call site and returns errors. Checks register against
-  a named phase — `:call` today — and receive the call's AST node alongside
-  its resolved argument types, because types alone cannot see a raw SQL
-  string's placeholders or a constant predicate. Only gems named in
-  `Extensions::ALLOWED` may register, so the compiler knows who extends it and
-  nothing about what they do.
-
 ### Changed
 
 - **A crossing does less on the way in.** An argument with a specialized
@@ -214,10 +205,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   above.** `foo` on one line and `(1, 2)` on the next is now two statements, not
   a call. The same rule applies to a type's arguments, so a return type no
   longer reaches across a newline to swallow the body's first line.
-
-- **The `Sql.Assignable` deriver moves to jade-sql.** The deriver list named
-  jade-sql's interface outright, with a comment apologising for it; it now
-  holds only the built-ins and whatever an allowed gem registers.
 
 ### Removed
 
@@ -424,6 +411,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   that type arguments do not select between implementations. Duplicates can
   only arise within one module: the orphan rule and cycle detection between
   them rule out the cross-module case.
+
+## [0.9.0] - 2026-08-21
+
+### Added
+
+- **`Jade::Extensions`, where a gem hooks into compilation.** Two kinds, both
+  read-only: a *deriver* builds an implementation for an interface it owns,
+  and a *check* reads a call site and returns errors. Checks register against
+  a named phase — `:call` today — and receive the call's AST node alongside
+  its resolved argument types, because types alone cannot see a raw SQL
+  string's placeholders or a constant predicate. Only gems named in
+  `Extensions::ALLOWED` may register, so the compiler knows who extends it and
+  nothing about what they do.
+
+### Changed
+
+- **The `Sql.Assignable` deriver moves to jade-sql.** The deriver list named
+  jade-sql's interface outright, with a comment apologising for it; it now
+  holds only the built-ins and whatever an allowed gem registers.
 
 ## [0.8.0]
 
