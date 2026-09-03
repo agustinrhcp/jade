@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`jade init`.** Writes `jade.json`, which is how every tool that runs
+  outside the app finds your sources, creates the source directory, and adds
+  `.jade/` to a `.gitignore` that has one. It refuses to overwrite an existing
+  manifest rather than discarding a source root and extension list that cannot
+  be recovered from the directory. Until now the first thing a new project met
+  was the error telling it to write that file by hand.
+
 ### Fixed
 
 - **A record update that does not fit crashed the compiler.** The unification
