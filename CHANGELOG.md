@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **A `:call` check sees what the call returns.** `Extensions::CallContext`
+  carried the argument types and not the result, so a check on a function
+  whose interesting type is the shape the caller asked for had nothing to
+  read. jade-sql needs it to compare a read's result against the table's
+  columns, the way it already compares a write's.
+
 ## [0.10.0] - 2026-09-02
 
 ### Breaking
