@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A record update that does not fit crashed the compiler.** The unification
+  that closes an update was the one call with no error block, and
+  `State#unify` calls the block unconditionally when unification fails, so a
+  mismatch reached `nil.call` and took the compiler out with a `NoMethodError`
+  naming a line in `state.rb`. Changing a field's type is the usual way in;
+  anything the surrounding code cannot accept arrives the same way. It now
+  reads `This update produces Box(Int), but String was expected`.
+
 ## [0.10.0] - 2026-09-02
 
 ### Breaking
