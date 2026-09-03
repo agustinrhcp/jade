@@ -107,6 +107,7 @@ module Jade
               column_errors = Extensions.check_call(
                 callee_name(callee),
                 args_acc.types.map { st.env.substitution.apply(it) },
+                st.env.substitution.apply(result_type),
                 node,
                 registry,
                 st.env.entry_name,

@@ -6,8 +6,8 @@ module Jade
   describe Extensions do
     after { described_class.reset! }
 
-    def call(name, arg_types = [])
-      described_class.check_call(name, arg_types, :the_node, nil, nil, nil)
+    def call(name, arg_types = [], return_type = :the_return)
+      described_class.check_call(name, arg_types, return_type, :the_node, nil, nil, nil)
     end
 
     let(:deriver) do
@@ -75,5 +75,18 @@ module Jade
 
       expect(described_class.derivers.length).to eql 1
     end
+
+    # A check on a function whose interesting type is what it produces has
+    # nothing to read without this.
+    it 'hands the check what the call returns' do
+      described_class.register_check('jade-sql', :call, Module.new do
+        def self.watches = ['Fake.go']
+
+        def self.check(ctx) = [ctx.return_type]
+      end)
+
+      expect(call('Fake.go', [], :a_row)).to eql [:a_row]
+    end
+
   end
 end
