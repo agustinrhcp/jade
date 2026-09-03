@@ -45,13 +45,18 @@ module Jade
 
     # The node travels with the types because a literal's value — a SQL string,
     # a constant predicate — is not in them.
-    CallContext = Data.define(:name, :arg_types, :node, :registry, :entry_name, :span)
+    # `return_type` is what the call produces, which a check needs when the
+    # thing being checked is the shape the caller asked for rather than
+    # something it passed in. Still a variable when nothing has pinned it.
+    CallContext = Data.define(
+      :name, :arg_types, :return_type, :node, :registry, :entry_name, :span
+    )
 
-    def check_call(name, arg_types, node, registry, entry_name, span)
+    def check_call(name, arg_types, return_type, node, registry, entry_name, span)
       call_checks[name].then do |watching|
         next [] if watching.nil?
 
-        CallContext[name, arg_types, node, registry, entry_name, span]
+        CallContext[name, arg_types, return_type, node, registry, entry_name, span]
           .then { |ctx| watching.flat_map { it.check(ctx) } }
       end
     end
