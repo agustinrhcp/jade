@@ -28,7 +28,14 @@ module Jade
               )
             end
 
-            after_state.unify_result(result, expected.type)
+            after_state.unify_result(result, expected.type) do
+              Error::RecordUpdateTypeMismatch.new(
+                state.env.entry_name,
+                node.range,
+                expected: it.expected,
+                actual: it.actual,
+              )
+            end
           end
         end
       end

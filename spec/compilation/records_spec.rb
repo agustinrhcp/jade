@@ -151,6 +151,49 @@ module Jade
         end
       end
 
+      # The unification that closes an update had no error block, so a
+      # result the surrounding code cannot accept reached `block.call` with
+      # nothing there and took the compiler out.
+      describe 'updating into a type that cannot hold the result' do
+        it 'reports the mismatch rather than crashing' do
+          source = <<~JADE
+            module Rv exposing (Box(..), name)
+
+            struct Box(a) = {
+              tag: String,
+              held: a
+            }
+
+
+            def name(b: Box(Int)) -> String
+              { b | tag: "x" }
+            end
+          JADE
+
+          expect { test_compiler.require(source) }
+            .to raise_error(CompilationError, /This update produces Box\(Int\), but String was expected/)
+        end
+
+        it 'reports a field whose new value the record cannot hold' do
+          source = <<~JADE
+            module Ru exposing (Box(..), widen)
+
+            struct Box(a) = {
+              tag: String,
+              held: a
+            }
+
+
+            def widen(b: Box(Int)) -> Box(String)
+              { b | held: "now a string" }
+            end
+          JADE
+
+          expect { test_compiler.require(source) }
+            .to raise_error(CompilationError, /record access/)
+        end
+      end
+
       describe 'updating a field with sugar on top' do
         let(:pepe_source) do
           <<~JADE
