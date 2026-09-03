@@ -1160,5 +1160,29 @@ module Jade
         expect(decode_pair).to have_attributes(x: 1, y: 'a')
       end
     end
+    # What the public wrapper refuses, `Internal` still holds. `jade test`
+    # rests on it: a `Test` carries thunks, so it can never have an Encodable
+    # instance, and `Internal.tests` is the only way to get the tree out. That
+    # is a codegen convention rather than an API, so it is pinned here — a
+    # change to the shape then breaks in the suite that made it.
+    context 'a value the boundary cannot encode' do
+      let(:unencodable_source) do
+        <<~JADE
+          module Unencodable exposing (thunk)
+
+          def thunk -> (() -> Int)
+            -> { 42 }
+          end
+        JADE
+      end
+
+      it 'stays reachable through Internal, though the wrapper refuses' do
+        test_compiler.require(unencodable_source)
+
+        expect(Unencodable::Internal.thunk.call).to eql 42
+        expect { Unencodable.thunk }
+          .to raise_error(Jade::Interop::NotExposed, /Unencodable\.thunk is not exposed/)
+      end
+    end
   end
 end
