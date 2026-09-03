@@ -235,8 +235,45 @@ Jade functions are pure; effects go through `Task`, declared in a `uses`
 block. A function that doesn't use a `Task` takes data in and returns data, so
 you test it by passing values and asserting on the result — no mocks.
 
-When you do hit a boundary, you stub the `Task`. Here's a Jade module that
-calls a Ruby mailer, and the RSpec that drives it:
+Those tests can be written in Jade and run with `jade test`:
+
+```jade
+# lib/math_test.jd
+module MathTest exposing (tests)
+
+import Test exposing (Test, context, describe, it)
+import Expect
+import Math
+
+
+def tests -> Test
+  describe(
+    "Math",
+    [
+      it("adds", -> { Expect.equal(Math.add(1, 2), 3) }),
+      context("halve", [
+        it("rejects odds", -> { Expect.nothing(Math.halve(7)) }),
+      ]),
+    ],
+  )
+end
+```
+
+```
+$ jade test
+MathTest
+  Math
+    . adds
+    halve
+      . rejects odds
+
+2 tests, 0 failures (0.05s)
+```
+
+`jade test` refuses to run a `Task`, so a test that reaches a port fails
+instead of touching the world. When you do hit a boundary, you stub the `Task`
+from RSpec. Here's a Jade module that calls a Ruby mailer, and the spec that
+drives it:
 
 ```jade
 # src/signup.jd
@@ -350,6 +387,7 @@ A single `jade` binary fronts the toolchain:
 ```
 jade check [file...]      # type-check; exits 1 on errors, generates nothing
 jade fmt [-i|-c] [file]   # format .jd source (stdin or file)
+jade test [pattern...]    # run the project's *_test.jd modules
 jade lsp                  # language server over stdio (hover, defn, refs, diagnostics)
 jade q hover FILE:L:C     # headless JSON queries — hover/symbols/defn/refs
 jade q api List.fold      # stdlib signatures, read from the registry
@@ -364,6 +402,8 @@ pre-commit hook.
 `Task`, `Decode`, `Encode`, `Bytes`, `Calendar`, `Clock`, `Decimal`, `Show`,
 `Debug`. Stdlib operations compile inline rather than through a runtime
 dispatch layer.
+
+`Test` and `Expect` ship alongside them, imported only by test modules.
 
 ## Docs
 

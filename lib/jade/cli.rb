@@ -8,6 +8,7 @@ module Jade
       'fmt' => 'Fmt',
       'lsp' => 'Lsp',
       'q' => 'Q',
+      'test' => 'Test',
     }.freeze
 
     module_function
@@ -42,6 +43,7 @@ module Jade
           fmt    Format .jd source (stdin or file).
           lsp    Run the language server (stdio JSON-RPC).
           q      Headless query interface (hover/symbols/defn/refs/api).
+          test   Run the project's `*_test.jd` modules.
 
         Run `jade COMMAND --help` for command-specific options.
       TXT
