@@ -6,6 +6,7 @@ module Jade
       'check' => 'Check',
       'eject' => 'Eject',
       'fmt' => 'Fmt',
+      'init' => 'Init',
       'lsp' => 'Lsp',
       'q' => 'Q',
     }.freeze
@@ -40,6 +41,7 @@ module Jade
           check  Type-check the project (or the given files).
           eject  Write the project as Ruby that runs without the gem.
           fmt    Format .jd source (stdin or file).
+          init   Write jade.json and the source directory.
           lsp    Run the language server (stdio JSON-RPC).
           q      Headless query interface (hover/symbols/defn/refs/api).
 

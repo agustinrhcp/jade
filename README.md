@@ -348,6 +348,7 @@ for us so far.
 A single `jade` binary fronts the toolchain:
 
 ```
+jade init                 # write jade.json and the source directory
 jade check [file...]      # type-check; exits 1 on errors, generates nothing
 jade fmt [-i|-c] [file]   # format .jd source (stdin or file)
 jade lsp                  # language server over stdio (hover, defn, refs, diagnostics)
