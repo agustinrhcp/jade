@@ -17,6 +17,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A function type printed as `(a) -> b`, which means something else.**
+  `Type::Function#to_s` parenthesised its parameters unconditionally, so
+  `jade q api` printed `List.fold : (List(a), b, (b, a) -> b) -> b`, a
+  signature whose outer parentheses read as a tuple argument. It prints the
+  bare form now, `List(a), b, (b, a -> b) -> b`, which is what the formatter
+  writes and what you can paste back into a file.
+
+  Parentheses around a comma list are a tuple everywhere, and a parameter
+  list is bare. A nested function type keeps parentheses of its own, told
+  apart from a tuple by the arrow inside them. `(Int) -> Int` also parses
+  now, which it did not: one element is not a tuple.
+
 - **A record update that does not fit crashed the compiler.** The unification
   that closes an update was the one call with no error block, and
   `State#unify` calls the block unconditionally when unification fails, so a

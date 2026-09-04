@@ -57,7 +57,7 @@ module Jade
 
     describe '#lookup' do
       it 'qualifies a value so the signature reads the way you call it' do
-        expect(signature('List.map')).to eql 'List.map : (List(a), (a) -> b) -> List(b)'
+        expect(signature('List.map')).to eql 'List.map : List(a), (a -> b) -> List(b)'
       end
 
       it 'spells out a struct, since the fields are the thing you need' do
@@ -66,11 +66,11 @@ module Jade
       end
 
       it 'carries interface constraints' do
-        expect(signature('List.sort')).to eql 'List.sort : Comparable a => (List(a)) -> List(a)'
+        expect(signature('List.sort')).to eql 'List.sort : Comparable a => List(a) -> List(a)'
       end
 
       it 'renders a constructor as the function it is' do
-        expect(signature('Maybe.Just')).to eql 'Maybe.Just : (a) -> Maybe(a)'
+        expect(signature('Maybe.Just')).to eql 'Maybe.Just : a -> Maybe(a)'
       end
 
       # `Dict.empty()` is a compile error — it's a value. Rendering it as
@@ -89,9 +89,9 @@ module Jade
       # cannot change the element type. It can. Read the declaration.
       it 'reports the declared variables, not the env scheme collapsed ones' do
         expect(signature('Maybe.map'))
-          .to eql 'Maybe.map : (Maybe(a), (a) -> b) -> Maybe(b)'
+          .to eql 'Maybe.map : Maybe(a), (a -> b) -> Maybe(b)'
         expect(signature('Result.map'))
-          .to eql 'Result.map : (Result(a, e), (a) -> b) -> Result(b, e)'
+          .to eql 'Result.map : Result(a, e), (a -> b) -> Result(b, e)'
       end
     end
 
@@ -101,8 +101,8 @@ module Jade
           .search('fold')
           .map { it[:signature] }
           .then do |found|
-            expect(found).to include('List.fold : (List(a), b, (b, a) -> b) -> b')
-            expect(found).to include('Dict.fold : (Dict(k, v), b, (k, v, b) -> b) -> b')
+            expect(found).to include('List.fold : List(a), b, (b, a -> b) -> b')
+            expect(found).to include('Dict.fold : Dict(k, v), b, (k, v, b -> b) -> b')
           end
       end
 
@@ -165,7 +165,7 @@ module Jade
 
       it 'types a project function the way you would call it' do
         expect(signature('Ledger.Entry.post'))
-          .to eql 'Ledger.Entry.post : (Entry, Kind) -> Result(Entry, String)'
+          .to eql 'Ledger.Entry.post : Entry, Kind -> Result(Entry, String)'
       end
 
       it 'spells out a project struct, naming a field by the alias it was written with' do

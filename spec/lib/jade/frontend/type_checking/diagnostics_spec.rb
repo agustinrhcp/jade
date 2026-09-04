@@ -39,8 +39,8 @@ module Jade
 
         it 'reports the call site, with letters for the inference ids' do
           expect(errors[0].message)
-            .to eq('Function call mismatch, expected (AgeTiers, Int) -> Plan ' \
-                   'but found (AgeTiers, a, Int) -> b')
+            .to eq('Function call mismatch, expected AgeTiers, Int -> Plan ' \
+                   'but found AgeTiers, a, Int -> b')
         end
 
         it 'names the shape and the fix' do

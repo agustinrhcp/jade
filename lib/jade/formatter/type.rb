@@ -26,11 +26,9 @@ module Jade
           end
 
         in AST::TypeFunction(params:, return_type:)
-          params_str = params.empty? ?
-            "()" :
-            params.map { format_atom(it) }.join(', ')
-
-          "#{params_str} -> #{format_atom(return_type)}"
+          params
+            .then { it.empty? ? '()' : it.map { |p| format_atom(p) }.join(', ') }
+            .then { "#{it} -> #{format_atom(return_type)}" }
 
         in AST::TypeRecord(fields:, row_var:)
           fields_str = fields.map { |k, v| "#{k}: #{format(v)}" }.join(", ")
