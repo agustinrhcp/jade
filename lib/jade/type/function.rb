@@ -1,26 +1,25 @@
 module Jade
   module Type
-    Function = Data.define(:args, :return_type, :display) do
+    Function = Data.define(:args, :return_type) do
       include Base
-      include Displayable
 
-      def initialize(args:, return_type:, display: nil)
-        super
-      end
+      # `Int, Int -> Int`, the spelling the formatter writes. Parentheses
+      # around a comma list are a tuple, so a nested function keeps its own.
+      def to_s
+        params = args.empty? ? '()' : args.map { delimited(it) }.join(', ')
 
-      def identity
-        [args, return_type]
-      end
-
-      def render
-        args
-          .map(&:to_s).join(', ')
-          .then { "(#{it})"} + " -> " + return_type.to_s
+        "#{params} -> #{delimited(return_type)}"
       end
 
       def unbound_vars
         (args.flat_map(&:unbound_vars) + return_type.unbound_vars)
           .to_set.to_a
+      end
+
+      private
+
+      def delimited(type)
+        type.is_a?(Function) ? "(#{type})" : type.to_s
       end
     end
   end

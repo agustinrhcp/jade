@@ -316,7 +316,7 @@ module Jade
       subject { Type.function([a], a) }
 
       its(:unbound_vars) { is_expected.to eql [a] }
-      its(:to_s) { is_expected.to eql '(a) -> a' }
+      its(:to_s) { is_expected.to eql 'a -> a' }
     end
   end
 end

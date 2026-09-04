@@ -231,7 +231,7 @@ module Jade
           describe 'the error' do
             subject { super().errors.first }
             it { is_expected.to be_a(TypeChecking::Error::FunctionCallTypeMismatch) }
-            its(:message) { is_expected.to include('Function call mismatch, expected (Int, Int) -> Int but found (Int, String) -> Int') }
+            its(:message) { is_expected.to include('Function call mismatch, expected Int, Int -> Int but found Int, String -> Int') }
           end
         end
       end
@@ -310,7 +310,7 @@ module Jade
           describe 'the error' do
             subject { super().errors.first }
 
-            its(:message) { is_expected.to eql "Function call mismatch, expected (Int, Int) -> Maybe(Int) but found (Int, String) -> Maybe(Int)" }
+            its(:message) { is_expected.to eql "Function call mismatch, expected Int, Int -> Maybe(Int) but found Int, String -> Maybe(Int)" }
           end
         end
       end

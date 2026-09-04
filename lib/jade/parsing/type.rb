@@ -10,7 +10,7 @@ module Jade
       }
 
       parser(:type_atom) {
-        type_application | type_var | type_tuple | grouped(lazy { type_function })
+        type_application | type_var | type_tuple | grouped(lazy { type_expression })
       }
 
       parser(:type_tuple) {

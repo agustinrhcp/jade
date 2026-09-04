@@ -86,7 +86,7 @@ module Jade
     end
 
     it 'reports the shape it built, not a rule about placeholders' do
-      expect(subject[0].message).to match(/\(a\) -> b/)
+      expect(subject[0].message).to match(/a -> b/)
     end
 
     context 'a variant whose arguments are positional' do
