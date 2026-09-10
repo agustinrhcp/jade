@@ -241,15 +241,17 @@ module Jade
           struct Person = {
             name: String,
             age: Int,
-            nickname: String
+            nickname: String,
+            title: Maybe(String)
           }
 
 
           def person_decoder -> Decoder(Person)
-            Decode.succeed(Person(_, _, _))
+            Decode.succeed(Person(_, _, _, _))
               |> Decode.required("name", Decode.string)
               |> Decode.required("age", Decode.int)
               |> Decode.optional("nickname", Decode.string, "anon")
+              |> Decode.optional("title", Decode.map(Decode.string, Just), Nothing)
           end
 
 
@@ -283,6 +285,16 @@ module Jade
 
       it 'fails when a required field is missing' do
         expect(Pipeline::Internal.person_from_json('{"age":30}')).to be_err
+      end
+
+      it 'reads an absent key as Nothing when the default is Nothing' do
+        expect(Pipeline::Internal.person_from_json('{"name":"Pepe","age":30}'))
+          .to be_ok(have_attributes(title: Maybe::Nothing[]))
+      end
+
+      it 'reads a present key as Just when the default is Nothing' do
+        expect(Pipeline::Internal.person_from_json('{"name":"Pepe","age":30,"title":"Dr"}'))
+          .to be_ok(have_attributes(title: Maybe::Just['Dr']))
       end
 
       it 'fails when an optional field has the wrong type' do

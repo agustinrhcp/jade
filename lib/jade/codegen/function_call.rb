@@ -16,12 +16,27 @@ module Jade
         Inline.try_for(callee, args, dictionaries, registry)
           .then { return it if it }
 
+        constrained_constant(callee, dictionaries, registry)
+          .then { return it if it }
+
         return constructor_call(callee, args, registry) if constructor_callee?(callee, registry)
 
         [generate_many(args, registry), generate_dict_args(callee, dictionaries, registry)]
           .reject(&:empty?)
           .join(', ')
           .then { "#{generate_callee(callee, args, registry, dictionaries)}#{invocation_op(callee, registry)}(#{it})" }
+      end
+
+      # A constrained constant — `Decode.decoder` — has no parameters, so its
+      # dictionary slot holds the value itself rather than something to call.
+      # generate_callee already produced that value; invoking it would be
+      # calling a Decoder.
+      def constrained_constant(callee, dictionaries, registry)
+        symbol = resolve_callee_symbol(callee, registry)
+        return nil unless symbol.is_a?(Symbol::StdlibFunction)
+        return nil unless symbol.params.empty? && symbol.constraints.any?
+
+        generate_callee(callee, [], registry, dictionaries)
       end
 
       def constructor_call(callee, args, registry)

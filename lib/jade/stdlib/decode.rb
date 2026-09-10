@@ -269,6 +269,17 @@ module Jade
       # Constrained helpers — pick the decoder via Decodable.
 
       function(
+        'decoder',
+        {},
+        'Decoder(a)',
+        constraints: [['Decode.Decodable', 'a']],
+        body: Symbol::DerivedFunction.new(
+          params: [],
+          body: [:impl_arg, 0, 'decoder'],
+        ),
+      )
+
+      function(
         'from_value',
         { value: 'Value' },
         'Result(a, DecodeError)',

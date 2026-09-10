@@ -61,9 +61,23 @@ DecodeJson::Internal.user('{"name":"Ada"}')
 # => Err(MissingField("age"))
 ```
 
-The struct decoder is `Decode.succeed(User(_, _))` piped through one
-`Decode.required` per field — the `_` placeholders are the constructor's holes,
-filled left to right as each field decodes.
+The struct decoder is `Decode.succeed(User(_, _))` piped through one step per
+field — the `_` placeholders are the constructor's holes, filled left to right
+as each field decodes. `Decode.required` fails on a missing key;
+`Decode.optional` takes what a missing key stands for instead, which is a
+`Maybe` when that is the field's type:
+
+```jade
+Decode.succeed(Note(_, _, _))
+  |> Decode.required("body", Decode.nullable(Decode.string))
+  |> Decode.optional("kind", Decode.string, "note")
+  |> Decode.optional("archived_on", Decode.map(Decode.decoder, Just), Nothing)
+```
+
+A nullable field is a required one: the key has to be there, and `null` is a
+value the decoder admits. Pick the step at the field — once a step has run the
+pipeline holds the constructor's remaining arguments, so nothing downstream
+reaches back into one field.
 
 ## Encoding
 
@@ -145,6 +159,23 @@ end
 
 Reach for the explicit combinators above when the JSON shape doesn't match the
 struct one-to-one — renamed keys, nested lookups, optional fields.
+
+Those combinators still take derived decoders for the leaves. `Decode.decoder`
+is the instance for whatever type is expected of it, so a hand-built shape can
+be filled with types that already know how to read themselves:
+
+```jade
+def decoder -> Decoder(Movement)
+  Decode.succeed(Movement(_, _, _))
+    |> Decode.and_map(Decode.field("from_id", Decode.decoder))
+    |> Decode.and_map(Decode.field("to_id", Decode.decoder))
+    |> Decode.and_map(Decode.field("occurred_on", Decode.decoder))
+end
+```
+
+Two of those fields are `Uuid` and one is a `Date`; each resolves from the
+position it stands in. A type with no instance is a compile error naming the
+type, not a decoder that fails at runtime.
 
 Derivation reaches through the structural types to their elements, so anything
 built out of encodable parts is itself encodable:
