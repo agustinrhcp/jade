@@ -8,7 +8,7 @@ module Jade
       end
 
       def constant?
-        params.empty? && constraints.empty?
+        params.empty?
       end
     end
   end

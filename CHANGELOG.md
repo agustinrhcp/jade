@@ -8,6 +8,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`Decode.decoder`, the derived decoder as a value.** `Decode.from_json` has
+  always picked a decoder off the return type, but there was no way to name
+  that decoder and hand it to a combinator — every project ended up with a
+  `uuid_decoder` and a `date_decoder` per module, reimplementing an instance
+  that already existed. `Decode.field("on", Decode.decoder)` now resolves the
+  `Decodable` instance from the position the decoder stands in, including
+  derived ones, and a type without an instance is a compile error naming the
+  type.
+
 - **`jade init`.** Writes `jade.json`, which is how every tool that runs
   outside the app finds your sources, creates the source directory, and adds
   `.jade/` to a `.gitignore` that has one. It refuses to overwrite an existing
