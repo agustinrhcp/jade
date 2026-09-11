@@ -12,7 +12,7 @@ module Jade
             state
               .env
               .lookup(symbol.qualified_name)
-              .then { state.unify_result(it, expected.type) }
+              .then { state.unify_result(it, expected.type, &type_mismatch(state, node)) }
           end
         end
       end

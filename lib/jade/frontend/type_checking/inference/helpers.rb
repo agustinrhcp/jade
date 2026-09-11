@@ -27,6 +27,17 @@ module Jade
           def type_from_symbol(symbol, registry, var_gen)
             Type.from_symbol(symbol, registry, var_gen)
           end
+
+          def type_mismatch(state, node)
+            ->(error) do
+              Error::TypeMismatch.new(
+                state.env.entry_name,
+                node.range,
+                expected: error.expected,
+                actual: error.actual,
+              )
+            end
+          end
         end
       end
     end

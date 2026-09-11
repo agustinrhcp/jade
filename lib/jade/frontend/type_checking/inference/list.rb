@@ -12,7 +12,14 @@ module Jade
             if items.empty?
               Type.list.apply([state.fresh])
                 .then { Result.init(it) }
-                .then { return state.unify_result(it, expected.type, expected.rigid_vars) }
+                .then do
+                  return state.unify_result(
+                    it,
+                    expected.type,
+                    expected.rigid_vars,
+                    &type_mismatch(state, node)
+                  )
+                end
             end
 
             head, *rest = items
@@ -29,7 +36,14 @@ module Jade
 
             Result
               .init(Type.list.apply([items_result.type]), items_result.constraints)
-              .then { items_state.unify_result(it, expected.type, expected.rigid_vars) }
+              .then do
+                items_state.unify_result(
+                  it,
+                  expected.type,
+                  expected.rigid_vars,
+                  &type_mismatch(items_state, node)
+                )
+              end
           end
 
           private

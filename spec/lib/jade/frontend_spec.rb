@@ -1324,6 +1324,91 @@ module Jade
       end
     end
 
+    describe 'a body its signature does not accept' do
+      subject { frontend => Err(errors); errors }
+
+      context 'a list where the signature wants a scalar' do
+        let(:text) do
+          <<~JADE
+            module Test exposing (limit)
+
+            def limit -> Int
+              [1]
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::TypeMismatch) }
+
+        describe 'its message' do
+          subject { super().first.message }
+
+          it { is_expected.to eql 'Expected Int but got List(Int)' }
+        end
+      end
+
+      context 'a list of the wrong element' do
+        let(:text) do
+          <<~JADE
+            module Test exposing (names)
+
+            def names -> List(String)
+              [1]
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::TypeMismatch) }
+      end
+
+      context 'an empty list where the signature promises any type' do
+        let(:text) do
+          <<~JADE
+            module Test exposing (anything)
+
+            def anything -> a
+              []
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::TypeMismatch) }
+      end
+
+      context 'a constructor of another type' do
+        let(:text) do
+          <<~JADE
+            module Test exposing (limit)
+
+            def limit -> Int
+              Nothing
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::TypeMismatch) }
+      end
+
+      context 'a binding in last position' do
+        let(:text) do
+          <<~JADE
+            module Test exposing (limit)
+
+            def limit -> Int
+              x = "s"
+            end
+          JADE
+        end
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::TypeChecking::Error::TypeMismatch) }
+      end
+    end
+
     describe 'record literal' do
       include_context "single expression body"
 
