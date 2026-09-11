@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A body its signature rejects crashed the compiler.** A list, a bare
+  constructor, or a binding in last position, checked against a type it could
+  not be, reached `nil.call` in `State#unify` — the crash 0.10.1 fixed for
+  record updates, at the call sites that still had no error block.
+  `def limit -> Int` returning `[1]` now reads
+  `Expected Int but got List(Int)`.
+
 ## [0.10.1] - 2026-09-11
 
 ### Added
