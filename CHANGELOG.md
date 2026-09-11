@@ -14,6 +14,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `module` body, out of every method's reach. A module's top level holds
   declarations only; a value belongs in a zero-argument `def`.
 
+- **A file that ends mid-declaration crashed `jade check`.** The parse error
+  for input that runs out carries no span, since there is no token to point
+  at, and the renderer called `.begin` on it. The diagnostic now points at the
+  last character written, where the missing part belongs, and a label with no
+  span renders as its message alone.
+
 ## [0.10.1] - 2026-09-11
 
 ### Added
