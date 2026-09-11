@@ -42,6 +42,26 @@ module Jade
       test_compiler.write(exposing_source)
     end
 
+    context 'when importing everything it exposes' do
+      let(:importing_source) do
+        <<~JADE
+          module Importing exposing (hello)
+
+          import Exposing exposing (..)
+
+
+          def hello -> String
+            SomeOtherType("everything") |> my_function
+          end
+        JADE
+      end
+
+      it 'brings its values and constructors in unqualified' do
+        test_compiler.require(importing_source)
+        expect(Importing.hello).to eq 'everything'
+      end
+    end
+
     it 'fails because MyType is no in scope' do
       expect { test_compiler.require(importing_source) }
         .to raise_error(CompilationError, /cannot find a `MyType` constructor/)
