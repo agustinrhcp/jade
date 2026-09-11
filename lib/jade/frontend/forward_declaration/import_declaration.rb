@@ -19,7 +19,15 @@ module Jade
           end
 
           exposing_to_symbol(exposing, entry, importing_module)
-            .map { ImportEntry[module_name, as&.as || module_name, it, importing_module.exposes] }
+            .map do
+              ImportEntry.new(
+                module_name:,
+                alias: as&.as || module_name,
+                unqualified_symbols: it,
+                qualified_symbols: importing_module.exposes,
+                implicit: false,
+              )
+            end
             .on_err { return Result[entry, it] } => Ok(import_entry)
 
           Result[entry.import(import_entry), []]
