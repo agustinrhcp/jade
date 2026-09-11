@@ -8,6 +8,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A signature wider than its body was accepted.** `def anything -> a`
+  returning `Nothing`, or `def wrap -> Maybe(a)` returning `Just(1)`, type
+  checked: the body quietly fixed the declared variable, and every caller then
+  saw the narrower type. A declared type variable now has to stay a variable
+  through the body. Fixing it to a concrete type, or making two declared
+  variables the same, is an error that says which.
+
 - **A file that ends mid-declaration crashed `jade check`.** The parse error
   for input that runs out carries no span, since there is no token to point
   at, and the renderer called `.begin` on it. The diagnostic now points at the
