@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`jade repl`.** A prompt that evaluates Jade and shows each value with its
+  type. Every input compiles as a module of its own, importing what earlier
+  inputs defined, so the prompt accepts exactly what a module would, and a
+  later definition shadows an earlier one without disturbing values already
+  computed. `name = expr` binds a value, a trailing expression is `it`, a
+  `Task` is run and its `Result` shown, and `:t expr` gives a type without
+  evaluating. Inside a project its modules can be imported. Piped input is
+  read to the end, one result per input, exiting 1 if any failed. `<-` does
+  not work at the prompt yet.
+
 ### Fixed
 
 - **A statement at the top level of a module is an error.** `x = 2` between
@@ -13,6 +25,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   raised `NameError` at runtime: the binding became a local of the Ruby
   `module` body, out of every method's reach. A module's top level holds
   declarations only; a value belongs in a zero-argument `def`.
+
+- **A file that ends mid-declaration crashed `jade check`.** The parse error
+  for input that runs out carries no span, since there is no token to point
+  at, and the renderer called `.begin` on it. The diagnostic now points at the
+  last character written, where the missing part belongs, and a label with no
+  span renders as its message alone.
 
 ## [0.10.1] - 2026-09-11
 

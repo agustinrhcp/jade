@@ -52,6 +52,21 @@ module Jade
       def message
         "#{context_prefix}Unexpected end of input, expected #{expected}"
       end
+
+      def to_diagnostic(registry = nil, source: nil)
+        super.then do |diagnostic|
+          diagnostic.primary => { source: labelled, span: }
+          next diagnostic unless labelled && span.nil?
+
+          diagnostic.with(primary: diagnostic.primary.with(span: last_character(labelled.text)))
+        end
+      end
+
+      private
+
+      def last_character(text)
+        text.b.rstrip.bytesize.then { it.zero? ? nil : (it - 1)...it }
+      end
     end
 
     class UnexpectedTokenError < Error

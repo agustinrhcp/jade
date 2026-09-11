@@ -43,4 +43,5 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_dependency 'base64', '~> 0.2'
+  spec.add_dependency 'reline', '>= 0.5'
 end
