@@ -238,5 +238,20 @@ module Jade
         expect(output).to include('  42')
       end
     end
+
+    describe 'a label with nowhere to point' do
+      subject(:output) do
+        renderer.render(
+          Diagnostics::Diagnostic.error(
+            'Unexpected end of input',
+            primary: Diagnostics::Label[source, nil, nil],
+          ),
+        )
+      end
+
+      it 'renders the message alone' do
+        expect(output).to eq 'error: Unexpected end of input'
+      end
+    end
   end
 end
