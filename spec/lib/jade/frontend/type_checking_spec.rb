@@ -137,6 +137,66 @@ module Jade
           its(:errors) { is_expected.to be_empty }
         end
 
+        context 'when the body fixes a declared type param' do
+          let(:text) do
+            <<~JADE
+              def anything -> a
+                Nothing
+              end
+            JADE
+          end
+
+          its(:errors) { is_expected.to have(1).item }
+
+          describe 'the error' do
+            subject { super().errors.first }
+
+            it { is_expected.to be_a(TypeChecking::Error::NarrowedSignature) }
+            its(:message) { is_expected.to include('only works when `a` is Maybe(b)') }
+          end
+        end
+
+        context 'when the body fixes a declared type param inside another type' do
+          let(:text) do
+            <<~JADE
+              def wrap -> Maybe(a)
+                Just(1)
+              end
+            JADE
+          end
+
+          its(:errors) { is_expected.to have(1).item }
+
+          describe 'the error' do
+            subject { super().errors.first }
+
+            it { is_expected.to be_a(TypeChecking::Error::NarrowedSignature) }
+            its(:message) { is_expected.to include('only works when `a` is Int') }
+          end
+        end
+
+        context 'when the body makes two declared type params one' do
+          let(:text) do
+            <<~JADE
+              def same(x: a, y: b) -> Bool
+                x == y
+              end
+            JADE
+          end
+
+          its(:errors) { is_expected.to have(1).item }
+
+          describe 'the error' do
+            subject { super().errors.first }
+
+            it { is_expected.to be_a(TypeChecking::Error::NarrowedSignature) }
+
+            its(:message) do
+              is_expected.to include('`a` and `b` can be different types')
+            end
+          end
+        end
+
         context 'with Ok([]) and Result(List(Int), String) return type' do
           let(:text) do
             <<~JADE
@@ -535,6 +595,8 @@ module Jade
             <<~JADE
               def f(x: a) -> a
                 x
+              end
+              def g -> String
                 f(1)
                 f("one")
               end
@@ -700,9 +762,9 @@ module Jade
                 id: id
               }
               def identified(name: String, id: a) -> Person(a)
-                Person(name, id)
                 Person("Paul", 1)
                 Person("Frank", "asdf-1234")
+                Person(name, id)
               end
             JADE
           end

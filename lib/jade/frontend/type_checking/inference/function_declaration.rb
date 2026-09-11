@@ -41,6 +41,7 @@ module Jade
                   function_name: node.name,
                 )
               end
+              .then { |st| report_narrowing(st, node, symbol, registry, fn_type) }
               .then do |st|
                 next st if st.env.bindings[symbol.qualified_name].is_a?(Scheme) && !st.skip_constraints
 
@@ -57,6 +58,26 @@ module Jade
                 )
               end
               .then { [it, Result.init(Type.unit)] }
+          end
+
+          private
+
+          def report_narrowing(state, node, symbol, registry, fn_type)
+            Type
+              .from_symbol(registry.lookup(symbol), registry, state.env.var_gen)
+              .first
+              .then { Narrowing.against_declaration(it, state.env.substitution.apply(fn_type)) }
+              .then { it ? state.add_errors([narrowed(it, state, node)]) : state }
+          end
+
+          def narrowed((var, found), state, node)
+            Error::NarrowedSignature.new(
+              state.env.entry_name,
+              node.range,
+              function_name: node.name,
+              var: var.name,
+              found:,
+            )
           end
         end
       end
