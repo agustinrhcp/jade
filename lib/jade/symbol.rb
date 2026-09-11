@@ -1,5 +1,6 @@
 require 'jade/symbol/base'
 
+require 'jade/symbol/ambiguous'
 require 'jade/symbol/anonymous_record'
 require 'jade/symbol/constructor'
 require 'jade/symbol/derived_function'

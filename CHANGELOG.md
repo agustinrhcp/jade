@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A name imported from two modules picked one without a word.**
+  `import Alpha exposing (name)` beside `import Beta exposing (name)`
+  compiled, and `name` meant whichever import came last. Using it unqualified
+  is now an error naming both modules; qualified uses, and a module that never
+  uses it, still compile. The same goes for constructors and for a type named
+  in a signature. An explicit import still beats one of the stdlib's default
+  imports, now by rule rather than by the order imports were processed in.
+
 ## [0.10.1] - 2026-09-11
 
 ### Added
