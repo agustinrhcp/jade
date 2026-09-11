@@ -6,7 +6,9 @@ module Jade
     module Debug
       extend Intrinsics
 
-      function(:log, { label: 'String', value: 'a' }, 'a') { |l, v| Jade::Debug.log(l, v) }
+      function(:log, { label: 'String', value: 'a' }, 'a', effect: 'Debug.log') do |l, v|
+        Jade::Debug.log(l, v)
+      end
     end
   end
 end

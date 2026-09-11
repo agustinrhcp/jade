@@ -52,6 +52,40 @@ Composition (`map`, `and_then`, `sequence`) lives in Jade. (Pick a port module
 name that doesn't shadow a Ruby constant you rely on — `task :members` defines
 `KeyValue.members`.)
 
+## Naming what a port does
+
+Because every effect goes through a port, the set of ports a function can
+reach is what it can cause to happen in the outside world. `as` gives that a
+name worth reading:
+
+```jade
+uses JadeSql::Runtime with
+  port_execute_many as read          : (String, List(Value)) -> Task(List(a), SqlError),
+  port_execute_one  as (read, write) : (String, List(Value)) -> Task(a, SqlError),
+  port_notify       as Infra.Mail.send : String -> Task(Bool, NotifyError)
+end
+```
+
+A bare tag is qualified by the module that declares the port, so `read` inside
+module `Sql` is the capability `Sql.read`. That is what keeps two gems from
+colliding on `read` without anyone maintaining a list of capability names.
+Write it qualified to name someone else's.
+
+A port may carry several tags — `port_execute_one` backs both `fetch_one` and
+`insert … returning`, so a single tag would lie. **More than one must be
+parenthesised**, because commas already separate the declarations in a `uses`
+block: `foo as read, bar : T` is ambiguous, since `bar` is both a legal bare
+tag and a legal next port name.
+
+Tags carry no semantics. They do not affect type checking, codegen or
+dispatch, and an untagged port is not an untracked one — it reads as its own
+qualified name (`KeyValue.members`). Tagging only changes how the effect is
+*named*, never whether it is *seen*.
+
+A tag is a claim by whoever declared the port. Nothing verifies that the Ruby
+behind `now_raw as time` doesn't also write files; trusting a tag is trusting
+the gem that shipped it, the same trust you extended by bundling it.
+
 ## What crosses the boundary
 
 A port is the same boundary as a Jade function called from Ruby, pointed the
