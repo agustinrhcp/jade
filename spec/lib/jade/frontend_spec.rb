@@ -1211,7 +1211,7 @@ module Jade
           def map(maybe: Maybe(a), fn: a -> b) -> Maybe(b)
             case maybe
             in Just(something) then Just(fn(something))
-            in Nothing then maybe
+            in Nothing then Nothing
             end
           end
         JADE

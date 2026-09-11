@@ -535,6 +535,8 @@ module Jade
             <<~JADE
               def f(x: a) -> a
                 x
+              end
+              def g -> String
                 f(1)
                 f("one")
               end
@@ -700,9 +702,9 @@ module Jade
                 id: id
               }
               def identified(name: String, id: a) -> Person(a)
-                Person(name, id)
                 Person("Paul", 1)
                 Person("Frank", "asdf-1234")
+                Person(name, id)
               end
             JADE
           end
