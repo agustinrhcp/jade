@@ -8,6 +8,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A body its signature rejects crashed the compiler.** A list, a bare
+  constructor, or a binding in last position, checked against a type it could
+  not be, reached `nil.call` in `State#unify` — the crash 0.10.1 fixed for
+  record updates, at the call sites that still had no error block.
+  `def limit -> Int` returning `[1]` now reads
+  `Expected Int but got List(Int)`.
+
 - **A statement at the top level of a module is an error.** `x = 2` between
   two `def`s type-checked, and a function reading `x` compiled clean, then
   raised `NameError` at runtime: the binding became a local of the Ruby
