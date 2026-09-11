@@ -1,0 +1,12 @@
+require 'jade'
+require 'jade/module_loader'
+require 'jade/runtime'
+require 'jade/signature'
+
+require 'jade/repl/input'
+require 'jade/repl/scope'
+require 'jade/repl/cell'
+require 'jade/repl/printer'
+require 'jade/repl/host'
+require 'jade/repl/session'
+require 'jade/repl/output'

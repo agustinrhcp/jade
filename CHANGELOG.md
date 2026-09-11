@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`jade repl`.** A prompt that evaluates Jade and shows each value with its
+  type. Every input compiles as a module of its own, importing what earlier
+  inputs defined, so the prompt accepts exactly what a module would, and a
+  later definition shadows an earlier one without disturbing values already
+  computed. `name = expr` binds a value, a trailing expression is `it`, a
+  `Task` is run and its `Result` shown, and `:t expr` gives a type without
+  evaluating. Inside a project its modules can be imported. Piped input is
+  read to the end, one result per input, exiting 1 if any failed. `<-` does
+  not work at the prompt yet.
+
 ### Fixed
 
 - **A signature wider than its body was accepted.** `def anything -> a`
