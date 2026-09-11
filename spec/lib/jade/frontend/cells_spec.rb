@@ -9,7 +9,7 @@ module Jade
   describe 'REPL cells' do
     let(:root) { Dir.mktmpdir('jade-cells') }
     let(:build) { File.join(root, 'build') }
-    let(:space) { "cells_#{SecureRandom.alphanumeric(8).downcase}" }
+    let(:space) { "cells#{SecureRandom.hex(4)}" }
 
     after { FileUtils.rm_rf(root) }
 
@@ -113,6 +113,29 @@ module Jade
 
         tripled = triple(2)
       JADE
+    end
+
+    it 'reads an earlier binding of its own name' do
+      first = <<~JADE
+        module #{mod(1)} exposing (n)
+
+        n = 1
+      JADE
+
+      second = <<~JADE
+        module #{mod(2)} exposing (n)
+
+        import #{mod(1)} exposing (n)
+
+        n = n + 1
+      JADE
+
+      expect(evaluate(first, second, :n)).to eq 2
+    end
+
+    it 'does not let a binding see itself' do
+      expect { load("module #{mod(1)} exposing (n)\n\nn = n + 1\n") }
+        .to raise_error(CompilationError, /Undefined variable n/)
     end
 
     it 'keeps a binding that needs a dictionary a function of it' do
