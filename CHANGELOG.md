@@ -170,6 +170,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   completion now derives it from the document URI, turning `sql/mutation.jd`
   into `module Sql.Mutation exposing (...)`.
 
+### Added
+
+- **`jade api`** — every name a program can depend on, with its shape, as JSON,
+  with interface members listed on their own since adding one breaks every
+  implementation without changing a signature. `--check` exits 1 when the
+  surface moved, so an extension gem or an app can pin its own surface the way
+  this repo now pins the stdlib's.
+- **[docs/stability.md](docs/stability.md)** — what a version change is allowed
+  to do to your code. A minor may break you and a patch may not; what counts as
+  a break, including the one that is easy to miss, a new member on an interface;
+  how a break is announced; and when a deprecation cycle is possible at all.
+
 ### Changed
 
 - **A crossing does less on the way in.** An argument with a specialized

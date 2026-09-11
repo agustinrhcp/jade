@@ -1,0 +1,1244 @@
+{
+  "Basics": {
+    "origin": "stdlib",
+    "symbols": {
+      "Basics.(!=)": {
+        "function": "Eq a => (a, a) -> Bool"
+      },
+      "Basics.(&&)": {
+        "function": "(Bool, Bool) -> Bool"
+      },
+      "Basics.(*)": {
+        "function": "Numeric a => (a, a) -> a"
+      },
+      "Basics.(+)": {
+        "function": "Numeric a => (a, a) -> a"
+      },
+      "Basics.(++)": {
+        "function": "Appendable a => (a, a) -> a"
+      },
+      "Basics.(-)": {
+        "function": "Numeric a => (a, a) -> a"
+      },
+      "Basics.(/)": {
+        "function": "Numeric a => (a, a) -> a"
+      },
+      "Basics.(<)": {
+        "function": "Comparable a => (a, a) -> Bool"
+      },
+      "Basics.(<=)": {
+        "function": "Comparable a => (a, a) -> Bool"
+      },
+      "Basics.(==)": {
+        "function": "Eq a => (a, a) -> Bool"
+      },
+      "Basics.(>)": {
+        "function": "Comparable a => (a, a) -> Bool"
+      },
+      "Basics.(>=)": {
+        "function": "Comparable a => (a, a) -> Bool"
+      },
+      "Basics.(||)": {
+        "function": "(Bool, Bool) -> Bool"
+      },
+      "Basics.Appendable": {
+        "interface": "interface Appendable(a)"
+      },
+      "Basics.Bool": {
+        "type": "type Bool"
+      },
+      "Basics.Chainable": {
+        "interface": "interface Chainable(f)"
+      },
+      "Basics.Comparable": {
+        "interface": "interface Comparable(a)"
+      },
+      "Basics.EQ": {
+        "constructor": "Ordering"
+      },
+      "Basics.Eq": {
+        "interface": "interface Eq(a)"
+      },
+      "Basics.Float": {
+        "type": "type Float"
+      },
+      "Basics.GT": {
+        "constructor": "Ordering"
+      },
+      "Basics.Int": {
+        "type": "type Int"
+      },
+      "Basics.LT": {
+        "constructor": "Ordering"
+      },
+      "Basics.Mappable": {
+        "interface": "interface Mappable(f)"
+      },
+      "Basics.Never": {
+        "type": "type Never"
+      },
+      "Basics.Numeric": {
+        "interface": "interface Numeric(a)"
+      },
+      "Basics.Ordering": {
+        "type": "type Ordering"
+      },
+      "Basics.always": {
+        "function": "(a) -> (b) -> a"
+      },
+      "Basics.and_then": {
+        "function": "Chainable f => (f(a), (a) -> f(b)) -> f(b)"
+      },
+      "Basics.bool_eq": {
+        "function": "(Bool, Bool) -> Bool"
+      },
+      "Basics.ceiling": {
+        "function": "(Float) -> Int"
+      },
+      "Basics.compare": {
+        "function": "Comparable a => (a, a) -> Ordering"
+      },
+      "Basics.float_add": {
+        "function": "(Float, Float) -> Float"
+      },
+      "Basics.float_compare": {
+        "function": "(Float, Float) -> Ordering"
+      },
+      "Basics.float_div": {
+        "function": "(Float, Float) -> Float"
+      },
+      "Basics.float_eq": {
+        "function": "(Float, Float) -> Bool"
+      },
+      "Basics.float_mul": {
+        "function": "(Float, Float) -> Float"
+      },
+      "Basics.float_sub": {
+        "function": "(Float, Float) -> Float"
+      },
+      "Basics.floor": {
+        "function": "(Float) -> Int"
+      },
+      "Basics.from_int": {
+        "function": "Numeric a => (Int) -> a"
+      },
+      "Basics.identity": {
+        "function": "(a) -> a"
+      },
+      "Basics.int_add": {
+        "function": "(Int, Int) -> Int"
+      },
+      "Basics.int_compare": {
+        "function": "(Int, Int) -> Ordering"
+      },
+      "Basics.int_div": {
+        "function": "(Int, Int) -> Int"
+      },
+      "Basics.int_eq": {
+        "function": "(Int, Int) -> Bool"
+      },
+      "Basics.int_mul": {
+        "function": "(Int, Int) -> Int"
+      },
+      "Basics.int_sub": {
+        "function": "(Int, Int) -> Int"
+      },
+      "Basics.map": {
+        "function": "Mappable f => (f(a), (a) -> b) -> f(b)"
+      },
+      "Basics.max": {
+        "function": "Comparable a => (a, a) -> a"
+      },
+      "Basics.min": {
+        "function": "Comparable a => (a, a) -> a"
+      },
+      "Basics.mod": {
+        "function": "(Int, Int) -> Int"
+      },
+      "Basics.not": {
+        "function": "(Bool) -> Bool"
+      },
+      "Basics.round": {
+        "function": "(Float) -> Int"
+      },
+      "Basics.to_float": {
+        "function": "(Int) -> Float"
+      },
+      "Basics.truncate": {
+        "function": "(Float) -> Int"
+      }
+    },
+    "interfaces": {
+      "Basics.Appendable": [
+        "(++)"
+      ],
+      "Basics.Chainable": [
+        "and_then"
+      ],
+      "Basics.Comparable": [
+        "compare"
+      ],
+      "Basics.Eq": [
+        "(==)"
+      ],
+      "Basics.Mappable": [
+        "map"
+      ],
+      "Basics.Numeric": [
+        "(*)",
+        "(+)",
+        "(-)",
+        "(/)",
+        "from_int"
+      ]
+    }
+  },
+  "Bytes": {
+    "origin": "stdlib",
+    "symbols": {
+      "Bytes.Bytes": {
+        "type": "type Bytes"
+      },
+      "Bytes.bytes_append": {
+        "function": "(Bytes, Bytes) -> Bytes"
+      },
+      "Bytes.bytes_eq": {
+        "function": "(Bytes, Bytes) -> Bool"
+      },
+      "Bytes.empty": {
+        "function": "Bytes"
+      },
+      "Bytes.from_base64_url": {
+        "function": "(String) -> Maybe(Bytes)"
+      },
+      "Bytes.from_hex": {
+        "function": "(String) -> Maybe(Bytes)"
+      },
+      "Bytes.from_list": {
+        "function": "(List(Int)) -> Maybe(Bytes)"
+      },
+      "Bytes.from_string": {
+        "function": "(String) -> Bytes"
+      },
+      "Bytes.to_base64_url": {
+        "function": "(Bytes) -> String"
+      },
+      "Bytes.to_hex": {
+        "function": "(Bytes) -> String"
+      },
+      "Bytes.to_list": {
+        "function": "(Bytes) -> List(Int)"
+      },
+      "Bytes.to_string": {
+        "function": "(Bytes) -> Maybe(String)"
+      },
+      "Bytes.width": {
+        "function": "(Bytes) -> Int"
+      }
+    },
+    "interfaces": {}
+  },
+  "Calendar": {
+    "origin": "stdlib",
+    "symbols": {
+      "Calendar.Apr": {
+        "constructor": "Month"
+      },
+      "Calendar.Aug": {
+        "constructor": "Month"
+      },
+      "Calendar.Date": {
+        "struct": "struct Date = { year : Int, month : Month, day : Int }"
+      },
+      "Calendar.Days": {
+        "constructor": "Unit"
+      },
+      "Calendar.Dec": {
+        "constructor": "Month"
+      },
+      "Calendar.Feb": {
+        "constructor": "Month"
+      },
+      "Calendar.Fri": {
+        "constructor": "Weekday"
+      },
+      "Calendar.Jan": {
+        "constructor": "Month"
+      },
+      "Calendar.Jul": {
+        "constructor": "Month"
+      },
+      "Calendar.Jun": {
+        "constructor": "Month"
+      },
+      "Calendar.Mar": {
+        "constructor": "Month"
+      },
+      "Calendar.May": {
+        "constructor": "Month"
+      },
+      "Calendar.Mon": {
+        "constructor": "Weekday"
+      },
+      "Calendar.Month": {
+        "type": "type Month"
+      },
+      "Calendar.Months": {
+        "constructor": "Unit"
+      },
+      "Calendar.Nov": {
+        "constructor": "Month"
+      },
+      "Calendar.Oct": {
+        "constructor": "Month"
+      },
+      "Calendar.Sat": {
+        "constructor": "Weekday"
+      },
+      "Calendar.Sep": {
+        "constructor": "Month"
+      },
+      "Calendar.Sun": {
+        "constructor": "Weekday"
+      },
+      "Calendar.Thu": {
+        "constructor": "Weekday"
+      },
+      "Calendar.Tue": {
+        "constructor": "Weekday"
+      },
+      "Calendar.Unit": {
+        "type": "type Unit"
+      },
+      "Calendar.Wed": {
+        "constructor": "Weekday"
+      },
+      "Calendar.Weekday": {
+        "type": "type Weekday"
+      },
+      "Calendar.Weeks": {
+        "constructor": "Unit"
+      },
+      "Calendar.Years": {
+        "constructor": "Unit"
+      },
+      "Calendar.add": {
+        "function": "(Date, Unit, Int) -> Date"
+      },
+      "Calendar.day": {
+        "function": "(Date) -> Int"
+      },
+      "Calendar.diff": {
+        "function": "(Date, Date, Unit) -> Int"
+      },
+      "Calendar.from_calendar_date": {
+        "function": "(Int, Month, Int) -> Date"
+      },
+      "Calendar.from_iso_string": {
+        "function": "(String) -> Result(Date, String)"
+      },
+      "Calendar.from_rata_die": {
+        "function": "(Int) -> Date"
+      },
+      "Calendar.month": {
+        "function": "(Date) -> Month"
+      },
+      "Calendar.month_from_int": {
+        "function": "(Int) -> Month"
+      },
+      "Calendar.month_to_int": {
+        "function": "(Month) -> Int"
+      },
+      "Calendar.to_iso_string": {
+        "function": "(Date) -> String"
+      },
+      "Calendar.to_rata_die": {
+        "function": "(Date) -> Int"
+      },
+      "Calendar.today": {
+        "function": "Task(Date, Never)"
+      },
+      "Calendar.weekday": {
+        "function": "(Date) -> Weekday"
+      },
+      "Calendar.weekday_from_int": {
+        "function": "(Int) -> Weekday"
+      },
+      "Calendar.weekday_to_int": {
+        "function": "(Weekday) -> Int"
+      },
+      "Calendar.year": {
+        "function": "(Date) -> Int"
+      }
+    },
+    "interfaces": {}
+  },
+  "Char": {
+    "origin": "stdlib",
+    "symbols": {
+      "Char.Char": {
+        "type": "type Char"
+      },
+      "Char.alpha?": {
+        "function": "(Char) -> Bool"
+      },
+      "Char.alpha_numeric?": {
+        "function": "(Char) -> Bool"
+      },
+      "Char.char_eq": {
+        "function": "(Char, Char) -> Bool"
+      },
+      "Char.digit?": {
+        "function": "(Char) -> Bool"
+      },
+      "Char.from_code": {
+        "function": "(Int) -> Maybe(Char)"
+      },
+      "Char.lower?": {
+        "function": "(Char) -> Bool"
+      },
+      "Char.to_code": {
+        "function": "(Char) -> Int"
+      },
+      "Char.upper?": {
+        "function": "(Char) -> Bool"
+      }
+    },
+    "interfaces": {}
+  },
+  "Clock": {
+    "origin": "stdlib",
+    "symbols": {
+      "Clock.Duration": {
+        "type": "type Duration"
+      },
+      "Clock.Instant": {
+        "type": "type Instant"
+      },
+      "Clock.add": {
+        "function": "(Instant, Duration) -> Instant"
+      },
+      "Clock.at_time": {
+        "function": "(Instant) -> { hour : Int, minute : Int, second : Int, millisecond : Int }"
+      },
+      "Clock.days": {
+        "function": "(Int) -> Duration"
+      },
+      "Clock.diff": {
+        "function": "(Instant, Instant) -> Duration"
+      },
+      "Clock.epoch": {
+        "function": "Instant"
+      },
+      "Clock.from_iso": {
+        "function": "(String) -> Result(Instant, String)"
+      },
+      "Clock.hours": {
+        "function": "(Int) -> Duration"
+      },
+      "Clock.in_days": {
+        "function": "(Duration) -> Int"
+      },
+      "Clock.in_hours": {
+        "function": "(Duration) -> Int"
+      },
+      "Clock.in_millis": {
+        "function": "(Duration) -> Int"
+      },
+      "Clock.in_minutes": {
+        "function": "(Duration) -> Int"
+      },
+      "Clock.in_seconds": {
+        "function": "(Duration) -> Int"
+      },
+      "Clock.millis": {
+        "function": "(Int) -> Duration"
+      },
+      "Clock.minutes": {
+        "function": "(Int) -> Duration"
+      },
+      "Clock.now": {
+        "function": "Task(Instant, Never)"
+      },
+      "Clock.on_date": {
+        "function": "(Instant) -> Date"
+      },
+      "Clock.parts": {
+        "function": "(Duration) -> { days : Int, hours : Int, minutes : Int, seconds : Int, millis : Int }"
+      },
+      "Clock.seconds": {
+        "function": "(Int) -> Duration"
+      },
+      "Clock.to_iso": {
+        "function": "(Instant) -> String"
+      }
+    },
+    "interfaces": {}
+  },
+  "Debug": {
+    "origin": "stdlib",
+    "symbols": {
+      "Debug.log": {
+        "function": "(String, a) -> a"
+      }
+    },
+    "interfaces": {}
+  },
+  "Decimal": {
+    "origin": "stdlib",
+    "symbols": {
+      "Decimal.Decimal": {
+        "type": "type Decimal"
+      },
+      "Decimal.coefficient": {
+        "function": "(Decimal) -> Int"
+      },
+      "Decimal.div": {
+        "function": "(Decimal, Decimal, Int) -> Decimal"
+      },
+      "Decimal.exponent": {
+        "function": "(Decimal) -> Int"
+      },
+      "Decimal.of": {
+        "function": "(Int, Int) -> Decimal"
+      },
+      "Decimal.parse": {
+        "function": "(String) -> Maybe(Decimal)"
+      },
+      "Decimal.round": {
+        "function": "(Decimal, Int) -> Decimal"
+      },
+      "Decimal.scaled": {
+        "function": "(Int, Int) -> Decimal"
+      },
+      "Decimal.to_float": {
+        "function": "(Decimal) -> Float"
+      },
+      "Decimal.to_i": {
+        "function": "(Decimal) -> Int"
+      }
+    },
+    "interfaces": {}
+  },
+  "Decode": {
+    "origin": "stdlib",
+    "symbols": {
+      "Decode.AtField": {
+        "constructor": "(String, DecodeError) -> DecodeError"
+      },
+      "Decode.AtIndex": {
+        "constructor": "(Int, DecodeError) -> DecodeError"
+      },
+      "Decode.Custom": {
+        "constructor": "(String) -> DecodeError"
+      },
+      "Decode.Decodable": {
+        "interface": "interface Decodable(a)"
+      },
+      "Decode.DecodeError": {
+        "type": "type DecodeError"
+      },
+      "Decode.Decoder": {
+        "type": "type Decoder(a)"
+      },
+      "Decode.MissingField": {
+        "constructor": "(String) -> DecodeError"
+      },
+      "Decode.Multiple": {
+        "constructor": "(List(DecodeError)) -> DecodeError"
+      },
+      "Decode.Value": {
+        "type": "type Value"
+      },
+      "Decode.WrongType": {
+        "constructor": "(String, String) -> DecodeError"
+      },
+      "Decode.and_map": {
+        "function": "(Decoder((a) -> b), Decoder(a)) -> Decoder(b)"
+      },
+      "Decode.and_then": {
+        "function": "(Decoder(a), (a) -> Decoder(b)) -> Decoder(b)"
+      },
+      "Decode.bool": {
+        "function": "Decoder(Bool)"
+      },
+      "Decode.decode": {
+        "function": "(Decoder(a), Value) -> Result(a, DecodeError)"
+      },
+      "Decode.decode_string": {
+        "function": "(Decoder(a), String) -> Result(a, DecodeError)"
+      },
+      "Decode.decoder": {
+        "function": "Decodable a => Decoder(a)"
+      },
+      "Decode.dict": {
+        "function": "(Decoder(k), Decoder(v)) -> Decoder(Dict(k, v))"
+      },
+      "Decode.fail": {
+        "function": "(String) -> Decoder(a)"
+      },
+      "Decode.field": {
+        "function": "(String, Decoder(a)) -> Decoder(a)"
+      },
+      "Decode.float": {
+        "function": "Decoder(Float)"
+      },
+      "Decode.from_json": {
+        "function": "Decodable a => (String) -> Result(a, DecodeError)"
+      },
+      "Decode.from_result": {
+        "function": "(Result(a, String)) -> Decoder(a)"
+      },
+      "Decode.from_value": {
+        "function": "Decodable a => (Value) -> Result(a, DecodeError)"
+      },
+      "Decode.index": {
+        "function": "(Int, Decoder(a)) -> Decoder(a)"
+      },
+      "Decode.int": {
+        "function": "Decoder(Int)"
+      },
+      "Decode.list": {
+        "function": "(Decoder(a)) -> Decoder(List(a))"
+      },
+      "Decode.map": {
+        "function": "(Decoder(a), (a) -> b) -> Decoder(b)"
+      },
+      "Decode.nullable": {
+        "function": "(Decoder(a)) -> Decoder(Maybe(a))"
+      },
+      "Decode.one_of": {
+        "function": "(List(Decoder(a))) -> Decoder(a)"
+      },
+      "Decode.optional": {
+        "function": "(Decoder((a) -> b), String, Decoder(a), a) -> Decoder(b)"
+      },
+      "Decode.optional_field": {
+        "function": "(String, Decoder(a)) -> Decoder(Maybe(a))"
+      },
+      "Decode.required": {
+        "function": "(Decoder((a) -> b), String, Decoder(a)) -> Decoder(b)"
+      },
+      "Decode.sequence": {
+        "function": "(List(Decoder(a))) -> Decoder(List(a))"
+      },
+      "Decode.set": {
+        "function": "(Decoder(a)) -> Decoder(Set(a))"
+      },
+      "Decode.string": {
+        "function": "Decoder(String)"
+      },
+      "Decode.string_enum": {
+        "function": "(List(String), List(a)) -> Decoder(a)"
+      },
+      "Decode.succeed": {
+        "function": "(a) -> Decoder(a)"
+      },
+      "Decode.tuple": {
+        "function": "(Decoder(a), Decoder(b)) -> Decoder((a, b))"
+      },
+      "Decode.tuple3": {
+        "function": "(Decoder(a), Decoder(b), Decoder(c)) -> Decoder((a, b, c))"
+      },
+      "Decode.tuple4": {
+        "function": "(Decoder(a), Decoder(b), Decoder(c), Decoder(d)) -> Decoder((a, b, c, d))"
+      },
+      "Decode.type_": {
+        "function": "Decoder(a)"
+      },
+      "Decode.value": {
+        "function": "Decoder(Value)"
+      },
+      "Decode.variant": {
+        "function": "(Decoder(a), String, Decoder(a)) -> Decoder(a)"
+      }
+    },
+    "interfaces": {
+      "Decode.Decodable": [
+        "decoder"
+      ]
+    }
+  },
+  "Decode.Params": {
+    "origin": "stdlib",
+    "symbols": {
+      "Decode.Params.Params": {
+        "constructor": "(List((String, Decoder(a))), List((String, a))) -> Params(a)",
+        "type": "type Params(a)"
+      },
+      "Decode.Params.accept": {
+        "function": "(Params(a), String, Decoder(a)) -> Params(a)"
+      },
+      "Decode.Params.bool": {
+        "function": "(Params(a), String, (Bool) -> a) -> Params(a)"
+      },
+      "Decode.Params.collect": {
+        "function": "(Params(a)) -> Decoder(List(a))"
+      },
+      "Decode.Params.default": {
+        "function": "(Params(a), String, a) -> Params(a)"
+      },
+      "Decode.Params.empty": {
+        "function": "Params(a)"
+      },
+      "Decode.Params.float": {
+        "function": "(Params(a), String, (Float) -> a) -> Params(a)"
+      },
+      "Decode.Params.int": {
+        "function": "(Params(a), String, (Int) -> a) -> Params(a)"
+      },
+      "Decode.Params.nested": {
+        "function": "(Params(a), String, (List(b)) -> a, Params(b)) -> Params(a)"
+      },
+      "Decode.Params.string": {
+        "function": "(Params(a), String, (String) -> a) -> Params(a)"
+      }
+    },
+    "interfaces": {}
+  },
+  "Dict": {
+    "origin": "stdlib",
+    "symbols": {
+      "Dict.Dict": {
+        "type": "type Dict(k, v)"
+      },
+      "Dict.dict_eq": {
+        "function": "(Dict(k, v), Dict(k, v)) -> Bool"
+      },
+      "Dict.empty": {
+        "function": "Dict(k, v)"
+      },
+      "Dict.empty?": {
+        "function": "(Dict(k, v)) -> Bool"
+      },
+      "Dict.filter": {
+        "function": "(Dict(k, v), (k, v) -> Bool) -> Dict(k, v)"
+      },
+      "Dict.fold": {
+        "function": "(Dict(k, v), b, (k, v, b) -> b) -> b"
+      },
+      "Dict.from_list": {
+        "function": "Eq k => (List((k, v))) -> Dict(k, v)"
+      },
+      "Dict.get": {
+        "function": "Eq k => (Dict(k, v), k) -> Maybe(v)"
+      },
+      "Dict.insert": {
+        "function": "Eq k => (Dict(k, v), k, v) -> Dict(k, v)"
+      },
+      "Dict.keys": {
+        "function": "(Dict(k, v)) -> List(k)"
+      },
+      "Dict.map": {
+        "function": "(Dict(k, v), (k, v) -> v2) -> Dict(k, v2)"
+      },
+      "Dict.member?": {
+        "function": "Eq k => (Dict(k, v), k) -> Bool"
+      },
+      "Dict.merge": {
+        "function": "Eq k => (Dict(k, v), Dict(k, v), (v, v) -> v) -> Dict(k, v)"
+      },
+      "Dict.remove": {
+        "function": "Eq k => (Dict(k, v), k) -> Dict(k, v)"
+      },
+      "Dict.singleton": {
+        "function": "Eq k => (k, v) -> Dict(k, v)"
+      },
+      "Dict.size": {
+        "function": "(Dict(k, v)) -> Int"
+      },
+      "Dict.to_list": {
+        "function": "(Dict(k, v)) -> List((k, v))"
+      },
+      "Dict.union": {
+        "function": "Eq k => (Dict(k, v), Dict(k, v)) -> Dict(k, v)"
+      },
+      "Dict.update": {
+        "function": "Eq k => (Dict(k, v), k, (Maybe(v)) -> Maybe(v)) -> Dict(k, v)"
+      },
+      "Dict.values": {
+        "function": "(Dict(k, v)) -> List(v)"
+      }
+    },
+    "interfaces": {}
+  },
+  "Encode": {
+    "origin": "stdlib",
+    "symbols": {
+      "Encode.Encodable": {
+        "interface": "interface Encodable(a)"
+      },
+      "Encode.bool": {
+        "function": "(Bool) -> Value"
+      },
+      "Encode.dict": {
+        "function": "((k) -> Value, (v) -> Value, Dict(k, v)) -> Value"
+      },
+      "Encode.encode": {
+        "function": "Encodable a => (a) -> Value"
+      },
+      "Encode.encode_to_string": {
+        "function": "(Value) -> String"
+      },
+      "Encode.encoder": {
+        "function": "Encodable a => (a) -> Value"
+      },
+      "Encode.field": {
+        "function": "(String, (a) -> Value, a) -> (String, Value)"
+      },
+      "Encode.float": {
+        "function": "(Float) -> Value"
+      },
+      "Encode.int": {
+        "function": "(Int) -> Value"
+      },
+      "Encode.list": {
+        "function": "((a) -> Value, List(a)) -> Value"
+      },
+      "Encode.null": {
+        "function": "Value"
+      },
+      "Encode.nullable": {
+        "function": "((a) -> Value, Maybe(a)) -> Value"
+      },
+      "Encode.object": {
+        "function": "(List((String, Value))) -> Value"
+      },
+      "Encode.set": {
+        "function": "((a) -> Value, Set(a)) -> Value"
+      },
+      "Encode.string": {
+        "function": "(String) -> Value"
+      },
+      "Encode.tuple": {
+        "function": "((a) -> Value, (b) -> Value, (a, b)) -> Value"
+      },
+      "Encode.tuple3": {
+        "function": "((a) -> Value, (b) -> Value, (c) -> Value, (a, b, c)) -> Value"
+      },
+      "Encode.tuple4": {
+        "function": "((a) -> Value, (b) -> Value, (c) -> Value, (d) -> Value, (a, b, c, d)) -> Value"
+      },
+      "Encode.value": {
+        "function": "(Value) -> Value"
+      },
+      "Encode.variant": {
+        "function": "(String, List(Value)) -> Value"
+      }
+    },
+    "interfaces": {
+      "Encode.Encodable": [
+        "encoder"
+      ]
+    }
+  },
+  "List": {
+    "origin": "stdlib",
+    "symbols": {
+      "List.List": {
+        "type": "type List(a)"
+      },
+      "List.all?": {
+        "function": "(List(a), (a) -> Bool) -> Bool"
+      },
+      "List.and_then": {
+        "function": "(List(a), (a) -> List(b)) -> List(b)"
+      },
+      "List.any?": {
+        "function": "(List(a), (a) -> Bool) -> Bool"
+      },
+      "List.concat": {
+        "function": "(List(List(a))) -> List(a)"
+      },
+      "List.drop": {
+        "function": "(List(a), Int) -> List(a)"
+      },
+      "List.empty?": {
+        "function": "(List(a)) -> Bool"
+      },
+      "List.filter": {
+        "function": "(List(a), (a) -> Bool) -> List(a)"
+      },
+      "List.filter_map": {
+        "function": "(List(a), (a) -> Maybe(b)) -> List(b)"
+      },
+      "List.find": {
+        "function": "(List(a), (a) -> Bool) -> Maybe(a)"
+      },
+      "List.fold": {
+        "function": "(List(a), b, (b, a) -> b) -> b"
+      },
+      "List.head": {
+        "function": "(List(a)) -> Maybe(a)"
+      },
+      "List.indexed_map": {
+        "function": "(List(a), (Int, a) -> b) -> List(b)"
+      },
+      "List.length": {
+        "function": "(List(a)) -> Int"
+      },
+      "List.list_append": {
+        "function": "(List(a), List(a)) -> List(a)"
+      },
+      "List.map": {
+        "function": "(List(a), (a) -> b) -> List(b)"
+      },
+      "List.maximum": {
+        "function": "Comparable a => (List(a)) -> Maybe(a)"
+      },
+      "List.member?": {
+        "function": "Eq a => (List(a), a) -> Bool"
+      },
+      "List.minimum": {
+        "function": "Comparable a => (List(a)) -> Maybe(a)"
+      },
+      "List.partition": {
+        "function": "(List(a), (a) -> Bool) -> (List(a), List(a))"
+      },
+      "List.product": {
+        "function": "Numeric a => (List(a)) -> a"
+      },
+      "List.range": {
+        "function": "(Int, Int) -> List(Int)"
+      },
+      "List.repeat": {
+        "function": "(a, Int) -> List(a)"
+      },
+      "List.reverse": {
+        "function": "(List(a)) -> List(a)"
+      },
+      "List.singleton": {
+        "function": "(a) -> List(a)"
+      },
+      "List.sort": {
+        "function": "Comparable a => (List(a)) -> List(a)"
+      },
+      "List.sort_by": {
+        "function": "Comparable b => (List(a), (a) -> b) -> List(a)"
+      },
+      "List.sum": {
+        "function": "Numeric a => (List(a)) -> a"
+      },
+      "List.tail": {
+        "function": "(List(a)) -> List(a)"
+      },
+      "List.take": {
+        "function": "(List(a), Int) -> List(a)"
+      },
+      "List.unzip": {
+        "function": "(List((a, b))) -> (List(a), List(b))"
+      },
+      "List.zip": {
+        "function": "(List(a), List(b)) -> List((a, b))"
+      }
+    },
+    "interfaces": {}
+  },
+  "Maybe": {
+    "origin": "stdlib",
+    "symbols": {
+      "Maybe.Just": {
+        "constructor": "(a) -> Maybe(a)"
+      },
+      "Maybe.Maybe": {
+        "type": "type Maybe(a)"
+      },
+      "Maybe.Nothing": {
+        "constructor": "Maybe(a)"
+      },
+      "Maybe.and_then": {
+        "function": "(Maybe(a), (a) -> Maybe(b)) -> Maybe(b)"
+      },
+      "Maybe.map": {
+        "function": "(Maybe(a), (a) -> b) -> Maybe(b)"
+      },
+      "Maybe.with_default": {
+        "function": "(Maybe(a), a) -> a"
+      }
+    },
+    "interfaces": {}
+  },
+  "Result": {
+    "origin": "stdlib",
+    "symbols": {
+      "Result.Err": {
+        "constructor": "(error) -> Result(value, error)"
+      },
+      "Result.Ok": {
+        "constructor": "(value) -> Result(value, error)"
+      },
+      "Result.Result": {
+        "type": "type Result(value, error)"
+      },
+      "Result.and_then": {
+        "function": "(Result(a, e), (a) -> Result(b, e)) -> Result(b, e)"
+      },
+      "Result.from_maybe": {
+        "function": "(Maybe(a), e) -> Result(a, e)"
+      },
+      "Result.map": {
+        "function": "(Result(a, e), (a) -> b) -> Result(b, e)"
+      },
+      "Result.map_error": {
+        "function": "(Result(a, e), (e) -> x) -> Result(a, x)"
+      },
+      "Result.on_error": {
+        "function": "(Result(a, e), (e) -> Result(a, f)) -> Result(a, f)"
+      },
+      "Result.sequence": {
+        "function": "(List(Result(a, e))) -> Result(List(a), e)"
+      },
+      "Result.to_maybe": {
+        "function": "(Result(a, e)) -> Maybe(a)"
+      },
+      "Result.with_default": {
+        "function": "(Result(a, e), a) -> a"
+      }
+    },
+    "interfaces": {}
+  },
+  "Set": {
+    "origin": "stdlib",
+    "symbols": {
+      "Set.Set": {
+        "type": "type Set(a)"
+      },
+      "Set.diff": {
+        "function": "Eq a => (Set(a), Set(a)) -> Set(a)"
+      },
+      "Set.empty": {
+        "function": "Set(a)"
+      },
+      "Set.empty?": {
+        "function": "(Set(a)) -> Bool"
+      },
+      "Set.filter": {
+        "function": "(Set(a), (a) -> Bool) -> Set(a)"
+      },
+      "Set.fold": {
+        "function": "(Set(a), b, (a, b) -> b) -> b"
+      },
+      "Set.from_list": {
+        "function": "Eq a => (List(a)) -> Set(a)"
+      },
+      "Set.insert": {
+        "function": "Eq a => (Set(a), a) -> Set(a)"
+      },
+      "Set.intersect": {
+        "function": "Eq a => (Set(a), Set(a)) -> Set(a)"
+      },
+      "Set.map": {
+        "function": "Eq b => (Set(a), (a) -> b) -> Set(b)"
+      },
+      "Set.member?": {
+        "function": "Eq a => (Set(a), a) -> Bool"
+      },
+      "Set.remove": {
+        "function": "Eq a => (Set(a), a) -> Set(a)"
+      },
+      "Set.set_eq": {
+        "function": "(Set(a), Set(a)) -> Bool"
+      },
+      "Set.singleton": {
+        "function": "Eq a => (a) -> Set(a)"
+      },
+      "Set.size": {
+        "function": "(Set(a)) -> Int"
+      },
+      "Set.to_list": {
+        "function": "(Set(a)) -> List(a)"
+      },
+      "Set.union": {
+        "function": "Eq a => (Set(a), Set(a)) -> Set(a)"
+      }
+    },
+    "interfaces": {}
+  },
+  "Show": {
+    "origin": "stdlib",
+    "symbols": {
+      "Show.Show": {
+        "interface": "interface Show(a)"
+      },
+      "Show.bool_show": {
+        "function": "(Bool) -> String"
+      },
+      "Show.char_show": {
+        "function": "(Char) -> String"
+      },
+      "Show.float_show": {
+        "function": "(Float) -> String"
+      },
+      "Show.int_show": {
+        "function": "(Int) -> String"
+      },
+      "Show.never_show": {
+        "function": "(Never) -> String"
+      },
+      "Show.show": {
+        "function": "Show a => (a) -> String"
+      },
+      "Show.str_show": {
+        "function": "(String) -> String"
+      }
+    },
+    "interfaces": {
+      "Show.Show": [
+        "show"
+      ]
+    }
+  },
+  "String": {
+    "origin": "stdlib",
+    "symbols": {
+      "String.String": {
+        "type": "type String"
+      },
+      "String.concat": {
+        "function": "(List(String)) -> String"
+      },
+      "String.cons": {
+        "function": "(Char, String) -> String"
+      },
+      "String.contains?": {
+        "function": "(String, String) -> Bool"
+      },
+      "String.empty?": {
+        "function": "(String) -> Bool"
+      },
+      "String.ends_with?": {
+        "function": "(String, String) -> Bool"
+      },
+      "String.from_char": {
+        "function": "(Char) -> String"
+      },
+      "String.from_int": {
+        "function": "(Int) -> String"
+      },
+      "String.from_list": {
+        "function": "(List(Char)) -> String"
+      },
+      "String.indexes": {
+        "function": "(String, String) -> List(Int)"
+      },
+      "String.join": {
+        "function": "(List(String), String) -> String"
+      },
+      "String.length": {
+        "function": "(String) -> Int"
+      },
+      "String.lines": {
+        "function": "(String) -> List(String)"
+      },
+      "String.map": {
+        "function": "(String, (Char) -> Char) -> String"
+      },
+      "String.repeat": {
+        "function": "(String, Int) -> String"
+      },
+      "String.replace": {
+        "function": "(String, String, String) -> String"
+      },
+      "String.reverse": {
+        "function": "(String) -> String"
+      },
+      "String.slice": {
+        "function": "(String, Int, Int) -> String"
+      },
+      "String.split": {
+        "function": "(String, String) -> List(String)"
+      },
+      "String.starts_with?": {
+        "function": "(String, String) -> Bool"
+      },
+      "String.str_append": {
+        "function": "(String, String) -> String"
+      },
+      "String.str_compare": {
+        "function": "(String, String) -> Ordering"
+      },
+      "String.str_eq": {
+        "function": "(String, String) -> Bool"
+      },
+      "String.to_int": {
+        "function": "(String) -> Maybe(Int)"
+      },
+      "String.to_list": {
+        "function": "(String) -> List(Char)"
+      },
+      "String.to_lower": {
+        "function": "(String) -> String"
+      },
+      "String.to_upper": {
+        "function": "(String) -> String"
+      },
+      "String.trim": {
+        "function": "(String) -> String"
+      },
+      "String.trim_left": {
+        "function": "(String) -> String"
+      },
+      "String.trim_right": {
+        "function": "(String) -> String"
+      },
+      "String.uncons": {
+        "function": "(String) -> Maybe((Char, String))"
+      },
+      "String.words": {
+        "function": "(String) -> List(String)"
+      }
+    },
+    "interfaces": {}
+  },
+  "Task": {
+    "origin": "stdlib",
+    "symbols": {
+      "Task.Task": {
+        "type": "type Task(a, e)"
+      },
+      "Task.and_then": {
+        "function": "(Task(a, e), (a) -> Task(b, e)) -> Task(b, e)"
+      },
+      "Task.fail": {
+        "function": "(e) -> Task(a, e)"
+      },
+      "Task.from_result": {
+        "function": "(Result(a, e)) -> Task(a, e)"
+      },
+      "Task.map": {
+        "function": "(Task(a, e), (a) -> b) -> Task(b, e)"
+      },
+      "Task.map_error": {
+        "function": "(Task(a, e), (e) -> f) -> Task(a, f)"
+      },
+      "Task.on_error": {
+        "function": "(Task(a, e), (e) -> Task(a, f)) -> Task(a, f)"
+      },
+      "Task.run": {
+        "function": "(Task(a, e)) -> Result(a, e)"
+      },
+      "Task.sequence": {
+        "function": "(List(Task(a, e))) -> Task(List(a), e)"
+      },
+      "Task.succeed": {
+        "function": "(a) -> Task(a, e)"
+      }
+    },
+    "interfaces": {}
+  },
+  "Tuple": {
+    "origin": "stdlib",
+    "symbols": {
+      "Tuple.first": {
+        "function": "((a, b)) -> a"
+      },
+      "Tuple.pair": {
+        "function": "(a, b) -> (a, b)"
+      },
+      "Tuple.second": {
+        "function": "((a, b)) -> b"
+      }
+    },
+    "interfaces": {}
+  }
+}
