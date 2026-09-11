@@ -34,7 +34,7 @@ module Jade
         def exposing_to_symbol(exposing, current_entry, importing_module)
           case exposing
           in AST::ExposeNone then Ok[[]]
-          in AST::ExposeAll then Ok[importing_module.exposed]
+          in AST::ExposeAll then Ok[importing_module.exposes.to_a]
           in AST::ExposeList(items:) then handle_exposing_list(items, current_entry, importing_module)
           end
         end

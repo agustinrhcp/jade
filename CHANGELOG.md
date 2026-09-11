@@ -24,6 +24,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Codegen now carries the entry's substitution while it emits a body, and
   resolves a marker's var through it before giving up.
 
+- **`import M exposing (..)` crashed the compiler.** It asked the imported
+  module for `exposed`, which does not exist, so the only way to bring a
+  module's whole surface in unqualified was a `NoMethodError`. It now
+  imports everything the module exposes, constructors included.
+
 ## [0.11.3] - 2026-09-16
 
 ### Added
