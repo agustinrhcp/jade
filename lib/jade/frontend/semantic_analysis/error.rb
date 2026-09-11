@@ -1,6 +1,7 @@
 require 'jade/error'
 
 require 'jade/frontend/semantic_analysis/error/no_base_case'
+require 'jade/frontend/semantic_analysis/error/ambiguous_name'
 require 'jade/frontend/semantic_analysis/error/circular_extends'
 require 'jade/frontend/semantic_analysis/error/constant_not_callable'
 require 'jade/frontend/semantic_analysis/error/constructor_not_found'

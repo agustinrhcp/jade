@@ -123,6 +123,13 @@ module Jade
         private
 
         def require_type(entry, name, span)
+          if !entry.defined_types.key?(name) && (candidates = entry.ambiguous_types[name])
+            return Err[Error::AmbiguousType.new(
+              entry.name, span, name:,
+              modules: candidates.map(&:module_name),
+            )]
+          end
+
           entry.lookup_type(name)
             &.then { Ok[it] } ||
             Err[Error::TypeNotFound.new(

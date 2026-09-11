@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A name imported from two modules picked one without a word.**
+  `import Alpha exposing (name)` beside `import Beta exposing (name)`
+  compiled, and `name` meant whichever import came last. Using it unqualified
+  is now an error naming both modules; qualified uses, and a module that never
+  uses it, still compile. The same goes for constructors and for a type named
+  in a signature. An explicit import still beats one of the stdlib's default
+  imports, now by rule rather than by the order imports were processed in.
+
 - **A dictionary marker kept the var it was attached with.** A constraint
   records its marker while inference is still running, so it holds whatever
   type variable it had at that moment. Unification may bind that variable to

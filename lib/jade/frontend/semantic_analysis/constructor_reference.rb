@@ -26,6 +26,11 @@ module Jade
                   .add_errors([it])
               end
 
+          in Symbol::Ambiguous(modules:)
+            Result
+              .init(node, scope)
+              .add_errors([Error::AmbiguousName.new(entry.name, node.range, name:, modules:)])
+
           in symbol
             Result.init(node.with(symbol: symbol.to_ref), scope)
           end
