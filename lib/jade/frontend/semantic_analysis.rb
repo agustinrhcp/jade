@@ -66,7 +66,10 @@ module Jade
 
       def initialize_scope(entry)
         entry
-          .values
+          .ambiguous_values
+          .reject { |name, _| entry.defined_values.key?(name) }
+          .to_h { |name, refs| [name, Symbol::Ambiguous[name, refs.map(&:module_name)]] }
+          .then { entry.values.merge(it) }
           .reduce(Scope.new) { |acc, (unq_name, sym)| acc.bind(unq_name, sym) }
       end
 

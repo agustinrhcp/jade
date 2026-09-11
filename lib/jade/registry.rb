@@ -75,5 +75,5 @@ module Jade
     end
   end
 
-  ImportEntry = Data.define(:module_name, :alias, :unqualified_symbols, :qualified_symbols)
+  ImportEntry = Data.define(:module_name, :alias, :unqualified_symbols, :qualified_symbols, :implicit)
 end

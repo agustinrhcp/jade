@@ -39,7 +39,14 @@ module Jade
       def resolve_imports(entry)
         imports
           .reduce(entry) do |acc, stdlib|
-            ImportEntry[stdlib.entry.name, stdlib.entry.name, stdlib.default_imports, stdlib.entry.exposes]
+            ImportEntry
+              .new(
+                module_name: stdlib.entry.name,
+                alias: stdlib.entry.name,
+                unqualified_symbols: stdlib.default_imports,
+                qualified_symbols: stdlib.entry.exposes,
+                implicit: true,
+              )
               .then { acc.import(it) }
           end
       end

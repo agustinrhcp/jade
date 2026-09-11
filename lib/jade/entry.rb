@@ -64,19 +64,19 @@ module Jade
     end
 
     def imported_values
-      imports
-        .flat_map(&:unqualified_symbols)
-        .select { it.is_a?(Symbol::ValueRef) }
-        .map { [it.name, it] }
-        .to_h
+      unqualified(Symbol::ValueRef)
     end
 
     def imported_types
-      imports
-        .flat_map(&:unqualified_symbols)
-        .select { it.is_a?(Symbol::TypeRef) }
-        .map { [it.name, it] }
-        .to_h
+      unqualified(Symbol::TypeRef)
+    end
+
+    def ambiguous_values
+      ambiguous(Symbol::ValueRef)
+    end
+
+    def ambiguous_types
+      ambiguous(Symbol::TypeRef)
     end
 
     def values
@@ -127,6 +127,28 @@ module Jade
     end
 
     private
+
+    def unqualified(kind)
+      imports
+        .partition(&:implicit)
+        .map { |group| refs(group, kind).to_h { [it.name, it] } }
+        .then { |(implicit, explicit)| implicit.merge(explicit) }
+    end
+
+    def ambiguous(kind)
+      imports
+        .reject(&:implicit)
+        .then { refs(it, kind) }
+        .uniq(&:qualified_name)
+        .group_by(&:name)
+        .select { |_, candidates| candidates.size > 1 }
+    end
+
+    def refs(imports, kind)
+      imports
+        .flat_map(&:unqualified_symbols)
+        .select { it.is_a?(kind) }
+    end
 
     def interface_snapshot
       value_names = exposes.filter_map { it.is_a?(Symbol::ValueRef) ? it.name : nil }.sort
