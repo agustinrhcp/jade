@@ -7,6 +7,8 @@ module Jade
       def generate_boundary_wrapper(node, registry)
         node => AST::FunctionDeclaration(name:, params:, symbol:)
 
+        return nil if registry.cell?(symbol.module_name)
+
         entry = registry.get(symbol.module_name)
         return nil unless entry&.exposed_value(name)
 
@@ -43,10 +45,25 @@ module Jade
         sig     = (param_names + dict_params).join(', ')
         sig_str = sig.empty? ? '' : "(#{sig})"
 
-        Pretty.block("def #{target}#{sig_str}", body_code)
+        body_code
+          .then { memoize?(symbol, var_cs, registry) ? memoize(name, it) : it }
+          .then { Pretty.block("def #{target}#{sig_str}", it) }
       end
 
       private
+
+      def memoize?(symbol, var_cs, registry)
+        var_cs.empty? && registry.lookup(symbol).return_type.is_a?(Symbol::Inferred)
+      end
+
+      def memoize(name, body_code)
+        "@#{name.delete_suffix('?')}".then do |ivar|
+          [
+            "return #{ivar} if defined?(#{ivar})",
+            Pretty.block("#{ivar} = begin", body_code),
+          ].join(Pretty.newline(2))
+        end
+      end
 
       def emit_body(body, self_sym, param_names, registry)
         if Transforms::TailCall.tail_recursive?(body, self_sym, param_names.size, registry)

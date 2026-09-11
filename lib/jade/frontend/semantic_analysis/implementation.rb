@@ -34,8 +34,10 @@ module Jade
           end
 
           type_is_local = entry.defined_types.key?(local_type_name(applied_type))
+          owned = entry.defined_types.key?(interface) || type_is_local ||
+            session_owned?(registry, entry, [interface_ref, type_ref])
 
-          unless entry.defined_types.key?(interface) || type_is_local
+          unless owned
             return make_error
               .(
                 Error::OrphanImplementation,
@@ -44,6 +46,20 @@ module Jade
               )
               .then { Result[node, [it], scope] }
           end
+
+          earlier_cell(registry, entry, [interface_ref.qualified_name, type_ref.qualified_name])
+            .then do |cell|
+              if cell
+                return make_error
+                  .(
+                    Error::ImplementedInEarlierCell,
+                    interface: interface_ref.qualified_name,
+                    type: type_sym.qname,
+                    cell:,
+                  )
+                  .then { Result[node, [it], scope] }
+              end
+            end
 
           iface_sym = registry.lookup(interface_ref)
 
@@ -85,6 +101,20 @@ module Jade
         end
 
         private
+
+        def session_owned?(registry, entry, refs)
+          registry.cell?(entry.name) && refs.any? { registry.cell?(it.module_name) }
+        end
+
+        def earlier_cell(registry, entry, key)
+          return nil unless registry.cell?(entry.name)
+
+          registry
+            .modules
+            .each_value
+            .find { it.name != entry.name && it.implementations.key?(key) }
+            &.name
+        end
 
         def local_type_name(applied_type)
           case applied_type.constructor
