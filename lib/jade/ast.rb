@@ -99,7 +99,7 @@ module Jade
       ->(tokens) do
         tokens => [open, token, close]
 
-        Literal[token.value, token.range.begin...close.range.end]
+        Literal[token.value, open.range.begin...close.range.end]
       end
     end
 

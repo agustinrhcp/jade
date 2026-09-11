@@ -34,6 +34,7 @@ module Jade
 
         it { is_expected.to be_a(AST::Node).and be_a(AST::Literal) }
         its(:value) { is_expected.to eql "Hello" }
+        its(:range) { is_expected.to eql 0...7 }
       end
 
       context 'and it is empty' do
@@ -45,6 +46,7 @@ module Jade
 
         it { is_expected.to be_a(AST::Node).and be_a(AST::Literal) }
         its(:value) { is_expected.to eql "" }
+        its(:range) { is_expected.to eql 0...2 }
       end
 
       context 'but it is malformed' do
