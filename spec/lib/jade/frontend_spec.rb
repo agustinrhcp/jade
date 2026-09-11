@@ -1070,6 +1070,44 @@ module Jade
         its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::MissingExposingClause) }
       end
 
+      context 'with a binding at the top level' do
+        let(:text) do
+          <<~JADE
+            module Test exposing (limit)
+
+            x = 2
+
+            def limit -> Int
+              x
+            end
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TopLevelStatement) }
+      end
+
+      context 'with a bare expression at the top level' do
+        let(:text) do
+          <<~JADE
+            module Test exposing (limit)
+
+            def limit -> Int
+              2
+            end
+
+            [1, 2]
+          JADE
+        end
+
+        subject { frontend => Err(errors); errors }
+
+        it { is_expected.to have(1).item }
+        its([0]) { is_expected.to be_a(Frontend::SemanticAnalysis::Error::TopLevelStatement) }
+      end
+
       context 'exposing a symbol that doesn\'t exist' do
         let(:text) do
           <<~JADE
