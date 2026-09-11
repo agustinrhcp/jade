@@ -126,11 +126,6 @@ module Jade
           .is_a?(Symbol::InteropFunction)
       end
 
-      def check_repl(node, registry, env = Env.new)
-        check_node(node, registry, env, Expected.infer(env.fresh))
-          .to_result
-      end
-
       def check_node(node, registry, state, expected_type)
         case node
         in AST::Body then Inference::Body

@@ -76,7 +76,7 @@ module Jade
         @self_var_name = prev
       end
 
-      # False outside a Module so bare expressions (REPL) get the runtime
+      # False outside a Module so bare expressions get the runtime
       # fallback — no constants exist to reference.
       def hoist_records?
         @hoist_records
