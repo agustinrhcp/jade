@@ -8,9 +8,13 @@ module Jade
     LETTERS = ('a'..'z').to_a.freeze
 
     def render(name, type, constraints)
+      "#{name} : #{describe(type, constraints)}"
+    end
+
+    def describe(type, constraints)
       naming(type, constraints)
         .then { |sub| [sub.apply(type), constraints.map { sub.apply(it) }] }
-        .then { |(renamed, cs)| "#{name} : #{constraint_prefix(cs)}#{renamed}" }
+        .then { |(renamed, cs)| "#{constraint_prefix(cs)}#{renamed}" }
     end
 
     # Vars compare by id but print as their name, which nothing keeps unique.
