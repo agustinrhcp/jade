@@ -41,6 +41,7 @@ module Jade
                   function_name: node.name,
                 )
               end
+              .then { |st| keep_signature(st, node, symbol, registry, fn_type) }
               .then do |st|
                 next st if st.env.bindings[symbol.qualified_name].is_a?(Scheme) && !st.skip_constraints
 
@@ -62,6 +63,72 @@ module Jade
                 )
               end
               .then { [it, Result.init(Type.unit)] }
+          end
+
+          private
+
+          def keep_signature(state, node, symbol, registry, fn_type)
+            Type
+              .from_symbol(registry.lookup(symbol), registry, state.env.var_gen)
+              .first
+              .then { narrowing(it, state.env.substitution.apply(fn_type)) }
+              .then { it ? state.add_errors([narrowed(it, state, node)]) : state }
+          end
+
+          def narrowing(declared, actual)
+            pairs(declared, actual).then do |found|
+              found.find { |(_, type)| !type.is_a?(Type::Var) } ||
+                found
+                  .uniq { |(var, _)| var.id }
+                  .group_by { |(_, type)| type.id }
+                  .values
+                  .find { it.size > 1 }
+                  &.then { |((var, _), (other, _))| [var, other] }
+            end
+          end
+
+          def pairs(declared, actual)
+            case declared
+            in Type::Var
+              [[declared, actual]]
+
+            in Type::Application(constructor:, args:)
+              pairs(constructor, actual.constructor) + zipped(args, actual.args)
+
+            in Type::Function(args:, return_type:)
+              zipped(args, actual.args) + pairs(return_type, actual.return_type)
+
+            in Type::AnonymousRecord(fields:, row_var:)
+              fields.flat_map { |name, type| pairs(type, actual.fields.fetch(name)) } +
+                row_pairs(row_var, fields, actual)
+
+            else
+              []
+            end
+          end
+
+          def zipped(declared, actual)
+            declared
+              .zip(actual)
+              .flat_map { |(d, a)| pairs(d, a) }
+          end
+
+          def row_pairs(row_var, fields, actual)
+            return [] unless row_var
+
+            (actual.fields.keys - fields.keys).empty? && actual.row_var ?
+              pairs(row_var, actual.row_var) :
+              [[row_var, actual]]
+          end
+
+          def narrowed((var, found), state, node)
+            Error::NarrowedSignature.new(
+              state.env.entry_name,
+              node.range,
+              function_name: node.name,
+              var: var.name,
+              found:,
+            )
           end
         end
       end

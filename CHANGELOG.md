@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A signature wider than its body was accepted.** `def anything -> a`
+  returning `Nothing`, or `def wrap -> Maybe(a)` returning `Just(1)`, type
+  checked: the body quietly fixed the declared variable, and every caller then
+  saw the narrower type. A declared type variable now has to stay a variable
+  through the body. Fixing it to a concrete type, or making two declared
+  variables the same, is an error that says which.
+
 ## [0.10.1] - 2026-09-11
 
 ### Added
