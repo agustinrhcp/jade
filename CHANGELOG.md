@@ -24,6 +24,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   be recovered from the directory. Until now the first thing a new project met
   was the error telling it to write that file by hand.
 
+### Added
+
+- **[docs/pilot.md](docs/pilot.md), a playbook for a four to six week trial.**
+  How to pick the module, how to set up CI so ejecting is proven from the
+  first commit rather than the last, what to record and what to measure, and a
+  kill criterion agreed before any code is written. It states the costs before
+  the guarantees: what a crossing costs, where Jade runs slower than the Ruby
+  it replaces, how small the stdlib is.
+
 ### Fixed
 
 - **A function type printed as `(a) -> b`, which means something else.**
