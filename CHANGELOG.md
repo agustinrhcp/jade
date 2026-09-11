@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A statement at the top level of a module is an error.** `x = 2` between
+  two `def`s type-checked, and a function reading `x` compiled clean, then
+  raised `NameError` at runtime: the binding became a local of the Ruby
+  `module` body, out of every method's reach. A module's top level holds
+  declarations only; a value belongs in a zero-argument `def`.
+
 - **A name imported from two modules picked one without a word.**
   `import Alpha exposing (name)` beside `import Beta exposing (name)`
   compiled, and `name` meant whichever import came last. Using it unqualified

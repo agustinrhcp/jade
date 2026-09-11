@@ -53,11 +53,6 @@ module Jade
           .then { it.errors.any? ? Err[it.errors] : Ok[entry.with(ast: it.node)] }
       end
 
-      def analyze_repl(ast, registry, scope, entry)
-        analyze_node(ast, registry, scope, entry)
-          .then { it.errors.any? ? Err[it.errors] : Ok[[it.node, it.scope]] }
-      end
-
       def analyze_entry(entry, registry)
         analyze(entry, registry)
       end

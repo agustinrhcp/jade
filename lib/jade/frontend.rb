@@ -46,28 +46,6 @@ module Jade
        end
     end
 
-    def run_repl(ast, registry, current_entry, scope, env, var_gen)
-      registry ||= registry_with_basics
-      current_entry ||= entry_with_basics('JadeRepl')
-      scope ||= SemanticAnalysis::Scope.new
-      env ||= TypeChecking::Env.new
-      var_gen ||= TypeChecking::VarGen.new
-
-      ForwardDeclaration
-        .declare(ast, registry, current_entry)
-        .then { |entry| FixityFixer.fix(ast).then { [it, entry] } }
-        .then do |fixed_ast, updated_entry|
-          updated_registry = registry.update_module(updated_entry)
-          SemanticAnalysis
-            .analyze_repl(fixed_ast, updated_registry, scope, updated_entry)
-            .and_then do |(enhanced_ast, new_scope)|
-              enhanced_ast = Desugaring.desugar_resolved(enhanced_ast, updated_registry)
-              TypeChecking.check_repl(enhanced_ast, updated_registry, env, var_gen)
-                .map { |type, new_env| [enhanced_ast, type, updated_registry, updated_entry, new_scope, new_env] }
-            end
-        end
-    end
-
     def run_up_to_semantic_analysis(ast)
       registry, current_entry = entry_with_basics(ast)
 
