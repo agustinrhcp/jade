@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A file that ends mid-declaration crashed `jade check`.** The parse error
+  for input that runs out carries no span, since there is no token to point
+  at, and the renderer called `.begin` on it. The diagnostic now points at the
+  last character written, where the missing part belongs, and a label with no
+  span renders as its message alone.
+
 - **A body its signature rejects crashed the compiler.** A list, a bare
   constructor, or a binding in last position, checked against a type it could
   not be, reached `nil.call` in `State#unify` — the crash 0.10.1 fixed for

@@ -60,6 +60,10 @@ module Jade
 
         it { is_expected.to be_kind_of(Parsing::Error) }
         its(:message) { is_expected.to include("Unexpected end of input, expected quote") }
+
+        it 'points its diagnostic at the last character written' do
+          expect(subject.to_diagnostic(source:).primary.span).to eql 5...6
+        end
       end
     end
 

@@ -20,7 +20,7 @@ module Jade::Diagnostics
     def render(diagnostic)
       [
         header(diagnostic),
-        diagnostic.primary&.then { span_block(it, severity: diagnostic.severity) if it.source },
+        diagnostic.primary&.then { primary_block(it, diagnostic.severity) },
         *diagnostic
           .secondary
           .map { span_block(_1, severity: :secondary) },
@@ -40,6 +40,10 @@ module Jade::Diagnostics
     end
 
     private
+
+    def primary_block(label, severity)
+      span_block(label, severity:) if label.source && label.span
+    end
 
     def header(diagnostic)
       "#{bold}#{color(diagnostic.severity)}#{diagnostic.severity}:#{reset} " \
