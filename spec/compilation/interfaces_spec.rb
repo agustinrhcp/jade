@@ -612,5 +612,66 @@ module Jade
       end
     end
 
+    context 'an implementation function constrained on a type it does not implement' do
+      let(:source) do
+        <<~JADE
+          module ImplConstraint exposing (row_sel)
+
+          struct Sel(a) = { names: List(String) }
+
+
+          interface Selectable(a) with
+            selector : Sel(a)
+          end
+
+
+          interface Fetchable(x) with
+            projection : x -> Sel(a)
+          end
+
+
+          struct PatientsCols = { id: String }
+
+
+          def cols_projection(c: PatientsCols) -> Sel(a)
+            selector
+          end
+
+
+          implements Fetchable(PatientsCols) with
+            projection: cols_projection
+          end
+
+
+          struct Row = { id: String }
+
+
+          def row_selector -> Sel(Row)
+            Sel(["id"])
+          end
+
+
+          implements Selectable(Row) with
+            selector: row_selector
+          end
+
+
+          def row_sel -> Sel(Row)
+            projection(PatientsCols("x"))
+          end
+        JADE
+      end
+
+      it 'is refused, rather than compiling to something that raises' do
+        expect { test_compiler.require(source) }
+          .to raise_error(CompilationError, /whose type is not the one being implemented/)
+      end
+
+      it 'is refused when the function is written inline' do
+        expect {
+          test_compiler.require(source.sub('projection: cols_projection', 'projection: (c) -> { selector }'))
+        }.to raise_error(CompilationError, /whose type is not the one being implemented/)
+      end
+    end
   end
 end

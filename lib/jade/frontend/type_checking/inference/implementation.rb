@@ -57,6 +57,7 @@ module Jade
                   st_after_bind,
                   Expected.check(expected_type),
                   interface_qname,
+                  concrete_type,
                 )
               end
               .then { [it, Result.init(Type.unit)] }
@@ -64,7 +65,7 @@ module Jade
 
           private
 
-          def infer_fn(impl_fn, registry, state, expected, interface_qname)
+          def infer_fn(impl_fn, registry, state, expected, interface_qname, head_type)
             impl_fn => AST::ImplementationFunction(name:, fn:)
 
             case fn
@@ -83,29 +84,66 @@ module Jade
                   state,
                   Expected.infer(state.fresh),
                 )
-                body_state.unify(
-                  body_result.type,
-                  expected.type,
-                  &mismatch_error(state.env.entry_name, impl_fn, interface_qname, name)
-                )
+                body_state
+                  .unify(
+                    body_result.type,
+                    expected.type,
+                    &mismatch_error(state.env.entry_name, impl_fn, interface_qname, name)
+                  )
+                  .then do |unified|
+                    unified.add_errors(
+                      foreign_constraints(
+                        body_result.constraints,
+                        head_type,
+                        unified,
+                        impl_fn,
+                        interface_qname,
+                        name,
+                      ),
+                    )
+                  end
               end
 
             in AST::Lambda
-              check(fn, registry, state, expected).first
+              lambda_state, lambda_result = check(fn, registry, state, expected)
+
+              lambda_state.add_errors(
+                foreign_constraints(
+                  lambda_result.constraints,
+                  head_type,
+                  lambda_state,
+                  impl_fn,
+                  interface_qname,
+                  name,
+                ),
+              )
 
             in AST::VariableReference
               ref_state, ref_result = check(fn, registry, state, expected)
 
-              ref_state.unify(
-                ref_result.type,
-                expected.type,
-                &mismatch_error(
-                  state.env.entry_name,
-                  impl_fn,
-                  interface_qname,
-                  name
+              ref_state
+                .unify(
+                  ref_result.type,
+                  expected.type,
+                  &mismatch_error(
+                    state.env.entry_name,
+                    impl_fn,
+                    interface_qname,
+                    name
+                  )
                 )
-              )
+                .then do |unified|
+                  unified.add_errors(
+                    foreign_constraints(
+                      ref_result.constraints,
+                      head_type,
+                      unified,
+                      impl_fn,
+                      interface_qname,
+                      name,
+                    ),
+                  )
+                end
 
             # `decoder: zero_arg_fn` becomes `FunctionCall(zero_arg_fn, [])`
             # after ZeroArgRewrite. Type the call; its result must match the
@@ -113,6 +151,24 @@ module Jade
             in AST::FunctionCall
               check(fn, registry, state, expected).first
             end
+          end
+
+          def foreign_constraints(constraints, head_type, state, impl_fn, interface_qname, fn_name)
+            substitution = state.env.substitution
+            head_vars = substitution.apply(head_type).unbound_vars.map(&:id).to_set
+
+            constraints
+              .map { substitution.apply(it) }
+              .reject { it.unbound_vars.all? { |v| head_vars.include?(v.id) } }
+              .map do
+                Error::ImplementationFunctionConstraint.new(
+                  state.env.entry_name,
+                  impl_fn.range,
+                  interface: interface_qname,
+                  fn_name:,
+                  constraint: it.to_s,
+                )
+              end
           end
 
           def constructor_var_in?(type, var_id)
