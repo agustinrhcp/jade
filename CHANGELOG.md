@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **An implementation whose function requires an interface of some other type
+  is refused, instead of compiling to something that raises.** An interface
+  method may mention a type variable the interface itself does not name:
+
+      interface Fetchable(x) with
+        projection : x -> Sel(a)
+      end
+
+  An implementation of it then needs a dictionary for `a` — but `a` is settled
+  where the method is called, while the implementation is picked by `x`, so
+  nothing carries one to it. The module type checked and then died with a
+  `NameError` on the first call, because codegen had emitted the boundary stub
+  in place of the real function. Both spellings are now compile errors, the
+  named function and the inline lambda, and the message names the requirement
+  that cannot be met.
+
+  Allowing it is a feature rather than a fix: the dictionary would have to be
+  attached at each call site and threaded into the implementation.
+
 ## [0.10.1] - 2026-09-11
 
 ### Added
