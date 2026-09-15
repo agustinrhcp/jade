@@ -236,6 +236,7 @@ module Jade
             params: [var_sym('a'), var_sym('a')],
             return_type: type_sym('Basics', 'Bool'),
             decl_span: nil,
+            constraints: [],
           )
         end
 

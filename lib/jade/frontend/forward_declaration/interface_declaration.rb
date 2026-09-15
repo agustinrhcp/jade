@@ -50,10 +50,14 @@ module Jade
         private
 
         def build_interface_function(entry, interface_ref, fn_decl)
-          fn_decl => AST::InterfaceFunctionDecl(name:, type:, range:)
+          fn_decl => AST::InterfaceFunctionDecl(name:, type:, constraints:, range:)
 
           figure_out_type(entry, type)
-            .map do |type_symbol|
+            .and_then do |type_symbol|
+              declared_constraints(entry, constraints)
+                .map { [type_symbol, it] }
+            end
+            .map do |(type_symbol, declared)|
               params, return_type =
                 case type_symbol
                 in Symbol::FunctionType(params:, return_type:)
@@ -63,8 +67,17 @@ module Jade
                 end
 
               Symbol
-                .interface_function(name, interface_ref, params, return_type, range)
+                .interface_function(name, interface_ref, params, return_type, range, declared)
             end
+        end
+
+        def declared_constraints(entry, constraints)
+          constraints
+            .map do |constraint|
+              require_type(entry, constraint.interface, constraint.range)
+                .map { [it.to_ref.qualified_name, constraint.type_param.name] }
+            end
+            .then { Results.sequence(it) }
         end
       end
     end

@@ -662,15 +662,255 @@ module Jade
         JADE
       end
 
-      it 'is refused, rather than compiling to something that raises' do
-        expect { test_compiler.require(source) }
-          .to raise_error(CompilationError, /whose type is not the one being implemented/)
+      it 'becomes a requirement of the implementation' do
+        expect { test_compiler.require(source) }.not_to raise_error
       end
 
-      it 'is refused when the function is written inline' do
+      it 'becomes a requirement when the function is written inline' do
         expect {
           test_compiler.require(source.sub('projection: cols_projection', 'projection: (c) -> { selector }'))
-        }.to raise_error(CompilationError, /whose type is not the one being implemented/)
+        }.not_to raise_error
+      end
+
+      it 'resolves the requirement against the call site' do
+        test_compiler.require(source)
+
+        expect(ImplConstraint.row_sel).to eq({ 'names' => ['id'] })
+      end
+
+      describe 'when the interface declares the requirement' do
+        let(:declared_source) do
+          <<~JADE
+            module DeclaredReq exposing (row_sel)
+
+            struct Sel(a) = { names: List(String) }
+
+
+            interface Selectable(a) with
+              selector : Sel(a)
+            end
+
+
+            interface Fetchable(x) with
+              projection : x -> Sel(a) with Selectable(a)
+            end
+
+
+            struct PatientsCols = { id: String }
+
+
+            def cols_projection(c: PatientsCols) -> Sel(a)
+              selector
+            end
+
+
+            implements Fetchable(PatientsCols) with
+              projection: cols_projection
+            end
+
+
+            struct Row = { id: String }
+
+
+            def row_selector -> Sel(Row)
+              Sel(["id"])
+            end
+
+
+            implements Selectable(Row) with
+              selector: row_selector
+            end
+
+
+            def row_sel -> Sel(Row)
+              projection(PatientsCols("x"))
+            end
+          JADE
+        end
+
+        it 'resolves it without inferring anything' do
+          test_compiler.require(declared_source)
+
+          expect(DeclaredReq.row_sel).to eq({ 'names' => ['id'] })
+        end
+
+        it 'refuses an implementation needing something it does not declare' do
+          expect {
+            test_compiler.require(
+              declared_source
+                .sub('module DeclaredReq', 'module UndeclaredReq')
+                .sub('with Selectable(a)', 'with Taggable(a)')
+                .sub("interface Selectable(a) with\n", "interface Taggable(a) with\n  tag : Sel(a)\nend\n\n\ninterface Selectable(a) with\n"),
+            )
+          }.to raise_error(CompilationError, /does not declare/)
+        end
+      end
+
+      describe 'a qualified reference to an interface method as a body' do
+        let(:iface_source) do
+          <<~JADE
+            module QualIface exposing (Sel(..), Selectable, selector)
+
+            struct Sel(a) = { names: List(String) }
+
+
+            interface Selectable(a) with
+              selector : Sel(a)
+            end
+          JADE
+        end
+
+        let(:use_source) do
+          <<~JADE
+            module QualUse exposing (row_sel)
+
+            import QualIface exposing (Sel(..), Selectable)
+
+
+            struct Row = { id: String }
+
+
+            def row_selector -> Sel(Row)
+              Sel(["id"])
+            end
+
+
+            implements Selectable(Row) with
+              selector: row_selector
+            end
+
+
+            def pick -> Sel(a)
+              QualIface.selector
+            end
+
+
+            def row_sel -> Sel(Row)
+              pick
+            end
+          JADE
+        end
+
+        it 'resolves through the dictionary rather than emitting a bare name' do
+          test_compiler.require(iface_source)
+          test_compiler.require(use_source)
+
+          expect(QualUse.row_sel).to eq({ 'names' => ['id'] })
+        end
+      end
+
+      describe 'when another module declares the requirement' do
+        let(:decl_iface_source) do
+          <<~JADE
+            module DeclIface exposing (Fetchable, Sel(..), Selectable, projection, selector)
+
+            struct Sel(a) = { names: List(String) }
+
+
+            interface Selectable(a) with
+              selector : Sel(a)
+            end
+
+
+            interface Fetchable(x) with
+              projection : x -> Sel(a) with Selectable(a)
+            end
+          JADE
+        end
+
+        let(:decl_use_source) do
+          <<~JADE
+            module DeclCols exposing (row_sel)
+
+            import DeclIface exposing (Fetchable, Sel(..), Selectable, projection, selector)
+
+
+            struct PatientsCols = { id: String }
+
+
+            def cols_projection(c: PatientsCols) -> Sel(a)
+              selector
+            end
+
+
+            implements Fetchable(PatientsCols) with
+              projection: cols_projection
+            end
+
+
+            struct Row = { id: String }
+
+
+            def row_selector -> Sel(Row)
+              Sel(["id"])
+            end
+
+
+            implements Selectable(Row) with
+              selector: row_selector
+            end
+
+
+            def row_sel -> Sel(Row)
+              projection(PatientsCols("x"))
+            end
+          JADE
+        end
+
+        it 'is allowed, because the declaration travels with the interface' do
+          test_compiler.require(decl_iface_source)
+          test_compiler.require(decl_use_source)
+
+          expect(DeclCols.row_sel).to eq({ 'names' => ['id'] })
+        end
+      end
+
+      describe 'when the interface is declared in another module' do
+        let(:iface_source) do
+          <<~JADE
+            module CrossIface exposing (Fetchable, Sel, Selectable, projection, selector)
+
+            struct Sel(a) = { names: List(String) }
+
+
+            interface Selectable(a) with
+              selector : Sel(a)
+            end
+
+
+            interface Fetchable(x) with
+              projection : x -> Sel(a)
+            end
+          JADE
+        end
+
+        let(:impl_source) do
+          <<~JADE
+            module CrossCols exposing (PatientsCols)
+
+            import CrossIface exposing (Fetchable, Sel, Selectable, projection, selector)
+
+
+            struct PatientsCols = { id: String }
+
+
+            def cols_projection(c: PatientsCols) -> Sel(a)
+              selector
+            end
+
+
+            implements Fetchable(PatientsCols) with
+              projection: cols_projection
+            end
+          JADE
+        end
+
+        it 'is refused rather than losing the dictionary at the call site' do
+          test_compiler.require(iface_source)
+
+          expect { test_compiler.require(impl_source) }
+            .to raise_error(CompilationError, /declared in another module/)
+        end
       end
     end
   end

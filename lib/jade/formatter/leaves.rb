@@ -113,7 +113,18 @@ module Jade
       extend Helper
 
       def format(node, indent:, source:)
-        "#{node.name} : #{format_type(node.type)}".then(&and_indent(indent))
+        "#{node.name} : #{format_type(node.type)}#{constraints_clause(node)}"
+          .then(&and_indent(indent))
+      end
+
+      def constraints_clause(node)
+        return '' if node.constraints.empty?
+
+        node
+          .constraints
+          .map { "#{it.interface}(#{it.type_param.name})" }
+          .join(', ')
+          .then { " with #{it}" }
       end
     end
   end

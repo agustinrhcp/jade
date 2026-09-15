@@ -246,15 +246,6 @@ module Jade
         end
       end
 
-      # When a user fn has var-typed constraints, two definitions are emitted:
-      # `name` (Ruby-boundary wrapper, no dicts) and `__name__impl__` (takes
-      # dicts). Jade-internal calls target the latter.
-      def fn_target_name(fn_sym, registry)
-        return fn_sym.name if dict_constraints(fn_sym, registry).empty?
-
-        fn_impl_synthetic_name(fn_sym.name)
-      end
-
       # Returns the list of dict args to pass after regular args. Only
       # Symbol::Function callees take dict params; other branches dispatch
       # via `dictionaries` directly inside generate_callee. dictionaries are
@@ -267,11 +258,20 @@ module Jade
           else callee.symbol
           end
 
+        return interface_dict_args(symbol, dictionaries, registry) if symbol.is_a?(Symbol::InterfaceFunction)
         return "" unless symbol.is_a?(Symbol::Function)
 
         fn_constraints(symbol, registry)
           .each_with_index
           .filter_map { |c, i| dispatch_value(dictionaries[i], registry) if c.type.is_a?(Type::Var) }
+          .join(', ')
+      end
+
+      def interface_dict_args(_symbol, dictionaries, registry)
+        dictionaries
+          .drop(1)
+          .compact
+          .filter_map { dispatch_value(it, registry) }
           .join(', ')
       end
 
@@ -356,7 +356,7 @@ module Jade
           "#{internal(fn.module_name)}.#{fn.name}"
 
         in Symbol::Function => fn
-          "#{internal(fn.module_name)}.method(:#{fn.name})"
+          "#{internal(fn.module_name)}.method(:#{fn_target_name(fn, registry)})"
         end
       end
 

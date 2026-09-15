@@ -27,6 +27,15 @@ module Jade
           def type_from_symbol(symbol, registry, var_gen)
             Type.from_symbol(symbol, registry, var_gen)
           end
+
+          def attach_markers(result)
+            result
+              .constraints
+              .select { it.type.is_a?(Type::Var) && it.index != :unindex }
+              .each { Constraints.attach_dictionary(it, it) }
+
+            result
+          end
         end
       end
     end

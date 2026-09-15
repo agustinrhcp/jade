@@ -753,10 +753,23 @@ module Jade
     }
 
     parser(:interface_function_decl) {
+      constraint =
+        (
+          constant >>
+          type(:lparen).skip >>
+          type_param >>
+          type(:rparen).skip
+        ).map(&AST.interface_constraint)
+
+      constraints =
+        type(:with).skip >>
+        at_least_one(constraint, separated_by: type(:comma).skip)
+
       (
         (type(:identifier) | (type(:lparen).skip >> operator >> type(:rparen).skip)) >>
         type(:colon).skip >>
-        type_expression
+        type_expression >>
+        optional(constraints, default: []).map { [it] }
       ).map(&AST.interface_function_decl)
     }
 

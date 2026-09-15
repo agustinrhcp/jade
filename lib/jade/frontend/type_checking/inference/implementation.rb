@@ -58,6 +58,7 @@ module Jade
                   Expected.check(expected_type),
                   interface_qname,
                   concrete_type,
+                  iface_fn_type,
                 )
               end
               .then { [it, Result.init(Type.unit)] }
@@ -65,7 +66,7 @@ module Jade
 
           private
 
-          def infer_fn(impl_fn, registry, state, expected, interface_qname, head_type)
+          def infer_fn(impl_fn, registry, state, expected, interface_qname, head_type, sig_type)
             impl_fn => AST::ImplementationFunction(name:, fn:)
 
             case fn
@@ -91,15 +92,14 @@ module Jade
                     &mismatch_error(state.env.entry_name, impl_fn, interface_qname, name)
                   )
                   .then do |unified|
-                    unified.add_errors(
-                      foreign_constraints(
-                        body_result.constraints,
-                        head_type,
-                        unified,
-                        impl_fn,
-                        interface_qname,
-                        name,
-                      ),
+                    record_requirements(
+                      unified,
+                      body_result.constraints,
+                      head_type,
+                      sig_type,
+                      interface_qname,
+                      impl_fn,
+                      name,
                     )
                   end
               end
@@ -107,15 +107,14 @@ module Jade
             in AST::Lambda
               lambda_state, lambda_result = check(fn, registry, state, expected)
 
-              lambda_state.add_errors(
-                foreign_constraints(
-                  lambda_result.constraints,
-                  head_type,
-                  lambda_state,
-                  impl_fn,
-                  interface_qname,
-                  name,
-                ),
+              record_requirements(
+                lambda_state,
+                lambda_result.constraints,
+                head_type,
+                sig_type,
+                interface_qname,
+                impl_fn,
+                name,
               )
 
             in AST::VariableReference
@@ -133,15 +132,14 @@ module Jade
                   )
                 )
                 .then do |unified|
-                  unified.add_errors(
-                    foreign_constraints(
-                      ref_result.constraints,
-                      head_type,
-                      unified,
-                      impl_fn,
-                      interface_qname,
-                      name,
-                    ),
+                  record_requirements(
+                    unified,
+                    ref_result.constraints,
+                    head_type,
+                    sig_type,
+                    interface_qname,
+                    impl_fn,
+                    name,
                   )
                 end
 
@@ -153,22 +151,45 @@ module Jade
             end
           end
 
-          def foreign_constraints(constraints, head_type, state, impl_fn, interface_qname, fn_name)
+          def record_requirements(state, constraints, head_type, sig_type, interface_qname, impl_fn, fn_name)
             substitution = state.env.substitution
             head_vars = substitution.apply(head_type).unbound_vars.map(&:id).to_set
+            names = signature_names(sig_type, substitution)
 
-            constraints
+            free = constraints
               .map { substitution.apply(it) }
-              .reject { it.unbound_vars.all? { |v| head_vars.include?(v.id) } }
-              .map do
-                Error::ImplementationFunctionConstraint.new(
-                  state.env.entry_name,
-                  impl_fn.range,
-                  interface: interface_qname,
-                  fn_name:,
-                  constraint: it.to_s,
-                )
+              .select { it.type.is_a?(Type::Var) && !head_vars.include?(it.type.id) }
+              .uniq { [it.interface, it.type.id] }
+
+            free
+              .reject { names.key?(it.type.id) }
+              .map { unsatisfiable(state, impl_fn, interface_qname, fn_name, it) }
+              .then { state.add_errors(it) }
+              .require_impl(
+                [interface_qname, fn_name],
+                free.filter_map { |c| names[c.type.id]&.then { |n| [c.interface, n] } },
+              )
+          end
+
+          def signature_names(sig_type, substitution)
+            sig_type
+              .unbound_vars
+              .filter_map do |var|
+                substitution
+                  .apply(var)
+                  .then { it.is_a?(Type::Var) ? [it.id, var.name] : nil }
               end
+              .to_h
+          end
+
+          def unsatisfiable(state, impl_fn, interface_qname, fn_name, constraint)
+            Error::ImplementationFunctionConstraint.new(
+              state.env.entry_name,
+              impl_fn.range,
+              interface: interface_qname,
+              fn_name:,
+              constraint: constraint.to_s,
+            )
           end
 
           def constructor_var_in?(type, var_id)

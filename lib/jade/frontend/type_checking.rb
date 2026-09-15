@@ -8,6 +8,7 @@ require 'jade/frontend/type_checking/expected'
 require 'jade/frontend/type_checking/inference'
 require 'jade/frontend/type_checking/loader'
 require 'jade/frontend/type_checking/port_resolution'
+require 'jade/frontend/type_checking/requirements'
 require 'jade/frontend/type_checking/result'
 require 'jade/frontend/type_checking/state'
 require 'jade/frontend/type_checking/substitution'
@@ -26,11 +27,16 @@ module Jade
           .load(entry, registry)
           .then { collect_constraints(entry, registry, it) }
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
-          .then { finalize(*it, registry) }
+          .then { |state, _| Requirements.reconcile(entry, registry, state) }
+          .then { |amended, state| complete(amended, state, registry) }
+          .and_then { PortResolution.resolve(it, registry) }
+      end
+
+      def complete(entry, state, registry)
+        finalize(state, registry)
           .map { Canonicalize.run(entry.ast, it, registry) }
           .map { it.canonicalize_node_types }
           .map { entry.with(env: it) }
-          .and_then { PortResolution.resolve(it, registry) }
       end
 
       # A collecting pass walks declarations in source order, so a call to a
@@ -76,7 +82,7 @@ module Jade
           .then { it + 1 }
       end
 
-      def finalize(state, result, registry)
+      def finalize(state, registry)
         state.env => { bindings:, entry_name: }
 
         errors = bindings

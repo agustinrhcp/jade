@@ -13,6 +13,7 @@ module Jade
               .env
               .lookup(symbol.qualified_name)
               .then { it.attach_origin(node) }
+              .then { state.skip_constraints ? it : attach_markers(it) }
               .then { state.unify_result(it, expected.type) }
           end
         end
