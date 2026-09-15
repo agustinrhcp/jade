@@ -274,6 +274,67 @@ module Jade
 
         expect(PropEncCaller::Internal.dump_ints([1, 2, 3])).to eq([1, 2, 3])
       end
+
+      it 'keeps a constraint raised inside the target of a field access' do
+        src = <<~JADE
+          module PropFieldAccess exposing (from_cols)
+
+          struct Sel(a) = { names: List(String) }
+
+
+          struct Q(c) = { cols: c }
+
+
+          struct Cols = { id: String }
+
+
+          struct Row = { id: String }
+
+
+          interface Selectable(a) with
+            selector : Sel(a)
+          end
+
+
+          interface Runnable(c) with
+            to_sel : Q(c) -> Q(Sel(a)) with Selectable(a)
+          end
+
+
+          def row_selector -> Sel(Row)
+            Sel(["id"])
+          end
+
+
+          implements Selectable(Row) with
+            selector: row_selector
+          end
+
+
+          def cols_to_sel(q: Q(Cols)) -> Q(Sel(a))
+            Q(selector)
+          end
+
+
+          implements Runnable(Cols) with
+            to_sel: cols_to_sel
+          end
+
+
+          def run(q: Q(c)) -> Sel(a)
+            to_sel(q).cols
+          end
+
+
+          def from_cols -> Sel(Row)
+            run(Q(Cols("x")))
+          end
+        JADE
+
+        test_compiler.require(src)
+
+        expect(PropFieldAccess.from_cols).to eq({ 'names' => ['id'] })
+      end
     end
   end
 end
