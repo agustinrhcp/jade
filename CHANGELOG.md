@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.2] - 2026-09-15
+
+### Fixed
+
+- **A constraint raised inside a field access reached nothing.**
+  `RecordAccess` built its result from the expected type alone, so whatever
+  the target raised was dropped at the dot. A function whose body is
+  `to_sel(q).cols` therefore recorded no constraint of its own: it took no
+  dictionary parameter, and the interface call inside it fell through to
+  `Runtime.impl_for`, which keys on the argument's own class. That dispatches
+  on `Q` when the interface is over the `c` inside it, and fails at the first
+  call — at run time, though both the types and the call sites were settled
+  when it compiled.
+
+  Deleting the `.cols` from the same program made it work, which is the
+  asymmetry that gave it away. It matters wherever an interface is over a type
+  a struct holds rather than the struct itself.
+
 ## [0.11.1] - 2026-09-15
 
 ### Added
