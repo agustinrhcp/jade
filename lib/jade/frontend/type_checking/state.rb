@@ -1,9 +1,17 @@
 module Jade
   module Frontend
     module TypeChecking
-      State = Data.define(:env, :errors, :skip_constraints) do
+      State = Data.define(:env, :errors, :skip_constraints, :impl_requirements) do
         def self.init(env, skip_constraints: false)
-          new(env, [], skip_constraints)
+          new(env, [], skip_constraints, {})
+        end
+
+        def require_impl(key, constraints)
+          return self if constraints.empty?
+
+          impl_requirements
+            .merge(key => constraints) { |_, old, new| (old + new).uniq }
+            .then { with(impl_requirements: it) }
         end
 
         def unify_result(result, right, rigid_vars = [], &block)

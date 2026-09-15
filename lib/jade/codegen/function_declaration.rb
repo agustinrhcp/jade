@@ -34,10 +34,9 @@ module Jade
 
         var_cs      = dict_constraints(symbol, registry)
         param_names = params.map { generate_node(it, registry) }
-        dict_params = var_cs.each_index.map { dict_synthetic_name(it) }
 
-        body_code = build_dict_env(var_cs)
-          .then { Codegen.with_dict_env(it) { emit_body(body, symbol, param_names, registry) } }
+        dict_params, body_code =
+          with_dict_params(var_cs) { emit_body(body, symbol, param_names, registry) }
 
         target  = var_cs.empty? ? name : fn_impl_synthetic_name(name)
         sig     = (param_names + dict_params).join(', ')
@@ -200,13 +199,6 @@ module Jade
           .then { it.substitution.apply(it.bindings[symbol.qualified_name].type) }
       end
 
-      def build_dict_env(var_cs)
-        var_cs
-          .each_with_index
-          .reduce({}) do |env, (c, i)|
-            env.merge([c.interface, c.type.id] => dict_synthetic_name(i))
-          end
-      end
     end
   end
 end

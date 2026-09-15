@@ -178,9 +178,18 @@ module Jade
         constraint = Type
           .constraint(symbol.interface.qualified_name, param_type, nil)
 
-        from_symbol_r(symbol.return_type, registry, var_gen, local_map)
-          .then { |(t, c, _)| [args.empty? ? t : Type.function(args, t), c + arg_cs + [constraint]] }
-          .then { it + [var_map] }
+        ret_type, ret_cs, full_map =
+          from_symbol_r(symbol.return_type, registry, var_gen, local_map)
+
+        extra_cs = symbol.constraints.map { |iface, var_name|
+          Type.constraint(iface, full_map.fetch(var_name), nil)
+        }
+
+        [
+          args.empty? ? ret_type : Type.function(args, ret_type),
+          ret_cs + arg_cs + [constraint] + extra_cs,
+          var_map,
+        ]
 
       in Symbol::Constructor if symbol.args.empty?
         from_symbol_r(symbol.parent, registry, var_gen, var_map)

@@ -6,7 +6,8 @@ module Jade
       :interface,
       :params,
       :return_type,
-      :decl_span
+      :decl_span,
+      :constraints
     ) do
       include Base
 

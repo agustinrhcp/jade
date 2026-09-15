@@ -77,7 +77,8 @@ module Jade
     define(:ImplementationFunction, :name, :fn)
 
     define(:InterfaceDeclaration, :name, :type_param, :functions)
-    define(:InterfaceFunctionDecl, :name, :type)
+    define(:InterfaceFunctionDecl, :name, :type, :constraints)
+    define(:InterfaceConstraint, :interface, :type_param)
 
     module Pattern
       extend self
@@ -751,7 +752,7 @@ module Jade
     end
 
     def interface_function_decl
-      ->((name, type)) do
+      ->((name, type, constraints)) do
         canonical_name =
           case name.type
           in :identifier then name.value
@@ -761,7 +762,18 @@ module Jade
         InterfaceFunctionDecl[
           canonical_name,
           type,
-          name.range.begin...type.range.end,
+          constraints,
+          name.range.begin...(constraints.last&.range&.end || type.range.end),
+        ]
+      end
+    end
+
+    def interface_constraint
+      ->((name, type_param)) do
+        InterfaceConstraint[
+          name.value,
+          type_param,
+          name.range.begin...type_param.range.end,
         ]
       end
     end

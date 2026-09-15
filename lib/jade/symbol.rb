@@ -134,8 +134,8 @@ module Jade
       Interface[nil, name, type_var, functions, default, span]
     end
 
-    def interface_function(name, inteface, params, return_type, span)
-      InterfaceFunction[nil, name, inteface, params, return_type, span]
+    def interface_function(name, inteface, params, return_type, span, constraints = [])
+      InterfaceFunction[nil, name, inteface, params, return_type, span, constraints]
     end
 
     def implementation(

@@ -48,11 +48,6 @@ module Jade
                   .map { st.env.substitution.apply(it) }
                   .uniq { it.type.is_a?(Type::Var) ? [it.interface, it.type] : it }
 
-                # TODO: for impl function declarations, unresolved constraints here
-                # (e.g. Eq(a) when the body calls == on a field of type a) should
-                # be stored as impl-level constraints, not function-level ones.
-                # The impl finalization pass (see TypeChecking.finalize) should then
-                # promote them into deps when the impl is instantiated for a concrete type.
                 st.bind(
                   symbol.qualified_name,
                   Placeholder[

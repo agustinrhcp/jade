@@ -17,6 +17,7 @@ module Jade
             end
               .then { state.env.lookup(it) }
               .then { it.attach_origin(node) }
+              .then { state.skip_constraints ? it : attach_markers(it) }
               .then { [state, it] }
           end
         end

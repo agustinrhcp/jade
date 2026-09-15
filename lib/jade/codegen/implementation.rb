@@ -106,7 +106,7 @@ module Jade
       end
 
       def generate_defs(node, registry)
-        node => AST::Implementation(interface:, applied_type:, functions:)
+        node => AST::Implementation(interface:, applied_type:, functions:, symbol:)
 
         type_name =
           case applied_type.constructor
@@ -115,7 +115,7 @@ module Jade
           end
 
         functions
-          .filter_map { generate_function(it, registry, interface, type_name) }
+          .filter_map { generate_function(it, registry, interface, type_name, symbol) }
           .join(Pretty.newline(2))
       end
 
@@ -143,7 +143,7 @@ module Jade
         fn_map = symbol.functions.filter_map { |fn_name, ref|
           next unless ref.is_a?(Symbol::ValueRef)
 
-          [fn_name, "->(*args) { #{internal(ref.module_name)}.#{ref.name}(*args) }"]
+          [fn_name, "->(*args) { #{internal(ref.module_name)}.#{registered_target(ref, registry)}(*args) }"]
         }.to_h
 
         return "" if fn_map.empty?
@@ -155,16 +155,41 @@ module Jade
           .join(Pretty.newline)
       end
 
-      def generate_function(impl_fn, registry, interface, type_name)
+      def requirement_markers(body, impl_sym, fn_name, registry)
+        required = registry
+          .lookup(impl_sym.interface)
+          .functions
+          .find { it.name == fn_name }
+          .constraints
+
+        return [] if required.empty?
+
+        body_markers(body)
+          .uniq { [it.interface, it.type.id] }
+          .sort_by { |c| required.index { |iface, _| iface == c.interface } || required.size }
+      end
+
+      def registered_target(ref, registry)
+        case registry.lookup(ref)
+        in Symbol::Function => fn then FunctionCall.fn_target_name(fn, registry)
+        else ref.name
+        end
+      end
+
+      def generate_function(impl_fn, registry, interface, type_name, impl_sym)
         impl_fn => AST::ImplementationFunction(name: fn_name, fn:)
 
         case fn
         in AST::Lambda(params:, body:)
-          synth     = impl_synthetic_name(interface, type_name, fn_name)
-          param_str = params.map { generate_node(it, registry) }.join(', ')
-          sig       = param_str.empty? ? '' : "(#{param_str})"
+          synth = impl_synthetic_name(interface, type_name, fn_name)
 
-          Pretty.block("def #{synth}#{sig}", generate_node(body, registry))
+          dicts, body_code = requirement_markers(body, impl_sym, fn_name, registry)
+            .then { with_dict_params(it) { generate_node(body, registry) } }
+
+          (params.map { generate_node(it, registry) } + dicts)
+            .join(', ')
+            .then { it.empty? ? '' : "(#{it})" }
+            .then { Pretty.block("def #{synth}#{it}", body_code) }
 
         # Bare VariableReference, and the auto-invoke FunctionCall the
         # desugar pass synthesises for zero-arg fn refs, both dispatch via

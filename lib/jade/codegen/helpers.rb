@@ -74,6 +74,48 @@ module Jade
           .then { "__#{it}__impl__" }
       end
 
+      def fn_target_name(fn_sym, registry)
+        return fn_sym.name if dict_constraints(fn_sym, registry).empty?
+
+        fn_impl_synthetic_name(fn_sym.name)
+      end
+
+      def with_dict_params(constraints)
+        constraints
+          .each_with_index
+          .to_h { |c, i| [[c.interface, c.type.id], dict_synthetic_name(i)] }
+          .then { |env| Codegen.with_dict_env(env) { yield } }
+          .then { |body| [constraints.each_index.map { dict_synthetic_name(it) }, body] }
+      end
+
+      def body_markers(node)
+        return [] unless node.is_a?(AST::Node)
+
+        node
+          .deconstruct_keys(nil)
+          .each_value
+          .flat_map { marker_children(it) }
+          .flat_map { body_markers(it) }
+          .then { own_markers(node) + it }
+      end
+
+      def own_markers(node)
+        return [] unless node.respond_to?(:dictionaries)
+
+        node
+          .dictionaries
+          .select { it.is_a?(Type::Constraint) && it.type.is_a?(Type::Var) }
+      end
+
+      def marker_children(value)
+        case value
+        in Array then value.flat_map { marker_children(it) }
+        in Hash then value.each_value.flat_map { marker_children(it) }
+        in AST::Node then [value]
+        else []
+        end
+      end
+
       def fn_constraints(fn_symbol, registry)
         env = registry.get(fn_symbol.module_name).env
 
