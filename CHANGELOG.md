@@ -4,28 +4,41 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.11.0] - 2026-09-15
+
+### Added
+
+- **An interface method may require an interface of another type.** A method
+  can mention a type variable the interface itself does not name, and say what
+  that variable has to satisfy:
+
+      interface Fetchable(x) with
+        projection : x -> Sel(a) with Selectable(a)
+      end
+
+  `a` is settled where `projection` is called, not where the implementation is
+  picked, so each call site resolves the requirement against its own types and
+  passes that dictionary alongside the one for `x`. Left undeclared, the
+  requirement is inferred from the implementations instead. Declared and
+  inferred are reconciled rather than one overriding the other: an
+  implementation may require what the method declares, and anything beyond it
+  is refused by name.
+
+  Two cases stay refused. A requirement *inferred* on an interface from
+  another module, because a declaration is what travels with the interface and
+  there is no foreign entry to amend — declare it and it works across modules.
+  And a requirement on a variable the method's signature never names, which
+  nothing could satisfy.
 
 ### Fixed
 
-- **An implementation whose function requires an interface of some other type
-  is refused, instead of compiling to something that raises.** An interface
-  method may mention a type variable the interface itself does not name:
-
-      interface Fetchable(x) with
-        projection : x -> Sel(a)
-      end
-
-  An implementation of it then needs a dictionary for `a` — but `a` is settled
-  where the method is called, while the implementation is picked by `x`, so
-  nothing carries one to it. The module type checked and then died with a
-  `NameError` on the first call, because codegen had emitted the boundary stub
-  in place of the real function. Both spellings are now compile errors, the
-  named function and the inline lambda, and the message names the requirement
-  that cannot be met.
-
-  Allowing it is a feature rather than a fix: the dictionary would have to be
-  attached at each call site and threaded into the implementation.
+- **A bare reference to a zero-arg interface method resolves through its
+  dictionary.** Dictionaries were only ever attached where a method was called
+  or passed as an argument, so a function body that was just `selector` — or
+  `Module.selector` — compiled to that name as a Ruby method and died on the
+  first call. It now reads the enclosing function's dictionary, or is a compile
+  error where none is in scope. Code that was silently broken this way may stop
+  compiling.
 
 ## [0.10.1] - 2026-09-11
 
