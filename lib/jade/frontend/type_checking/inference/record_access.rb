@@ -24,7 +24,7 @@ module Jade
               )
             end
 
-            Result.init(expected_.type)
+            Result.init(expected_.type, target_result.constraints)
               .then { it.apply(after_state.env.substitution) }
               .then { [after_state, it] }
           end
