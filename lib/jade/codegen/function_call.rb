@@ -393,7 +393,7 @@ module Jade
       end
 
       def emit(ir, registry)
-        Emitter.emit(ir)
+        Emitter.emit(ir, registry)
       end
     end
   end
