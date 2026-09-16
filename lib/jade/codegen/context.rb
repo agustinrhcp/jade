@@ -23,11 +23,10 @@ module Jade
       end
 
       # The substitution of the module being emitted. A dictionary marker is
-      # attached while inference is still running, so it holds whatever var
-      # the constraint had at that moment; unification may bind that var to
-      # another one afterwards, and the dict env is keyed on the second. Set
-      # around the whole module body, so every path that resolves a marker
-      # has it — a function body, an implementation body, a bare expression.
+      # attached mid-inference, so it holds whatever var the constraint had
+      # then; unification may bind that var to another, and the dict env is
+      # keyed on the second. Module-scoped because every kind of body resolves
+      # markers, not just function declarations.
       def substitution
         @substitution
       end

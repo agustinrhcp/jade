@@ -121,9 +121,6 @@ module Jade
         end
       end
 
-      # The marker's var may have been unified with the one the enclosing
-      # function's dict param is keyed on, which is what the substitution
-      # records.
       def dict_for_bound_var(interface, var)
         Codegen
           .substitution
