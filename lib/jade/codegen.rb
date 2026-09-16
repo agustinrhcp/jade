@@ -107,11 +107,13 @@ module Jade
         dict_consts = {}
 
         outer, inner, wrappers =
-          with_dict_consts(dict_consts) do
-            with_boundary_cache(boundary_cache) do
-              with_dispatched_methods(collect_dispatched_methods(body, registry)) do
-                with_hoisted_records do
-                  partition_module_body(body.expressions, registry, name.count('.'))
+          with_substitution(registry.get(name).env.substitution) do
+            with_dict_consts(dict_consts) do
+              with_boundary_cache(boundary_cache) do
+                with_dispatched_methods(collect_dispatched_methods(body, registry)) do
+                  with_hoisted_records do
+                    partition_module_body(body.expressions, registry, name.count('.'))
+                  end
                 end
               end
             end

@@ -3,6 +3,10 @@ require 'spec_helper'
 require 'jade'
 require 'jade/module_loader'
 
+module TwoConstraintsRuntime
+  def self.port_rows(_sql) = []
+end
+
 module Jade
   describe 'Dict-passing constraint propagation through compound shapes' do
     include_context 'with test compiler'
@@ -334,6 +338,43 @@ module Jade
         test_compiler.require(src)
 
         expect(PropFieldAccess.from_cols).to eq({ 'names' => ['id'] })
+      end
+    end
+
+    context 'two constraints on one function' do
+      it 'resolves a marker whose var unification bound after it was attached' do
+        src = <<~JADE
+          module TwoConstraints exposing (values)
+
+          import Decode exposing (Decodable)
+
+
+          struct Box(a) = { value: a }
+
+
+          uses TwoConstraintsRuntime with
+            port_rows : String -> Task(List(a), String)
+          end
+
+
+          interface Widen(e) with
+            widen : String -> e
+          end
+
+
+          def values(sql: String) -> Task(List(b), e)
+            port_rows(sql)
+              |> Task.map((rows) -> { List.map(rows, value_of) })
+              |> Task.map_error(widen)
+          end
+
+
+          def value_of(r: Box(a)) -> a
+            r.value
+          end
+        JADE
+
+        expect { test_compiler.require(src) }.not_to raise_error
       end
     end
   end
