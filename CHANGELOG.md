@@ -42,6 +42,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   in a signature. An explicit import still beats one of the stdlib's default
   imports, now by rule rather than by the order imports were processed in.
 
+- **An implementation could fix a variable the method leaves to the call
+  site.** 0.11.0 let an interface method quantify a variable the interface
+  itself does not name, settled where the method is called. Nothing then
+  checked that the implementation was actually that general:
+
+      interface Runnable(c) with
+        to_select : Q(c) -> Sel(a) with Selectable(a)
+      end
+
+      implements Runnable(Sel(a)) with
+        to_select: (q) -> { q.result }     -- Q(Sel(a)) -> Sel(a), not -> Sel(any)
+      end
+
+  Unification bound the method's `a` to the implementation's, and the binding
+  reached no call site, so `Q(Sel(Row)) -> Sel(Other)` compiled and returned a
+  row of the wrong type. It is refused now, by name, where it is written.
+
 - **A dictionary marker kept the var it was attached with.** A constraint
   records its marker while inference is still running, so it holds whatever
   type variable it had at that moment. Unification may bind that variable to

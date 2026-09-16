@@ -58,7 +58,7 @@ module Jade
                   Expected.check(expected_type),
                   interface_qname,
                   concrete_type,
-                  iface_fn_type,
+                  [iface_fn_type, t_var],
                 )
               end
               .then { [it, Result.init(Type.unit)] }
@@ -151,10 +151,18 @@ module Jade
             end
           end
 
-          def record_requirements(state, constraints, head_type, sig_type, interface_qname, impl_fn, fn_name)
+          def record_requirements(state, constraints, head_type, signature, interface_qname, impl_fn, fn_name)
+            signature => [sig_type, t_var]
             substitution = state.env.substitution
             head_vars = substitution.apply(head_type).unbound_vars.map(&:id).to_set
             names = signature_names(sig_type, substitution)
+
+            narrowed = Narrowing.against_method(sig_type, t_var, head_vars, substitution)
+            unless narrowed.empty?
+              return state.add_errors(
+                narrowed.map { narrowing(state, impl_fn, interface_qname, fn_name, it) },
+              )
+            end
 
             free = constraints
               .map { substitution.apply(it) }
@@ -169,6 +177,19 @@ module Jade
                 [interface_qname, fn_name],
                 free.filter_map { |c| names[c.type.id]&.then { |n| [c.interface, n] } },
               )
+          end
+
+          def narrowing(state, impl_fn, interface_qname, fn_name, narrowed)
+            narrowed => [var_name, bound_to]
+
+            Error::NarrowedMethodVariable.new(
+              state.env.entry_name,
+              impl_fn.range,
+              interface: interface_qname,
+              fn_name:,
+              var_name:,
+              bound_to: bound_to.to_s,
+            )
           end
 
           def signature_names(sig_type, substitution)

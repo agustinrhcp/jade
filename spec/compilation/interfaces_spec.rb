@@ -913,5 +913,56 @@ module Jade
         end
       end
     end
+
+    describe 'an implementation that fixes a variable the method quantifies' do
+      let(:source) do
+        <<~JADE
+          module Narrowed exposing (go)
+
+          struct Sel(a) = { names: List(String) }
+
+
+          struct Q(c) = { result: c }
+
+
+          interface Selectable(a) with
+            selector : Sel(a)
+          end
+
+
+          interface Runnable(c) with
+            to_select : Q(c) -> Sel(a) with Selectable(a)
+          end
+
+
+          implements Runnable(Sel(a)) with
+            to_select: (q) -> { q.result }
+          end
+
+
+          struct Row = { id: String }
+
+
+          def row_selector -> Sel(Row)
+            Sel(["id"])
+          end
+
+
+          implements Selectable(Row) with
+            selector: row_selector
+          end
+
+
+          def go(q: Q(Sel(Row))) -> Sel(Row)
+            to_select(q)
+          end
+        JADE
+      end
+
+      it 'is refused rather than silently dropping the narrowing' do
+        expect { test_compiler.require(source) }
+          .to raise_error(CompilationError, /fixes `a`.*leaves to the call site/m)
+      end
+    end
   end
 end

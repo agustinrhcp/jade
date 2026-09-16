@@ -1,9 +1,11 @@
 module Jade
   module Frontend
     module TypeChecking
-      # Unification is symmetric, so a body that pins a variable its
-      # declaration quantifies simply binds it, and a call site instantiating
-      # the declaration afresh never sees that it did.
+      # Unification is symmetric, so pinning a variable a declaration
+      # quantifies simply binds it, and a call site instantiating that
+      # declaration afresh never sees that it did. Two places can do it: a
+      # function's own body, and an implementation against the method it
+      # implements.
       module Narrowing
         extend self
 
@@ -16,7 +18,32 @@ module Jade
           end
         end
 
+
+        # An implementation is the other place a quantified variable can be
+        # pinned: the method promises a variable each call site settles, and
+        # unification will happily bind it to the implementation's own.
+        #
+        # The interface's own parameter is exempt — binding that to the
+        # implemented type is what an implementation is.
+        def against_method(sig_type, t_var, head_vars, substitution)
+          sig_type
+            .unbound_vars
+            .reject { it.id == t_var.id }
+            .filter_map { pinned(it, substitution.apply(it), head_vars) }
+            .uniq(&:first)
+        end
+
         private
+
+        # Pinned to one of the implemented type's own variables is the common
+        # case, and naming it reads as nonsense when the two are spelled alike.
+        def pinned(var, applied, head_vars)
+          case applied
+          in Type::Var(id:) if !head_vars.include?(id) then nil
+          in Type::Var then [var.name, 'the type this implements']
+          else [var.name, "`#{applied}`"]
+          end
+        end
 
         def merged(found)
           found
