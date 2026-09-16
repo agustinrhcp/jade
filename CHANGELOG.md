@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A dictionary marker kept the var it was attached with.** A constraint
+  records its marker while inference is still running, so it holds whatever
+  type variable it had at that moment. Unification may bind that variable to
+  another one afterwards, and the enclosing function's dict parameter is keyed
+  on the second — so the lookup missed and codegen raised `no dict in scope`,
+  naming itself as the bug.
+
+  It took two constraints on one function to see it: with one, the marker's
+  var and the parameter's var were usually the same. jade-sql wanted a
+  `pluck` — one column of the caller's type out of every row — which needs
+  `Decodable(a)` threaded alongside the error widening, and neither constraint
+  alone reproduced it.
+
+  Codegen now carries the entry's substitution while it emits a body, and
+  resolves a marker's var through it before giving up.
+
 ## [0.11.3] - 2026-09-16
 
 ### Added

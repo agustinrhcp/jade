@@ -22,6 +22,24 @@ module Jade
         @dict_env = prev
       end
 
+      # The substitution of the module being emitted. A dictionary marker is
+      # attached while inference is still running, so it holds whatever var
+      # the constraint had at that moment; unification may bind that var to
+      # another one afterwards, and the dict env is keyed on the second. Set
+      # around the whole module body, so every path that resolves a marker
+      # has it — a function body, an implementation body, a bare expression.
+      def substitution
+        @substitution
+      end
+
+      def with_substitution(sub)
+        prev = @substitution
+        @substitution = sub
+        yield
+      ensure
+        @substitution = prev
+      end
+
       # Dictionary source => constant name, filled while a module emits.
       # A dictionary built entirely from concrete implementations depends
       # on nothing at the call site, so it is built once at load instead

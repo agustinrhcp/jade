@@ -113,12 +113,22 @@ module Jade
 
       def dispatch_value(entry, registry)
         case entry
-        in Type::Constraint(interface:, type: Type::Var(id:))
-          Codegen.dict_env[[interface, id]]
+        in Type::Constraint(interface:, type: Type::Var(id:) => var)
+          Codegen.dict_env[[interface, id]] || dict_for_bound_var(interface, var)
 
         in Symbol::Implementation
           hoisted(Pretty.hash(generate_impl_dispatch(entry, registry)))
         end
+      end
+
+      # The marker's var may have been unified with the one the enclosing
+      # function's dict param is keyed on, which is what the substitution
+      # records.
+      def dict_for_bound_var(interface, var)
+        Codegen
+          .substitution
+          .apply(var)
+          .then { it.is_a?(Type::Var) ? Codegen.dict_env[[interface, it.id]] : nil }
       end
 
       # A dictionary built only from concrete implementations is the same
