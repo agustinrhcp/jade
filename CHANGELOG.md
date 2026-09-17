@@ -6,7 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Fixed
+## [0.12.0] - 2026-09-17
+
+### Breaking
+
+Each of these refuses a program that compiled before. All four were
+accepting something unsound, so the refusal is the fix — but a build that
+passed on 0.11.3 may not pass on this one.
 
 - **A signature wider than its body was accepted.** `def anything -> a`
   returning `Nothing`, or `def wrap -> Maybe(a)` returning `Just(1)`, type
@@ -14,19 +20,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   saw the narrower type. A declared type variable now has to stay a variable
   through the body. Fixing it to a concrete type, or making two declared
   variables the same, is an error that says which.
-
-- **A file that ends mid-declaration crashed `jade check`.** The parse error
-  for input that runs out carries no span, since there is no token to point
-  at, and the renderer called `.begin` on it. The diagnostic now points at the
-  last character written, where the missing part belongs, and a label with no
-  span renders as its message alone.
-
-- **A body its signature rejects crashed the compiler.** A list, a bare
-  constructor, or a binding in last position, checked against a type it could
-  not be, reached `nil.call` in `State#unify` — the crash 0.10.1 fixed for
-  record updates, at the call sites that still had no error block.
-  `def limit -> Int` returning `[1]` now reads
-  `Expected Int but got List(Int)`.
 
 - **A statement at the top level of a module is an error.** `x = 2` between
   two `def`s type-checked, and a function reading `x` compiled clean, then
@@ -59,6 +52,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   reached no call site, so `Q(Sel(Row)) -> Sel(Other)` compiled and returned a
   row of the wrong type. It is refused now, by name, where it is written.
 
+### Fixed
+
+- **A file that ends mid-declaration crashed `jade check`.** The parse error
+  for input that runs out carries no span, since there is no token to point
+  at, and the renderer called `.begin` on it. The diagnostic now points at the
+  last character written, where the missing part belongs, and a label with no
+  span renders as its message alone.
+
+- **A body its signature rejects crashed the compiler.** A list, a bare
+  constructor, or a binding in last position, checked against a type it could
+  not be, reached `nil.call` in `State#unify` — the crash 0.10.1 fixed for
+  record updates, at the call sites that still had no error block.
+  `def limit -> Int` returning `[1]` now reads
+  `Expected Int but got List(Int)`.
+
 - **A dictionary marker kept the var it was attached with.** A constraint
   records its marker while inference is still running, so it holds whatever
   type variable it had at that moment. Unification may bind that variable to
@@ -79,6 +87,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   module for `exposed`, which does not exist, so the only way to bring a
   module's whole surface in unqualified was a `NoMethodError`. It now
   imports everything the module exposes, constructors included.
+
+- **A string literal's range started one byte in.** `Literal` took its range
+  from the content token, so a diagnostic on `"ab"` underlined `ab"`, and
+  anything editing source by node range landed inside the quotes.
 
 ## [0.11.3] - 2026-09-16
 
