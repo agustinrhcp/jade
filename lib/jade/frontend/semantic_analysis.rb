@@ -155,6 +155,10 @@ module Jade
           with(bindings: bindings.merge(name => symbol))
         end
 
+        def unbind(name)
+          with(bindings: bindings.except(name))
+        end
+
         def lookup(name)
           bindings[name]
         end

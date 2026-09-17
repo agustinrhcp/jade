@@ -4,6 +4,7 @@ require 'jade/type'
 require 'jade/stdlib'
 require 'jade/did_you_mean'
 
+require 'jade/frontend/cells'
 require 'jade/frontend/comment_attacher'
 require 'jade/frontend/forward_declaration'
 require 'jade/frontend/semantic_analysis'
@@ -28,6 +29,7 @@ module Jade
       initial
         .then { FixityFixer.fix_entry(it).tap(&capture) }
         .then { Desugaring.desugar_entry(it).tap(&capture) }
+        .then { Cells.lift(it, registry).tap(&capture) }
         .then { ForwardDeclaration.declare_entry(it, registry).map { it.tap(&capture) } }
         .and_then { SemanticAnalysis.analyze(it, registry.update_module(it)).map { it.tap(&capture) } }
         .map { Desugaring.desugar_resolved_entry(it, registry.update_module(it)).tap(&capture) }
