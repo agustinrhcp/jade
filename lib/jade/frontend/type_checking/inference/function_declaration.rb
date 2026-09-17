@@ -43,7 +43,7 @@ module Jade
                   function_name: node.name,
                 )
               end
-              .then { |st| report_narrowing(st, node, symbol, registry, fn_type) }
+              .then { |st| declared ? report_narrowing(st, node, symbol, registry, fn_type) : st }
               .then do |st|
                 next st if st.env.bindings[symbol.qualified_name].is_a?(Scheme) && !st.skip_constraints
 
