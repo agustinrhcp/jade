@@ -9,6 +9,7 @@ module Jade
       'init' => 'Init',
       'lsp' => 'Lsp',
       'q' => 'Q',
+      'repl' => 'Repl',
     }.freeze
 
     module_function
@@ -44,6 +45,7 @@ module Jade
           init   Write jade.json and the source directory.
           lsp    Run the language server (stdio JSON-RPC).
           q      Headless query interface (hover/symbols/defn/refs/api).
+          repl   Evaluate Jade at a prompt, showing each value with its type.
 
         Run `jade COMMAND --help` for command-specific options.
       TXT
