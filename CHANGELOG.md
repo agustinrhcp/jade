@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A pattern in a lambda is checked against the type the caller gives it.**
+  Coverage was decided where the pattern was written, which for a lambda is
+  before the call that types its parameter — so the subject was still a
+  variable and anything but a binding or a wildcard was reported as
+  non-exhaustive. `(a, b) = p` inside a `List.map` is the common shape;
+  `Tuple.first` / `Tuple.second` or a one-armed `case` were the workarounds.
+  Coverage and redundancy now run once inference has finished.
+
 ### Added
 
 - **`Show` renders a `Dict` and a `Set`.** Both already had `Eq`, so they

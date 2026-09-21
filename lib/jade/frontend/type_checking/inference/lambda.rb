@@ -54,10 +54,7 @@ module Jade
                 in AST::Pattern::Binding | AST::Pattern::Wildcard
                   acc
                 else
-                  concrete_t = body_state.env.substitution.apply(t)
-                  PatternAnalysis::Exhaustiveness
-                    .assert([p], p.range, acc.env, concrete_t)
-                    .then { acc.add_errors(it) }
+                  acc.defer_patterns([p], p.range, t)
                 end
               end
 
