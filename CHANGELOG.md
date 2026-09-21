@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-09-21
+
+Both of these make code compile that should have compiled, so they ride a
+patch rather than waiting for a minor.
+
 ### Fixed
 
 - **A pattern in a lambda is checked against the type the caller gives it.**
