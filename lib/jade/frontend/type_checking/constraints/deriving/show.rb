@@ -24,6 +24,8 @@ module Jade
             # reason. Contained because derivation is private — see
             # vault jade/plans/jade-test-runner.md for the four layers involved.
             LIST = 'List.List'
+            DICT = 'Dict.Dict'
+            SET = 'Set.Set'
 
             def special_case(constraint, lookup)
               case constraint.type
@@ -32,6 +34,12 @@ module Jade
 
               in Type::Application(constructor: Type::Constructor(name: LIST), args: [inner])
                 list_show(constraint, inner, lookup)
+
+              in Type::Application(constructor: Type::Constructor(name: DICT), args: [key, value])
+                container_show(constraint, [key, value], 'Dict.show_with', lookup)
+
+              in Type::Application(constructor: Type::Constructor(name: SET), args: [inner])
+                container_show(constraint, [inner], 'Set.show_with', lookup)
 
               else
                 nil
@@ -56,6 +64,22 @@ module Jade
                     .then { Ok[implementation(constraint, { 'show' => it }, deps: [dep])] }
                 end
             end
+
+            # Threads each element's own `show` into the stdlib function that
+            # renders the container.
+            def container_show(constraint, inners, fn, lookup)
+              inners
+                .map { lookup.call(Type.constraint(INTERFACE, it, constraint.origin)) }
+                .then { Results.sequence(it) }
+                .and_then do |deps|
+                  args = deps.each_index.map { [:impl_arg, it, 'show'] } + [[:var, 'value']]
+
+                  Symbol::DerivedFunction
+                    .new(params: ['value'], body: [:call, [:stdlib_fn, fn], args])
+                    .then { Ok[implementation(constraint, { 'show' => it }, deps:)] }
+                end
+            end
+
 
             def constant(text)
               Symbol::DerivedFunction.new(params: ['value'], body: text)

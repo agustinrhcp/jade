@@ -178,6 +178,8 @@ module Jade
       # Bodies that don't fit a single Ruby expression.
       NO_INLINE = %w[
         Number.checked
+        Dict.show_with
+        Set.show_with
         List.sort_with
         List.sort_by_with
         List.filter_map

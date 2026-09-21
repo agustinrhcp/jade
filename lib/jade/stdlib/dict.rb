@@ -69,6 +69,18 @@ module Jade
         end
       end
 
+      function(
+        :show_with,
+        { show_key: 'k -> String', show_value: 'v -> String', dict: 'Dict(k, v)' },
+        'String',
+        private: true,
+      ) do |show_key, show_value, dict|
+        dict.hash
+          .map { |k, v| "#{show_key.call(k)}: #{show_value.call(v)}" }
+          .join(', ')
+          .then { "Dict(#{it})" }
+      end
+
       function(:keys, { dict: 'Dict(k, v)' }, 'List(k)')
       function(:values, { dict: 'Dict(k, v)' }, 'List(v)')
       function(:to_list, { dict: 'Dict(k, v)' }, 'List(Tuple2(k, v))')
