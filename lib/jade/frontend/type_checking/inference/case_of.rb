@@ -86,12 +86,7 @@ module Jade
             patterns = branches.map(&:pattern)
             type     = result.apply(state.env.substitution).type
 
-            [
-              PatternAnalysis::Exhaustiveness.assert(patterns, node.range, state.env, type),
-              PatternAnalysis::Redundancy.assert(patterns, state.env, type),
-            ]
-              .flatten
-              .then { state.add_errors(it) }
+            state.defer_patterns(patterns, node.range, type)
           end
 
           def mistyped_patterns?(node, state)

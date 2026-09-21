@@ -33,9 +33,8 @@ module Jade
                 [pattern_state, expr_result.constraints]
               end
 
-            PatternAnalysis::Exhaustiveness
-              .assert([pattern], pattern.range, final_state.env, expr_result.type)
-              .then { final_state.add_errors(it) }
+            final_state
+              .defer_patterns([pattern], pattern.range, expr_result.type)
               .unify_result(
                 expr_result.with(constraints: residual_cs),
                 expected.type,

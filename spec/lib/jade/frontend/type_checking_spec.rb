@@ -31,10 +31,12 @@ module Jade
               state,
               TypeChecking::Expected.infer(state.fresh),
             )
+            checked = TypeChecking::PatternChecks.run(check_state)
+
             Data.define(:type, :errors, :env).new(
               type: result.type,
-              errors: check_state.errors,
-              env: check_state.env,
+              errors: checked.errors,
+              env: checked.env,
             )
           end
       end
@@ -665,6 +667,37 @@ module Jade
           end
 
           its(:errors) { is_expected.to include(be_a(TypeChecking::Error::MissingPatterns)) }
+        end
+
+        # The pattern is checked before the call that gives the lambda's
+        # parameter its type, so coverage is decided after inference rather
+        # than where the pattern was written.
+        context 'destructuring a tuple the caller types' do
+          let(:text) do
+            <<~JADE
+              pairs = [(1, "a")]
+
+              firsts = pairs |> List.map((p) -> {
+                (n, s) = p
+
+                n
+              })
+            JADE
+          end
+
+          its(:errors) { is_expected.to be_empty }
+        end
+
+        context 'destructuring a tuple in the parameter itself' do
+          let(:text) do
+            <<~JADE
+              pairs = [(1, "a")]
+
+              firsts = pairs |> List.map(((n, s)) -> { n })
+            JADE
+          end
+
+          its(:errors) { is_expected.to be_empty }
         end
       end
 

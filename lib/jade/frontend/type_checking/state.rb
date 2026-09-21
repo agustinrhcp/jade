@@ -1,9 +1,16 @@
 module Jade
   module Frontend
     module TypeChecking
-      State = Data.define(:env, :errors, :skip_constraints, :impl_requirements) do
+      State = Data.define(:env, :errors, :skip_constraints, :impl_requirements, :pattern_checks) do
         def self.init(env, skip_constraints: false)
-          new(env, [], skip_constraints, {})
+          new(env, [], skip_constraints, {}, [])
+        end
+
+        # Coverage is decided once inference is done: a pattern in a lambda is
+        # checked before the call that gives the lambda's parameter its type,
+        # so the subject can still be a variable here.
+        def defer_patterns(patterns, range, type)
+          with(pattern_checks: pattern_checks + [[patterns, range, type]])
         end
 
         def require_impl(key, constraints)

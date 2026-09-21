@@ -8,6 +8,7 @@ require 'jade/frontend/type_checking/expected'
 require 'jade/frontend/type_checking/inference'
 require 'jade/frontend/type_checking/loader'
 require 'jade/frontend/type_checking/narrowing'
+require 'jade/frontend/type_checking/pattern_checks'
 require 'jade/frontend/type_checking/port_resolution'
 require 'jade/frontend/type_checking/requirements'
 require 'jade/frontend/type_checking/result'
@@ -28,7 +29,7 @@ module Jade
           .load(entry, registry)
           .then { collect_constraints(entry, registry, it) }
           .then { check_node(entry.ast, registry, State.init(it), Expected.infer(it.fresh)) }
-          .then { |state, _| Requirements.reconcile(entry, registry, state) }
+          .then { |state, _| Requirements.reconcile(entry, registry, PatternChecks.run(state)) }
           .then { |amended, state| complete(amended, state, registry) }
           .and_then { PortResolution.resolve(it, registry) }
       end
