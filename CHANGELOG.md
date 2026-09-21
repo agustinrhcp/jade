@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`Show` renders a `Dict` and a `Set`.** Both already had `Eq`, so they
+  compared but could not be printed, and anything that shows a value on
+  failure — a test assertion, a debug line — stopped compiling at
+  `Show cannot be derived for Dict(String, Int)`. Keys, values and elements
+  render through their own instances, so a `String` key keeps its quotes and a
+  nested list prints as a list.
+
 ## [0.12.0] - 2026-09-17
 
 ### Breaking

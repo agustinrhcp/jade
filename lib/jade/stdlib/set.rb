@@ -24,6 +24,18 @@ module Jade
         constraints: [['Basics.Eq', 'a']],
       )
 
+      function(
+        :show_with,
+        { show_value: 'a -> String', set: 'Set(a)' },
+        'String',
+        private: true,
+      ) do |show_value, set|
+        set.hash.keys
+          .map { show_value.call(it) }
+          .join(', ')
+          .then { "Set(#{it})" }
+      end
+
       function(:"empty?", { set: 'Set(a)' }, 'Bool')
       function(:size, { set: 'Set(a)' }, 'Int')
 

@@ -39,10 +39,10 @@ module Jade
     describe 'derived' do
       let(:compiler) { TestCompiler.new }
 
-      def derived(name, decls, expr)
+      def derived(name, decls, expr, also: [])
         header = "module #{name} exposing (probe)"
         probe  = "def probe -> String\n  show(#{expr})\nend"
-        import = 'import Show exposing (show)'
+        import = ['import Show exposing (show)', *also.map { "import #{it}" }].join("\n")
 
         compiler.require("#{header}\n\n#{import}\n\n\n#{decls}\n\n\n#{probe}\n")
 
@@ -97,6 +97,27 @@ module Jade
 
       it 'renders a list of a derived type' do
         expect(derived('ShowListOfBox', box, '[B(1), Empty]')).to eql '[B(1), Empty]'
+      end
+
+      it 'renders a dict through its key and value instances' do
+        dict = "def pairs -> Dict.Dict(String, Int)\n" \
+               "  Dict.from_list([(\"a\", 1), (\"b\", 2)])\nend"
+
+        expect(derived('ShowDict', dict, 'pairs', also: ['Dict'])).to eql 'Dict("a": 1, "b": 2)'
+      end
+
+      it 'renders a set through its element instance' do
+        set = "def nums -> Set.Set(Int)\n  Set.from_list([1, 2])\nend"
+
+        expect(derived('ShowSet', set, 'nums', also: ['Set'])).to eql 'Set(1, 2)'
+      end
+
+      it 'renders what a dict holds, not only what it is' do
+        dict = "def lists -> Dict.Dict(String, List(Int))\n" \
+               "  Dict.from_list([(\"a\", [1, 2])])\nend"
+
+        expect(derived('ShowDictOfLists', dict, 'lists', also: ['Dict']))
+          .to eql 'Dict("a": [1, 2])'
       end
 
       it 'renders a variant mixing a type parameter with a concrete type' do
