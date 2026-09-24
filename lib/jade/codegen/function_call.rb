@@ -140,7 +140,8 @@ module Jade
         table = Codegen.dict_consts or return source
         return source if Codegen.dict_env.values.any? { source.include?(it) }
 
-        table[source] ||= "DICT_#{table.size}"
+        table[source] ||= "dict_#{table.size}"
+        "::#{Codegen.dict_owner}.#{table[source]}"
       end
 
       # Polymorphic fn referenced as a value (not called). Wraps the fn with

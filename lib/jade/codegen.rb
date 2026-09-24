@@ -109,10 +109,12 @@ module Jade
         outer, inner, wrappers =
           with_substitution(registry.get(name).env.substitution) do
             with_dict_consts(dict_consts) do
-              with_boundary_cache(boundary_cache) do
-                with_dispatched_methods(collect_dispatched_methods(body, registry)) do
-                  with_hoisted_records do
-                    partition_module_body(body.expressions, registry, name.count('.'))
+              with_dict_owner(to_qualified(name)) do
+                with_boundary_cache(boundary_cache) do
+                  with_dispatched_methods(collect_dispatched_methods(body, registry)) do
+                    with_hoisted_records do
+                      partition_module_body(body.expressions, registry, name.count('.'))
+                    end
                   end
                 end
               end
@@ -365,9 +367,25 @@ module Jade
     # weighed against its specialized form, say), and a discarded one can
     # still have claimed a constant. Keep the ones that survived, and the
     # ones those refer to.
+    # Memoised methods rather than constants: a dictionary can hold the
+    # result of calling a module function, and that function's own body can
+    # name another dictionary. Constants are evaluated in the order they are
+    # written, so that dependency could reach forward to one not defined
+    # yet; a method body runs when it is first called, by which time every
+    # definition exists.
     def referenced_dicts(table, body)
       reachable_dicts(table, body.join(Pretty.newline))
-        .map { |source, const| "#{const} = #{source}.freeze" }
+        .map { |source, const| dict_method(const, source) }
+    end
+
+    # The nil assignment runs on every load, so a reloaded module rebuilds
+    # its dictionaries rather than keeping ones that close over the classes
+    # the reload just replaced.
+    def dict_method(const, source)
+      [
+        "@#{const} = nil",
+        Pretty.block("def self.#{const}", "@#{const} ||= #{source}.freeze"),
+      ].join(Pretty.newline(2))
     end
 
     # A kept dictionary can name another one, so widen the search text

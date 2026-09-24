@@ -6,6 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A hoisted dictionary is built on first use, not while the module loads.**
+  One can hold the result of calling a module function, and that function's
+  own body can name another dictionary — emitted as constants in the order
+  they were written, the second was still undefined while the first was being
+  built, and requiring the module raised `uninitialized constant DICT_6`.
+  Whether it happened depended on the order the dictionaries were discovered
+  in, so adding an unrelated function could break a module that compiled
+  yesterday. They are memoised singleton methods now, cleared on each load so
+  a reloaded module does not keep dictionaries closing over classes the
+  reload replaced.
+
 ## [0.12.1] - 2026-09-21
 
 Both of these make code compile that should have compiled, so they ride a
