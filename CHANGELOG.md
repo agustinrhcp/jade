@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-09-24
+
 ### Fixed
 
 - **A hoisted dictionary is built on first use, not while the module loads.**
