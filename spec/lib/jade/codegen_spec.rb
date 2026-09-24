@@ -484,12 +484,21 @@ module Jade
       end
 
       it 'is built once and shared by both call sites' do
-        expect(subject).to include 'DICT_0 = [{ "(+)" =>'
-        expect(subject.scan('.call(DICT_0)').size).to eq 2
+        expect(subject).to include 'def self.dict_0'
+        expect(subject).to include '@dict_0 ||= [{ "(+)" =>'
+        expect(subject.scan('.call(::Totals.dict_0)').size).to eq 2
       end
 
       it 'is frozen, since two call sites now hold the same object' do
-        expect(subject).to match(/DICT_0 = .*\.freeze/)
+        expect(subject).to match(/@dict_0 \|\|= .*\.freeze/)
+      end
+
+      # A dictionary can hold the result of calling a module function whose
+      # own body names another dictionary. Built at load in the order they
+      # are written, that second one could still be undefined.
+      it 'is built on first use, not while the module is loading' do
+        expect(subject).to include '@dict_0 = nil'
+        expect(subject).not_to match(/^\s*DICT_0 =/)
       end
     end
 
@@ -512,8 +521,8 @@ module Jade
         JADE
       end
 
-      it 'stays a constant where the type is known' do
-        expect(subject).to include 'DICT_0 = { "compare" =>'
+      it 'stays hoisted where the type is known' do
+        expect(subject).to include '@dict_0 ||= { "compare" =>'
       end
 
       it 'keeps the parameter where it is not' do

@@ -56,6 +56,20 @@ module Jade
         @dict_consts = prev
       end
 
+      # The module the dictionary methods are defined on, so a reference from
+      # inside `Internal` still finds them.
+      def dict_owner
+        @dict_owner
+      end
+
+      def with_dict_owner(owner)
+        prev = @dict_owner
+        @dict_owner = owner
+        yield
+      ensure
+        @dict_owner = prev
+      end
+
       # When set, references with this name emit as `self` (and field accesses
       # on them as bare method calls). Used to rewrite operator-impl lambda
       # bodies — `(a, b) -> { a.amount == b.amount }` becomes
