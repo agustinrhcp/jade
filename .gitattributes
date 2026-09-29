@@ -1,0 +1,3 @@
+# .jd has no Linguist grammar; Elixir is the closest fit for def/end,
+# # comments and |>, and gives GitHub something to colour.
+*.jd linguist-language=Elixir
