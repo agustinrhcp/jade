@@ -64,6 +64,7 @@ module Jade
         # exposed, polymorphic, or ineligible).
         def boundary_types(fn_node, registry)
           symbol = fn_node.symbol
+          return nil if registry.cell?(symbol.module_name)
           return nil unless registry.get(symbol.module_name).exposed_value(symbol.name)
           return nil unless dict_constraints(symbol, registry).empty?
 

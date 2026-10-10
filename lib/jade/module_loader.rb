@@ -21,9 +21,9 @@ module Jade
   module ModuleLoader
     extend self
 
-    def load(source_root, path, cache_dir: nil, tolerant: false, overlays: {})
+    def load(source_root, path, cache_dir: nil, tolerant: false, overlays: {}, cells: ::Set[])
       Source.load(source_root, path, overlays:)
-        .then { load_(it, new_registry(source_root, overlays:), entry: true) }
+        .then { load_(it, new_registry(source_root, overlays:, cells:), entry: true) }
         .then { Stdlib.apply(it) }
         .then { compile(it, cache_dir:, tolerant:) }
     end
@@ -149,9 +149,9 @@ module Jade
     # post-Stdlib.load Registry once per process and stamp the per-call
     # source_root + overlays on a copy. Invalidated only on restart —
     # acceptable since compiler code changes need a restart anyway.
-    def new_registry(source_root, overlays: {})
+    def new_registry(source_root, overlays: {}, cells: ::Set[])
       @stdlib_base ||= Stdlib.load(Registry.new)
-      @stdlib_base.with(source_root:, overlays:)
+      @stdlib_base.with(source_root:, overlays:, cells:)
     end
   end
 end

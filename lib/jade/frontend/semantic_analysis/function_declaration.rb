@@ -15,9 +15,13 @@ module Jade
               .add_errors(acc.errors)
           end
 
+          body_scope = cell_binding?(symbol_ref, registry) ?
+            without_self(params_r.scope, name, entry) :
+            params_r.scope
+
           Result
             .combine(node, scope:,
-              body: analyze_node(body, registry, params_r.scope, entry),
+              body: analyze_node(body, registry, body_scope, entry),
             )
             .map_node { it.with(symbol: symbol_ref) }
             .add_errors(params_r.errors)
@@ -51,6 +55,16 @@ module Jade
               fn_name: name,
             )]
           end
+        end
+
+        def cell_binding?(symbol, registry)
+          registry.lookup(symbol).return_type.is_a?(Symbol::Inferred)
+        end
+
+        def without_self(scope, name, entry)
+          entry
+            .imported_values[name]
+            .then { it ? scope.bind(name, it) : scope.unbind(name) }
         end
       end
     end

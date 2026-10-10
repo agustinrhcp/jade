@@ -17,6 +17,9 @@ module Jade
             .defined_values
             .reduce(env) do |e, (_, sym)|
               case sym
+              in Symbol::Function(return_type: Symbol::Inferred)
+                Placeholder[Type.function([], e.fresh), []]
+
               in Symbol::Function
                 Type
                   .from_symbol(sym, registry, e.var_gen)

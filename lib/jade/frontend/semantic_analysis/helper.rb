@@ -144,7 +144,7 @@ module Jade
             registry.lookup(symbol)
               .then { validate_type_symbol(it, registry, entry) }
 
-          in Symbol::Variable
+          in Symbol::Variable | Symbol::Inferred
             []
 
           in Symbol::PartialApplication(constructor:, args:)

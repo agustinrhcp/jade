@@ -2,15 +2,29 @@ require 'jade/module_loader'
 require 'jade/entry'
 
 module Jade
-  Registry = Data.define(:modules, :implementations, :source_root, :dependency_graph, :overlays) do
-    def initialize(modules: {}, implementations: {}, source_root: nil, dependency_graph: nil, overlays: {})
+  Registry = Data.define(
+    :modules, :implementations, :source_root, :dependency_graph, :overlays, :cells
+  ) do
+    def initialize(
+      modules: {},
+      implementations: {},
+      source_root: nil,
+      dependency_graph: nil,
+      overlays: {},
+      cells: ::Set[]
+    )
       super(
         modules:,
         implementations:,
         source_root:,
         dependency_graph: dependency_graph || ModuleLoader::DependencyGraph.new,
         overlays:,
+        cells:,
       )
+    end
+
+    def cell?(module_name)
+      cells.include?(module_name)
     end
 
     def self.entry(name)

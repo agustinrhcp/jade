@@ -21,10 +21,19 @@ module Jade
             .map { |param| param.type.then { figure_out_type(entry, it) }.map { [param.name, it] } }
             .then { Results.sequence(it) }
             .map(&:to_h)
-            .and_then { |params_types| figure_out_type(entry, return_type).map { [params_types, it] } }
+            .and_then { |params_types| declared_return(entry, return_type).map { [params_types, it] } }
             .map { |params_types, return_type_type| Symbol.function(name, params_types, return_type_type, range) }
             .map { entry.define(it) }
             .then { to_declaration_result(entry, it) }
+        end
+
+        private
+
+        def declared_return(entry, return_type)
+          case return_type
+          in nil then Ok[Symbol::Inferred.new]
+          else figure_out_type(entry, return_type)
+          end
         end
       end
     end

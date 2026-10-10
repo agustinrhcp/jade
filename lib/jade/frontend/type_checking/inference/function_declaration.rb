@@ -19,19 +19,21 @@ module Jade
               }
 
             arg_types, return_type = Type.signature(fn_type)
+            declared = !registry.lookup(symbol).return_type.is_a?(Symbol::Inferred)
+            expected = declared ? Expected.check(return_type) : Expected.infer(return_type)
 
             new_state, body_result = arg_types
               .zip(params)
               .reduce(state) do |acc, (t, p)|
                 acc.bind(p.name, Scheme.mono(t))
               end
-              .then { check(body, registry, it, Expected.check(return_type)) }
+              .then { check(body, registry, it, expected) }
 
             new_state
               .unify(
                 body_result.type,
                 return_type,
-                fn_type.unbound_vars
+                declared ? fn_type.unbound_vars : []
               ) do
                 Error::FunctionBodyTypeMismatch.new(
                   state.env.entry_name,
@@ -41,7 +43,7 @@ module Jade
                   function_name: node.name,
                 )
               end
-              .then { |st| report_narrowing(st, node, symbol, registry, fn_type) }
+              .then { |st| declared ? report_narrowing(st, node, symbol, registry, fn_type) : st }
               .then do |st|
                 next st if st.env.bindings[symbol.qualified_name].is_a?(Scheme) && !st.skip_constraints
 
