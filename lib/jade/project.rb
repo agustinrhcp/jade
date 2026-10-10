@@ -13,7 +13,8 @@ module Jade
   # constants in that block land in `Jade`, not on the class — which would
   # put `Jade::DEFAULTS` in the gem's top namespace.
   class Project < Data.define(
-    :root, :source_roots, :build_dir, :cache_dir, :extensions, :entries, :map
+    :root, :source_roots, :build_dir, :cache_dir, :extensions, :entries, :map,
+    :extension_config
   )
     MANIFEST = 'jade.json'.freeze
 
@@ -24,7 +25,19 @@ module Jade
       extensions: [],
       entries: [],
       map: {},
+      extension_config: {},
     }.freeze
+
+    class UnknownKey < StandardError
+      def initialize(key, known)
+        super(<<~MSG)
+          #{MANIFEST} has no `#{key}` setting
+
+          A key named after a gem in `extensions` belongs to that gem, and
+          anything else has to be one of: #{known.join(', ')}.
+        MSG
+      end
+    end
 
     class NotFound < StandardError
       def initialize(from)
@@ -59,8 +72,22 @@ module Jade
       (root + MANIFEST)
         .read
         .then { JSON.parse(it, symbolize_names: true) }
-        .then { new(root: root.to_s, **DEFAULTS.merge(it)) }
+        .then { new(root: root.to_s, **DEFAULTS.merge(settings(it))) }
         .tap { it.require_extensions }
+    end
+
+    # A key named after one of the `extensions` is that gem's to read, and is
+    # set aside for it. Anything else unknown is a typo — `source_root` for
+    # `source_roots` would otherwise be ignored in silence.
+    def self.settings(raw)
+      raw
+        .except(*DEFAULTS.keys)
+        .partition { |key, _| raw.fetch(:extensions, []).include?(key.to_s) }
+        .then do |(extension, unknown)|
+          unknown.each { |key, _| fail UnknownKey.new(key, DEFAULTS.keys - [:extension_config]) }
+
+          raw.slice(*DEFAULTS.keys).merge(extension_config: extension.to_h)
+        end
     end
 
     def source_root

@@ -37,7 +37,8 @@ module Jade
       it 'refuses a key it does not know, so a typo is not silently ignored' do
         manifest(source_root: 'lib')
 
-        expect { Project.find(root) }.to raise_error(ArgumentError, /source_root/)
+        expect { Project.find(root) }
+          .to raise_error(Project::UnknownKey, /has no `source_root` setting/)
       end
     end
 
@@ -104,6 +105,23 @@ module Jade
         expect { Project.find(root) }
           .to change { Jade.extensions.include?("#{gem_dir}/jade-fake") }
           .from(false).to(true)
+      end
+
+      it 'sets aside a key named after one of them, for that gem to read' do
+        manifest(
+          source_roots: ['lib'],
+          extensions: ['jade-fake'],
+          'jade-fake': { enums: { invoice_status: 'Invoice.Status' } },
+        )
+
+        expect(Project.find(root).extension_config)
+          .to eql({ :'jade-fake' => { enums: { invoice_status: 'Invoice.Status' } } })
+      end
+
+      it 'leaves it empty when none of them claims anything' do
+        manifest(source_roots: ['lib'], extensions: ['jade-fake'])
+
+        expect(Project.find(root).extension_config).to eql({})
       end
     end
 
