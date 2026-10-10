@@ -39,8 +39,14 @@ module Jade
     register_extension(entry_file.delete_suffix('.rb'))
   end
 
+  # `Test` and `Expect` are Jade source, not Intrinsics or Compiled modules:
+  # their functions are constrained polymorphic (`Eq(a)` and `Show(a)`), which
+  # only compiles on the ordinary-module path. Shipping them the way an
+  # extension gem ships its modules puts them on that path.
+  TESTING_ROOT = File.expand_path('jade/testing', __dir__)
+
   def extensions
-    @extensions ||= []
+    @extensions ||= [TESTING_ROOT]
   end
 
   def setup(&block)

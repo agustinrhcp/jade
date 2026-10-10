@@ -1,0 +1,28 @@
+module Test exposing (
+  Test(..),
+  context,
+  describe,
+  it,
+)
+
+import Expect exposing (Expectation)
+
+
+type Test
+  = Unit(String, () -> Expectation)
+  | Group(String, List(Test))
+
+
+def it(name: String, body: () -> Expectation) -> Test
+  Unit(name, body)
+end
+
+
+def describe(name: String, tests: List(Test)) -> Test
+  Group(name, tests)
+end
+
+
+def context(name: String, tests: List(Test)) -> Test
+  Group(name, tests)
+end
